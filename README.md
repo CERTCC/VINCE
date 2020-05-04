@@ -8,7 +8,7 @@ VINCE documentation is available here: [https://vuls.cert.org/confluence/display
 
 ## Bugs and Feature Requests
 
-If you are using VINCE and have a bug, feature request, or other issue to report, please open a issue in this project.
+If you are using VINCE and have a bug, feature request, or other issue to report, please open an [issue](https://github.com/CERTCC/VINCE/issues) in this project.
 
 ## Code
 
