@@ -1,6 +1,6 @@
 # VINCE
 
-[VINCE] (https://kb.cert.org/vince/) is the Vulnerability Information and Coordination Environment developed and used by the CERT Coordination Center to improve coordinated vulnerability disclosure.
+[VINCE](https://kb.cert.org/vince/) is the Vulnerability Information and Coordination Environment developed and used by the CERT Coordination Center to improve coordinated vulnerability disclosure.
 
 ## Documentation
 
