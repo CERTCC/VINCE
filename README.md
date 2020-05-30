@@ -1,6 +1,6 @@
 # VINCE
 
-VINCE is the Vulnerability INformation and Coordination Environment developed and used by the CERT Coordination Center to improve coordinated vulnerability disclosure.
+[VINCE] (https://kb.cert.org/vince/) is the Vulnerability Information and Coordination Environment developed and used by the CERT Coordination Center to improve coordinated vulnerability disclosure.
 
 ## Documentation
 
@@ -8,7 +8,7 @@ VINCE documentation is available here: [https://vuls.cert.org/confluence/display
 
 ## Bugs and Feature Requests
 
-If you are using VINCE and have a bug, feature request, or other issue to report, please open an [issue](https://github.com/CERTCC/VINCE/issues) in this project.
+If you are using VINCE and have a bug, feature request, or other issue to report, please open an [issue](https://github.com/CERTCC/VINCE/issues) in this project. VINCE users can also send feedback through
 
 ## Code
 
