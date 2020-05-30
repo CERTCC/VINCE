@@ -4,11 +4,11 @@
 
 ## Documentation
 
-VINCE documentation is available here: [https://vuls.cert.org/confluence/display/VIN/](https://vuls.cert.org/confluence/display/VIN/)
+VINCE documentation is available here: [https://vuls.cert.org/confluence/display/VIN/](https://vuls.cert.org/confluence/display/VIN/).
 
 ## Bugs and Feature Requests
 
-If you are using VINCE and have a bug, feature request, or other issue to report, please open an [issue](https://github.com/CERTCC/VINCE/issues) in this project. VINCE users can also send feedback through
+You can report a bug, feature request, or other [issue](https://github.com/CERTCC/VINCE/issues) in this GitHub project. VINCE users can also send [feedback](https://kb.cert.org/vince/comm/sendmsg/8/) through the Private Message feature.
 
 ## Code
 
