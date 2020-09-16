@@ -1,0 +1,136 @@
+{
+    "document": {
+        "acknowledgements": [
+            {
+                "text": "Please see Acknowledgements section of https://kb.cert.org/vuls/id/257161"
+            }
+        ],
+        "csaf_version": "2.0",
+        "notes": [
+            {
+                "text": "Treck Inc.designs and distributes software for real-time operating systems (RTOS) customers worldwide. Treck's sofware provide essential TCP/IP networking capability to these devices. Security researchers from JSOF have discovered a number of vulnerabilities that can have an impact on devices that have adopted Treck's embedded software to cause unexpected behavior and possibly further exploit these devices for nefarious purposes.",
+                "title": "Summary",
+                "type": "summary"
+            },
+            {
+                "text": "Please visit https://vuls.cert.org/confluence/display/Wiki/Vulnerability+Disclosure+Policy for full disclosure policy document",
+                "title": "Vulnerability Policy",
+                "type": "general"
+            },
+            {
+                "text": "THIS DOCUMENT IS PROVIDED ON AN \"AS IS\" BASIS AND DOES NOT IMPLY ANY KIND OF GUARANTEE OR WARRANTY, INCLUDING THE WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE. YOUR USE OF THE INFORMATION ON THE DOCUMENT OR MATERIALS LINKED FROM THE DOCUMENT IS AT YOUR OWN RISK.",
+                "title": "Legal Disclaimer",
+                "type": "legal_disclaimer"
+            }
+        ],
+        "product_tree": [],
+        "publisher": {
+            "contact_details": "Email: cert@cert.org, Phone: +1412 268 5800",
+            "issuing_authority": "CERT/CC under DHS/CISA https://www.cisa.gov/cybersecurity also see https://kb.cert.org/ ",
+            "type": "coordinator"
+        },
+        "references": [
+            {
+                "description": "Full document of our Vulnerability Notes database",
+                "url": "https://kb.cert.org/vuls/id/257161"
+            }
+        ],
+        "title": "Multiple vulnerabilities in Treck embedded software",
+        "tracking": {
+            "current_release_date": "2020-05-19T18:22:00Z",
+            "generator": {
+                "engine": "VINCE API"
+            },
+            "id": "257161",
+            "initial_release_date": "2020-06-04T20:31:25.554423Z",
+            "revision_history": [
+                {
+                    "date": "2020-05-19T18:22:00Z",
+                    "description": "Public released after peer review",
+                    "number": "1.0"
+                }
+            ],
+            "status": "final",
+            "version": "1.0"
+        },
+        "type": "CERT/CC Vulnerability Notes Database Advisory",
+        "vulnerabilities": [
+            {
+                "cve": "CVE-2020-11904",
+                "title": "Integer Overflow or Wraparound (CWE-190) in Memory Allocation component.  An unauthorized network attacker can send a malicious packet that may result in corruption of sensitive information, a crash, or code execution on the target device."
+            },
+            {
+                "cve": "CVE-2020-11900",
+                "title": "Double Free (CWE-415) in IPv4 tunneling component when handling a packet.  An unauthorized network attacker can use malicious packets that could lead to unexpected behavior of memory access that can be used to write or read values in arbitrary memory spaces."
+            },
+            {
+                "cve": "CVE-2020-11907",
+                "title": "Improper Handling of Length Parameter Inconsistency (CWE-130) in TCP component.  A remote attacker can send a malformed TCP packet that can cause trigger an integer underflow event leading to unexpected behavior of a crash or segmentation fault on the target device."
+            },
+            {
+                "cve": "CVE-2020-11898",
+                "title": "Improper Handling of Length Parameter Inconsistency (CWE-130) in IPv4/ICMPv4 component. An unauthorized network attacker can send a malicious request that can lead to unintended exposure of sensitive information on the target device."
+            },
+            {
+                "cve": "CVE-2020-11903",
+                "title": "Out-of-bounds Read (CWE-125) in DHCP component when handling a packet.  A local network attacker can craft a malicious Layer-2 DHCP request that could lead to access of sensitive information on the destination device."
+            },
+            {
+                "cve": "CVE-2020-11909",
+                "title": "Improper Input Validation (CWE-20) in IPv4 component.  A remote attacker can send a malformed IPv4 packet that can cause trigger an integer underflow event leading to unexpected behavior of a crash or segmentation fault on the target\r\ndevice."
+            },
+            {
+                "cve": "CVE-2020-11906",
+                "title": "Improper Input Validation (CWE-20) in Ethernet Link Layer component.  A local network attacker can send a malicious Layer-2 Ethernet packet that can cause trigger an integer underflow event leading to unexpected behavior of a crash or segmentation fault on the target device."
+            },
+            {
+                "cve": "CVE-2020-11911",
+                "title": "Improper Access Control (CWE-284) in ICMPv4 component.  An unauthorized network attacker can send a malicious packet that can lead to higher privileges in permissions assignment for critical resources on the destination device."
+            },
+            {
+                "cve": "CVE-2020-11912",
+                "title": "Improper Input Validation (CWE-20) in TCP component.  An unauthorized network attacker can send a malicious packet that may expose data that is present outside the bounds of allocated memory."
+            },
+            {
+                "cve": "CVE-2020-11896",
+                "title": "Improper Handling of Length Parameter Inconsistency (CWE-130) in IPv4/UDP component.  An unauthorized network attacker can send a malicious packet that can be used to inject arbitrary code on the target system."
+            },
+            {
+                "cve": "CVE-2020-11897",
+                "title": "Improper Handling of Length Parameter Inconsistency (CWE-130) in IPv6 component.  An unauthorized network attacker can send a malicious packet that can lead to out of bounds write on the target device."
+            },
+            {
+                "cve": "CVE-2020-11905",
+                "title": "Out-of-bounds Read (CWE-125) in DHCP component.  A local network attacker can send a malicious Layer-2 DHCP packet that could lead to an unintended exposure of sensitive information on the target device."
+            },
+            {
+                "cve": "CVE-2020-11908",
+                "title": "Improper Null Termination (CWE-170) in DHCP component. A local network attacker can send a malicious Layer-2 DHCP packet that could lead to an unintended exposure of sensitive information on the target device."
+            },
+            {
+                "cve": "CVE-2020-11913",
+                "title": "Improper Input Validation (CWE-20) in IPv6 component.  An unauthorized network attacker can send a malicious packet that may expose data that is present outside the bounds of allocated memory."
+            },
+            {
+                "cve": "CVE-2020-11901",
+                "title": "Improper Input Validation (CWE-20) in DNS resolver component when handling a packet sent.  An unauthorized network attacker can inject arbitrary code on the target system using a maliciously crafted packet."
+            },
+            {
+                "cve": "CVE-2020-11899",
+                "title": "Improper Input Validation (CWE-20) in IPv6 component when handling a packet sent by an unauthorized network attacker.  An unauthorized network attacker can send a malicious request that can lead to out of bounds read on the\r\ntarget device."
+            },
+            {
+                "cve": "CVE-2020-11914",
+                "title": "Improper Input Validation (CWE-20) in ARP component.  A local network attacker can send a malicious Layer-2 ARP packet that could lead to an unintended exposure of sensitive information on the target device."
+            },
+            {
+                "cve": "CVE-2020-11902",
+                "title": "Improper Input Validation (CWE-20) in IPv6overIPv4 tunneling component.  An unauthorized network attacker can send a malicious packet that may expose data that is present outside the bounds of allocated memory."
+            },
+            {
+                "cve": "CVE-2020-11910",
+                "title": "Improper Input Validation (CWE-20) in ICMPv4 component.  An unauthorized network attacker can send a malicious packet that may expose data that is present outside the bounds of allocated memory."
+            }
+        ]
+    }
+}
