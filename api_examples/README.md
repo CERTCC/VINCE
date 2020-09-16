@@ -1,5 +1,5 @@
 # API Examples 
-Select examples of using VINCE API to create various output such as CVRF underrr Oasis [CSAF](https://github.com/oasis-tcs/csaf)
+Select examples of using VINCE API to create various output such as CVRF under Oasis [CSAF](https://github.com/oasis-tcs/csaf)
 working group and other outputs like [CVE JSON](https://github.com/CVEProject/automation-working-group/tree/master/cve_json_schema) 
 
 First generate your API Key in your VINCE profile.  For full VINCE API documentation visit [https://vuls.cert.org/confluence/display/VIN/API](https://vuls.cert.org/confluence/display/VIN/API)
