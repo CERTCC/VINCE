@@ -1,6 +1,6 @@
 # September 2020 VINCE Announcement
 
-In March, the CERT/CC started using a custom-developed web-based platform for vulnerability coordination.  This platform is called VINCE: Vulnerability Information and Coordination Environment.  We have been slowly moving new vulnerability reports to VINCE and inviting vendors to VINCE on a case-by-case basis.
+In March 2020, the CERT/CC started using a custom-developed web-based platform for vulnerability coordination.  This platform is called VINCE: Vulnerability Information and Coordination Environment.  We have been slowly moving new vulnerability reports to VINCE and inviting vendors to VINCE on a case-by-case basis.
 
 VINCE represents a significant change in how we perform vulnerability coordination.  Change has costs, and we realize that we are asking you to share these costs.  We believe the investment will pay off by reducing per-case effort, improving scalability and coverage, and maturing the state of coordinated vulnerability disclosure practice.
 
