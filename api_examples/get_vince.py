@@ -42,6 +42,7 @@ def safe_print(st):
 
 
 def create_response(key,turl):
+    #print
     r =  requests.get(turl, headers=auth_header, stream=True)
     result["debug_"+key] = {"ok":str(r.ok),"headers":dict(r.headers),
                             "url": turl,
@@ -50,49 +51,85 @@ def create_response(key,turl):
         result[key] = json.loads(str(r.text))
 
 def vince_to_cvrf(vince):
-    cvrf ={}
-    cvrf["document"] = {}
-    cvrf["document"]["title"] = vince["get_case"]["title"]
-    cvrf["document"]["type"] = "CERT/CC Vulnerability Notes Database Advisory"
-    cvrf["document"]["csaf_version"] = "2.0"
-    cvrf["document"]["publisher"] = {"contact_details":
-                                     "Email: cert@cert.org, Phone: +1412 268 5800",
-		                     "issuing_authority":
-                                     "CERT/CC under DHS/CISA https://www.cisa.gov/cybersecurity"+
-                                     " also see https://kb.cert.org/ ",
-		                     "type":"coordinator"
-    }
-    cvrf["document"]["tracking"] = {}
-    cvrf["document"]["tracking"]["id"] = vince["get_case"]["vuid"]
-    cvrf["document"]["tracking"]["status"] = "final"
-    cvrf["document"]["tracking"]["version"] = "1.0"
-    cvrf["document"]["tracking"]["revision_history"] = [{"number":"1.0","date":vince["get_case"]["due_date"],"description":"Public released after peer review"}]
-    cvrf["document"]["tracking"]["generator"] = {"engine":"VINCE API"}
-    cvrf["document"]["tracking"]["initial_release_date"] = vince["get_case"]["created"]
-    cvrf["document"]["tracking"]["current_release_date"] = vince["get_case"]["due_date"]
-    #three element dictionary array to provide Summary, general and legal_disclaimer
-    cvrf["document"]["notes"] = [{},{},{}]
-    cvrf["document"]["notes"][0]["title"] = "Summary"
-    cvrf["document"]["notes"][0]["type"] = "summary"
-    cvrf["document"]["notes"][0]["text"] = vince["get_case"]["summary"]
-    cvrf["document"]["notes"][1]["title"] =  "Vulnerability Policy"
-    cvrf["document"]["notes"][1]["type"] = "general"
-    cvrf["document"]["notes"][1]["text"] = "Please visit https://vuls.cert.org/confluence/display/Wiki/Vulnerability+Disclosure+Policy for full disclosure policy document"
-    cvrf["document"]["notes"][2]["title"] =  "Legal Disclaimer"
-    cvrf["document"]["notes"][2]["type"] = "legal_disclaimer"
-    cvrf["document"]["notes"][2]["text"] = "THIS DOCUMENT IS PROVIDED ON AN \"AS IS\" BASIS AND DOES NOT IMPLY ANY KIND OF GUARANTEE OR WARRANTY, INCLUDING THE WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE. YOUR USE OF THE INFORMATION ON THE DOCUMENT OR MATERIALS LINKED FROM THE DOCUMENT IS AT YOUR OWN RISK."
-    cvrf["document"]["references"] = [{}]
-    cvrf["document"]["references"][0]["url"] = "https://kb.cert.org/vuls/id/"+vince["get_case"]["vuid"]
-    cvrf["document"]["references"][0]["description"] = "Full document of our Vulnerability Notes database"
-    cvrf["document"]["acknowledgements"]=[{}]
-    cvrf["document"]["acknowledgements"][0]["text"] = "Please see Acknowledgements section of "+"https://kb.cert.org/vuls/id/"+vince["get_case"]["vuid"]
-    cvrf["document"]["product_tree"] = []
-    #cvrf["document"]["vulnerability"] = vince["get_vuls"]
-    cvrf["document"]["vulnerabilities"] = []
+    cvrf =  { "document": {
+        "acknowledgments": [
+            {
+                "urls": [
+                    "https://kb.cert.org/vuls/id/"+vince["get_case"]["vuid"]
+                    ]
+            }
+        ],
+        "category": "generic_csaf",
+        "csaf_version": "2.0",
+        "notes": [
+            {
+                "category": "summary",
+                "text": vince["get_case"]["summary"],
+                "title": "Summary"
+            },
+            {
+                "category": "faq",
+                "text": "Please visit https://vuls.cert.org/confluence/display/Wiki/Vulnerability+Disclosure+Policy for full disclosure policy document",
+                "title": "Vulnerability Policy"
+            },
+            {
+                "category": "legal_disclaimer",
+                "text": "THIS DOCUMENT IS PROVIDED ON AN \"AS IS\" BASIS AND DOES NOT IMPLY ANY KIND OF GUARANTEE OR WARRANTY, INCLUDING THE WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE. YOUR USE OF THE INFORMATION ON THE DOCUMENT OR MATERIALS LINKED FROM THE DOCUMENT IS AT YOUR OWN RISK.",
+                "title": "Legal Disclaimer"
+            }
+        ],
+        "publisher": {
+            "category": "coordinator",
+            "contact_details": "Email: cert@cert.org, Phone: +1412 268 5800",
+            "issuing_authority": "CERT/CC under DHS/CISA https://www.cisa.gov/cybersecurity also see https://kb.cert.org/ ",
+            "name": "CERT/CC",
+            "namespace": "https://kb.cert.org/"
+        },
+        "references": [
+            {
+                "summary": "CERT/CC document released",
+                "url": "https://kb.cert.org/vuls/id/"+vince["get_case"]["vuid"]
+            }
+        ],
+        "title": vince["get_case"]["title"],
+        "tracking": {
+            "current_release_date": vince["get_case"]["due_date"],
+            "generator": {
+                "engine": {
+                    "name": "VINCE",
+                    "version": "1.30.0"
+                }
+            },
+            "id": vince["get_case"]["vuid"],
+            "initial_release_date": vince["get_case"]["created"],
+            "revision_history": [
+                {
+                    "date": vince["get_case"]["due_date"],
+                    "number": "1.0.0",
+                    "summary": "Public released after peer review"
+                }
+            ],
+            "status": "final",
+            "version": "1.0.0"
+        }
+    }}
+    cvrf["vulnerabilities"] = []
     #map vulnerabilities to cvrf
     for k in vince["get_vuls"]:
-        cvrf["document"]["vulnerabilities"].append({"title":k["description"],
-                                                    "cve":k["name"]})
+        cvrf["vulnerabilities"].append({
+            "title":k["description"],
+            "cve":k["name"]})
+    cvrf["product_tree"] = {"branches": [{
+        "category": "product_version",
+        "name": vince["get_original_report"]["product_name"] 
+            if vince["get_original_report"]["product_name"] else "Unspecified",
+        "product": {
+            "name": vince["get_original_report"]["product_name"] 
+            if vince["get_original_report"]["product_name"] else "Unspecified",
+            "product_id": vince["get_original_report"]["product_version"]
+            if vince["get_original_report"]["product_version"] else "Unknown"
+        }
+    }]}
     return cvrf
 
     
@@ -129,12 +166,11 @@ if __name__ == '__main__':
                 print(json.dumps((vince_to_cvrf(result))))
             else:
                 print(json.dumps(result))
-        sys.exit(0)
+                sys.exit(0)
     else:
         result["query_info"] ="Getting all cases "
         create_response("get_cases",url_map["get_cases"])
-    safe_print(result)
-    sys.exit(0)
-
+        safe_print(result)
+        sys.exit(0)
 
 
