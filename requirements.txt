@@ -57,7 +57,7 @@ PyYAML==5.4.1
 qrcode==6.1
 redis==3.2.1
 requests==2.26.0
-rsa==4.6
+rsa==4.7
 s3transfer==0.5.0
 simplejson==3.17.0
 six==1.12.0
