@@ -26,7 +26,7 @@ You can report a bug, feature request, or other issue in this GitHub project. VI
 VINCE, a Django application, is designed to run in Amazon Web Services (AWS)
 and is developed around many
 of AWS services such as Cognito, S3, ElasticBeanstalk, Cloudfront, SQS, SNS,
-and SES. VINCE users the python library,
+and SES. VINCE uses the python library,
 [warrant](https://github.com/capless/warrant), for AWS Cognito
 authentication.  [Warrant](https://github.com/capless/warrant) has been
 slightly modified and is included with VINCE.
