@@ -1,0 +1,79 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Create CVE" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/cve.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>{{ title }} </h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vince:teams' %}">Teams</a></li>
+      <li><a href="{% url 'vince:teamsettings' %}">Team Settings</a></li>
+      <li><a href="{% url 'vince:cve_dashboard' %}">CVE Services</a></li>
+      <li><span class="show-for-sr">Current: </span> Manage CVE</li>
+    </ul>
+  </nav>
+  </div>
+</div>
+
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <form method="post" id="cveform">{% csrf_token %}
+      <div class="row">
+	<div class="large-8 columns">
+	  {% if form.errors %}
+	  <div class="callout alert">
+	    {% for error in form.non_field_errors %}
+	    <h5>Error submitting form: <b>{{ error }}</b></h5>
+	    {% endfor %}
+	    {% for field in form %}
+            {% for error in field.errors %}
+              <strong>{{ error|escape }}</strong>
+	      {% endfor %}
+	      {% endfor %}
+	  </div>
+	  {% endif %}
+
+	  {% for field in form %}
+	  {% if field.is_hidden %}
+	  {{ field }}
+	  {% else %}
+          <div class="form-group">
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+	    {% if field.name == "vuid" %}
+	    {% render_field form.vuid|add_class:"form-control"|append_attr:"readonly:readonly" %}
+	    {% else %}
+	    {{ field }}
+	    {% endif %}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+
+          </div>
+	  {% endif %}
+          {% endfor %}
+
+	  <input type="submit" value="Submit" name="vrfSubmit" class="button primary">
+	  <a href="{% url 'vince:cve_dashboard' %}" class="button secondary">Cancel</a>
+	</div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{% endblock %}

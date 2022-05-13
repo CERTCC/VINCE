@@ -1,0 +1,132 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize%}
+{% load widget_tweaks %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/vince_contact.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/case.js' %}"></script>
+{% endblock %}
+{% block vince_title %}{% trans "Case" %}{% endblock %}
+<!-- site-title  -->
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Case <a href="{{ case.get_absolute_url }}"> {{ case.get_vuid }}</a> Vendors </h2>
+    </div>
+    <div class="large-4 columns text-right">
+      <a href="#" class="button cmu" data-open="addvendor"> <i class="fas fa-plus"></i> Add Vendor </a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if case.lotus_notes %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning">
+      <p>Vendors can not be notified until this case is added to VinceComm.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div id="addvendor" class="reveal" data-reveal>
+  <form id="addvendorform" case="{{ case.id }}" action="{% url 'vince:addvendor' %}" reload="notify">
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">Add new vendor(s)</h5>
+      </div>
+      <div class="modal-body">
+	<div id="project-label">Search for a vendor:</div>
+	<br/>
+	
+	<input id="vendor" class="form-control" type="text" name="vendor" />
+	<p>Adding vendors (click submit to continue):</p>
+	<table class="hover unstriped" id="project-description">
+	</table>
+      </div>
+      <div class="modal-footer text-right">
+	<a href="#" id="cancelvendor" class="hollow button" data-close type="cancel">Cancel</a>
+	<input type="submit" class="primary button">
+      </div>
+      <button class="close-button" data-close aria-label="Close modal" type="button">
+	<span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  </form>
+</div>
+<div class="reveal" id="rmvendormodal" data-reveal></div>
+
+<form method="post" id="vendor_notify" action="{% url 'vince:editvendorlist' case.id %}">
+  {% csrf_token %}
+  <div class="row">
+    <div class="large-12 columns">
+      <div class="vendorlist">
+	{% include 'vince/include/vendors.html' %}
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-6 columns">
+      <a href="#" class="button primary {% if case.lotus_notes %}disabled"{% else %}" data-open="email-form"{% endif %}><i class="fas fa-paper-plane"></i> Send Notifications</a>
+    </div>
+    <div class="large-6 columns text-right">
+      {% if user.is_superuser %}
+      <a id="removeall" href="{% url 'vince:rmallvendors' case.id %}" class="button alert"><i class="fas fa-trash"></i> Remove All Vendors</a>
+      {% else %}
+      <a href="#" class="button disabled alert"><i class="fas fa-trash"></i> Remove All Vendors</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="reveal" id="email-form" data-reveal>
+    <div class="modal-content">
+      <div class="modal-header">
+	<h3 class="modal-title">Notify Vendors</h3>
+      </div>
+      <div class="modal-body">
+	{% if case|notifystatus:"test" %}
+	{% else %}
+	<div class="callout alert"> This case has not defined any vulnerabilities and/or created a post.
+          Are you sure you want to invite vendors to this case?
+	</div>
+	{% endif %}
+	<div class="lead" id="vendors_list">
+	  To:
+	  <ul>
+	  </ul>
+	</div>
+	<div class="form-group">
+	  <label for='id_{{ form.subject.name }}'>{% trans form.subject.label %}<span class='required'>*</span></label>
+	  {% render_field form.subject class="form-control" %}
+	  {% if form.subject.help_text %}<small class='form-text text-muted'>{% trans form.subject.help_text %}</small>{% endif %}
+	</div>
+	<div class="form-group">
+	  <label for='id_{{ form.email_body.name }}'>{% trans form.email_body.label %}<span class='required'>*</span></label>
+	  {% render_field form.email_body class="form-control" %}
+	  {% if form.email_body.help_text %}<small class='form-text text-muted'>{% trans form.email_body.help_text %}</small>{% endif %}
+	</div>
+      </div>
+      <div class="modal-footer text-right">
+	<a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+	<input type="submit" value="Send" class="button primary" id="submit_vendors">
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</form>
+
+
+{% endblock %}
+	    

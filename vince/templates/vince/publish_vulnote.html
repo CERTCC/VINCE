@@ -1,0 +1,45 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method="POST" action="{% url 'vince:publish' vulnote.id %}" id="publishsubmit">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Publish Vulnerability Note</h3>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to publish this vulnerability note?</p>
+      {% if files_to_remove %}
+      <p>By publishing this vulnote, you will remove the following files:</p>
+      <ul>
+      {% for file in files_to_remove %}
+      <li><b><i>{{ file.filename }}</i></b></li>
+      {% endfor %}
+      </ul>
+      <br/>
+      {% endif %}
+      <ul>
+      {% if files %}
+      <p>By publishing this vulnote, you will also be making the following files public:</p>
+      <ul>
+      {% for file in files %}
+      <li><b><i>{{ file.filename }}</i></b></li>
+      {% endfor %}
+      </ul>
+      <p>If this list is incorrect, edit the vulnote and remove the appropriate files before publishing.</p>
+      {% endif %}
+      {% csrf_token %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button primary" type='submit' id="publishbtn" value='{% trans "Yes, Publish" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  </form>
+</div>
+
+{% endblock %}
+
+    

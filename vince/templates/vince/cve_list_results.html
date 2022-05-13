@@ -1,0 +1,14 @@
+{% if error %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert">{{ error }}</div>
+  </div>
+</div>
+{% else %}
+    
+<div class="row">
+    <div class="large-12 columns">
+      {{ cves|json_script:"cve_data" }}
+    </div>
+  </div>
+{% endif %}

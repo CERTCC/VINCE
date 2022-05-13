@@ -1,0 +1,165 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Create CVE" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/cve.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      {% if title %}
+      <h2>{{ title }} </h2>
+      {% elif case %}
+      <h2>Create a CVE for <a href="{% url 'vince:case' case.id %}">Case {{ case.vu_vuid }}</a></h2>
+      {% else %}
+      <h2>Create a CVE</h2>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vince:case' vul.case.id %}#vuls">Case</a></li>
+      <li><a href="{% url 'vince:vul' vul.id %}">Vulnerability</a></li>
+      <li><span class="show-for-sr">Current: </span> Edit CVE</li>
+    </ul>
+  </nav>
+  </div>
+</div>
+
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <form method="post" id="cveform">{% csrf_token %}
+      <div class="row">
+	<div class="large-8 columns">
+	  {% if form.errors %}
+	  <div class="callout alert">
+	    {% for error in form.non_field_errors %}
+	    <h5>Error submitting form: <b>{{ error }}</b></h5>
+	    {% endfor %}
+	    {% for field in form %}
+            {% for error in field.errors %}
+              <strong>{{ error|escape }}</strong>
+	      {% endfor %}
+	      {% endfor %}
+	  </div>
+	  {% endif %}
+
+	  {% for field in form %}
+	  {% if field.is_hidden %}
+	  {{ field }}
+	  {% else %}
+          <div class="form-group">
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+	    {% if field.name == "vuid" %}
+	    {% render_field form.vuid|add_class:"form-control"|append_attr:"readonly:readonly" %}
+	    {% else %}
+	    {{ field }}
+	    {% endif %}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+
+          </div>
+	  {% endif %}
+          {% endfor %}
+
+	  {{ cwe_formset.management_form }}
+	  <table class="unstriped cve_formset_table">
+	    <div id="cweprefix" class="hidden">{{ cwe_formset.prefix }}</div>
+	    {% for subform in cwe_formset %}
+	    <tr class="cwe_formset">
+	      <td>
+		<label for="cwe_cwe">Problem Type (CWE):</label>
+		{% render_field subform.cwe class="form-control" %}
+	      </td>
+	      <td class="text-right"></td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	  {{ ref_formset.management_form }}
+	  <div id="refprefix" class="hidden">{{ ref_formset.prefix }}</div>
+	  <table class="unstriped cve_formset_table">
+	    {% for subform in ref_formset %}
+	    <tr class="ref_formset">
+	      <td>
+		<label for="cve_ref">Reference Source:</label>
+		{% render_field subform.ref_source class="form-control" %}
+	      </td>
+	      <td>
+		<label for="cve_ref">Reference:</label>
+		{% render_field subform.reference class="form-control" %}
+	      </td>
+	      <td class="text-right"></td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	  {{ wa_formset.management_form }}
+	  <div id="waprefix" class="hidden">{{ wa_formset.prefix }}</div>
+	  <table class="unstriped cve_formset_table">
+	    {% for subform in wa_formset %}
+	    <tr class="wa_formset">
+	      <td>
+		<label for="cve_wa">Workaround:</label>
+		{% render_field subform.workaround class="form-control" %}
+	      </td>
+	      <td class="text-right"></td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+
+	</div>
+	<div class="large-4 columns"></div>
+      </div>
+      <br/>
+      <div class="row">
+	<div class="large-12 columns">
+	  <p><b>Please include at least 1 affected product</b></p>
+	  {{ prod_formset.management_form }}
+	  <div id="prodprefix" class="hidden">{{ prod_formset.prefix }}</div>
+	  <table class="unstriped cve_formset_table">
+	    {% for subform in prod_formset %}
+	    <tr class="prod_formset">
+	      <td>
+		<label for="cve_prod">Organization: <span class='required'>*</span></label>
+		{% render_field subform.organization class="form-control" %}
+	      </td>
+	      <td>
+		<label for="cve_prod_name">Product Name: <span class='required'>*</span></label>
+		{% render_field subform.name class="form-control" %}
+	      </td>
+	      <td>
+		<label for="cve_version_num">Version Number: <span class='required'>*</span></label>
+		{% render_field subform.version_value class="form-control" %}
+	      </td>
+	      <td>
+		<label for="cve_version_num">Version Affected: </label>
+		{% render_field subform.version_affected class="form-control" %}
+	      </td>
+	      
+	      <td> 
+		<label for="cve_version_name">Version Name:</label>
+		{% render_field subform.version_name class="form-control" %}
+	      </td>
+	      <td></td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	  <input type="submit" value="Submit" name="vrfSubmit" class="button primary">
+	  <a href="{{ cancel_url }}" class="button secondary">Cancel</a>
+	</div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{% endblock %}

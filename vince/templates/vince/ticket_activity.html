@@ -1,0 +1,89 @@
+{% load i18n humanize dashboard_tags %}
+{% if ticket.followup_set.all %}
+{% load ticket_to_link %}
+<div class="row">
+  <div class="large-12 columns">
+    <h3 class="section-title">{% trans "Activity" %}</h3>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <div class="article-row-section">
+      <div class="article-row-section-inner">
+	{% for followup in ticket.get_actions %}
+	<div class="article-row">
+	
+	  <div class="article-row-img">
+	    {% autoescape off %}
+	    {% if followup.user %}
+	    {{ followup.user|vtuserlogo:"profile-pic" }}
+	    {% else %}
+	    {{ followup.html_logo }}
+	    {% endif %}
+	    {% endautoescape %}
+	  </div>
+	  <div class="article-row-content">
+            <p class="article-row-content-description">{{ followup.title|email_to_user }} {% if followup.title in "Comment,Closed" and followup.user == user %} <small><a href="{% url 'vince:followup_edit' followup.id %}" class='followup-edit'><i class="fas fa-edit" title="Edit this comment"></i></a></small>{% elif "Email" in followup.title %}{% if followup.email_id %}<span class="email-detail" title="{{ followup.email_id }} in {{ followup.email_bucket }}"><i class="fas fa-envelope-open-text"></i></span>{% endif %}{% endif %}</p>
+	    <p class="article-row-content-detail">
+	      {% if followup.comment|is_json %}
+	      <div class="long_text_container">
+		<div class="text_container textheightshort">
+		  <div class="text_content">
+		    {{ followup.comment }}
+		  </div>
+		</div>
+	      </div>
+	      {% elif followup.comment %}
+	      <div class="long_text_container">
+		<div class="text_container textheightshort">
+		  <div class="text_content">
+		    {{ followup.comment|force_escape|smarter_urlize:50|linebreaksbr }}
+		  </div>
+		</div>
+		<div class="showfull moretext"><i class="fas fa-arrow-down"></i>  Show More</div>
+		<div class="showfull lesstext"><i class="fas fa-arrow-up"></i> Show Less</div>
+		<a href="#" class="scrollnext"><i class="fas fa-arrow-down"></i></a>
+	      </div>
+	      {% endif %}
+	      {% if contact_link %}
+              <a href="{% url 'vince:contact' contact_link %}">View changes.</a>
+              {% endif %}
+	    </p>
+            {% for change in followup.ticketchange_set.all %}
+            {% if forloop.first %}<div class='changes'><ul>{% endif %}
+                <li>{% blocktrans with change.field as field and change.old_value as old_value and change.new_value as new_value %}Changed {{field }} from {{ old_value }} to {{ new_value }}.{% endblocktrans %}</li>
+                {% if forloop.last %}</ul></div>{% endif %}
+            {% endfor %}
+	    {% for attachment in followup.attachment_set.all %}{% if forloop.first %}<div class='attachments'><ul>{% endif %}
+                <li><a href="{% url 'vince:attachment' attachment.uuid %}">{{ attachment.filename }}</a> ({{ attachment.mime_type }}, {{ attachment.size|filesizeformat }})
+                </li>
+                {% if forloop.last %}</ul></div>{% endif %}
+            {% endfor %}
+	    {% if "commented on report" in followup.title %}
+	    <div>
+	      <a href="{{ vincecomm_link }}"> <button type="button" class="button primary tiny"> <i class="fas fa-reply"></i> Respond</button></a>
+	    </div>
+	    {% endif %}
+	    {% for message in followup.followupmessage_set.all %}
+            <div><a href="{% url 'vinny:msg_detail' message.msg %}"> <button type="button" class="button primary tiny"> <i class="fas fa-reply"></i> Reply to User</button></a></div>
+            {% endfor %}
+	    {% if followup.title|review:followup and followup.ticket.review %}
+	    <div><a href="{% url 'vince:reviewdetail' followup.ticket.review.id %}"> <button type="button" class="button primary tiny"> View Review</button></a></div>
+	    {% endif %}
+            <time class="article-row-content-time">{{ followup.date|date:"Y-m-d H:i" }} ({{ followup.date|naturaltime }}) {% if followup.user %} by {{ followup.user.usersettings.vince_username }}{% endif %}  {% if followup.last_edit %}<b><i class="fas fa-edit"></i> Edited: {{ followup.last_edit|date:"Y-m-d" }}</b>{% endif %}</time>
+	  {% if followup.is_email %}
+	  <div class="edit-hover">
+            <a href="{% url 'vince:replyemail' followup.id %}" type="button" class="edit-btn button primary" title="Reply to Email"><i aria-hidden="true" class="fas fa-reply"></i></a>
+	  </div>
+	  {% endif %}
+	  </div>
+
+	</div>
+	{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+  

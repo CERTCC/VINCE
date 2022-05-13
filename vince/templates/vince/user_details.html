@@ -1,0 +1,62 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n static %}
+
+{% block title %}VINCE{% endblock %}
+
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Edit User's Profile</h2>
+    </div>
+    <div class="large-6 columns text-right">
+    </div>
+  </div>
+</div>
+
+{% if form.errors %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert">
+      {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 columns">
+    <p>You may only change the username/email address and or display name.  All other fields should be changed by the user in their VINCEComm Profile.
+    </p>
+  </div>
+</div>
+
+<form action="{% url 'vince:cognito_edit_user' %}" method="post" class="form">
+  {% csrf_token %}
+  
+  <div class="row">
+    <div class="large-8 columns">
+      {% for field in form %}
+      <div class="form-row">
+        <label for="id_{{ field.name }}">{% trans field.label %}{% if field.field.required %} <span class="required">*</span>{% endif %}</label>
+        {% if field.help_text %}
+        <small class='form-text text-muted'>{% autoescape off %}{{ field.help_text }}{% endautoescape %}</small>{% endif %}
+        {{ field }}
+        {% for error in field.errors %}
+        <p style="color: red">{% autoescape off %}{{ error }} {% endautoescape %}</p>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="large-4 columns">
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+      <input type="hidden" name="old_email" class="hidden" value="{{ form.email.value }}">
+      <input type="submit" class="primary button small-only-expanded" value="Submit">
+      <a href="{% url 'vince:cognito_change_user' %}" class="default button">Cancel</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize%}
+{% block vince_title %}{% trans "Ticket Artifacts" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/artifacts.js' %}"></script>
+{% endblock %}
+<!-- site-title  -->
+{% block content %}
+<div class="row columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vince:dashboard' %}">Dashboard</a></li>
+      {% if ticket %}
+      <li><a href="{% url 'vince:ticket' ticket.id %}">Ticket</a></li>
+      {% else %}
+      <li><a href="{% url 'vince:case' case.id %}">Case</a></li>
+      {% endif %}
+      <li><span class="show-for-sr">Current: </span> Artifacts</li>
+    </ul>
+  </nav>
+</div>
+  
+<div class="row">
+  <div class="large-12 columns">
+    <div class="ticketinfo">
+      {% if ticket %}
+      <h5><i class="fas fa-ticket-alt"></i> Ticket Artifacts for <a href="{{ticket.get_absolute_url}}"> {{ ticket.id }}. {{ ticket.title }} [{{ ticket.get_status }}] </a></h5>
+      <p><small><i class="fas fa-user"></i> Created by {{ ticket.assigned_to.get_username }}   <i class="fas fa-calendar-plus"></i> {{ ticket.created }}</small></p>
+      {% else %}
+      <h5><i class="fas fa-ticket-alt"></i> Case Artifacts for <a href="{{ case.get_absolute_url }}"> {{ case.get_title }} [{{ case.get_status }}] </a></h5>
+      <p><small>Created on <i class="fas fa-calendar-plus"></i> {{ case.created }}</small></p>
+      {% endif %}
+    </div>
+    <div class="vendorlist">
+      <div class="hover unstriped" id="artifact-table"></div>
+      <table>
+	<thead>
+	  <tr>
+	    <th>Type</th>
+	    {% if case %}
+	    <th width="100">Ticket</th>
+	    {% endif %}
+	    <th>Artifact</th>
+	    <th width="150">Date Added</th>
+	    <th width="100">Action</th>
+	  </tr>
+	</thead>
+	<tbody>
+	{% for artifact in artifacts %}
+	<tr>
+	  <td>{{ artifact.type }}</td>
+	  {% if case %}
+	  {% if artifact.get_related_ticket %}
+	  <td><a href="{{ artifact.get_related_ticket.get_absolute_url }}">[{{ artifact.get_related_ticket.ticket_for_url }}]</a></td>
+	  {% else %}
+	  <td></td>
+	  {% endif %}{% endif %}
+	  <td><b>{{ artifact.title }}</b><br/>
+	  {{ artifact.value }}<br/>
+	    <i>{{ artifact.description }}</i><br/>
+	    {% if artifact.get_related_tags %}
+	    <i class="fas fa-tags"></i> {% autoescape off %}{{ artifact.get_related_tags|gettags:'1' }}{% endautoescape%}
+	    {% endif %}
+	  </td>
+	  <td>{{ artifact.date_added|date:"Y-m-d" }}<br>
+	    <small><i>Added by: {{ artifact.user }}</i></small></td>
+
+	  <td><a href="{% url 'vince:editartifact' artifact.id %}"><i class="fas fa-edit"></i></a>&nbsp;&nbsp;	  {% if ticket %}<a href="{% url 'vince:rmartifact' ticket.id artifact.id %}"><i class="fas fa-times-circle"></i></a>{% else %}<a href="{% url 'vince:rmcase_artifact' case.id artifact.id %}"><i class="fas fa-times-circle"></i></a>{% endif %}</td>
+	</tr>
+	{% empty %}
+	<tr>
+	  <td colspan="5"><b><i>No Artifacts have been added</i></b></td>
+	</tr>
+	{% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+	    

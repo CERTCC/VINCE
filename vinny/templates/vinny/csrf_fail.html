@@ -1,0 +1,25 @@
+{% extends VINCEPUB_BASE_TEMPLATE %}
+{% load staticfiles %}
+{% block content %}
+
+<br/>
+<br/>
+<div class="row">
+  <div class="large-12 columns">
+    <h3> CSRF verification failed. The CSRF token has expired or is incorrect.  <a href="{% url 'vinny:login' %}">Please retry to log in</a>.</h3>
+    <p>Cookies must be enabled to login to VINCE.</p>
+    <br/>
+
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+
+  </div>
+</div>
+
+
+{% endblock %}
+    

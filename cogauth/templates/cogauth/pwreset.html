@@ -1,0 +1,23 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+
+{% block content_title %}<h3>VINCE Password Reset</h3>{% endblock %}
+
+{% block content %}
+<p>Use your VINCE username (case-sensitive) to reset your password or <a href="{% url 'cogauth:login' %}">Login</a></p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-row">
+      {{ form.username.label_tag }} {{ form.username }}
+      </div>
+
+    <div class="password-reset-link">
+      <a href="{% url 'cogauth:loginhelp' %}">{% trans 'Need help?' %}</a>
+    </div>
+    <input type="submit" value="{% trans 'Submit' %}" class="primary button expanded search-button" />
+  </form>
+{% endblock %}
+
+

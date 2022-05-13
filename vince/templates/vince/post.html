@@ -1,0 +1,29 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Post by {{ object.user.usersettings.vince_username }}</h3>
+    </div>
+
+    <div class="modal-body">
+      {% if object.case.lotus_notes %}
+      <div class="callout alert">
+        <p>You can't push this post until the case has been made available in VinceComm.</p>
+      </div>
+      {% endif %}
+
+      {{ object.content | markdown | safe }}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="{% url 'vince:editnotify' object.case.id object.id %}" class="button">
+        <span class="fas fa-pencil-alt"></span>
+        {% trans "Edit post" %}
+      </a>
+
+      <a href={% if object.case.lotus_notes or object.published %}""{% else %}"{% url 'vince:push_notify' object.id %}"{% endif %} class="confirmpush button {% if object.published or object.case.lotus_notes %}disabled{% endif %}"> <i class="fas fa-paper-plane"></i> {% trans "Publish Post" %} </a>{% if object.case.lotus_notes or object.published %}{% else %}  <a href="{% url 'vince:delete_post' object.id %}" class="postremove button"><i class="fas fa-trash"></i> Delete Post</a>{% endif %}
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

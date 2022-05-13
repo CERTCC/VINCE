@@ -1,0 +1,350 @@
+{% load i18n humanize ticket_to_link %}
+<div class="reveal modal" id="cr_description" data-reveal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title"><h4>Report Submission</h4></div>
+    </div>
+    <div class="modal-body">
+      {{ ticket.description|force_escape|smarter_urlize:75|num_to_link|linebreaksbr }}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="{% url 'vince:vrffullscreen' ticket.id %}" target="_blank" rel="noopener" class="secondary button">View Full Screen</a>
+      <a href="{{ vrf_url }}" class="downloadvrf primary button">Download</a>
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{{ old_tags|json_script:"old_tags" }}
+{{ other_tags|json_script:"other_tags" }}
+{{ assignable|json_script:"assignable" }}
+<div class="row align">
+  <div class="large-9 medium-8 small-12 columns">
+    <h3>{{ ticket.title }}</h3>
+    <p>Reported by {% if vince_user_submission %}<a href="{% url 'vince:vcuser' vc_cr.user.id %}">VINCE User: {{ vince_user_submission }}</a> {% endif %}{% if ticket.contact_email %} {{ ticket.contact_name }} [{{ ticket.contact_email }}] {% else %}Anonymous {% endif %}on {{ ticket.date_submitted|date:"Y-m-d, H:i" }} via <a href="#"  data-open="cr_description">{{ ticket.submission_type }} submission</a><br/>
+      {% if ticket.vrf_id %}
+      <b>{{REPORT_ID}}{{ ticket.vrf_id }}</b>
+      {% endif %}
+    </p>
+
+  </div>
+  <div class="large-3 medium-4 small-12 columns">
+    <button class="button default dropdown menu float-right" data-dropdown-menu type="button" data-toggle="wanttomenu" aria-haspopup="true" aria-expanded="false" id="iwanttobutton">
+      I want to</button>
+    <div class="dropdown-pane hoverable bottom" id="wanttomenu" data-dropdown data-hover="true" data-hover-pane="true">
+      <ul class="menu vertical">
+	{% if vincecomm_link %}
+	<li><a class="dropdown-item" href="{{ vincecomm_link }}">View in VinceComm</a></li>
+	{% endif %}
+	<li><a class="dropdown-item" id="quickclose" href="#comment">{% trans "Quick close ticket" %}</a></li>
+	<li><a class="dropdown-item" id="assignteam" href="{% url 'vince:assignteam' ticket.id %}">{% trans "Assign new team" %}</a></li>
+	<li><a class="dropdown-item" href="#comment">{% trans "Comment" %}</a></li>
+	<li><a class="dropdown-item" href="#comment">{% trans "Change Status" %}</a></li>
+	{% if ticket %}
+	<li><a class="dropdown-item" href="{% url 'vince:edit' ticket.id %}">{% trans "Edit Ticket" %}</a></li>
+	{% if ticket.on_hold %}
+	<li><a class="dropdown-item" href="{% url 'vince:unhold' ticket.id %}">{% trans "Unhold Ticket" %}</a></li>
+	{% else %}
+	<li><a class="dropdown-item" href="{% url 'vince:hold' ticket.id %}">{% trans "Hold Ticket" %}</a></li>
+	  {% endif %}
+	<li><a class="dropdown-item" href="{% url 'vince:editcr' ticket.id %}">{% trans "Edit Submission" %}</a></li>
+	<li><a class="dropdown-item adddependency" action="{% url 'vince:adddep' ticket.id %}">{% trans "Add Dependency" %}</a></li>
+	{% if case %}{% else %}
+	<li><a class="dropdown-item" data-open="deleteticket">{% trans "Delete this Ticket" %}</a></li>
+	{% endif %}
+	<li><a class="dropdown-item" id="encrypttkt" href="{% url 'vince:encrypt' ticket.id %}">{% trans "Encrypt and Send" %}</a></li>
+	{% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+{% if ticket.resolution %}
+<div class="row">
+  <div class="large-12 columns">
+    <label for="resolution">{% trans "Ticket Resolution" %}
+      {% ifequal ticket.get_status_display "Resolved" %}
+      
+    <a href='?close'>
+      <button type="button"
+              class="button assignme alert tiny">{% trans "Accept and Close" %}</button>
+    </a>{% else %} {% if noshowdeps %}{% else %}<a href="{% url 'vince:editres' ticket.id %}" id="editres" title="edit resolution"><i class="fas fa-edit"></i></a>{% endif %}{% endifequal %}</label>
+    {{ ticket.resolution|force_escape|smarter_urlize:75|linebreaksbr }}
+  </div>
+</div>
+{% elif ticket.get_status_display in "Resolved,Closed" %}
+{% if noshowdeps %}
+{% else %}
+<div class="row">
+  <div class="large-12 columns">
+    <label for="resolution">{% trans "Ticket Resolution" %}
+    <a href="{% url 'vince:editres' ticket.id %}" id="editres" title="Add resolution">
+      <button type="button" class="button assignme tiny">{% trans "Add resolution" %}</button>
+    </a>
+    </label>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="hidden" id="reassignblock">
+<span class="assigned_to_name">{{ user.usersettings.preferred_username }}</span> <strong><button type="button" id="reassign" class="button default tiny assignme"><i class="far fa-hand-paper"></i>&nbsp;{% trans "Reassign" %}</button></strong>
+</div>
+
+<div class="row">
+    <div class="large-3 columns align-middle">
+      <label for="Assigned to">Assigned to</label>
+      <span id="assign_block">
+	<div id="user_assign">
+          <select name="user_assign" id="uassign">
+            {% if auto_assign %}
+            <option value="-2">Auto Assign</option>
+            {% endif %}
+	    {% ifequal ticket.get_assigned_to _('Unassigned') %}
+	    {% else %}
+            <option value="{{ ticket.assigned_to.id }}">{{ ticket.get_assigned_to }}</option>
+	    {% endifequal %}
+            {% for user in assignable_users %}
+            <option value="{{user.id}}">{{ user.usersettings.preferred_username }}</option>
+            {% endfor %}
+            <option value="0">Unassign</option>
+          </select><button type="button" id="assign_submit"><i class="fas fa-check"></i></button><button type="button" id="assign_cancel"><i class="fas fa-times"></i></button></div></span><span class="assigned_to">  <span class="assigned_to_name">{{ ticket.get_assigned_to }}</span> <strong><button type="button" id="reassign" class="button default tiny assignme"><i class="far fa-hand-paper"></i>&nbsp;{% trans "Reassign" %}</button></strong>
+      </span>
+    </div>
+    <div class="large-3 columns">
+      <label for="due_date">Due Date</label>
+      {{ ticket.due_date|date:"r" }} ({{ ticket.due_date|naturaltime }})
+    </div>
+    <div class="large-3 columns">
+    <label for="contact">Contact</label>
+    <ul class="no_bullet">
+    {% for contact in ticket.ticketcontact_set.all %}
+    <li><a href="{% url 'vince:contact' contact.contact.id %}">{{ contact.contact.vendor_name }}</a></li>
+    {% empty %}
+    None
+    {% endfor %}
+    </ul>
+  </div>
+
+    <div class="large-3 columns">
+      <label for="priority">{% trans "Priority" %}</label>
+      <span class="label {{ ticket.get_priority_css }}">{{ ticket.get_priority_display }}</span>
+    </div>
+  </div>
+
+{% if show_taggle %}
+  <div class="row">
+    <div class="large-12 columns">
+      <label for="ticket_tag">{% trans "Tag Ticket" %} <span class="helptooltip" title="Classify this ticket with a tag. Tags must be pre-defined in Tag Manager."><i class="fas fa-question-circle"></i></span></label></label>
+      <div class="input textarea taggle_input" id="ticketcc_taggle" action="{% url 'vince:update' ticket.id %}"></div>
+    </div>
+</div>
+{% endif %}
+
+  <div class="row">
+    <div class="large-12 columns">
+      {% if ticket.ics_impact %}
+      <b>ICS: This vulnerability has significant ICS/OT impact.</b>
+      {% else %}
+      <b>ICS:</b> No indication of significant ICS/OT impact.
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="large-4 columns">
+      <label for="reporter">Affected Vendor</label>
+      {{ ticket.vendor_name }} <br/>
+      {% if ticket.multiplevendors %} {{ ticket.other_vendors }}{% endif %}
+    </div>
+    <div class="large-4 columns">
+      <label for="reporter">Affected Product</label>
+      {{ ticket.product_name }}
+    </div>
+    <div class="large-4 columns">
+      <label for="reporter">Affected Version</label>
+      {{ ticket.product_version }}
+    </div>
+  </div>
+  
+
+  {% if ticket.tracking %}
+  <div class="row"><div class="large-4 columns">
+      <label for="tracket">Related Tracking</label>
+      {{ ticket.tracking }}
+    </div>
+    <div class="large-8 columns">
+    </div>
+  </div>
+  {% endif %}
+  <div class="row">
+    <div class="large-4 columns">
+      <label for="reporter">Reporter</label>
+      {% if ticket.contact_name %}
+      {{ ticket.contact_name }}
+      [{{ ticket.contact_email }}]
+      {% elif ticket.contact_email %}
+      {{ ticket.contact_email }}
+      {% else %}
+      Reporter did not provide name or email
+      <br/>
+      {% endif %}
+      {% if ticket.contact_org %}
+      {{ ticket.contact_org }}
+      <br/>
+      {% endif %}
+      {% if ticket.contact_phone %}
+      {{ ticket.contact_phone }}
+      {% endif %}
+    </div>
+    <div class="large-4 columns">
+      <label for="reporter">Reporter wants credit?</label>
+      <span class="label {{ ticket.credit_release|yesno:"success,alert" }}">{{ ticket.credit_release|yesno }}</span>
+      
+    </div>
+    <div class="large-4 columns">
+      <label for="reporter">Share reporter contact info?</label>
+      <span class="label {{ ticket.share_release|yesno:"success,alert" }}">{{ ticket.share_release|yesno }}</span>
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-4 columns">
+      <label for="comm_attempt">{% trans "Vendor contacted?" %}</label>
+      <span class="label {{ticket.comm_attempt|yesno:"success,alert"}}">{{ ticket.comm_attempt|yesno }}</span>
+    </div>
+    <div class="large-4 columns">
+      <label for="first_contact">{% trans "Date First Contacted" %}</label>
+      {% if ticket.first_contact %}{{ ticket.first_contact|date:"Y-m-d" }}<br/>{% endif %}
+    </div>
+    <div class="large-4 columns"></div>
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+      {% if ticket.comm_attempt %}
+      {{ ticket.vendor_communication|force_escape|smarter_urlize:75|num_to_link|linebreaksbr }}
+    {% else %}
+      {% if ticket.why_no_attempt == "3" %}
+      <tr>
+	<th>{% trans "Explanation" %}:</th>
+	<td>{{ ticket.please_explain }}</td>
+      </tr>
+      {% else %}
+      <tr>
+	<th>{% trans "No attempt to contact" %}</th>
+	{% if ticket.why_no_attempt == "2" %}
+	<td>({% trans "Unable to find contact information." %}) {% if ticket.please_explain %}<br/>{{ ticket.please_explain }}{% endif %}</td>
+	{% else %}
+	<td>{% if ticket.please_explain %}{{ ticket.please_explain }}{% endif %}</td>
+	{% endif %}
+      </tr>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="large-12 columns">
+      <label for="description">Description</label>
+      {{ ticket.vul_description|force_escape|smarter_urlize:75|num_to_link|linebreaksbr }}
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+      <label for="exploit">{% trans "Exploit" %}</label>
+      {{ ticket.vul_exploit|force_escape|smarter_urlize:75|num_to_link|linebreaksbr }}
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+    <label for="impact">{% trans "Impact" %}</label>
+    {{ ticket.vul_impact|force_escape|smarter_urlize:75|num_to_link|linebreaksbr }}
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="large-12 columns">
+    <label for="discovery">Discovery</label>
+    {{ ticket.vul_discovery|force_escape|smarter_urlize:75|num_to_link|linebreaksbr }}
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="large-12 columns">
+    <label>{% trans "Has been exploited?" %} 
+      <span class="label {{ ticket.vul_exploited|yesno:"alert,success" }}">{{ ticket.vul_exploited|yesno }}</span> </label>
+    {% if ticket.vul_exploited %}
+    {{ ticket.exploit_references|force_escape|smarter_urlize:75|num_to_link|linebreaksbr}}
+    {% endif %}
+  </div>
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+      <label>{% trans "Is public?" %} 
+	<span class="label {{ ticket.vul_public|yesno:"alert,success" }}">{{ ticket.vul_public|yesno }}</span></label>
+      {% if ticket.vul_public %}
+      {{ ticket.public_references|force_escape|smarter_urlize:75|num_to_link|linebreaksbr}}
+      {% endif %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+      <label>{% trans "Disclosure Plans?" %} 
+	<span class="label {{ ticket.vul_disclose|yesno:"alert,success" }}">{{ ticket.vul_disclose|yesno }}</span></label>
+      {% if ticket.vul_disclose %}
+      {{ ticket.disclosure_plans|force_escape|smarter_urlize:75|num_to_link|linebreaksbr }}
+      {% endif %}
+    </div>
+  </div>
+  {% if ticket.comments %}
+  <div class="row">
+    <div class="large-12 columns">
+      <label>{% trans "Comments" %}</label>
+      {{ ticket.comments }}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if noshowdeps %}
+  {% else %}
+<div class="row">
+  <div class="large-12 columns">
+    <label>{% trans "Dependencies" %}</label>
+    {% for dep in ticket.ticketdependency.all %}
+    {% if forloop.first %}<p>{% trans "This ticket cannot be resolved until the following ticket(s) are resolved" %}</p><ul>{% endif %}
+      <li><a href='{{ dep.depends_on.get_absolute_url }}'>{{ dep.depends_on.ticket }} {{ dep.depends_on.title }}</a> ({{ dep.depends_on.get_status_display }}) <a class="button tiny warning adddependency" action='{% url 'vince:rmdep' ticket.id dep.id %}'><i class="fas fa-trash"></i>&nbsp;{% trans "Remove Dependency" %}</a></li>
+      {% if forloop.last %}</ul>{% endif %}
+    {% empty %}
+    <p>{% trans "This ticket has no dependencies." %}</p>
+    {% endfor %}
+  </div>
+</div>
+<div class="reveal" id="adddependency" data-reveal data-close-on-click="false"></div>
+<div class="reveal" id="deleteticket" data-reveal>
+  <div class="fullmodal">
+    <form method='post' action="{% url 'vince:delete' ticket.id %}">
+      <div class="modal-content">
+	<div class="modal-header">
+          <h5 class="modal-title">{% trans "Delete Ticket" %}</h5>
+	</div>
+	<div class="modal-body">
+	  {% csrf_token %}
+	  {% blocktrans with ticket.title as ticket_title %}Are you sure you want to delete this ticket (<em>{{ ticket_title }}</em>)? All traces of the ticket, including followups, attachments, and updates will be irreversibly removed.{% endblocktrans %}</p>
+	</div>
+	<div class="modal-footer text-right">
+          <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+          <input class="button alert" type='submit' value='{% trans "Yes, Delete" %}' />
+	</div>
+      </div>
+      <button class="close-button" data-close aria-label="Close modal" type="button">
+	<span aria-hidden="true">&times;</span>
+      </button>
+    </form>
+  </div>
+</div>
+<div class="reveal" id="rmdependency" data-reveal></div>
+{% endif %}
+
+
+  

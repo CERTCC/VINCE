@@ -1,0 +1,47 @@
+EnvironmentConfigurationMetadata:
+  Description: Configuration created from the EB CLI using "eb config save".
+  DateCreated: '1561145871000'
+  DateModified: '1561145871000'
+Platform:
+  PlatformArn: arn:aws:elasticbeanstalk:us-east-2::platform/Python 3.6 running on 64bit Amazon Linux/2.8.4
+OptionSettings:
+  aws:elasticbeanstalk:application:environment:
+    VINCE_COMM_DB_HOST: vince-dev-9-rds.conwqrlp4lyg.us-east-2.rds.amazonaws.com
+    VINCE_COMM_AUTH: arn:aws:secretsmanager:us-east-2:137743039930:secret:RDSCommSecret-G3S08jGf9BGd-bfrVIX
+    AWS_REGION: us-east-2
+    VINCE_SUPERUSER_AUTH: arn:aws:secretsmanager:us-east-2:137743039930:secret:VinceSuperuserSecret-OpeB4uR9EyqC-8fe2Nu
+    VINCE_TRACK_DB_PORT: '5432'
+    AWS_DEPLOYED: true
+    VINCE_TRACK_DB_HOST: vince-dev-9-rds.conwqrlp4lyg.us-east-2.rds.amazonaws.com
+    AWS_SECRET_MANAGER: true
+    VINCE_TRACK_AUTH: arn:aws:secretsmanager:us-east-2:137743039930:secret:RDSTrackSecret-ISi5LnYOgMHV-IYD2LY
+    VINCE_COMM_DB_PORT: '5432'
+    AWS_STORAGE_BUCKET_NAME: vince-dev-9-staticbucket-1pwblsoq5kbf
+  aws:elasticbeanstalk:environment:
+    ServiceRole: vince-dev-9-ElasticBeanstalkServiceRole-1ODCJU48GJCER
+    EnvironmentType: LoadBalanced
+    LoadBalancerType: application
+  aws:elasticbeanstalk:application:
+    Application Healthcheck URL: /vince/
+  aws:autoscaling:trigger:
+    LowerThreshold: '40'
+    MeasureName: CPUUtilization
+    UpperThreshold: '80'
+    Unit: Percent
+  aws:elasticbeanstalk:healthreporting:system:
+    SystemType: enhanced
+  aws:ec2:vpc:
+    Subnets: subnet-044ea90e1730c339a,subnet-09f70bceee7b69a39,subnet-0a8766cc8debf495d
+    VPCId: vpc-0444b29def68adbe1
+    ELBSubnets: subnet-0f321e40caffd12f6,subnet-0d48ae356be8ec33c,subnet-0d109aca6c1c3cc30
+  aws:autoscaling:launchconfiguration:
+    SecurityGroups: sg-0fc0906de5b1108e7
+    IamInstanceProfile: vince-dev-9-AppInstanceProfile-1WZFV39OZ5FZF
+    EC2KeyName: dwight_cert
+  aws:autoscaling:asg:
+    MinSize: '1'
+    MaxSize: '4'
+EnvironmentTier:
+  Type: Standard
+  Name: WebServer
+AWSConfigurationTemplateVersion: 1.1.0.0

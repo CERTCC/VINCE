@@ -1,0 +1,28 @@
+{% extends "vince/login.html" %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% load i18n static %}
+
+{% block content_title %}<h3>VINCE Verify Email</h3>{% endblock %}
+
+{% block content %}
+<p>It looks like we haven't yet verified your email.</p>
+<p>
+    Please check your email to {{ email }} for a verification code.
+  </p>
+  <p>
+    If you don't receive an email, please check your spam folder or contact {{ CONTACT_EMAIL }} to confirm that we have the correct email on file.
+  </p>
+  
+  <form action="." method="post" class="form">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" class="primary button expanded search-button" value="Submit">
+  </form>
+  
+{% endblock %}
+
+
+

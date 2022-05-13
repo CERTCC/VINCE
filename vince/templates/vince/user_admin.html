@@ -1,0 +1,106 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "User Admin" %}{% endblock %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>User Admin</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
+<div class="user_admin_options">
+  <div class="row">
+    <div class="large-6 columns">
+      <a href="{% url 'vince:cve_dashboard' %}">
+        <div class="callout"><i class="fas fa-bug"></i> CVE Services</div>
+      </a>      
+      <a href="{% url 'vince:create_user' %}">
+	<div class="callout"><i class="fas fa-user-plus"></i> Create a new VINCE user</div>
+      </a>
+      {% if user.is_superuser %}
+      <a href="{% url 'vince:process_email' %}">
+	<div class="callout"><i class="fas fa-envelope-open-text"></i> Read Email</div>
+      </a>
+      <a href="{% url 'vince:cognito_change_user' %}">
+	<div class="callout"><i class="fas fa-user-secret"></i> Search and Modify User </div>
+      </a>
+      {% endif %}
+      <a href="{% url 'vince:user_report' %}">
+	<div class="callout"><i class="fas fa-chart-bar"></i> Track User Statistics</div>
+      </a>
+      <a href="{% url 'vince:manage_auto_assign' %}">
+	<div class="callout"><i class="fas fa-user-cog"></i> Manage Auto Assignment</div>
+      </a>
+      {% if user.is_superuser %}
+      <a href="{% url 'vinny:sendmsgall' %}">
+        <div class="callout"><i class="fas fa-envelope-open-text"></i> Message All VINCE Users</div>
+      </a>
+      <a href="{% url 'vince:emailall' %}">
+        <div class="callout"><i class="fas fa-paper-plane"></i> Email All VINCE Users</div>
+      </a>
+      {% endif %}
+      <a href="{% url 'vince:contactreports' %}">
+	<div class="callout"><i class="fas fa-chart-pie"></i> Contact Queries</div>
+      </a>
+      <a href="{% url 'vince:bouncemanager' %}">
+	<div class="callout"><i class="fas fa-envelope"></i> Bounce Manager</div>
+      </a>
+    </div>
+    
+  <div class="large-6 columns">
+    <div class="activity-table">
+      <div class="activity-header">
+	<h5 class="text-center">Recent Activity</h5>
+      </div>
+
+    {% for action in activity %}
+      <div class="activity-log">
+
+
+	{% if "created" in action.title %}
+	<div class="row">
+	  <div class="small-1 large-1 columns">
+            <i class="fas fa-user-plus" aria-hidden="true"></i>
+	  </div>
+	  <div class="small-11 large-11 columns">
+	    {{ action.user.usersettings.preferred_username }} added user <b>{{ action.email }}</b>
+	    <br/><span class="activity_time">
+              {{ action.date|date:"Y-m-d" }} ({{ action.date|timesince }} ago)
+	  </div>
+	</div>
+	{% else %}
+	<div class="row">
+          <div class="small-1 large-1 columns">
+            <i class="fas fa-user-edit" aria-hidden="true"></i>
+          </div>
+          <div class="small-11 large-11 columns">
+            {{ action.user.usersettings.preferred_username }} <b>{{ action.title }}</b>
+            <br/><span class="activity_time">
+              {{ action.date|date:"Y-m-d" }} ({{ action.date|timesince }} ago)
+          </div>
+        </div>
+	{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "vince/login.html" %}
+{% load i18n static %}
+
+{% block content_title %}<h3>Registration Almost Complete</h3>{% endblock %}
+
+{% block content %}
+<p>Please check your email {% if email %}to {{ email }}{% endif %} for a verification code.</p>
+<p>If you don't receive an email, please make sure you've entered the correct address,
+  and check your spam folder.</p>
+<p>Still didn't get the code?  <a href="{% url 'cogauth:resend' %}">Resend it</a></p>
+
+<form action="{% url 'cogauth:account_activation_sent' %}" method="post" class="form">
+  {% csrf_token %}
+  {{ form }}
+  <input type="submit" class="primary button expanded search-button" value="Submit">
+</form>
+  
+{% endblock %}
+
+
+

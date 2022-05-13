@@ -1,0 +1,290 @@
+{% load i18n humanize ticket_to_link %}
+{{ case_tags|json_script:"case_tags" }}
+{{ case_available_tags|json_script:"case_available_tags" }}
+<div class="case-container">
+  <ul class="tabs" data-tabs id="case-tabs" data-deep-link="true" data-update-history="true">
+    <li class="tabs-title"><a href="#details" data-tabs-target="details"> <i class="fas fa-folder-open"></i> Details</a></li>
+    {% if cr %}
+    <li class="tabs-title"><a data-tabs-target="cr" href="#cr"><i class="fas fa-info-circle"></i> Original Report</a></li>
+    {% elif ticket %}
+    <li class="tabs-title"><a data-tabs-target="ticket" href="#ticket"><i class="fas fa-info-circle"></i> Ticket</a></li>
+    {% else %}
+    <li class="tabs-title"><a data-tabs-target="cr" href="#cr"><i class="fas fa-info-circle"></i> Original Report</a></li>
+    {% endif %}
+    <li class="tabs-title is-active"><a aria-selected="true" data-tabs-target="tasks" href="#tasks"><i class="fas fa-list-alt"></i> Tasks</a></li>
+    <li class="tabs-title"><a data-tabs-target="vuls" href="#vuls"><i class="fas fa-skull"></i> Vuls</a></li>
+    <li class="tabs-title"><a data-tabs-target="vendors" href="#vendors"><i class="fas fa-users"></i> Vendors</a></li>
+    <li class="tabs-title"><a data-tabs-target="posts" href="#posts"><i class="fas fa-sticky-note"></i> Posts</a></li>
+    <li class="tabs-title"><a data-tabs-target="vulnote" href="#vulnote"><i class="fas fa-bookmark"></i> Vul Note</a></li>
+    <li class="tabs-title"><a data-tabs-target="participants" href="#participants"><i class="fas fa-users"></i> Participants</a></li>
+  </ul>
+  <div class="tabs-content" data-tabs-content="case-tabs">
+    <div class="tabs-panel" id="details">
+      <a href="{% url 'vince:editcase' case.id %}"><button class="button cmu tiny"><i class="fas fa-edit"></i> Edit Case Details </button></a>
+      <a id="mutecase" href="{% url 'vince:mutecase' case.id %}" class="button cmu primary tiny" href="#" title="{% trans 'Mute case reminders. Do not remind me about this case' %}"><i class="fas fa-volume-mute"></i> Mute Reminders</a>
+      <table class="hover unstriped fixed">
+	<tbody>
+	  {% if case.team_owner %}
+          <tr><th width="200">{% trans "Owner" %}</th>
+            <td><b>{{ case.team_owner.name }}</b>  <button id="transfer" href="{% url 'vince:reqtransfer' case.id %}" class="button tiny assignme">Request Transfer</button></td>
+          </tr>
+	  {% else %}
+	  <tr><th width="200">{% trans "Owner" %}</th>
+            <td>No Owner Set  <button href="{% url 'vince:reqtransfer' case.id %}" class="button tiny assignme" id="transfer">Request Transfer</button></td>
+          </tr>
+	  {% endif %}
+	  <tr><th width="200">{% trans "Status" %}</th>
+	    <td>{% if case.lotus_notes %}{% else %}<a href="{% url 'vinny:vincase' case.id %}" target="_blank"><span class="label primary">VINCEComm</span></a>  {% endif %}{% if case.status == 1 %}<span class="label success">Active</span>{% else %}<span class="label info">Inactive</span>{% endif %}  <a href="{% url 'vince:updateconfirm' case.id %}" id="changestatus"><i class="fas fa-edit"></i></a></td>
+	  </tr>
+	  <tr><th>{% trans "Public" %}</th><td>{% if case.publicdate %}<span class="label success">Public</span>  {{ case.publicdate|date:"Y-m-d" }} {% if case.publicurl %}<a class="publicurl" href="{{case.publicurl}}" target="_blank"><i class="fas fa-external-link-alt"></i> {{ case.publicurl|smarter_urlize:50 }}</a>{% endif %}{% else %}<span class="label warning">Not Public</span>{% endif %}</td>
+	  </tr>
+	  <tr><th>{% trans "Date Created" %}</th><td> {{ case.created|date:"Y-m-d g:i:s A" }}</td>
+	  </tr>
+	  <tr>
+	    <th>{% trans "Estimated Date Public" %}</th>
+	    <td>{{ case.due_date|date:"Y-m-d" }} ({{ case.due_date|naturaltime }})</td>
+          </tr>
+	    {% if case.published %}
+	  <tr><th width="200">{% trans "Published" %}</th>
+	    <td><span class="label badge-tag-success">Published</span>  {{ vulnote.date_published|date:"Y-m-d" }}: <a href="{% url 'vincepub:vudetail' case.vuid %}" target="_blank" rel="noopener">View Vulnerability Note</a></td>
+	  </tr>
+	  {% endif %}
+	  <tr><th>{% trans "Case Permissions" %}</th>
+	    <td>{% for p in case.casepermissions_set.all %}<span class="label secondary">{{ p.group.name }}  {% if p.group_read %}r{% endif %}{% if p.group_write %}/w{% endif %}{% if p.publish %}/p {% endif %}</span>{% endfor %}</td>
+	  </tr>
+	  <tr><th width="200">{% trans "Summary" %}</th>
+	    <td>{{ case.summary }}</td>
+	  </tr>
+	  <tr><th>{% trans "Product Name" %}</th>
+	    <td>{{ case.product_name }}</td>
+	  <tr>
+	  <tr><th>{% trans "Product Version" %}</th>
+	    <td>{{ case.product_version }}</td>
+	  </tr>
+	  <tr>
+	    <th>{% trans "Assigned To" %}</th>
+	    <td><div href="{% url 'vince:taguser' case.id %}" class="taggle_input custom martie" id="user_taggs"></div></td>
+          </tr>
+          <tr>
+	    <th>{% trans "Case Tags" %}</th>
+	    <td><div href="{% url 'vince:updatecase' case.id %}" class="taggle_input custom martie" id="case_taggs"></div>
+	    </td>
+	  </tr>
+	  <tr>
+	    <th>{% trans "Dependencies" %} <a class="adddep assignme button primary tiny" action="{% url 'vince:addcasedep' case.id %}" title="{% trans "Add dependency to make this case dependent on another ticket. A case may not be closed until all tickets it depends on are closed." %}"><i class="fas fa-plus"></i></a></th>
+            <td>{% for dep in case.casedependency.all %}
+	      {% if forloop.first %}<p>{% trans "This ticket cannot be resolved until the following ticket(s) are resolved" %}</p><ul>{% endif %}
+		<li><a href='{{ dep.depends_on.get_absolute_url }}'>{{ dep.depends_on.ticket }} {{ dep.depends_on.title }}</a> ({{ dep.depends_on.get_status_display }}) <a title="{% trans 'Remove Dependency' %}"  href='{% url 'vince:rmcasedep' case.id dep.id %}' class="rmdep"><i class="fas fa-trash"></i></a></li>
+		{% if forloop.last %}</ul>{% endif %}
+              {% empty %}
+              <p>{% trans "This case has no dependencies." %}</p>
+              {% endfor %}
+	    </td>
+	  </tr>
+	  <tr>
+	    <div class="reveal" id="modal" data-reveal></div>
+	    <th>{% trans "Reminders" %} <a id="newremind" class="assignme button primary tiny" href="{% url 'vince:newreminder' %}?case={{case.vuid}}" title="{% trans 'Add a reminder for this case' %}"><i class="fas fa-plus"></i></a>
+
+	    </th>
+	    <td><ul>{% for r in reminders %}
+		<li><i>{{r.alert_date|date:"Y-m-d"}}</i> "{{ r }}" <small><b>for {{r.user.usersettings.preferred_username}}</b></small><a class="rmreminder" id="{{ r.id }}" action="{% url 'vince:rmreminder' %}">   <i class="fas fa-trash"></i></a></li>
+	      {% empty %}
+              <p>{% trans "This case has no reminders." %}</p>
+              {% endfor %}</ul>
+
+	    </td>
+	  </tr>
+	</tbody>
+      </table>
+    </div>
+    {% if cr %}
+    <div class="tabs-panel" id="cr">
+      <div class="crview">
+	{% include 'vince/cr_table.html' with table_class="hover unstriped" ticket=cr noshowdeps=1 %}
+      </div>
+    </div>
+    {% elif ticket %}
+    <div class="tabs-panel" id="ticket">
+      {% include 'vince/ticket_table.html' with table_class="hover fixed unstriped" %}
+    </div>
+    {% else %}
+    <div class="tabs-panel" id="cr">
+      <div class="crview">
+	<div class="callout alert">
+	  <p>This case was not created from a CR. If you would like to share details about a vulnerability in VinceComm please add a CR.</p>
+	</div>
+	<a href="{% url 'vince:newcrcase' case.id %}"><button class="button secondary">Add a CR</button></a>
+      </div>
+    </div>
+    {% endif %}
+    <div class="reveal large" id="largemodal" data-reveal data-close-on-click='false'></div>
+    <div class="reveal small" id="smallmodal" data-reveal data-close-on-click='false'></div>
+    <div class="tabs-panel" id="vuls">
+      <p><a href="#" class="addvulmodal" caseid="{{case.id }}"><button class="button cmu tiny"><i class="fas fa-plus"></i> Add Vulnerability</button></a>&nbsp;&nbsp; <!--<a href="{% url 'vince:editvuls' case.id %}"><button class="button cmu tiny"><i class="fas fa-skull"></i> Edit Vulnerabilities</button></a>-->
+      </p>
+      {{ vulsjs|json_script:"vuls_data" }}
+      <div id="vuls-table" class="tabulator bootstrap"></div>
+      {#{% include 'vince/include/vuls.html' with edit=0 %}#}
+    </div>
+    
+    <div class="hidden" id="task_assign">
+      <div class="reassign">
+	<select class="task_reassign">
+          {% for user in assignable_users %}
+          <option value="{{ user.id }}">{{ user.usersettings.vince_username }}</option>
+          {% endfor %}
+          <option value="0">Unassign</option>
+	</select><button type="button" class="task_assign_submit"><i class="fas fa-check"></i>
+	</button><button type="button" class="task_assign_cancel"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    
+    <div class="tabs-panel is-active" id="tasks">
+      <div class="row">
+	<div class="large-2 columns">
+	  <a href="{% url 'vince:newticket' case.id %}"><button class="button cmu tiny"> <i class="fas fa-plus"></i> Add Task </button></a>
+	</div>
+	<div class="large-1 columns"></div>
+	<div class="large-3 columns">
+	  <div class="input-group">
+	    <span class="input-group-label">Status</span>
+	    <select class="input-group-field" id="filterstatus">
+	      <option value="0">All</option>
+	      <option value="1">Open</option>
+	      <option value="4">Closed</option>
+	    </select>
+	  </div>
+	</div>
+	
+	<div class="large-6 columns">
+	  <div class="input-group">
+	    <input class="input-group-field" type="text" placeholder="Filter tasks" id="filter_tasks" href="{% url 'vince:casefiltertask' case.id %}">
+	    <div class="input-group-button">
+	      <button type="submit" class="button"><i class="fas fa-search"></i></button>  
+	    </div>
+	  </div>
+	</div>
+      </div>
+      {{ assignable_usersjs|json_script:"user_data"}}
+      <div id="case_tasks" class="tabulator bootstrap">
+      </div>
+    </div>
+    <div class="tabs-panel" id="vendors">
+      <!-- Link to open the modal -->
+      <div class="row">
+	<div class="large-9 medium-12 small-12 columns">
+	  <button class="button cmu tiny" id="addnewvendor" href="{% url 'vince:addvendor' %}"> <i class="fas fa-plus"></i> Add Vendor </button>
+	  <!--<a href="{% url 'vince:editvendorlist' case.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vendor</button></a>-->
+	  <button class="button cmu tiny" id="select-all-vendors"> Select All </button>
+	  <button class="button cmu tiny" id="deselect-all-vendors"> Deselect All </button>
+	  <button class="button cmu tiny" id="remove-vendor"> <i class="fas fa-trash"></i> Remove Vendor </button>
+	  <a href="{% url 'vince:approveall' case.id %}" id="approveall" class="button cmu tiny"><i class="fas fa-check"></i> Approve all</a>
+	  {% if case.lotus_notes %}
+	  {% else %}
+	  <a href="#" class="button cmu tiny" id="notifyvendors"><i class="fas fa-paper-plane"></i> Send Notifications</a>
+	  {% endif %}
+	  {% if case.lotus_notes %}{% else %}
+	  <a class="button cmu tiny" href="{% url 'vinny:groupchatcase' vc_case.id %}">Start Group Thread</a>
+	  {% endif %}
+	</div>
+	<div class="large-3 small-12 medium-12 columns large-text-right">
+	  {% if vendorgroups %}
+	  {% for g in vendorgroups %}
+	  <span title="Group added to case" class="label"><a href="{% url 'vince:group' g.from_group.id %}">{{ g.from_group.name }}</a></span>
+	  {% endfor %}
+	  {% endif %}
+	</div>
+      </div>
+	<div class="reveal" id="statusmodal" data-reveal data-close-on-click="false"></div>	  
+      <div id="vendorlist">
+	{% if vendors %}
+	{% include 'vince/casevendors.html' %}
+	{% endif %}
+      </div>
+      {{ vendorsjs|json_script:"vendors_data" }}
+      <div id="vendors-table" class="tabulator bootstrap"></div>
+    </div>
+    <div class="tabs-panel" id="posts">
+      {% include 'vince/include/posts.html' %}
+    </div>
+    
+    <div class="tabs-panel" id="vulnote">
+      <p>
+	{% if vulnote %}
+	<a href="{% url 'vince:edit_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vul Note</button></a>
+	<a href="{% url 'vince:changelog' vulnote.id %}"><button class="button cmu tiny"> <i class="fas fa-clock"></i> View Full History</button></a>
+	<button id="sharevulnote" class="button cmu tiny" action="{% url 'vince:sharevulnote' vulnote.id %}" {% if case.lotus_notes %}disabled{% endif %}> <i class="fas fa-share-square"></i> Share in VinceComm</button>
+	{% if vulnote.ticket_to_approve %}
+	{% if vulnote.ticket_to_approve.submitter_email != user.email %}
+	<a class="button cmu tiny" href="{% url 'vince:vulnotereviewal' vulnote.id %}"><i class="fas fa-tasks"></i> Review Vul Note</a>
+	{% endif %}
+	{% endif %}
+
+	{% if vulnote.approved %}
+	<a href="{% url 'vince:notify' case.id %}"><button class="button cmu tiny publishvulnote" action="{% url 'vince:publish' vulnote.id %}" {% if vulnote.ticket_to_approve.status != 4 %}disabled{% else %}{% if not case.can_be_resolved %}disabled{% endif %}{% endif %}><i class="fas fa-bell"></i> Publish</button></a>
+	{% else %}
+	<a href="{% url 'vince:newticket' case.id %}?approval=1" id="approvalrequest"><button class="button cmu tiny"> <i class="fas fa-hands-helping"></i> Request Approval</button></a>
+	{% if user.is_superuser %}
+	<button class="button cmu tiny" id="approvevulnote" action="{% url 'vince:approvevulnote' vulnote.id %}"><i class="fas fa-thumbs-up"></i> Approve for Publishing</button>
+	{% endif %}
+
+	{% endif %}
+	{% else %}
+	<a href="{% url 'vince:create' case.id %}"> <button class="button cmu tiny"> <i class="fas fa-plus"></i> Start Vul Note </button></a>
+	{% endif %}
+      </p>
+      {% include 'vince/include/changelog.html' %}
+    </div>
+    <div id="approvenote" class="reveal" data-reveal data-close-on-click='false'></div>
+    <div class="tabs-panel" id="participants">
+      <div id="adduser" class="reveal" data-reveal data-close-on-click='false'>
+        <form id="adduserform" case="{{ case.id }}">
+	  <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Add new participant(s)</h5>
+            </div>
+            <div class="modal-body">
+              <label for="user">Search for a current VinceComm user:</label>
+              <input id="user" class="form-control" type="text" name="vendor" />
+	      <p>OR</p>
+	      <label for="contact">Search for a Contact/Vendor/Group:</label>
+	      <small class="form-text text-muted">  (Type "Group:" to search groups)</small>
+              <input id="contact" class="form-control" type="text" name="contact" />
+              <p>OR</p>
+	      <label for="newuser">Invite a user to signup for VinceComm</label>
+	      <input id="newuser" class="form-control" type="text" name="newuser" />
+	      
+              <p>Adding users (click submit to continue):</p>
+              <table class="hover unstriped" id="user-description">
+		
+              </table>
+	    </div>
+	    <div class="modal-footer text-right">
+	      <a href="#" id="cancelparticipant" class="hollow button" data-close type="cancel">Cancel</a>
+              <input type="submit" class="primary button" value="Submit">
+	    </div>
+	  </div>
+	  <button class="close-button" data-close aria-label="Close modal" type="button">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </form>
+      </div>
+      <p>
+	<button class="button cmu tiny" data-open="adduser"> <i class="fas fa-plus"></i> Add Participant </button>&nbsp;&nbsp;
+	<button class="button cmu tiny" id="select-all-participants"> Select All </button>
+        <button class="button cmu tiny" id="deselect-all-participants"> Deselect All </button>
+        <button class="button cmu tiny" id="remove-participant"> <i class="fas fa-trash"></i> Remove Participant </button>
+        {% if case.lotus_notes %}
+        {% else %}
+        <a href="#" class="button cmu tiny" id="notifyparticipants"><i class="fas fa-paper-plane"></i> Send Invitations</a>
+        {% endif %}
+      </p>
+      <div id="participant_list">
+	{% include 'vince/case_participants.html' %}
+      </div>
+      {{ participantsjs|json_script:"participant_data" }}
+      <div id="participant-table" class="tabulator bootstrap"></div>
+    </div>
+  </div>
+</div>
+

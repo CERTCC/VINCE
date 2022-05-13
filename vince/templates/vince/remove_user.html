@@ -1,0 +1,25 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method='post' action="{% url 'vince:rmuser' pending_user.id %}">
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">{% trans "Ignore User" %}</h5>
+      </div>
+      <div class="modal-body">
+	<p>Are you sure you wish to ignore this user's request for a VINCE account?</p>
+	{% csrf_token %}
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input class="button primary" type='submit' value='{% trans "Yes, Ignore" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>
+
+  
+{% endblock %}

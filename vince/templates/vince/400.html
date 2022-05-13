@@ -1,0 +1,20 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Bad Request</h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <h3> Oops. Not sure how you got here but <a href="{% url 'vinny:sendmsg' %}">contact us</a> if the problem persists.</h3>
+  </div>
+</div>
+
+
+{% endblock %}

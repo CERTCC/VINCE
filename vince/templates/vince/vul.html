@@ -1,0 +1,428 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize dashboard_tags %}
+{% load widget_tweaks %}
+{% block vince_title %}{% trans "Edit Vuls" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.css' %}">
+<link rel="stylesheet" href="{% static 'vince/css/ssvc.css' %}">
+<link rel="stylesheet" href="{% static 'vince/css/jquery.json-viewer.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/taggle.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/d3.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/jquery.json-viewer.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/ssvc.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vulmodal.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/cvsscalc31.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/addvuls.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vendorstatus.js' %}"></script>
+{% endblock %}
+
+<!-- site-title  -->
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2><i class="fas fa-skull"></i> {{ vul.vul }} <a href="{{ vul.case.get_absolute_url }}">({{ vul.case.get_vuid }})</a></h2>
+    </div>
+    <div class="large-4 columns text-right">
+      <a href="{% url 'vince:editvul' vul.id %}" class="openeditmodal"><button class="button cmu"><i class="fas fa-pen"></i> Edit Vulnerability</button></a>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vince:case' vul.case.id %}#vuls">Case</a></li>
+      <li><span class="show-for-sr">Current: </span> Vul Detail</li>
+    </ul>
+  </nav>
+  </div>
+</div>
+
+
+{{ vul_tags|json_script:"tags" }}
+{{ allowed_tags|json_script:"atags" }}
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="reveal small" id="smallmodal" data-reveal data-close-on-click='false'></div>
+<div class="reveal large" id="largemodal" data-reveal data-close-on-click='false'></div>
+
+<div class="row">
+  <div class="large-6 columns">
+    <h3 class="section-title">Vulnerability Information</h3>
+  </div>
+  <div class="large-6 columns text-right">
+  </div>
+</div>
+<div class="row">
+  <div class="large-6 columns">
+    <p>
+      <b>Description:</b><br/>
+      {{ vul.description }}
+
+  </div>
+  <div class="large-6 columns">
+    <b>VINCE ID:</b> {{ vul.cert_id }}
+    <br/>
+    <b>Case:</b> <a href="{{ vul.case.get_absolute_url }}"> {{ vul.case.vutitle }} </a><br/>
+    <b>Date Added:</b> {{ vul.date_added|date:"Y-m-d" }}<br/>
+    {% if vul.user %}
+    <b>Added by:</b> {{ vul.user.usersettings.preferred_username }}<br/>
+    {% endif %}
+    {% if vul.ask_vendor_status %}
+    {% else %}
+    <b>Ask Vendor Status:</b> {{ vul.ask_vendor_status|yesno }}<br/>
+    {% endif %}
+  </div>
+</div>
+<hr>
+<div class="row">
+  <div class="large-6 columns">
+    <h3 class="section-title">{% if vul|cve_complete %}<i title="All information is needed for CVE request" class="fas fa-check-circle goodtext"></i> {% else %}<i class="fas fa-exclamation-circle required" title="Information needed for CVE request"></i> {% endif %}CVE</h3>
+  </div>
+  <div class="large-6 columns text-right">
+    <a id="reserve" title="reserve CVE" class="button default small {% if vul.cveallocation.cvereservation or vul.cve %}disabled{% endif %}" href="{% url 'vince:reservecve' vul.id %}"><i class="fas fa-bookmark"></i> Reserve CVE</a>
+    {% if vul.cveallocation %}
+    <a title="edit cve json file" class="button default small" href="{% url 'vince:cve' vul.cveallocation.id %}"><i class="fas fa-pen"></i> Edit CVE Record</a>
+    {% if vul|cve_complete %}
+    <a class="downloadcvefile button default small" href="{% url 'vince:download_cve' vul.cveallocation.id %}" title="download json file"><i class="fas fa-file-download"></i>  Download CVE JSON</a>{% endif %}
+    {% else %}
+    <a title="Create New CVE" href="{% url 'vince:newcve' vul.id %}" class="button default small">Create CVE JSON</a>
+    {% endif %}
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% if vul.cveallocation.cvereservation and vul.cve %}
+    {% if vul.cveallocation.cvereservation.cve_id != vul.vul %}
+    <div class="callout alert">The CVE ID reserved for this vulnerability ({{ vul.cveallocation.cvereservation.cve_id }}) does not match the CVE ID provided for this vulnerability.</div>
+    {% endif %}
+    {% endif %}
+    <b>CVE:</b><span id="exportId">{% if vul.cve %} CVE-{{ vul.cve }} {% else %} Unspecified {% endif %}</span>
+    <br/>
+    <b>Status:</b> {% if vul.cveallocation.cvereservation %}<span class="goodtext">RESERVED by {{ vul.cveallocation.cvereservation.user_reserved.usersettings.preferred_username }} on {{ vul.cveallocation.cvereservation.time_reserved|date:"Y-m-d" }} </span>{% elif vul.cve %}CVE not obtained through VINCE{% else %}CVE not obtained{% endif %}
+    <br/>
+    <b>Date Public</b>: {{ vul.cveallocation.date_public|date:"Y-m-d" }}
+    <br/>
+    {% if vul.cveallocation.cwe|loadjson|length %}
+    <b>CWEs:</b><br/>
+    {{ vul.cveallocation.cwe|loadjson|join:"<br/>"}}
+    {% elif vul.vulcwe_set.all|length > 0 %}
+    <b>CWEs:</b><br/>
+    {% for x in vul.vulcwe_set.all %}
+    {{ x.cwe }}
+    {% endfor %}
+    {% else %}
+    <b class="required">No CWEs selected</b>
+    {% endif %}
+    <br/>
+    {% if vul.cveallocation.references|loadjson|length %}
+    <b>References:</b><br/>
+    {% with x=vul.cveallocation.references|loadjson %}
+    {% for ref in x %}
+    {{ ref.refsource }}: <a href="{{ ref.url }}" target="_blank">{{ ref.url }}</a><br/>
+    {% endfor %}
+    {% endwith %}
+    {% else %}
+    <b class="required">No references</b>
+    {% endif %}
+    <br/>
+    {% if vul.cveallocation.cveaffectedproduct_set.all|length > 0 %}
+    <b>Products:</b><br/>
+    {% for product in vul.cveallocation.cveaffectedproduct_set.all %}
+    {{ product.name }}, {{ product.organization }}, {% if product.version_name %}{{ product.version_name }}{% endif %} {% if product.version_affected %}{{ product.version_affected }}{% endif %} {{ product.version_value }}<br/>
+    {% endfor %}
+    {% else %}
+    <b class="required">No products</b>
+    {% endif %}
+  </div>
+</div>
+
+<hr>
+<div class="row">
+  <div class="large-12 columns">
+    <h3 class="section-title">Tags</h3>
+    {% if allowed_tags %}
+    {% else %}
+    <div class="callout warning">
+      <p>Tags are currently disabled. There are no tags defined for vulnerabilties. Tags can be entered in the <a href="{% url 'vince:tags' %}">Tag Manager</a>.</p>
+    </div>
+    {% endif %}
+
+    <div class="taggle_input custom martie" id="vul_taggs" action="{% url 'vince:editvul' vul.id %}"></div>
+  </div>
+</div>
+<hr>
+<div class="row">
+  <div class="large-8 columns">
+    <h3 class="section-title">CVSS</h3>
+  </div>
+  <div class="large-4 columns text-right">
+    {% if vul.vulcvss %}
+    <a title="add cvss base score" id="cvsser" class="button small default" href="{% url 'vince:vulcvss' vul.id %}"><i class="fas fa-pen"></i>  Edit Score</a>
+    <a title="clear score" id="delcvss" class="button small default" href="{% url 'vince:rmvulcvss' vul.id %}"><i class="fas fa-trash"></i>  Clear Score</a>
+    {% else %}
+    <a title="add cvss base score" id="cvsser" class="button small default" href="{% url 'vince:vulcvss' vul.id %}"><i class="fas fa-plus"></i> Add Score</a>
+    <a title="remove cvss score" id="delcvss" class="hidden button small default" href="{% url 'vince:rmvulcvss' vul.id %}"><i class="fas fa-trash"></i>  Clear Score</a>
+
+    {% endif %}
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% if vul.vulcvss %}
+    <b>CVSS Base Score:</b> <span id="cvss_base">{{ vul.vulcvss.score }}</span><br/>
+    <b>CVSS Severity:</b>   <span id="cvss_severity">  {{ vul.vulcvss.severity }}</span><br/>
+    <b>CVSS Vector:</b>  <span id="cvss_vector"> {{ vul.vulcvss.vector }}</span>   <a title="copy to clipboard" href="#" id="copycvss"><i class="fas fa-copy"></i></a> 
+    <br/>Scored by {{ vul.vulcvss.scored_by.usersettings.preferred_username }} on {{ vul.vulcvss.last_modified|date:"Y-m-d" }}<br/>
+
+    {% else %}
+    <div class="hidden" id="cvsinfo">
+      <b>CVSS Base Score:</b> <span id="cvss_base"></span><br/>
+      <b>CVSS Severity:</b>  <span id="cvss_severity"></span><br/>
+      <b>CVSS Vector:</b>  <span id="cvss_vector"></span>   <a title="copy to clipboard" href="#" id="copycvss"><i class="fas fa-copy"></i></a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<hr>
+<div class="row">
+  <div class="large-6 columns">
+    <h3 class="section-title">SSVC Decision Tree</h3>
+  </div>
+  <div class="large-6 columns text-right">
+    <a href="#" class="button small default" id="dt_start" title="Start walking the SSVC Decision tree" class="button default"><i class="fas fa-plus"></i> Start Decision</a>
+    <button id="dt_full_tree" data-toggle="tooltip" title="boosh" class="hidden button default"><i class="fas fa-plus"></i> Start Decision</button>
+
+    <button id="delssvc" href="{% url 'vince:rmvulssvc' vul.id %}" data-toggle="tooltip" title="Clear Score" class="{% if vul.vulssvc %}{% else %}hidden{% endif %} button small default"><i class="fas fa-trash"></i> Clear Score</button>
+  </div>
+</div>
+{% if vul.vulssvc %}
+<div class="row">
+  <div class="large-12 columns">
+    <p>Decision last made by {% if vul.vulssvc.user %}{{ vul.vulssvc.user }}{% else %}Unknown user{% endif %} on {{ vul.vulssvc.last_edit|date:"Y-m-d" }}<p>
+  </div>
+</div>
+{% endif %}
+<div id="graph" class="position-relative"></div>
+{% if vul.vulssvc.json_file %}
+<div id="ssvc_decision">
+  {{ vul.vulssvc.json_file|json_script:"ssvc_file" }}
+  {% else %}
+  <div id="ssvc_decision" class="hidden">
+    {% endif %}
+  <hr/>
+  <div class="row">
+    <div class="large-8 columns">
+      <h3 class="section-title">SSVC Decision</h3>
+    </div>
+    <div class="large-4 columns text-right">
+      <button id="download_ssvc" data-toggle="tooltip" title="Download JSON File" class="small button default"><i class="fas fa-download"></i> Download</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+      <div id="something" action="{% url 'vince:vulssvc' vul.id %}">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="reveal" data-reveal data-close-on-click='false' id="mwb">
+
+ <div class="modal-content">
+   <div class="modal-header">
+     <h5 class="modal-title" id="exampleModalLabel">Mission & Well-Being impact value</h5>
+   </div>
+   <div class="modal-body">
+     <form id="wbform">
+       <table class="table table-dark table-stripped" id="wbtable">
+	 <tr><td>
+	     Mission Prevelance
+	     &nbsp; 
+	     <a href="javascript:void(0)"
+		class="circletext"
+		id="mwb_question">
+	       &quest; </a>
+	   </td>
+	   <td>
+	     <select id="mp" class="form-control">
+	       <option value=0>Minimal</option>
+	       <option value=1>Support</option>
+	       <option value=2>Essential</option>
+	     </select>
+	 </td></tr>
+	 <tr><td>
+	     Public Well-Being Impact
+	     <a href="javascript:void(0)"
+		class="circletext"
+		id="public_question">
+	       &quest; </a>
+	   </td><td>
+	     <select id="wb" class="form-control">
+	       <option value=0>Minimal</option>
+	       <option value=1>Material</option>
+	       <option value=2>Irreversible</option>
+	     </select>
+       </td></tr></table>
+     </form>
+     <div id="wsdiv" style="display:none">
+       Cumulative MWB rating is <strong id="wscore"></strong>
+     </div>
+     <div class="modal-footer text-right">
+       <a href="#" id="cancelvendor" class="hollow button" data-close type="cancel">Cancel</a>
+       <button type="button" class="button primary" id="finishcalc"> Calculate</button>
+     </div>
+   </div>
+   <button class="close-button" data-close aria-label="Close modal" type="button">
+     <span aria-hidden="true">&times;</span>
+   </button>
+ </div>
+</div>
+ <hr>
+<div class="row">
+  <div class="large-8 columns">
+    <h3 class="section-title">SSVC Exploit Information</h3>
+  </div>
+  <div class="large-4 columns text-right">
+    <button action="{% url 'vince:addexploit' vul.id %}" class="addexploit button small  default"><i class="fas fa-plus"></i> Add Exploit</button>
+  </div>
+</div>
+<div id="exploits">
+{% include 'vince/exploits.html' %}
+</div>
+<hr>
+<div class="row">
+  <div class="large-12 columns">
+    <h3 class="section-title">Vendors</h3>
+    <div class="vendorlist">
+      <table class="hover unstriped">
+	<thead>
+	  <tr>
+	    <td>Vendor</td>
+	    <td>Status</td>
+	    <td>Date</td>
+	    <td>Modified</td>
+	    <td>Approved</td>
+	    <td>Statement</td>
+	  </tr>
+	</thead>
+	<tbody>
+	  {% for vendor in vendor_list %}
+	  <tr>
+	    <td><a href="{% url 'vince:vendorstatus' vendor.vendor.id %}">{{ vendor.vendor.contact.vendor_name }}</a></td>
+	    <td>{% if vendor.status == 1 %}<span class="label alert">Affected</span>
+              {% elif vendor.status == 2 %} <span class="label success">Not Affected</span>
+              {% elif vendor.status == 3 %} <span class="label warning">Unknown</span>
+	      {% endif %}
+	    </td>
+	    <td>
+	      {% if vendor.user or vendor.date_added %}
+              {{ vendor.date_added|date:"Y-m-d" }} ({% vcuser vendor.user %})
+              {% endif %}
+            </td>
+            <td>
+              {% if vendor.date_modified %}{{ vendor.date_modified|date:"Y-m-d" }} ({% vcuser vendor.user %}){% endif %}
+            </td>
+            <td>{% if vendor.user_approved %}{% if vendor.approved %} <i class="fas fa-check primary"></i>{% else %}<i class="fas fa-user-edit warning"></i>{% endif %}{% endif %}</td>
+            <td>{% if vendor.statement or vendor.references %}<button class="viewstmt button" href="{% url 'vince:vendorstatusmodal' vendor.vendor.id %}">View Statement</button>{% endif %}</td>
+	  </tr>
+	  {% endfor %}
+	  {% for vendor in vendor_unknown_list %}
+	  <tr>
+	  <td><a href="{% url 'vince:vendorstatus' vendor.id %}">{{ vendor.contact.vendor_name }}</a></td>
+	  <td><span class="label warning">Unknown</span></td>
+	  <td></td><td></td><td></td><td></td>
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div id="mpopup">
+</div>
+<div class="Exploitation d-RXhwbG9pdGF0 hidden">
+  <h5>Exploitation choices</h5>
+  <b>None: </b> &nbsp; There is no evidence of active exploitation and no public proof of concept (PoC) of how to exploit the vulnerability.
+  <hr/>
+  <b>PoC: </b> &nbsp; 
+  (Proof of Concept) One of the following cases is true: (1) private evidence of exploitation is attested but not shared; (2) widespread hearsay attests to exploitation; (3) typical public PoC in places such as Metasploit or ExploitDB; or (4) the vulnerability has a well-known method of exploitation. Some examples of condition (4) are open-source web proxies serve as the PoC code for how to exploit any vulnerability in the vein of improper validation of TLS certificates. As another example, Wireshark serves as a PoC for packet replay attacks on ethernet or WiFi networks.
+  <hr />
+  <b>Active:</b> &nbsp;  Shared, observable, reliable evidence that the exploit is being used in the wild by real attackers; there is credible public reporting.
+</div>
+<div class="Automatable d-QXV0b21hdGFi hidden">
+  <h5>Automatable choices</h5>
+  <p><b>No:</b> &nbsp; Attackers cannot reliably automate steps 1-4 of the kill chain for this vulnerability. These steps are (1) reconnaissance, (2) weaponization, (3) delivery, and (4) exploitation. Reasons why a step may not be reliably automatable could include the following:</p>
+  <ol>
+    <li>the vulnerable component is not searchable or enumerable on the network,</li>
+    <li>weaponization may require human direction for each target,</li>
+    <li>delivery may require channels that widely deployed network security configurations block, and</li>
+    <li>    exploitation is not reliable, due to exploit-prevention techniques enabled by default; ASLR is an example of an exploit-prevention tool.</li>
+    </ol>
+  <hr/>
+  <b>Yes: </b> &nbsp; Attackers can reliably automate steps 1-4 of the kill chain. If the vulnerability allows remote code execution or command injection, the expected response should be yes.
+</div>
+<div class="Technical_Impact d-VGVjaG5pY2Fs hidden">
+  <h5>Technical Impact</h5>
+  <b>Partial: </b> &nbsp; The exploit gives the adversary limited control over, or information exposure about, the behavior of the software that contains the vulnerability. Or the exploit gives the adversary an importantly low stochastic opportunity for total control. In this context, “low” means that the attacker cannot reasonably make enough attempts to overcome the low chance of each attempt not working. Denial of service is a form of limited control over the behavior of the vulnerable component.
+  <hr/>
+  <b>Total: </b> &nbsp;  The exploit gives the adversary total control over the behavior of the software, or it gives total disclosure of all information on the system that contains the vulnerability.
+</div>
+<div id="mwb_addon" class="top_fixed top_blue tescape">      
+  <button type="button" class="close-button float-right" id="mwb_escape">
+    <span>&times;</span>
+  </button>      
+  <h5>Mission Prevelance choices</h5>
+  <b>Minimal: </b> &nbsp; Neither support nor essential apply. The vulnerable component may be used within the entities, but it is not used as a mission-essential component nor does it support (enough) mission essential functions.
+  <hr/>
+  <b>Support: </b> &nbsp; The operation of the vulnerable component merely supports mission essential functions for two or more entities.
+  EssentialThe vulnerable component directly provides capabilities that constitute at least one MEF for at least one entity, and failure may (but need not) lead to overall mission failure.
+</div>
+<div class="Track Track_ Attend Act d-VHJhY2s61 d-VHJhY2sq d-QXR0ZW5k d-QWN0 hidden">
+  <h5> Vulnerability Scoring Decisions</h5>
+  <b>Track </b> &nbsp; The vulnerability does not require attention outside of Vulnerability Management (VM) at this time.  Continue to track the situation and reassess the severity of vulnerability if necessary.
+  <hr />
+  <b>Track * </b> &nbsp; Track these closely, especially if mitigation is unavailable or difficult. Recommended that analyst discuss with other ana-lysts and get a second opinion.
+  <hr />
+  <b>Attend  </b> &nbsp; The vulnerability requires to be attended to by stakeholders outside VM. The action is a request to others for assistance / information / details, as well as a potential publication about the issue.
+  <hr/>
+  <b>Act </b> &nbsp; The vulnerability requires immediate action by the relevant leadership. The action is a high-priority meeting among the relevant supervisors to decide how to respond.
+</div>
+<div class="Mission___Well_being d-TWlzc2lvbiAm hidden">
+  <table class="table table-striped table-dark table-bordered table-well-being">
+    <thead>
+      <tr>
+	<th colspan="6">
+	  Determining Mission & Well-being impact value
+	</th>
+      </tr>
+    </thead>
+    <tbody><tr><td colspan="3" ><p><strong>&nbsp;</strong></p></td><td colspan="3" ><p><strong>Public Well-Being Impact</strong></p></td></tr>
+      <tr><td colspan="3"><p><br></p></td><td ><p><em>Minimal</em></p></td><td ><p><em>Material</em></p></td><td ><p><em>Irreversible</em></p></td></tr>
+      <tr><td colspan="2" rowspan="3"  style="vertical-align:middle"><p><strong>Mission Prevalence</strong></p></td><td ><p><em>Minimal</em></p></td><td ><p>Low</p></td><td ><p>Medium</p></td><td ><p>High</p></td></tr><tr><td ><p><em>Support</em></p></td><td ><p>Medium</p></td><td ><p>Medium</p></td><td ><p>High</p></td></tr><tr><td ><p><em>Essential</em></p></td><td ><p>High</p></td><td ><p>High</p></td><td ><p>High</p></td></tr></tbody></table>
+</div>
+<div id="public_well_being_addon" class="top_fixed top_blue tescape">
+  <button type="button" class="close-button float-right" id="public_escape">
+    <span>&times;</span>
+  </button>
+  <h5> Public Well-being Impact Decision Values</h5>
+  <table class="table table-bordered table-striped table-pwell-being"><thead><tr><td>
+	  <p><span class="bold">Impact</span></p></td><td ><p><span class="bold">Type of Harm</span></p></td><td ><p><span class="bold">Description</span></p></td></tr></thead><tbody><tr><td ><p><strong>Minimal</strong></p></td><td ><p>All</p></td><td ><p>The effect is below the threshold for all aspects described in material.</p></td></tr><tr><td rowspan="6" ><p><strong>Material <br>(Any one or more of these conditions hold.)</strong></p></td><td ><p>Physical harm</p></td><td ><p>Physical distress and injuries for users (not operators) of the system.</p></td></tr><tr><td ><p>Operator <br>resiliency</p></td><td ><p>If the operator is expected to be able to keep the cyber-physical system safely operating (that is, prevents one of the other types of harm), then select this option if one of these three apply: system operator must react to exploitation of the vulnerability to maintain safe system state but operator actions would be within their capabilities; OR significant distraction or discomfort to operators; OR causes significant occupational safety hazard.</p></td></tr><tr><td ><p>System <br>resiliency</p></td><td ><p>Cyber-physical system’s safety margin effectively eliminated but no actual harm; OR failure of cyber-physical system functional capabilities that support safe operation.</p></td></tr><tr><td ><p>Environment</p></td><td ><p>Major externalities (property damage, environmental damage, etc.) imposed on other parties.</p></td></tr><tr><td ><p>Financial</p></td><td ><p>Financial losses that likely lead to bankruptcy of multiple persons.</p></td></tr><tr><td ><p>Psychological</p></td><td ><p>Widespread emotional or psychological harm, sufficient to be cause for counselling or therapy, to populations of people.</p></td></tr><tr><td rowspan="6" ><p><strong>Irreversible (Any one or more of these conditions hold.)</strong></p></td><td ><p>Physical harm</p></td><td ><p>Multiple fatalities likely.</p></td></tr><tr><td ><p>Operator <br>resiliency</p></td><td ><p>Operator is incapacitated, where operator usually maintains safe cyber-physical system operations, and so other harms at this level are likely.</p></td></tr><tr><td ><p>System<br>resiliency</p></td><td ><p>Total loss of whole cyber-physical system of which the software is a part.</p></td></tr><tr><td ><p>Environment</p></td><td ><p>Extreme or serious externalities (immediate public health threat, environmental damage leading to small ecosystem collapse, etc.) imposed on other parties.</p></td></tr><tr><td ><p>Financial</p></td><td ><p>Social systems (elections, financial grid, etc.) supported by the software are destabilized and potentially collapse.</p></td></tr><tr><td ><p>Psychological</p></td><td ><p>N/A</p></td></tr></tbody>
+  </table>
+</div>
+
+{% endblock %}
+	  

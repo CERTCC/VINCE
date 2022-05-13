@@ -1,0 +1,115 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Case Template Management" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/case_management.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.css' %}">
+{% endblock %}
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Edit Case Template</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      <!--<a href="{% url 'vince:deletetmpl' object.id %}" class="button vulsubmitopposite"><i class="fas fa-trash-alt"></i> Delete Template</a>-->
+      <button data-open="delete_template" class="cmu button"><i class="fas fa-trash-alt"></i> Delete Template</button>
+    </div>
+  </div>
+</div>
+<div class="reveal" id="deletetask" data-reveal></div>
+<div class="reveal" id="delete_template" data-reveal>
+<div class="fullmodal">
+  <form method='post' action="{% url 'vince:deletetmpl' object.id %}">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Delete Ticket" %}</h5>
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+        <p>{% blocktrans with object.title as ticket_title %}Are you sure you want to delete this template (<em>{{ ticket_title }}</em>)? All traces of the template, including tasks will be irreversibly removed.{% endblocktrans %}</p>
+      </div>
+      <div class="modal-footer text-right">
+	<a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+	<input class="button alert" type='submit' value='{% trans "Yes, Delete" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>
+</div>
+{{ tasksjs|json_script:"tasks" }}
+<form id="edittemplate" action="" name="editForm" enctype="multipart/form-data" method="POST" edit="{{ object.id }}">
+    <div class="row">
+      <div class="small-12 large-8 columns">
+	{% csrf_token %}
+	{% for field in form %}
+	{% if field.name in "vendor_email,participant_email" %}
+	{% else %}
+	<div class="form-group">
+        <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+        {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+        {{ field }}
+        {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+	</div>
+	{% endif %}
+	{% endfor %}
+      </div>
+
+      <div class="large-4 columns">
+      </div>
+    </div>
+    <hr>
+    <div class="row">
+      <div class="small-6 large-6 columns">
+	<h3 class="section-title">Tasks</h3>
+      </div>
+      <div class="small-6 large-6 columns text-right">
+	<a href="#addtask" class="button cmu" id="add_task" action="{% url 'vince:casetask' object.id %}"><i class="fas fa-plus"></i>Add Task</a>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<div id="task-table" class="tabulator bootstrap"></div>
+      </div>
+    </div>
+
+    <div class="hide-col" id="editmode"></div>
+
+    <hr>
+    <div class="row">
+      <div class="small-12 large-8 columns">
+        {% csrf_token %}
+        {% for field in form %}
+        {% if field.name in "vendor_email,participant_email" %}
+        <div class="form-group">
+        <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+        {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+        {{ field }}
+        {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <div class="large-4 columns">
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<button type="submit" name="vrfSubmit" class="primary button">Save Template</button>
+	<a href="{% url 'vince:casemgmt' %}" class="secondary button">Cancel</a>
+      </div>
+    </div>
+    
+  </form>
+
+  <div id="addtask" class="reveal" data-reveal>
+  </div>
+
+
+{% endblock %}

@@ -1,0 +1,7 @@
+{% if object.get_related_attachment %}
+{% if object.type == "image" %}
+!{% endif %}[{{ object.title }}]({{object.get_related_attachment.access_url}})
+{% else %}
+### {{object.title }}###
+{{ object.value }}
+{% endif %}

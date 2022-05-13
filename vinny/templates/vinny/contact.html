@@ -1,0 +1,45 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load i18n humanize post_tags %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+{% endblock %}
+{% load widget_tweaks %}
+{% block content %}
+{% if object %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 medium-6 small-12 columns">
+      <h2>My Contact Info</h2>
+    </div>
+    <div class="large-6 medium-6 small-12 columns text-right">
+      <a href="{% url 'vinny:editcontact' object.id %}" class="ticket-edit"><button class="button cmu small-only-expanded"><i class="fas fa-pencil-alt"></i> {% trans "Edit My Contact Info" %}</button></a>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+
+    <div class="callout {{ message.tags }}">{% autoescape off %}{{ message }}{% endautoescape %}</div>
+    {% endfor %}
+  </div>
+</div>
+<div class="card-profile-stats">
+  <div class="row column">
+    <div class="card-profile-stats-intro">
+      {% autoescape off %}{{ gc|gclogo:"card-profile-stats-intro-pic" }}{% endautoescape %}
+      <!--<img class="card-profile-stats-intro-pic" src="{{ gc.get_logo }}">-->
+      <h3>{{ object.vendor_name }}</h3>
+    </div>
+  </div>
+</div>
+{% include 'vinny/include/mycontact.html' %}
+
+{% else %}
+<div class="row column">
+  <p> We do not have contact information for your group </p>
+</div>
+{% endif %}
+
+{% endblock %}

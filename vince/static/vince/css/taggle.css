@@ -1,0 +1,229 @@
+.btn {
+  background: #990033;
+  padding: 12px 30px;
+  border-radius: 8px;
+  margin-right: 3px;
+  color: #fff !important;
+  position: relative;
+  display: inline-block;
+  width: 130px; }
+  .btn:hover {
+    background: #cc0044; }
+  .btn:active {
+    top: 1px; }
+  .btn:last-child {
+    margin-right: 0; }
+
+::-moz-selection {
+  background: #990033;
+  color: #fff; }
+
+::selection {
+  background: #990033;
+  color: #fff; }
+
+::-moz-selection {
+  background: #990033;
+  color: #fff; }
+
+@-webkit-keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    -webkit-transform: translateY(0); }
+  40% {
+    -webkit-transform: translateY(-16px); }
+  60% {
+    -webkit-transform: translateY(-4px); } }
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    -webkit-transform: translateY(0);
+            transform: translateY(0); }
+  40% {
+    -webkit-transform: translateY(-16px);
+            transform: translateY(-16px); }
+  60% {
+    -webkit-transform: translateY(-4px);
+            transform: translateY(-4px); } }
+
+.bounce {
+  -webkit-animation-name: bounce;
+          animation-name: bounce; }
+
+.project_container a {
+  color: #000; }
+
+.clearfix:before, .clearfix:after {
+  display: block;
+  content: "";
+  line-height: 0;
+  clear: both; }
+
+.taggle_list {
+  float: left;
+  width: 100%; }
+
+.taggle_input {
+  border: none;
+  outline: none;
+}
+
+.taggle_list li {
+  float: left;
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 500;
+  margin-bottom: 5px; }
+
+.taggle_list .taggle {
+  margin-right: 8px;
+  background: #E2E1DF;
+  padding: 5px 10px;
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  transition: all .3s;
+  -webkit-animation-duration: 1s;
+          animation-duration: 1s;
+  -webkit-animation-fill-mode: both;
+          animation-fill-mode: both; }
+
+.taggle_list .taggle_hot {
+  background: #cac8c4; }
+
+.taggle_list .taggle .close {
+  font-size: 1.1rem;
+  position: absolute;
+  top: 5px;
+  right: 3px;
+  text-decoration: none;
+  padding-left: 2px;
+  padding-top: 3px;
+  line-height: 0.5;
+  color: #ccc;
+  color: rgba(0, 0, 0, 0.2);
+  padding-bottom: 4px;
+  display: none;
+  border: 0;
+  background: none;
+  cursor: pointer; }
+
+.taggle_list .taggle:hover {
+  padding: 5px;
+  padding-right: 15px;
+  background: #ccc;
+  transition: all .3s; }
+
+.taggle_list .taggle:hover > .close {
+  display: block; }
+
+.taggle_list .taggle .close:hover {
+  color: #990033; }
+
+.taggle_placeholder {
+    position: relative;
+    color: #CCC;
+    /*top: 12px; */
+    left: 8px;
+    transition: opacity, .25s;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none; }
+
+.taggle_input {
+  padding: 5px;
+  padding-left: 0;
+  float: left;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  background: none;
+  width: 100%;
+  max-width: 100%; }
+
+.taggle_sizer {
+  padding: 0;
+  margin: 0;
+  position: absolute;
+  top: -500px;
+  z-index: -1;
+  visibility: hidden; }
+
+/*container styles*/
+textarea.input,
+.textarea.input {
+  border: 0;
+  background: #FDFDFD;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(255, 255, 255, 0.7);
+  /*  min-height: 40px;*/
+  padding: 8px;
+  border-radius: 3px;
+  color: #555;
+  transition: all .25s;
+  cursor: text;
+  position: relative; }
+
+.textarea.input:focus,
+.textarea.input.active,
+textarea.input:focus,
+textarea.input.active {
+  background: #fff;
+  transition: all .25s; }
+
+.textarea.input,
+textarea.input {
+  height: auto; }
+
+.textarea.tags {
+  position: relative; }
+
+.textarea.tags * {
+  box-sizing: content-box; }
+
+.placeholder_input {
+  position: relative; }
+
+placeholder_input span {
+  position: absolute;
+  color: #AAA;
+/*  top: 50%;*/
+  margin-top: -5px;
+  left: 10px; }
+
+.placeholder_input input {
+  width: 120px; }
+
+.ui-autocomplete {
+  position: absolute;
+  top: 0;
+  left: 0; }
+
+.custom.martie {
+    border: 1px solid #ccc;
+    margin-left:auto;
+    margin-right: auto;
+}
+.custom.martie .taggle {
+    /*color: #FFF;*/
+    border-radius: 4px;
+    /*background-color: #E0EAF1;*/
+    /*background-color: #AAA;*/
+    /*font-weight: 200; */
+    margin-top:5px;
+    margin-bottom: 5px;
+    margin-left:10px;
+}
+.custom.martie .taggle.taggle_hot {
+    background: #BDD0DD; }
+/*.custom.martie .taggle .close {
+    color: #aaa;
+    border-radius: 0.7rem;
+    font-size: 0.9rem;
+    height: 0.7rem;
+    width: 0.7rem;
+    line-height: .1rem;
+    margin-top: 3px; }
+*/
+/*.custom.martie .taggle .close:hover {
+    background: #C03434;
+    color: #fff; }
+*/

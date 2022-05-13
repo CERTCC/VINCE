@@ -1,0 +1,31 @@
+<div class="row">
+  <div class="large-12 columns">
+    <ul class="category-list list-unstyled">
+      <li class="category-item media">
+	<div class="category-icon">
+	  <span class="sei-icon"><i class="fas fa-envelope"></i></span>
+	</div>
+	<div class="media-body">
+	  <h1 class="category-title border-bottom border-sei-gray-lightest">User Emails</h1>
+	  <div class="row">
+            <div class="large-12 columns">
+              <table class="unstriped">
+		
+		{% for email in object.vincecommemail_set.all %}
+		{% if email.email_list %}
+		{% else %}
+		<tr>
+		  <td>{% if email.public %}<span class="label success">Public</span>{% else %}<span class="label warning">Not Public</span>{% endif %}</td>
+		  <td>{{ email.email }}</td>
+		  <td>{{ email.name }}</td>
+		  <td>{{ email.email_type}}</td>
+		</tr>
+		{% endif %}
+		{% endfor %}
+              </table>
+            </div>
+	  </div>
+	</div>
+      </li>
+  </div>
+</div>

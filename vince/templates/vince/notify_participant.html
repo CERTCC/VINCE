@@ -1,0 +1,41 @@
+{% extends "vince/modal.html" %}
+{% load i18n %}
+{% load widget_tweaks %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="fullmodal">
+  <form id="notifyform" method="post" action="{{ action }}" enctype='multipart/form-data'>
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">{{ title }}</h5>
+      </div>
+      
+      <div class="modal-body">
+	{% if warning %}
+	<div class="callout alert">
+	  <p>The reporter of this vulnerability does not want their information shared with vendors. Confirm that they would like to be involved in the case discussion before inviting this participant to the case.</p>
+	</div>
+	{% endif %}
+	{% csrf_token %}
+	{% for field in form %}
+	<div class="form-group">
+          <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+	  {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+	  {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}	  
+	  {{ field }}
+	  
+	</div>
+	{% endfor %}
+      </div>
+      <div class="modal-footer text-right">
+	<a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+	<button id="notifyparty" type="submit" name="vrfSubmit" class="button primary"><i class="fas fa-paper-plane"></i> Send Notification </button>
+      </div>
+    </div>
+  </form>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

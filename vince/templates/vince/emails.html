@@ -1,0 +1,113 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "VINCE Email" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/email_search.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 medium-8 columns">
+      <h2>VINCE Emails</h2>
+    </div>
+    <div class="large-4 medium-4 columns text-right">
+      <a href="{% url 'vince:newemail' %}" class="button cmu small-only-expanded"><i class="fas fa-plus"></i> Create email</a>
+    </div>
+  </div>
+</div>
+
+{% if messages %}
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{% autoescape off %}{{ message }}{% endautoescape %}</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+<form action="" method="post" enctype="multipart/form-data" name="searchform" id="searchform">
+  <div class="row">
+    <div class="large-4 medium-4 small-6 columns">
+      {% with WIDGET_ERROR_CLASS='searchform_error' %}
+      {% csrf_token %}
+      {% render_field form.wordSearch errormsg=form.wordSearch.errors|first %}
+    </div>
+    <div class="large-2 columns medium-3 small-6">
+      <div class="dropdown-pane" id="method-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="row column">
+          <div class="form-check border-bottom mb-2 pb-2">
+            <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
+            <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
+          </div>
+          {% render_field form.method %}
+          <div class="filter-by-dropdown__dropdown-footer">
+          </div>
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="method-dropdown">
+          Email Type
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+    <div class="large-2 columns medium-3 small-6">
+      <div class="dropdown-pane" id="owner-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="row column">
+          <div class="form-check border-bottom mb-2 pb-2">
+            <input id="filter_by_dropdown_select_all_1" type="checkbox" class="form-check-input">
+            <label for="filter-by_dropdown_select_all_1" class="form-check-label"> Select all </label>
+          </div>
+          {% render_field form.user %}
+          <div class="filter-by-dropdown__dropdown-footer">
+          </div>
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="owner-dropdown">
+          User
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+    <div class="large-4 columns medium-2 hide-for-small-only">
+      <div class="dropdown-pane" id="date-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="input-group">
+          <span class="input-group-label">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+          {% render_field form.datestart class="input-group-field" placeholder="Start Date" %}
+        </div>
+        <div class="input-group">
+          <span class="input-group-label">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+	  {% render_field form.dateend class="input-group-field" placeholder="End date" %}
+        </div>
+        <div class="filter-by-dropdown__dropdown-footer">
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="date-dropdown">
+          Date
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+    {% endwith %}
+  </div>
+  <div><input type="hidden" name="page" id="id_page" value="1"></div>
+</form>
+<div class="row">
+  <div class="large-12 columns">
+    <div id="searchresults">
+      <p class="loading text-center"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

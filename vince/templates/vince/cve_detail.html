@@ -1,0 +1,77 @@
+<div class="activity-table">
+  <div class="activity-header">
+    <h5 class="text-center">Account Information</h5>
+  </div>
+   <p class="loading text-center hidden"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></p>
+  <div class="contact-query-list">
+    <div class="row">
+      <div class="large-6 columns">
+	<h3 class="section-title">Account</h3>
+      </div>
+      <div class="large-6 columns text-right">
+        <a id="viewkey" href="{% url 'vince:cveviewkey' cve_service.id %}"><button class="button default small">View Key</button></a>
+	<a href="{% url 'vince:cve_manage' cve_service.id %}"><button class="button default small">Edit Account</button></a>
+      </div>
+      
+    </div>
+    {% if account_error or service_down %}
+    <div class="callout alert">
+      {% if account_error %}<p>{{ account_error }}</p>{% else %}<p>CVE Services not responding.  Please try again later.</p>
+      {% endif %}
+    </div>
+    </div>
+    {% else %}
+
+    <b>Organization:</b>  {{ org.short_name }} {{ org.authority.active_roles|join:", " }}
+    <br/>
+    <b>Email:</b>  {{ account.username }}
+    <br/>
+    <b>First Name:</b>  {{ account.name.first }}
+    <br/>
+    <b>Last Name:</b>  {{ account.name.last }}
+    <br/>
+    <b>Roles:</b>  {{ account.authority.active_roles|join:", " }}
+    <br/>
+    <b>Created:</b> {{ account.time.created }}
+    <br/>
+    <b>Active:</b> {{ account.active }}
+    <hr/>
+    <div class="row">
+      <div class="large-6 columns">
+	<h3 class="section-title">Quota</h3>
+      </div>
+      <div class="large-6 columns text-right">
+	<a href="{% url 'vince:cvelist' cve_service.id %}"><button class="button default small">View Reserved</button></a>
+      </div>
+    </div>
+    <b>Quota:</b>  {{ quota.id_quota }}
+    <br/>
+    <b>Total Reserved:</b>  {{ quota.total_reserved }}
+    <br/>
+    <b>Available:</b>  {{ quota.available }}
+    <br/>
+    <hr/>
+    <h3 class="section-title">Users</h3>
+    <table class="unstriped">
+      <tr>
+        <td><b>Username</b></td>
+        <td><b>Active</b></td>
+        <td><b>First</b></td>
+        <td><b>Last</b></td>
+        <td><b>Roles</b></td>
+        <td><b>Created</b></td>
+      </tr>
+      {% for x in cve_users %}
+      <tr>
+        <td>{{ x.username }}</td>
+        <td>{{ x.active }}</td>
+        <td>{{ x.name.first }}</td>
+        <td>{{ x.name.last }}</td>
+        <td>{{ x.authority.active_roles|join:", " }}</td>
+        <td>{{ x.time.created }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+</div>

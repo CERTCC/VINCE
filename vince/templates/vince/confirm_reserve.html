@@ -1,0 +1,29 @@
+{% load i18n widget_tweaks %}
+<div class="full_modal">
+  <form method="post" action="{{ action }}">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Reserve CVE</h3>
+    </div>
+    <div class="modal-body">
+      {% csrf_token %}
+      {% if error %}
+      <p>{% autoescape off %}{{ error }}{% endautoescape %}
+      {% else %}
+      <p>Confirm the following settings before reserving a CVE{% if vul %} for this vulnerability{% endif %}.</p>
+      {% if form %}
+      {{ form.as_p }}
+	{% endif %}
+	{% endif %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      {% if error %}{% else %}
+      <input class="button alert" type='submit' value='{% trans "Reserve" %}' />
+      {% endif %}
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

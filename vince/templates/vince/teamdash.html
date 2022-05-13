@@ -1,0 +1,63 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags post_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Dashboard" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/teamdash.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 medium-8 small-12 columns">
+      <h2>{{ team.name }} Team Dashboard <a href="{% url 'vince:dashboard' %}" title="personal view"><i class="fas fa-user"></i></a></h2>
+    </div>
+      <div class="large-4 medium-4 small-12 columns text-right">
+      <a href="{% url 'vince:roles' %}">Triage:</a>{% if triage_user %}{% for triage in triage_user %} {{ triage.usersettings.vince_username }} {% endfor %} {% else %}  <b>Unassigned</b>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if other_teams %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning">
+      <p>Looks like you're a member of multiple teams. Switch to the {% for x in other_teams %}<a href="{% url 'vince:teamdash' x.id %}">{{ x }} Team Dashboard</a>{% endfor %}.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+
+  <div class="large-12 columns">
+    <div id="dashdiv" class="dashdiv" action="{% url 'vince:dstat' %}">
+      {% include 'vince/include/team_dashboard_stats.html' %}
+    </div>
+
+    <div class="dashdiv dashtkt">
+
+      <h3 id="ticket-title" action="{% url 'vince:teamtix' team.id %}">Open & In-progress Tickets</h3>
+      <div id="tkt-table" class="tabulator bootstrap" action="{% url 'vince:dashboardtickets' 'Open' %}"></div>
+    </div>
+    <div class="dashpostdiv hidden">
+      <h3>Active Cases</h3>
+      <div id="case-table" class="tabulator bootstrap"></div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

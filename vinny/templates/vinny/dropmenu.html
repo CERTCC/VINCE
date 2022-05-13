@@ -1,0 +1,42 @@
+{% load user_tags %}
+<ul class="vertical menu">
+    <li class="menu-close"><a href="#" data-close title="Close menu">&times;</a></li>
+    <li class="has-submenu {{ dashboard|yesno:'is,not' }}-active">
+      <a href="{% url 'vinny:dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    </li>
+    <li class="has-submenu {{ inboxpage|yesno:'is,not' }}-active">
+      <a href="{% url 'vinny:inbox' %}" class="menu-notify"><i class="fas fa-envelope"></i> Inbox {% if unread_msg_count %}<span class="badge success">{{ unread_msg_count }}</span>{% endif %}</a>
+    </li>
+    <li class="has-submenu {{ casepage|yesno:'is,not' }}-active">
+      <a href="{% url 'vinny:casesearch' %}"><i class="fas fa-briefcase"></i> Cases</a>
+    </li>
+    {% if user.vinceprofile.is_vendor_admin %}
+    <li class="has-submenu {{ contactpage|yesno:'is,not' }}-active">
+      <a href="{% url 'vinny:contact' %}"><i class="fas fa-mobile-alt"></i> My Contact Info</a>
+    </li>
+    {% endif %}
+    {% if user.vinceprofile.is_vendor %}
+    <li class="has-submenu {{ adminpage|yesno:'is,not' }}-active">
+      <a href="{% url 'vinny:admin' %}"><i class="fas fa-user"></i> User Management</a>
+    </li>
+    {% endif %}
+    <li class="has-submenu {{ crpage|yesno:'is,not' }}-active">
+      <a href="{% url 'vinny:reports' %}"><i class="fas fa-archive"></i> My Vulnerability Reports</a>
+    </li>
+    <li class="has-submenu {{ reportpage|yesno:'is,not' }}-active">
+      <a href="{% url 'vinny:report' %}" target="_blank" rel="noopener"><i class="fas fa-file-alt"></i> Report a Vulnerability</a>
+    </li>
+    <li class="has-submenu not-active"><a href="{% url 'cogauth:profile' %}"><i class="fas fa-id-badge"></i> Profile</a></li>
+    <li class="has-submenu not-active"><a href="{% url 'vinny:preferences' %}"><i class="fas fa-envelope"></i> Email Preferences</a></li>
+    <li class="has-submenu not-active"><a href="{% url 'cogauth:password_change' %}"><i class="fas fa-key"></i> Change Password</a></li>
+    {% if user.is_staff %}
+    <li><a href="{% url 'vinnyadmin:index' %}">Admin</a></li>
+    {% endif %}
+    {% if user.vinceprofile.is_track %}
+    <li><a href="{% url 'vince:dashboard' %}">VinceTrack Dashboard</a></li>
+    {% endif %}
+    {% if user|limited %}
+    <li><a href="{% url 'vinny:vcreport' %}"> Reports</a></li>
+    {% endif %}
+    <li class="has-submenu not-active"><a href="{% url 'cogauth:logout' %}"><i class="fas fa-sign-out-alt"></i> Log out</a></li>
+  </ul>

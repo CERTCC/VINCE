@@ -1,0 +1,35 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vulnote.js' %}"></script>
+{% endblock %}
+{% block content %}
+<div class="fullmodal">
+  <form method="POST" action="{% url 'vince:sharevulnote' vulnote.id %}">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Share Vulnerability Note</h3>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to share this vulnerability note with all participants in VinceComm?</p>
+      {% csrf_token %}
+      {{ form.as_p }}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button primary" type='submit' value='{% trans "Yes, Share" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  </form>
+</div>
+
+{% endblock %}
+
+    

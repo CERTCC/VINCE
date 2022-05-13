@@ -1,0 +1,10 @@
+Django
+six
+flake8
+python-coveralls
+celery
+Sphinx
+moto
+twine
+boto3
+fs

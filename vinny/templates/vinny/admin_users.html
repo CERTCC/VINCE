@@ -1,0 +1,65 @@
+{% load i18n humanize user_tags %}
+<div class="row">
+  <div class="large-12 columns">
+    <table class="hover usermgmt">
+    <thead>
+      <tr>
+	<th> Email (Username) </th>
+	<th> Access </th>
+	<th> Date Joined </th>
+	<th> Last Login </th>
+	<th> Actions </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+	<td>{{ u }} ({{ u.vinceprofile.vince_username }})  {% if u|groupadmin:object.id %}<i class="fas fa-crown" title="Group Admin"></i>{% endif %}</td>
+	<td>{% if u|groupadmin:object.id %} admin - all cases {% elif groupcontact.default_access %} user - all cases {% else %} {% if admin %}<a href="{% url 'vinny:caseaccess' object.id u.id %}" class="caseaccess">user - select</a>{% else %} user {% endif %} {% with my_cases=caseaccess|case_access:u.id %}<span class="needtip" title="This user has access to the following cases:<br/> {% for c in my_cases %}{{ CASE_ID }}{{ c }}<br/> {% endfor %}"> ({{ my_cases|length }} cases)</span> {% endwith %}{% endif %}</td>
+	<td>{{ u.date_joined|date:"Y-m-d" }}</td>
+	<td>{{ u.last_login|date:"Y-m-d, G:i" }}</td>
+	{% if admin %}
+	<td> {% if user == u %}<i class="fas fa-trash-alt" title="You can't remove yourself" aria-hidden="true"></i>{% else %}<a href="{% url 'vinny:rmuser' object.id 'user' u.id %}" class="rmuser"><i class="fas fa-trash-alt" aria-hidden="true" title="Remove user from group"></i></a>
+	  {% if u|groupadmin:object.id %}
+	  <a href="{% url 'vinny:promoteuser' groupcontact.id u.id %}" class="adminuser"><i class="fas fa-ban" title="Remove Admin Access"></i></a>
+	  {% else %}
+	  <a href="{% url 'vinny:promoteuser' groupcontact.id u.id %}" class="adminuser"><i class="fas fa-crown" aria-hidden="true" title="Make user group administrator"></i></a>
+	  {% endif %}
+	  {% endif %}
+	</td>
+	{% else %}
+	<td></td>
+	{% endif %}
+      </tr>
+      {% endfor %}
+      {% for u in eligible_users %}
+      <tr>
+        <th>{{ u.email }}</th>
+        <td><i>Eligible*</i></td>
+        <td></td>
+        <td></td>
+        {% if user.username != u.email %}
+        <td> <a href="{% url 'vinny:rmuser' object.id 'contact' u.id %}" class="rmuser"><i class="fas fa-trash-alt" aria-hidden="true"></i></a>
+	</td>
+        {% else %}
+        <td></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+      {% for u in invited_users %}
+      <tr>
+        <th>{{ u.email }}</th>
+        <td><i>Invited**</i></td>
+        <td></td>
+        <td></td>
+        {% if user.username != u.email %}
+        <td> <a href="{% url 'vinny:rmuser' object.id 'contact' u.id %}" class="rmuser"><i class="fas fa-trash-alt" aria-hidden="true"></i></a></td>
+        {% else %}
+        <td></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>

@@ -1,0 +1,51 @@
+<div class="row">
+  <div class="large-9 medium-12 small-12 columns">
+    <div class="row">
+      <div class="large-12 columns">
+        <h2 class="subtitle">{% if title %}{{ title }}{% else %}{% if object.name %}{{ object.name }}{% else %}{{ object.title }}{% endif %}{% endif %}	{% if draft %}<br/> <span class="label info">DRAFT VULNERABILITY NOTE</span>{% endif %}</h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-8 medium-7 columns">
+        <h4>Vulnerability Note {% if object.vu_vuid %}{{ object.vu_vuid }}{% else %}{{ object.vuid }}{% endif %}</h4>
+        <span class="text-muted">Original Release Date: {{ object.datefirstpublished|date:"Y-m-d" }}{% if object.dateupdated %} | Last Revised: {{ object.dateupdated|date:"Y-m-d" }}{% endif %}</span>
+      </div>
+      <div class="large-4 medium-5 large-text-right medium-text-right small-text-left columns">
+        <div id="social-options">
+          <!-- START PRINT BUTTON -->
+          <div id="custom-print-button">
+            <span id="print-button">
+              <a href="#" rel="nofollow" class="popup-print"><i class="fas fa-print"></i></a>
+            </span>
+          </div>
+	  <!-- END PRINT BUTTON -->
+          <!-- START TWEET BUTTON -->
+          <div id="custom-tweet-button">
+            <span id="tweet-button">
+              <a class="popup-twitter" href="https://twitter.com/share?url=https%3A%2F%2F{{ VINCEPUB_URL }}%2Fvuls%2Fid%2F{{object.idnumber}}" target="_blank" rel="nofollow"><i class="fab fa-twitter-square"></i></a>
+            </span>
+          </div>
+          <!-- END TWEET BUTTON -->
+          <!-- START FACEBOOK BUTTON -->
+          <div id="custom-facebook-button" class="fb-share-button">
+            <span id="facebook-button">
+              <a class="popup-facebook" href="https://www.facebook.com/sharer.php?u=https%3A%2F%2F{{ VINCEPUB_URL }}%2Fvuls%2Fid%2F{{object.idnumber}}" target="_blank" rel="nofollow"><i class="fab fa-facebook-square"></i></a>
+            </span>
+          </div>
+          <!-- END FACEBOOK BUTTON -->
+          <!-- START SHARE BUTTON -->
+          <div id="custom-share-button">
+            <span id="share-button">
+              <a class="popup-share" href="http://www.addthis.com/bookmark.php?url=https%3A%2F%2F{{ VINCEPUB_URL }}%2Fvuls%2Fid%2F{{object.idnumber}}" target="_blank" rel="nofollow"><i class="fas fa-plus-square"></i></a>
+            </span>
+          </div>
+          <!-- END SHARE BUTTON -->
+        </div><!-- end social options -->
+      </div> <!-- columns-->
+    </div><!-- end row -->
+    <div class="row column">
+      <hr>
+    </div>
+  </div><!-- end columns -->
+  <div class="large-3 medium-0 small-0 columns"></div>
+</div><!-- end row -->

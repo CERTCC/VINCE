@@ -1,0 +1,121 @@
+{% load i18n vulnote_tags %}
+{% if vulnote %}
+
+{% if vulnote.date_published %}
+<div class="callout success">
+  {% with pub=case.caseaction_set.all|last_published %}
+  <p>{% trans "This vulnerability note was first published on " %} {{ vulnote.date_published|date:"Y-m-d" }} {% if vulnote.date_last_published %} and last published on {{ vulnote.date_last_published|date:"Y-m-d" }}{% if pub.user %} by {{ pub.user.usersettings.vince_username }}{% endif %}{% endif %}.
+    <a href="{% url 'vincepub:vudetail' vulnote.case.vuid %}" target="_blank" rel="noopener">View Vulnote</a>.
+  </p>
+  {% endwith %}
+</div>
+{% else %}
+{% if vulnote.approved %}
+<div class="callout success">
+  <p>{% trans "Congratulations, your vul note has been approved" %}{% if approved_by %} by {{ approved_by|join:", " }}{% endif %}.  {% if vulnote.ticket_to_approve.status != 4 %}Close ticket <a href="{{ vulnote.ticket_to_approve.get_absolute_url }}">{{ vulnote.ticket_to_approve.ticket }}</a> before publishing the vul note.{% elif not case.can_be_resolved %}<dd>{% trans "This case cannot be published until the ticket dependencies are resolved." %}</dd>{% else %}{% trans "You can now publish your vul note." %}{% endif %}</p>
+</div>
+{% elif vulnote.ticket_to_approve %}
+<div class="callout warning">
+  <b>Vul Note pending approval. Refer to the following ticket(s): </b><br/>
+  {% for tkt in approvaltickets %}
+  <a href="{{ tkt.get_absolute_url }}">{{ tkt.ticket_for_url }}</a> {% if tkt.assigned_to %} Assigned to {{ tkt.assigned_to.usersettings.vince_username }} {% else %}Unassigned{% endif %}  {% autoescape off %} {{ tkt.get_status_html }} {% endautoescape %} {% if tkt.review.complete %}<a href="{% url 'vince:reviewdetail' tkt.review.id %}" class="button tiny assignme">View Review</a> {% if tkt.review.approved or vulnote.approved %}{% else %}<button href="{% url 'vince:askapproval' tkt.id %}" id="askapproval" class="tiny button assignme">Ask for Approval</button>{% endif %}{% endif %}<br/>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+    
+<div class="row column">
+<p>
+  {% trans "Showing last " %} {{ revisions|length }} {% trans " revisions. Click each revision to see a list of edited lines. Click the Preview button to see how the note looked at each stage." %}
+</p>
+</div>
+
+{% for revision in revisions %}
+<div class="panel-group">
+<div class="callout secondary" id="accordion{{ revision.revision_number }}">
+  <div class="callout-heading">
+    <a class="callout-toggle" style="float: left;" data-toggle="collapse{{ revision.revision_number }}" href="{% url 'vince:diff' revision.id %}">
+      {% if revision == vulnote.current_revision %}
+      <i class="fas fa-flag"></i>
+      {% else %}
+      <i class="fas fa-plus"></i>
+      {% endif %}
+      {% include "vince/include/revision_info.html" with current_revision=vulnote.current_revision shared=vulnote.revision_shared published=vulnote.revision_published %}
+      <div class="text-muted">
+        <small>
+          {% if revision.user_message %}
+          {{ revision.user_message }}
+          {% elif revision.automatic_log %}
+          {{ revision.automatic_log }}
+          {% else %}
+          ({% trans "no log message" %})
+          {% endif %}
+        </small>
+      </div>
+    </a>
+    <div class="progress progress-striped active" style="display: none; width: 40px; float: left; margin-top: 7px; margin-bottom: -7px;">
+      <div class="bar" style="width: 100%;"></div>
+    </div>
+    <div class="text-right" >
+      {% if revision == article.current_revision %}
+      <a href="#" class="button disabled">
+        <span class="fa fa-lock fa-fw"></span>
+        {% trans "Preview this revision" %}
+      </a>
+      {% else %}
+      {% if revision.reviews %}
+      <a href="{% url 'vince:review' revision.id %}" class="button small"> <i class="fas fa-spell-check"></i> See review</a>
+      {% endif %}
+      <button class="button small fillmodal" vnid="{{ vulnote.id }}" rev="{{ revision.id }}">
+        <span class="fa fa-eye fa-fw"></span>
+        {% trans "Preview this revision" %}
+      </button>
+      {% endif %}
+    </div>
+    <div style="clear: both"></div>
+  </div>
+  <div id="collapse{{ revision.revision_number }}" class="callout-collapse collapse" data-toggler=".expanded">
+    <div class="callout-body diff-container" style="padding: 0;">
+      <dl class="dl-horizontal">
+        <dt>{% trans "Auto log:" %}</dt>
+        <dd>{{ revision.automatic_log|default:"-"|linebreaksbr }}</dd>
+      </dl>
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="linenumber">{% if revision.previous_revision %}#{{revision.previous_revision.revision_number}}{% endif %}</th>
+            <th class="linenumber">#{{revision.revision_number}}</th>
+            <th>{% trans "Change" %}</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+{% endfor %}
+
+
+<div class="large reveal" id="previewModal" data-reveal>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        <iframe name="previewWindow" id="previewWindow" frameborder="0"></iframe>
+      </div>
+      <div class="modal-footer text-right">
+	<a href="{% url 'vince:preview' vulnote.id vulnote.current_revision.id %}" class="button default viewfullscreen">
+	  {% trans "View Full Screen" %}
+	</a>
+        <a href="#" class="button switch-to-revision">
+          <span class="fa fa-flag"></span>
+          {% trans "Switch to this version" %}
+        </a>
+      </div>
+    </div>
+  </div>
+   <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
+{% endif %}

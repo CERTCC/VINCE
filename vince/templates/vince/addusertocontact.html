@@ -1,0 +1,31 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="fullmodal">
+  <div class="modal-content">
+    <form method="POST" action="{% url 'vince:addusercontact' newuser.id %}" id="addusercontact">
+      {% csrf_token %}
+      <div class="modal-header">
+	<h3 class="modal-title">Do you want to add this user to a contact?</h3>
+      </div>
+      <div class="modal-body">
+	<h3>Add user {{ newuser.username }}</h3>
+	<div id="project-label">Search for a contact:</div>
+        <input id="id_contact" class="form-control" type="text" name="contact" />
+        <p>Adding contacts (click submit to continue):</p>
+        <table class="hover unstriped" id="project-description">
+	  
+        </table>
+      </div>
+      <div class="modal-footer text-right">
+	<a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+	<button type="submit" class="approveall primary button" vendorid="{{ object.id }}">Submit</button>
+	
+      </div>
+    </form>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

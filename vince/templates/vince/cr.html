@@ -1,0 +1,80 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize%}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<!--<link rel="stylesheet" href="{% static 'vince/css/tabulator.min.css' %}">-->
+<link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/tickets.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/artifacts.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/closeticket.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/artifactmodal.js' %}"></script>
+{% endblock %}
+									 
+{% block vince_title %}{% trans "Ticket" %}{% endblock %}
+<!-- site-title  -->
+{% block content %}
+{% load widget_tweaks %}
+
+{{ artifactsjs|json_script:"artifacts" }}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Case Request [{{ ticket.queue }}-{{ ticket.id }}] {% autoescape off %}{{ ticket.get_status_html }} {% if ticket.get_status_display == "Closed" %}{{ ticket.get_close_status_html }}{% endif %}{% endautoescape %}</h2>
+    </div>
+    <div class="large-4 columns text-right">
+      {% if ticket.case %}
+      <a href="{% url 'vince:case' ticket.case.id %}" class="button cmu"><i class="fas fa-suitcase"></i> View case {{ticket.case.vu_vuid}}</a>{% else %}
+      {% if vincecomm_link %}
+      <a href="{{ vincecomm_link }}" class="button default small small-only-expanded"><i class="fas fa-eye"></i> View in VinceComm</a>
+      {% endif %}
+      <a href="{% url 'vince:newcase' ticket.id %}" class="button primary small small-only-expanded"><i class="fas fa-suitcase"></i> Create case</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row" id="ticket-info">
+  <div class="large-12 columns">
+    {% include 'vince/cr_table.html' with show_taggle=1 %}
+  </div>
+</div>
+
+<hr>
+
+<div class="row">
+  <div class="small-6 large-6 columns">
+    <h3 class="section-title">Artifacts</h3>
+  </div>
+  <div class="small-6 large-6 columns text-right">
+    <button class="button default" id="addartifact" action="{% url 'vince:artifact' ticket.id %}"><i class="fas fa-plus"></i> Add Artifact</button>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+      {% include 'vince/include/artifacts.html' with empty_message="No artifacts have been created for this ticket" %}
+  </div>
+</div>
+<hr>
+
+<div id="ticket_activity" href="{% url 'vince:ticket_activity' ticket.id %}">
+{% include 'vince/ticket_activity.html' %}
+</div>
+
+<hr>
+{% url 'vince:update' ticket.id as the_url %}
+{% include 'vince/include/ticket_comment.html' with comm_action=the_url close_confirm=1 %}
+
+{% endblock %}
+
+  

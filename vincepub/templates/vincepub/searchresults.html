@@ -1,0 +1,103 @@
+<div class="large-12 medium-12 columns">
+  <div class="blog-post">
+    <div class="row">
+      <div class="large-12 columns">
+	{% if total %}
+	<div class="resultCount"> {{ total }} Results </div>
+	{% elif paginator.count %}
+	<div class="resultCount"> {{ paginator.count }} Results </div>
+	{% endif %}
+      </div>
+    </div>
+    
+    {% if object_list %}
+    {% for note in object_list %}
+    <div class="vulnerability-list">
+      {% with '/vuls/id/'|add:note.idnumber as vul_link %}
+      <h4>
+        <a href="{{ vul_link }}">
+          {{ note.vuid }}: {{ note.name }}
+          {% endwith %}
+        </a>
+      </h4>
+      <h6> Published {{ note.datefirstpublished|date:"F d, Y" }}
+	{% if note.dateupdated != note.datefirstpublished %}
+	<span class="updated-date">Updated {{ note.dateupdated|date:"F d, Y" }}</span>
+	{% endif %}
+      </h6>
+    </div>
+    {% endfor %}
+    {% if is_paginated %}
+    <ul class="pagination text-center" role="navigation" aria-label="Pagination">
+      {% if page_obj.has_previous %}
+      <li class="pagination-previous"><a href="#" next="{{ page_obj.previous_page_number }}" class="search_page">Previous</a></li>
+      {% else %}
+      <li class="pagination-previous disabled">Previous</li>
+      {% endif %}
+      {% for i in paginator.page_range %}
+      {% if page_obj.number == i %}
+      <li class="current"><span class="show-for-sr">You're on page</span> {{ page_obj.number }}</li>
+      {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+	<li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_page">{{ i }}</a></li>
+	{% else %}
+	{% if i == 1 %}
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_page">{{ i }}</a></li>
+      <li class="ellipsis"></li>
+      {% elif forloop.last %}
+      <li class="ellipsis"></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_page">{{ i }}</a></li>
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      
+      {% if page_obj.has_next %}
+      <li class="pagination-next"><a href="#" next="{{ page_obj.next_page_number }};" aria-label="Next page" class="search_page">Next</a></li>
+      {% else %}
+      <li class="pagination-next disabled">Next</li>
+      {% endif %}
+    </ul>
+    {% else %}
+    <ul class="pagination text-center" role="navigation" aria-label="Pagination">
+      {% if object_list.has_previous %}
+      <li class="pagination-previous"><a href="#" next="{{ object_list.previous_page_number }}" class="search_notes">Previous</a></li>
+      {% else %}
+      <li class="pagination-previous disabled">Previous</li>
+      {% endif %}
+      {% for i in object_list.paginator.page_range %}
+      {% if object_list.number == i %}
+      <li class="current"><span class="show-for-sr">You're on page</span> {{ object_list.number }}</li>
+      {% elif i > object_list.number|add:'-3' and i < object_list.number|add:'3' %}
+        <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+        {% else %}
+        {% if i == 1 %}
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      <li class="ellipsis"></li>
+      {% elif forloop.last %}
+      <li class="ellipsis"></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      {% if object_list.has_next %}
+	<li class="pagination-next"><a href="#" next="{{ object_list.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
+      {% else %}
+      <li class="pagination-next disabled">Next</li>
+      {% endif %}
+    </ul>
+    {% endif %}
+
+
+
+    
+    {% else %}
+    <br/>
+    
+    
+    <h3 class="subtitle"> No Results Found </h3>
+    <br/>
+    <br/>
+    {% endif %}
+  </div>
+</div>
+
+ 

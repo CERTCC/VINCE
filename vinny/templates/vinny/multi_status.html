@@ -1,0 +1,35 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load i18n humanize %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>My Groups for Case {{case.vu_vuid}}</h2>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-9 columns">
+    <div class="callout warning">
+      <p>It looks like you are a member of more than one organization that has access to this case.  Please choose an organization you would like to provide a status/statement on their behalf:</p>
+    </div>
+  </div>
+  <div class="large-3 columns"></div>
+</div>
+{% for object in groups %}
+<div class="row">
+  <div class="large-9 columns">
+    <a href="{% url 'vinny:status' case.id object.id %}">
+      <div class="callout secondary">
+	<h4>{{ object.group.groupcontact.contact.vendor_name }}</h4>
+    </div></a>
+  </div>
+  <div class="large-3 columns"></div>
+</div>
+{% endfor %}
+
+{% endblock %}

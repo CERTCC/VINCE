@@ -1,0 +1,30 @@
+{% extends "vince/login.html" %}
+{% load widget_tweaks %}
+{% block title %}VINCE{% endblock %}
+
+{% block content_title %}<div class="modal-header"><h3 class="modal-title">Multi-factor Authentication Required</h3></div>{% endblock %}
+
+{% block content %}
+
+<div id="content-main" class="signin">
+
+  <form method="post" action="{% url 'cogauth:mfa' %}">
+    {% csrf_token %}
+    <div class="row columns">
+      <p>Access to the system requires multi-factor authentication (MFA).
+	Please choose your MFA preference below.  You can
+	choose to use SMS text messages, or time-based one-time (TOTP) passwords as
+	second factors when signing in. To use TOTP, you will need access to an app
+	such as Google Authenticator, Duo, or LastPass Authenticator.
+      </p>
+      <p><b>We recommend using TOTP for the second factor.</b></p>
+      <div><input type="radio" name="mfa" value="TOTP"> TOTP </div>
+      <div><input type="radio" name="mfa" value="SMS"> SMS </div>
+    </div>
+    <div class="row column signin">
+      <button type="submit" name="vrfSubmit" class="primary expanded button"> Save MFA Preference </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

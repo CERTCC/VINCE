@@ -1,0 +1,38 @@
+{% extends template %}
+{% load post_tags %}
+{% block content %}
+{% if full %}
+<div class="card-profile-stats">
+  <div class="row column">
+    <div class="card-profile-stats-intro">
+      {% autoescape off %}{{ object.user|userlogo:"card-profile-stats-intro-pic" }}{% endautoescape %}
+      <h3>{{ object.preferred_username }}</h3>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <p><b>Organization:</b> {{ object.org }}<br/>
+      <b>Title:</b> <i>{{ object.title }}</i></p>
+    
+    <span class="location"><span class="location-icon fa fa-map-marker"></span>
+      <span class="location-text">{{ object.country }}</span></span>
+  </div>
+</div>
+{% else %}
+<div class="card-user-container">
+  <!--card's image-->
+  <div class="card-user-avatar">
+    {% autoescape off %}{{ object.user|userlogo:"user-image" }}{% endautoescape %}
+  </div>
+
+  <!--user info name, bio and location-->
+  <div class="card-user-bio">
+    <h4>{{ object.preferred_username }}</h4>
+    <p>{{ object.org }}<br/>
+    <i>{{ object.title }}</i></p>
+    <span class="location"><span class="location-icon fa fa-map-marker"></span><span class="location-text">{{ object.country }}</span></span>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

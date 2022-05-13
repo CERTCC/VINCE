@@ -1,0 +1,70 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n report_tags ticket_to_link %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "User Graph" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/chart.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/usergraph.js' %}"></script>
+
+{% endblock %}
+{% block content %}
+
+{{ userregjs|json_script:"user_reg" }}
+{{ vendorsjs|json_script:"vendors" }}
+{{ cumulativeusersjs|json_script:"cum_users" }}
+{{ vendorscumulativejs|json_script:"cum_vendors" }}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>VINCE User Report</h2>
+    </div>
+    <div class="large-4 columns text-right">
+      <button class="button cmu" id="download">Export Data</button>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vince:reports' %}#userinfo">Reports</a></li>
+      <li><span class="show-for-sr">Current: </span> User Registrations</li>
+    </ul>
+  </nav>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-8 medium-8 small-8 columns">
+    <h3 class="section-title">Registration By Month</h3>
+  </div>
+  <div class="large-4 medium-4 small-4 columns text-right">
+    <button id="reset1" class="small primary button">Reset</button>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">  
+    <div>
+      <canvas id="myChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<hr>
+<div class="row">
+  <div class="large-12 columns">
+    <h3 class="section-title">Cumulative Registration By Month</h3>
+    <div>
+      <canvas id="CumulativeChart"></canvas>
+    </div>
+    <br/>
+    <br/>
+    <p>Vendor registrations represents the number of users that registered for VINCE <b>and</b> belong to a vendor group.</p>
+  </div>
+</div>
+
+
+{% endblock %}

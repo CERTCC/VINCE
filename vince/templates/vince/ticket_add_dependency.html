@@ -1,0 +1,29 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method='post' action="{{ action }}">
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">{% trans "Add Dependency" %}</h5>
+      </div>
+      <div class="modal-body">
+	<p>Adding a dependency will stop you resolving this ticket/case until the dependent ticket has been resolved or closed.</p>
+	{% for field in form %}
+	<label for='id_{{ field.name }}'>{{ field.label }}</label>
+	{{ field }}
+	{% if field.errors %}<span class='error'>{{ field.errors }}</span>{% endif %}
+	{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+	{% endfor %}
+	{% csrf_token %}
+      </div>
+      <div class="modal-footer text-right">
+	<a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+	<input class="button primary" type='submit' value='{% trans "Save" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>
+{% endblock %}

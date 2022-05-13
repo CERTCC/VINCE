@@ -1,0 +1,141 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/mathjax_config.js' %}"></script>
+<script id="MathJax-script" src="{% static 'vince/js/mathjax/tex-chtml.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vulnote.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-10 columns">
+      <h2>Vulnerability Note Draft for <a href="{% url 'vince:case' case.id %}">{{ case.vu_vuid }}</a></h2>
+    </div>
+    <div class="large-2 columns"></div>
+  </div>
+</div>
+
+<div id="case_id" class="hidden">{{case.id}}</div>
+
+<div class="reveal" id="confirmmodal" data-reveal></div>
+
+<form method="post">{% csrf_token %}
+  <div class="row">
+    <div class="small-8 large-8 columns">
+      {% if warning or nocredit %}
+      <div class="callout alert">
+	
+        <p>{% if warning %}The reporter has indicated they would not like their contact information shared with vendors.<br/>{% endif %}
+	  {% if nocredit %}
+	  The reporter <b>DOES NOT</b> wish to be credited in the vul note.
+	  {% endif %}</p>
+      </div>
+      {% endif %}
+      <div class="vulnote-form">
+	{% if form.errors %}
+	<div class="callout alert">
+	{% for field in form %}
+        {% for error in field.errors %}
+	<p>
+          {{ error|escape }}
+        </p>
+        {% endfor %}
+	{% endfor %}
+	{% for error in form.non_field_errors %}
+        <p>
+          {{ error|escape }}
+        </p>
+	  {% endfor %}
+        </div>
+	{% endif %}
+	
+	<div class="row">
+	  <div class="large-12 columns">
+	    <div class="form-group">
+	      {{ form.current_revision }}
+	      {{ form.title.label_tag }}
+	      {% render_field form.title class="form-control" %}
+	    </div>
+	  </div>
+	</div>
+	<div class="row">
+          <div class="large-12 columns">
+	    <div class="form-group">
+              {{ form.content.label_tag }}
+              {% render_field form.content class="form-control" %}
+	      <small class='form-text text-muted'>{% trans form.content.help_text %}</small>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="large-8 columns">
+            <div class="form-group">
+              {{ form.references.label_tag }}
+              <small class='form-text text-muted'>{% trans form.references.help_text %}</small>
+            </div>
+          </div>
+          <div class="large-4 columns text-right">
+            <button class="button default small" id="syncrefs" href="{% url 'vince:syncrefs' case.id %}">Sync Vul References</button>
+        </div></div>
+	<div class="row">
+          <div class="large-12 columns">
+            <div class="form-group">
+              {% render_field form.references class="form-control" %}
+            </div>
+          </div>
+        </div>
+	
+	<div class="row">
+          <div class="large-12 columns">
+	    <div class="form-group">
+              {{ form.summary.label_tag }}
+	      <small class='form-text text-muted'>{% trans form.summary.help_text %}</small>
+              {% render_field form.summary class="form-control" %}
+            </div>
+          </div>
+        </div>
+        {% for error in field.errors %}
+        <p style="color: red">{% autoescape off %}{{ error }} {% endautoescape %}</p>
+        {% endfor %}
+        <div class="row column">
+	  <button type="submit" name="save" value="1" class="primary button">{% trans "Save Changes" %}</button>
+	  <a href="{% url 'vince:case' case.id %}#vulnote" class="button secondary">Cancel</a>
+        </div>
+    </div>
+  </div>
+    <div class="large-4 columns">
+      <div class="row column" id="filelist">
+	{% include 'vince/vulnote_files.html' %}
+      </div>
+      <br/>
+      {% if vuls %}
+      <div class="row column">
+	<h4>Add Vulnerabilities</h4>
+	<br/>
+	{% for vul in vuls %}
+        <input type="checkbox" title="{{ vul.vul }}" name="vuls[]" value="{{ vul.id }}" class="vul_check" {% if vul.added_to_note %} checked {% endif %}>&nbsp;&nbsp;<span title="{{ vul.description }}">{{ vul.vul }}</span><br/>
+	{% endfor %}
+      </div>
+      <br/>
+      {% endif %}
+      {% if artifacts %}
+      <div class="row column">
+	<h4>Add Artifacts</h4>
+	<br/>
+	
+	{% for art in artifacts %}
+	<input type="checkbox" title="{{ art.title }}" name="artifacts[]" value="{{ art.id }}" class="artifact_check" href="{% url 'vince:artifact_share' art.id %}" {% if art.added_to_note %} checked {% endif %}>&nbsp;&nbsp;<span title="{{ art.description }}">{{ art.title }}&nbsp;&nbsp;<i>({{ art.type }})</i></span><br/>
+	{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+{% endblock %}

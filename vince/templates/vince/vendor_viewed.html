@@ -1,0 +1,20 @@
+{% extends 'vince/card.html' %}
+{% block content %}
+
+
+  {% if timeseen %}
+<p>  Case first viewed {{ timeseen.date|date:"Y-m-d H:i:s:e" }} </p>
+<p> Last viewed:</p>
+<ul>
+  {% for v in views %}
+  <li>{{ v.date_viewed|date:"Y-m-d H:i:s:e" }} by {{ v.user.vinceprofile.preferred_username }}</li>
+  {% endfor %}
+</ul>
+  {% else %}
+
+<p>  Case not viewed </p>
+
+  {% endif %}
+
+
+{% endblock %}

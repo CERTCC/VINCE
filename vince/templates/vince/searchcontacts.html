@@ -1,0 +1,96 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/contact.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Contacts</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      <a href="{% url 'vince:newcontact' %}"><button class="button small primary"><i class="fas fa-plus"></i> Create Contact</button></a>&nbsp;&nbsp;
+      <a href="{% url 'vince:newgroup' %}"><button class="button small default"><i class="fas fa-user"></i> Create Group</button></a>&nbsp;&nbsp;
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-8 columns">
+
+    <form action="{% url 'vince:contacts' %}" method="get" enctype="multipart/form-data" name="searchform" id="searchform">
+      <div class="row">
+	<div class="large-12 medium-12 small-12 columns">
+	  <div class="search-menu">
+	    <ul class="menu simple">
+              <li><a href="#" class="menu-active">All</a></li>
+              <li><a href="#">Contacts</a></li>
+              <li><a href="#">Groups</a></li>
+	      <li><a href="#">VINCE</a></li>
+	    </ul>
+	  </div>
+	  
+	  <div class="input-group">
+	    {% if query %}
+	    <input type="text" class="input-group-field form-control" id="search_vector" name="search_vector" placeholder="Org Name, Group, Case ID, Person, Tag" value="{{query}}">
+	    {% else %}
+	    <input type="text" class="input-group-field form-control" id="search_vector" name="search_vector" placeholder="Org Name, Group, Case ID, Person, Tag">
+	    {% endif %}
+	    <div class="input-group-button">
+              <button type="submit" class="button" ><i class="fas fa-search"></i></button>
+	    </div>
+	    <div class="dropdown-pane" id="sort-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+	      <div class="row column">
+		<ul id="id_sort" class="ul_nobullet">
+		  <li>
+		    <label for="id_sort_0">
+		      <input type="radio" name="sort" value="1" class="ul_nobullet" id="id_sort_0" checked>
+		      Date Modified</label>
+		  </li>
+		  <li>
+		    <label for="id_sort_1">
+		      <input type="radio" name="sort" value="2" class="ul_nobullet" id="id_sort_1">
+		      Alphabetical</label>
+		  </li>
+		</ul>
+		<div class="filter-by-dropdown__dropdown-footer">
+		</div>
+	      </div>
+	    </div>
+	    <div class="filter-by-dropdown">
+	      <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="sort-dropdown" id="sort-dropdownbutton">
+		Sort
+		<i aria-hidden="true" class="fas fa-chevron-down"></i>
+	      </button>
+	    </div>
+	  </div>
+	</div>
+	<input type="hidden" name="page" id="id_page" value="1">
+      </div>
+    </form>
+    <div id="searchresults">
+      <div id="loader"></div>
+    </div>
+  </div>
+  <div class="large-4 columns">
+    <a href="{% url 'vince:initcontactverify' %}" class="button small expanded">Start Contact Verification</a>
+    <a href="{% url 'vince:contactlist' %}" class="button small expanded">Pending Contact Associations</a>
+    {% include 'vince/include/contactactivity.html' with object_list=activity_list title="Contact Activity" %}    
+  </div>
+</div>
+    {% endblock %}
+
+
+    

@@ -1,0 +1,54 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+
+{% block content_title %}
+<div class="row columns">
+  <h3>VINCE Multi-factor authentication</h3>
+</div>{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div class="row columns">
+  <p>Your account is secured using multi-factor authentication (MFA).
+  To finish signing in, turn on or view your MFA device and type the authentication code below.
+  </p>
+</div>
+{% if device %}
+<div class="row columns">
+  <p>Friendly device name: <b>{{ device }}</b></p>
+</div>
+{% endif %}
+{% if action %}
+<form action="{{ action }}" method="post">
+{% else %}
+<form action="." method="post">
+  {% endif %}
+  {% csrf_token %}
+  {% for field in form %}
+  <div class="row columns">
+    {% for error in field.errors %}
+    <div class="callout alert">{% autoescape off %}{{ error }} {% endautoescape %}</div>
+    {% endfor %}
+
+    <label for="id_{{ field.name }}">{% trans field.label %}{% if field.field.required %} <span class="required">*</span>{% endif %}</label>
+    {% if field.help_text %}
+    <small class='form-text text-muted'>{% autoescape off %}{{ field.help_text }}{% endautoescape %}</small>{% endif %}
+    {{ field }}
+  </div>
+  {% endfor %}
+  <div class="row columns">
+    <p class="password-reset-link text-center"><a href="{% url 'cogauth:loginhelp' %}">Troubleshoot MFA</a></p>
+  </div>
+  <div class="row columns">
+    <input type="submit" class="primary button expanded search-button" value="Submit">
+  </div>
+</form>
+<br/>
+
+{% endblock %}
+
+
+

@@ -1,0 +1,17 @@
+<div class="fullmodal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Approve User</h3>
+    </div>
+    <div class="modal-body">
+      This user has been approved.  Do you want to send this user an approval email?
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">No</a>
+      <a href="{% 'vince:sendapprovalemail' %}" class="button alert" type='submit' value='{% trans "Yes" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

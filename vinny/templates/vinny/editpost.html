@@ -1,0 +1,13 @@
+<form method="post" class="editpostform" action="{% url 'vinny:editpost' post.id %}">{% csrf_token %}
+  <div class="row">
+    <div class="large-12 columns">
+      <div class="form-group">
+	<textarea name="post" cols="40" rows="10" id="id_post_{{post.id}}">{{ form.post.value }}</textarea>
+      </div>
+    </div>
+  </div>
+  <div class="row column text-right">
+    <a href="#" class="canceleditpost secondary button"> Cancel</a>
+    <input type="submit" value="Submit" name="vrfSubmit" class="primary button"/>
+  </div>
+</form>

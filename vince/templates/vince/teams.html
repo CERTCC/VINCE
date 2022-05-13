@@ -1,0 +1,62 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "User Admin" %}{% endblock %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Coordination Teams</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      {% if my_team %}
+      <a class="button cmu small-only-expanded" href="{% url 'vince:teamsettings' my_team %}">Team Settings</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+
+    <div class="masonry-css">
+
+      {% for team in teams %}
+      <div class="masonry-css-item">
+	<div class="callout text-center">
+	  <div class="card-user-avatar">
+	    <div class="card-profile-stats-intro">
+	      {% autoescape off %}{{ team|teamlogo:"card-profile-stats-intro-pic" }}{% endautoescape %}
+	    </div>
+	    <div class="links">
+	      <small>{% if team.groupsettings.triage %}<a href="{% url 'vince:triage' team.groupsettings.triage.id %}">Triage</a>{% else %}No Team Queues{% endif %}</small><br/><small><a href="{% url 'vince:reports' team.id %}">Reports</a></small><br/><small><a href="{% url 'vince:teamsettings' team.id %}">Settings</a></small><br/><small><a href="{% url 'vince:cve_dashboard' team.id %}">CVE Services</a></small>
+	    </div>
+	  </div>
+	  <!--user info name, bio and location-->
+	  <div class="card-user-bio text-center">
+	    <h3><a href="{% url 'vince:contact' team.groupsettings.contact.id %}">{{ team.name }}</a></h3>
+	    <hr/>
+	    <h4>Team Members</h4>
+	    <ul>
+	      {% for u in team.user_set.all %}
+	      <li><a href="{% url 'vince:vvuser' u.id %}"> {{ u.usersettings.preferred_username }}</a></li>
+	      {% endfor %}
+	      </ul>
+	  </div>
+	</div>
+      </div>
+      {% endfor %}
+      
+    </div>
+  </div>
+</div>
+{% endblock %}

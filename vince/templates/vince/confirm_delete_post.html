@@ -1,0 +1,25 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <form method="post" action="{% url 'vince:delete_post' post.id %}" id="rmpostform">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Delete Post Draft</h3>
+    </div>
+
+    <div class="modal-body">
+      {% csrf_token %}
+      {% if error %}
+      <p>This post has already been published.  Please go to <a href="{% url 'vinny:case' post.case.id %}">the VINCEComm post</a> to remove.</p>
+      {% else %}
+      <p>Are you sure you want to remove this draft post?</p>
+      {% endif %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button alert" type='submit' value='{% trans "Yes, Remove" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

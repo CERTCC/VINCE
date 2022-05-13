@@ -1,0 +1,49 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize post_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Contact Updates" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Contact Updates Requiring Approval</h2>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% if object_list %}
+    {% for ticket in object_list %}
+    <article class="article-row">
+      <div class="article-row-img">
+	{% for c in ticket.contact.groupcontact_set.all %}{% autoescape off %}{{ c|gclogo:"profile-pic" }}{% endautoescape %}{% endfor %}
+      </div>
+      <div class="article-row-content">
+	<p class="article-row-content-description">
+	  <a href="{% url 'vince:contact' ticket.contact.vendor_id %}">
+	    {{ ticket.contact.vendor_name }} 
+	  </a>
+	</p>
+      <time class="article-row-content-time"><i class="far fa-clock"></i> Last updated {{ ticket.action.created|naturaltime }} by {{ ticket.action.user.vinceprofile.preferred_username }}  </time>
+      </div>
+      
+    </article>
+    {% endfor %}
+    {% else %}
+    <br/>
+    <h3 class="subtitle"> No Results Found </h3>
+    <br/>
+    <br/>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+
+

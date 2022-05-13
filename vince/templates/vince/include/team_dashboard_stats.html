@@ -1,0 +1,17 @@
+{% load i18n dashboard_tags %}
+<div class="row">
+  <div class="large-2 medium-4 small-6 columns dash_header">
+    <a href="{% url 'vince:teamtix' team.id %}" class="filtercase" id="ticketdash"><h2><i class="fas fa-clipboard-list"></i> {{ tickets|length}}</h2>
+      <h5>Open Tickets</h5></a><div class="hidden">Open & In-Progress Tickets</div>
+  </div>
+    <div class="large-2 medium-4 small-6 columns dash_header">
+    <a href="{% url 'vince:teamcase' team.id %}" class="filtercase" id="casedash"><h2><i class="fas fa-briefcase"></i> {{ cases }}</h2>
+      <h5>Active Cases</h5></a><div class="hidden">Case Queue</div>
+  </div>
+  <div class="large-2 medium-4 small-6 columns dash_header">
+    <a href="{% url 'vince:teamtix' team.id %}?queue=inbox" class="filtercase" id="msgdash"><h2><i class="fas fa-inbox"></i> {{ new_messages }}</h2>
+      <h5>Messages</h5></a><div class="hidden">Message Tickets</div>
+  </div>
+  <div class="large-6 columns">
+    </div>
+</div>

@@ -1,0 +1,106 @@
+{% load i18n humanize %}
+<div class="activity-table">
+  <div class="activity-header">
+    {% if title %}
+    <h5>{% trans title %}</h5>
+    {% else %}
+    <h5>{% trans "Activity" %}</h5>
+    {% endif %}
+  </div>
+  {% for item in activity_list %}
+  <div class="activity-log">
+    {% if item.action == 1 %}
+    <div class="row">
+      <div class="small-1 medium-1 large-1 columns">
+	<i class="fas fa-plus-square" aria-hidden="true"></i>
+      </div>
+      <div class="small-11 medium-11 large-11 columns">
+	{% if item.contact %}
+	{{item.user.usersettings.preferred_username}} created vendor: <a href="{% url 'vince:contact' item.contact.id %}">{{ item.contact.vendor_name}}</a>
+	{% elif item.group %}
+        {{item.user.usersettings.preferred_username}} created group: <a href="{% url 'vince:group' item.group.id %}">{{ item.group.name }}</a>
+	{% endif %}
+	{% elif item.action == 2 %}
+	<div class="row">
+        <div class="small-1 medium-1 large-1 columns">
+          <i class="fas fa-trash-alt" aria-hidden="true"></i>
+        </div>
+        <div class="small-11 medium-11 large-11 columns">
+      {{item.user.usersettings.preferred_username}} removed vendor {{ item.contact.vendor_name }}
+      {% elif item.action == 3 %}
+      <div class="row">
+        <div class="small-1 medium-1 large-1 columns">
+          <i class="fas fa-edit" aria-hidden="true"></i>
+        </div>
+        <div class="small-11 medium-11 large-11 columns">
+	  {{ item.text }}
+	  {% if show_contact and item.contact.vendor_name %}
+	  for <b>{{ item.contact.vendor_name }}</b>
+	  {% endif %}
+
+	  {% elif item.action == 4 %}
+	  <div class="row">
+	    <div class="small-1 medium-1 large-1 columns">
+	      <i class="fas fa-plus-square" aria-hidden="true"></i>
+	    </div>
+	    <div class="small-11 medium-11 large-11 columns">
+	      {{ item.text }}
+	      {% if show_contact and item.contact.vendor_name %}
+	      for <b>{{ item.contact.vendor_name }}</b>
+	      {% endif %}
+
+	      {% elif item.action == 5 %}
+	      <div class="row">
+		<div class="small-1 medium-1 large-1 columns">
+		  <i class="fas fa-trash-alt" aria-hidden="true"></i>
+		</div>
+		<div class="small-11 medium-11 large-11 columns">
+		  {{ item.text }}
+		  {% if show_contact and item.contact.vendor_name %}
+		  for <b>{{ item.contact.vendor_name }}</b>
+		  {% endif %}
+
+		  {% elif item.action == 6 %}
+		  <div class="row">
+                    <div class="small-1 medium-1 large-1 columns">
+                      <i class="fas fa-tag" aria-hidden="true"></i>
+                    </div>
+                    <div class="small-11 medium-11 large-11 columns">
+                      {{ item.text }}
+		      for <b>{{ item.contact.vendor_name }}</b>
+		  {% else %}
+		  <div class="row">
+                    <div class="small-1 medium-1 large-1 columns">
+		      {% if item.field == "NEW" %}
+		      <i class="fas fa-plus primary"></i>
+		    </div>
+                    <div class="small-11 medium-11 large-11 columns">
+                      {{item.action.user.vinceprofile.preferred_username }} {{ item.field }} {{ item.model }} {{ item.new_value }}
+
+		      {% elif item.field == "REMOVED" %}
+		      <i class="fas fa-minus warning"></i>
+		    </div>
+                    <div class="small-11 medium-11 large-11 columns">
+		      {{item.action.user.vinceprofile.preferred_username }} {{ item.field }} {{ item.model }} {{ item.old_value }}
+
+		      {% else %}
+		      <i class="fas fa-edit"></i>
+		    </div>
+                    <div class="small-11 medium-11 large-11 columns">
+		      {{item.action.user.vinceprofile.preferred_username }} modified {{ item.model }}:<b>{{ item.field }}</b>
+		      {% if item.old_value %}
+		      <span class="removedata">{{ item.old_value }} </span>
+		      {% endif %}
+		      {% if item.new_value %}
+		      <span class="adddata">{{ item.new_value }}</span>
+		      {% endif %}
+		      {% endif %}
+		  {% endif %}
+		  <br/><span class="activity_time">
+		    {{ item.action_ts|timesince }} ago by {% if item.user.usersettings.preferred_username %} {{ item.user.usersettings.preferred_username }} {% else %} {{ item.action.user.vinceprofile.preferred_username }}{% endif %}</span>
+    </div>
+  </div>
+    </div>
+    {% empty %}
+    <p> No recent activity </p>
+    {% endfor %}

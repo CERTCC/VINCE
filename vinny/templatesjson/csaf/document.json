@@ -1,0 +1,63 @@
+{
+    "acknowledgments": [
+        {
+            "urls": [
+                "%(publicurl)s"
+                
+            ]
+        }
+    ],
+    "category": "generic_csaf",
+    "csaf_version": "2.0",
+    "notes": [
+        {
+            "category": "summary",
+            "text": %(summary)s,
+            "title": "Summary"
+        },
+        {
+            "category": "legal_disclaimer",
+            "text": "%(LEGAL_DISCLAIMER)s",
+            "title": "Legal Disclaimer"
+        }
+    ],
+    "publisher": {
+        "category": "coordinator",
+        "contact_details": "Email: %(CONTACT_EMAIL)",
+        "issuing_authority": "%(ORG_NAME)",
+        "name": "%(ORG_NAME)",
+        "namespace": "%(WEBSITE)"
+    },
+    "references": [
+        {
+            "url": "References link here",
+            "summary": "%(ORG_NAME) vulnerability disclosure policy"
+        },
+        {
+            "summary": "%(ORG_NAME) document released",
+            "category": "self",
+            "url": "%(publicurl)s"
+        }
+    ],
+    "title": %(title)s,
+    "tracking": {
+        "current_release_date": "%(due_date)s",
+        "generator": {
+            "engine": {
+                "name": "VINCE",
+                "version": "%(VINCE_VERSION)s"
+            }
+        },
+        "id": "%(vu_vuid)s",
+        "initial_release_date": "%(due_date)s",
+        "revision_history": [
+            {
+                "date": "%(due_date)s",
+                "number": "1.0.0",
+                "summary": "Public released after peer review"
+            }
+        ],
+        "status": "final",
+        "version": "1.0.0"
+    }
+}

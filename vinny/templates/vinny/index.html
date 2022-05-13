@@ -1,0 +1,8 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Login" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/vinny_tokens.js' %}"></script>
+{% endblock %}

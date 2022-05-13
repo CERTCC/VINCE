@@ -1,0 +1,90 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Manage Ticket Assignment" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/assignment.js' %}"></script>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Manage Auto Assignment</h2>
+    </div>
+    <div class="large-6 columns text-right">
+
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="reveal" id="modal" data-reveal></div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <p>Add users to each role.  Roles can be added in <a href="{% url 'admin:index' %}">VINCE Admin</a>.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-8 columns">
+    {% for role in roles %}
+    <div class="callout secondary">
+      <div class="row">
+	<div class="large-8 columns">
+	  <h3>{{ role.role }} {% if role.group %}({{ role.group.name }}){% else %}(Global){% endif %}</h3>
+	</div>
+	<div class="large-4 columns text-right">
+	  <a href="{% url 'vince:adduserrole' role.id %}" class="add_user button tiny primary">Add user</a>
+	</div>
+      </div>
+    </div>
+
+    <table class="unstriped">
+      {% for u in assignments|in_role:role %}
+      {% if forloop.first %}
+      <tr>
+	<td>
+	  <b>User</b>
+	</td>
+	<td><b>Weight</b></td>
+	<td><b>Probability</b></td>
+	<td></td>
+      </tr>
+      {% endif %}
+      <tr>
+	<td>
+	  {{ u.user.usersettings.preferred_username }}
+	</td>
+	<td>
+	  {{ u.weight }}
+	</td>
+	<td>
+	  {{ u.probability|floatformat:1 }}%
+	</td>
+	<td class="text-right">
+	  <a href="{% url 'vince:adduserrole' role.id %}" class="rm_user" value="{{ u.id }}" title="remove user"><i class="fas fa-trash-alt"></i></a>
+	  <a href="{% url 'vince:adduserrole' role.id %}" class="edit_user" value="{{ u.id }}" title="edit user weight"><i class="fas fa-user-edit"></i></a>
+	</td>
+	  
+      </tr>
+      {% empty %}
+      <tr><td colspan=3>No users assigned to the {{ role.role }} role.</td></tr>
+      {% endfor %}
+    </table>
+    {% endfor %}
+  </div>
+</div>
+    
+{% endblock %}

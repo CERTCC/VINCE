@@ -1,0 +1,186 @@
+{% load inbox_tags %}
+<div class="row">
+  <div class="large-12 columns">
+<ul class="category-list list-unstyled">
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fas fa-envelope"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Email Lists</h1>
+      <div class="row">
+	<div class="large-12 columns">
+	  <table class="unstriped">
+	    
+	    {% for email in object.vincecommemail_set.all|email_lists %}
+	    <tr>
+	      <td>{% if email.public %}<span class="label success">Public</span>{% else %}<span class="label warning">Not Public</span>{% endif %}</td>
+	      <td>{{ email.email }}</td>
+	      <td>{{ email.name }}</td>
+	      <td>{{ email.email_type}}</td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+    </div>
+  </li>
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-key"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">PGP Keys</h1>
+      <div class="row">
+	<div class="large-12 columns">
+	  <table class="unstriped">
+	    {% for crypto in object.vincecommpgp_set.all %}
+	    <tr>
+	      <td>{% if crypto.public %}<span class="label success">Public</span>{% else %}<span class="label warning">Not Public</span>{% endif %}</td>
+	      <td><b>Key ID:</b> {{ crypto.pgp_key_id }}</td>
+	      {% if crypto.pgp_email %}
+	      <td><b>Email:</b> {{ crypto.pgp_email }}</td>
+	      {% endif %}
+	      <td><b>Valid:</b> {{ crypto.startdate }} - {{ crypto.enddate }}</td>
+	      <td>{% if crypto.revoked %}<b>[REVOKED]</b>{% endif %}</td>
+	      
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+    </div>
+  </li>
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-home"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Location</h1>
+      <div class="row">
+	<div class="large-12 columns">
+	  <table class="unstriped">
+	    {% for postal in object.vincecommpostal_set.all %}
+	    <tr>
+	      <td>{% if postal.public %}<span class="label success">Public</span>{% else %}<span class="label warning">Not Public</span>{% endif %}</td>
+	      <td>
+		{% if postal.address_type == "School" %}
+		<i class="fas fa-school" title="School"></i>
+		{% elif postal.address_type == "Home" %}
+		<i class="fas fa-home" title="home"></i>
+		{% elif postal.address_type == "Work" %}
+		<i class="fas fa-building" title="Work"></i>
+		{% else %}
+		<i class="fas fa-address-card" title="Other"></i>
+		{% endif %}
+	      </td> 
+	      <td>{{ postal.street }}</td>
+	      <td>{% if postal.street2 %}{{postal.street2}}{% endif %}</td>
+	      <td>{{ postal.city }}</td>
+	      <td>{{ postal.state }}</td>
+	      <td>{{ postal.zip_code }}</td>
+	      <td>{{ postal.country }}</td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+    </div>
+  </li>
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-mobile-alt"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Phone Numbers</h1>
+      <div class="row">
+	<div class="large-12 columns">
+	  <table class="unstriped">
+	    {% for phone in object.vincecommphone_set.all %}
+	    <tr>
+	      <td>{% if phone.public %}<span class="label success">Public</span>{% else %}<span class="label warning">Not Public</span>{% endif %}</td>
+	      <td>{% if phone.phone_type == "Fax" %}
+		<i class="fas fa-fax" title="fax"></i>
+		{% elif phone.phone_type == "Mobile" %}
+		<i class="fas fa-mobile-alt" title="mobile"></i>
+		{% elif phone.phone_type == "Home" %}
+		<i class="fas fa-home" title="home"></i>
+		{% elif phone.phone_type == "Office" %}
+		<i class="fas fa-building" title="office"></i>
+		{% else %}
+		<i class="fas fa-phone" title="hotline"></i>
+		{% endif %}
+		{{ phone.country_code }} {{ phone.phone }} {% if phone.comment %}({{ phone.comment }}){% endif %}</td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+    </div>
+  </li>
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-globe-americas"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Website</h1>
+      <div class="row">
+	<div class="large-12 columns">
+	  <table class="unstriped">
+	    {% for web in object.vincecommwebsite_set.all %}
+	    <tr>
+	      <td>{% if web.public %}<span class="label success">Public</span>{% else %}<span class="label warning">Not Public</span>{% endif %}</td>
+	      <td><a href="{{ web.url }}">{{ web.url }}</a> {% if web.description %}({{ web.description }}){% endif %}</td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+    </div>
+    {% if show_users %}{% else %}
+  <li class="category-item media">
+      <div class="category-icon">
+        <span class="sei-icon"><i class="fa-fw fas fa-users"></i></span>
+      </div>
+      <div class="media-body">
+        <h1 class="category-title border-bottom border-sei-gray-lightest">VINCE Users</h1>
+	<div class="row">
+	  <div class="large-12 columns">
+	    <table class="unstriped">
+	      {% for user in vince_users %}
+	      <tr>
+		<td>{{ user }} ({{ user.vinceprofile.vince_username }})
+		</td>
+	      </tr>
+	      {% endfor %}
+	    </table>
+	  </div>
+	</div>
+      </div>
+    </li>
+    <li class="category-item media">
+      <div class="category-icon">
+        <span class="sei-icon"><i class="fa-fw fas fa-user-tie"></i></span>
+      </div>
+      <div class="media-body">
+        <h1 class="category-title border-bottom border-sei-gray-lightest">VINCE Group Admin(s)</h1>
+	<div class="row">
+	  <div class="large-12 columns">
+	    <table class="unstriped">
+	      {% for admin in gadmins %}
+	      <tr>
+		<td>{{ admin.email }} ({{ admin.vinceprofile.vince_username }})</td>
+	      </tr>
+	      {% empty %}
+	      <tr>
+		<td><b>A group admin has not been selected.  Please <a href="{% url 'vinny:sendmsg' %}"> message CERT/CC</a> to add a group admin</b></td>
+	      </tr>
+	      {% endfor %}
+	    </table>
+	  </div>
+	</div>
+      </div>
+    </li>{% endif %}
+</ul>
+  </div>
+</div>

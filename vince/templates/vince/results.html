@@ -1,0 +1,88 @@
+{% load i18n humanize ticket_to_link %}
+<div class="row">
+  <div class="large-9 medium-9 columns">
+    <div class="blog-post">
+      <div class="row column">
+	{% if total %}
+	<div class="resultCount"> Showing results {{ object_list.start_index }} - {{ object_list.end_index }} of {{ total }} Results </div>
+	{% elif paginator.count %}
+	<div class="resultCount"> {{ paginator.count }} Results </div>
+	{% endif %}
+      </div>
+    {% if object_list %}
+    {% for ticket in object_list %}
+    <div class="row column">
+      <div class="vulnerability-list">
+	<h4>
+	  {% if ticket.vendor_name %}
+	  <i class="far fa-address-book"></i>  <a href="{% url 'vince:contact' ticket.id %}">{{ ticket.vendor_name }}</a>  {% autoescape off %} {{ ticket.get_tag_html }}{% endautoescape %}
+
+	  {% elif ticket.vul or ticket.cve_name %}
+	  {% if ticket.case %}
+	  <i class="fas fa-skull"></i> <a href="{{ ticket.get_absolute_url }}">{{ ticket.vul }}</a> {% autoescape off %} {{ ticket.get_tag_html }}{% endautoescape %}
+	  {% else %}
+	  {% if ticket.vul %}
+	  <i class="fas fa-skull"></i> <a href="{{ ticket.vul.get_absolute_url }}">{{ ticket.vul.vul }}</a> {% autoescape off %} {{ ticket.vul.get_tag_html }}{% endautoescape %}
+	  {% else %}
+	  <i class="fas fa-skull"></i> {{ ticket.cve_name }} - Case Removed
+	  {% endif %}
+	  {% endif %}
+	  {% elif ticket.preferred_username %}
+          <i class="fas fa-user" title="VINCE User"></i>  <a href="{% url 'vince:vcuser' ticket.user.id %}">{% if ticket.user.get_full_name %}{{ ticket.user.get_full_name }} ({{ ticket.preferred_username }}){% else %}{{ ticket.preferred_username }}{% endif %}</a>
+	  {% else %}
+	  {% if ticket.queue %}
+	  <i class="fas fa-clipboard-list"></i> <a href="{{ ticket.get_absolute_url }}"> [{{ ticket.queue }}-{{ ticket.id }}] {{ ticket.title }}</a> {% autoescape off %}{{ ticket.get_status_html }} {{ ticket.get_tag_html }}{% endautoescape %}
+	  {% elif ticket.group_type %}
+	  <i class="fas fa-users" title="Group"></i> <a href="{% url 'vince:group' ticket.id %}" title="Group">{{ ticket.name }}</a>
+	  {% else %}
+	    <i class="fas fa-briefcase"></i> <a href="{{ ticket.get_absolute_url }}">  {% if ticket|case_access:user %}{{ ticket.get_title }}{% else %}{{ ticket.vu_vuid }}{% endif %}</a> {% autoescape off %}{{ ticket.get_status_html }} {{ ticket.get_tag_html }} {{ ticket.get_owner_html }}{% endautoescape %}
+	      {% endif %}
+	  {% endif %}
+	</h4>
+	<h6> Last updated {{ ticket.modified|naturaltime }}</h6>
+	{% if note.dateupdated != note.datefirstpublished %}
+	<span class="updated-date">Updated {{ note.dateupdated|date:"F d, Y" }}</span>
+	{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    <div class="row column">
+    <ul class="pagination" role="navigation" aria-label="Pagination">
+      {% if object_list.has_previous %}
+      <li class="pagination-previous"><a href="#" next="{{ object_list.previous_page_number }}" class="search_notes">Previous</a></li>
+      {% else %}
+      <li class="pagination-previous disabled">Previous</li>
+      {% endif %}
+      {% for i in object_list.paginator.page_range %}
+      {% if object_list.number == i %}
+      <li class="current"><span class="show-for-sr">You're on page</span> {{ object_list.number }}</li>
+      {% elif i > object_list.number|add:'-3' and i < object_list.number|add:'3' %}
+        <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+        {% else %}
+        {% if i == 1 %}
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      <li class="ellipsis"></li>
+      {% elif forloop.last %}
+      <li class="ellipsis"></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      {% if object_list.has_next %}
+      <li class="pagination-next"><a href="#" next="{{ object_list.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
+      {% else %}
+      <li class="pagination-next disabled">Next</li>
+      {% endif %}
+    </ul>
+    {% else %}
+    <br/>
+    <h3> No Results Found </h3>
+    <br/>
+    <br/>
+    {% endif %}
+    </div>
+    </div>
+  </div><div class="large-3 columns">
+  </div>
+</div>
+

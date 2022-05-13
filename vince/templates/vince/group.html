@@ -1,0 +1,138 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/group.js' %}"></script>
+{% endblock %}
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Contact Group: {{ group.name }}</h2>
+    </div>
+    <div class="large-4 columns text-right">
+      <a href="{% url 'vince:editgroup' object.id %}" class="ticket-edit"><button class="button cmu"><i class="fas fa-pencil-alt"></i> {% trans "Edit Group" %}</button></a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{message.tags}}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if contacts_without_keys or expired_keys_contacts or contacts_without_emails %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert" role="alert">
+      <p><b> <span style="color:red;">WARNING</span> - see list below for details </b><br/>
+	{% if contacts_without_keys %}
+	This group has contact(s) without keys<br/>
+	{% endif %}
+	{% if expired_keys_contacts %}
+	This group has contact(s) with expired keys<br/>
+	{% endif %}
+	{% if contacts_without_emails %}
+	This group has contact(s) without email addresses<br/>
+	{% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-9 columns">
+    <div class="case-container">
+      <ul class="tabs" data-tabs id="case-tabs" data-deep-link="true" data-update-history="true">
+        <li class="tabs-title is-active"><a href="#details" aria-selected="true"> <i class="fas fa-mobile-alt"></i> Details</a></li>
+        <li class="tabs-title"><a data-tabs-target="cases" href="#cases"><i class="fas fa-briefcase"></i> Cases</a></li>
+      </ul>
+      <div class="tabs-content" data-tabs-content="case-tabs">
+        <div class="tabs-panel is-active" id="details">
+	  {% if object.status == "Active" %}
+	  <h4>{{ object.name }} Group (Active)</h4>
+	  {% else %}
+	  <h4>{{ object.name }} Group (Inactive)</h4>
+	  {% endif %}
+	  <table class="hover tickets">
+	    <thead>
+              <tr class="row_tablehead"><td colspan="2">
+		  <span class="ticket_toolbar">
+		    <a href="{% url 'vince:rmgroup' object.id %}" class="ticket-delete"><button class="button tiny alert"><i class="far fa-trash-alt"></i> {% trans "Delete" %}</button></a>
+		  </span>
+		</td>
+	      </tr>
+              <tr><th colspan='4'>SRMail: <i>{{ object.srmail_peer_name }}</i></th></tr>
+	    </thead>
+	    <tbody>
+	      {% if object.description %}
+              <tr>
+		<th colspan='4'>{% trans "Description" %}: {{ object.description }}</th>
+              </tr>
+              {% endif %}
+              {% if object.comment %}
+              <tr>
+		<th colspan='4'>{% trans "Comment" %}: {{ object.comment }}</th>
+              </tr>
+              {% endif %}
+              <tr>
+		<th width="150">{% trans "Type" %}</th>
+		<td>{{ object.group_type }}</td>
+              </tr>
+	      <tr>
+		<th colspan="4">{% trans "Members" %} <!--<a id="downloadList" title="Download List of Group Members" class="needtip"><i class="fa fa-download fa-3" aria-hidden="true" id="downloadlist"></i></a>--></th>
+	      </tr>
+	      <tr><td colspan='4'>
+		  {% for member in group_members %}
+		  <ul>
+		    <li><a href="{% url 'vince:contact' member.contact.id %}">{{member.contact.vendor_name}}</a> {% if member.contact in contacts_without_keys %} <b>NO KEY</b>{% endif %}{% if member.contact in contacts_without_emails %} <b>NO EMAIL</b>{% endif %}</li>
+		  </ul>
+		  {% endfor %}
+		  {% if groupmembers %}
+		  <hr>
+		  <b>GROUPS</b>
+		  <hr>
+		  {% endif %}
+		  {% for member in groupmembers %}
+		  <ul>
+		    <li><a href="{{ member.get_absolute_url }}">{{ member.name }}</a> </li>
+		  </ul>
+		  {% endfor %}
+		  {# if forloop.counter|divisibleby:4 #}
+		  <!--</tr><tr>-->
+		  {# endif #}
+	      </td></tr>
+	      
+	  </table>
+	</div>
+	<div class="tabs-panel" id="cases">
+	  {% for c in cases %}
+          <div class="contact-case-list">
+            <div class="row">
+              <div class="large-8 columns">
+		<h4>
+                  <a href="{{ c.case.get_absolute_url }}#vendors">
+                    {{ c.case.get_title }}</a>
+		</h4>
+                <h6> Last updated {{ c.case.modified|naturaltime }}</h6>
+              </div>
+              <div class="large-4 columns text-right">
+                {% autoescape off %}{{ c.case.get_status_html }}{% endautoescape %}
+              </div>
+	    </div>
+	  </div>
+	  {% endfor %}
+	</div>
+      </div>
+    </div>
+  </div>
+  <div class="large-3 medium-3 columns">
+    {% include 'vince/include/groupactivity.html' with object_list=activity %}
+  </div>
+</div>
+{% endblock %}
+

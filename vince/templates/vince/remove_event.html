@@ -1,0 +1,22 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <form method="post" action="{% url 'vince:triage_remove' %}" id="rmeventform">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Remove Event</h3>
+    </div>
+
+    <div class="modal-body">
+      {% csrf_token %}
+      <p>Are you sure you want to remove this event?</p>
+      <input class="hidden" name="event" value="{{ event.id }}">
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button alert" type='submit' value='{% trans "Yes, Remove" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

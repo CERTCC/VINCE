@@ -1,0 +1,96 @@
+{% load inbox_tags %}
+{% if page_obj %}
+<div class="resultCount"> Showing results {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ paginator.count }} Results </div>
+{% elif total %}
+<div class="resultCount"> Showing results {{ cases.start_index }} - {{ cases.end_index }} of {{ total }} Results </div>
+{% elif paginator.count %}
+<div class="resultCount"> {{ paginator.count }} Results </div>
+{% endif %}
+
+{% if dashboard %}
+<div class="case-category">  
+  {% if cases|open|length %}
+  <h3> Your active cases</h3>
+  <ul class="case-list">
+    {% for case in cases|open %}
+    {% include 'vinny/include/dash_case.html' with case=case %}
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+<div class="case-category">
+  {% if cases|published|length %}
+  <h3> Your active published cases</h3>
+  <ul class="case-list">
+    {% for case in cases|published %}
+    {% include 'vinny/include/dash_case.html' with case=case %}
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% else %}
+{% for case in cases %}
+{% include 'vinny/include/dash_case.html' with case=case %}
+{% empty %}
+<h4>No cases matched your filter criteria</h4>
+{% endfor %}
+{% endif %}
+{% if cases.paginator %}
+<ul class="pagination text-center" role="navigation" aria-label="Pagination">
+  {% if cases.has_previous %}
+  <li class="pagination-previous"><a href="#" next="{{ cases.previous_page_number }}" class="search_notes">Previous</a></li>
+  {% else %}
+  <li class="pagination-previous disabled">Previous</li>
+  {% endif %}
+  {% for i in cases.paginator.page_range %}
+  {% if cases.number == i %}
+  <li class="current"><span class="show-for-sr">You're on page</span> {{ cases.number }}</li>
+  {% elif i > cases.number|add:'-3' and i < cases.number|add:'3' %}
+  <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+  {% else %}
+  {% if i == 1 %}
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      <li class="ellipsis"></li>
+      {% elif forloop.last %}
+      <li class="ellipsis"></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      {% if cases.has_next %}
+      <li class="pagination-next"><a href="#" next="{{ cases.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
+      {% else %}
+      <li class="pagination-next disabled">Next</li>
+      {% endif %}
+  </ul>
+{% else %}
+
+<ul class="pagination text-center" role="navigation" aria-label="Pagination">
+  {% if page_obj.has_previous %}
+  <li class="pagination-previous"><a href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+  {% else %}
+  <li class="pagination-previous disabled">Previous</li>
+  {% endif %}
+  {% for i in page_obj.page_range %}
+  {% if page_obj.number == i %}
+  <li class="current"><span class="show-for-sr">You're on page</span> {{ page_obj.number }}</li>
+  {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+  <li><a href="?page={{ i }}" aria-label="Page {{ i }}">{{ i }}</a></li>
+  {% else %}
+  {% if i == 1 %}
+  <li><a href="?page={{ i }}" aria-label="Page {{ i }}">{{ i }}</a></li>
+    <li class="ellipsis"></li>
+    {% elif forloop.last %}
+    <li class="ellipsis"></li>
+    <li><a href="?page={{ i }}" aria-label="Page {{ i }}">{{ i }}</a></li>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+    <li class="pagination-next"><a href="?page={{ page_obj.next_page_number }}" aria-label="Next page">Next</a></li>
+    {% else %}
+    <li class="pagination-next disabled">Next</li>
+    {% endif %}
+</ul>
+
+{% endif %}

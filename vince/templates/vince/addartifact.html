@@ -1,0 +1,59 @@
+{% extends "vince/modal.html" %}
+{% load i18n widget_tweaks %}
+
+{% block content %}
+<div class="modal form_modal">
+  <form id="addartifactform" method="post" {% if ticket %} action="{% url 'vince:artifact' ticket.id %}" {% else %} action="{% url 'vince:case_artifact' case.id %}" {% endif %} enctype="multipart/form-data">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add an artifact</h5>
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+        {% for field in form %}
+        {% if field.name == "attachment" %}
+        <div class="row hidden" id="artifact_attachment">
+          {% elif field.name == "value" %}
+          <div class="row" id="artifact_value">
+            {% else %}
+            <div class="row">
+              {% endif %}
+              <div class="form-group">
+                <div class="large-3 columns text-right">
+                  <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+                </div>
+                <div class="large-9 columns">
+                  {% if field.name == "taggles" %}
+		  <div class="taggle_input custom martie" id="taggs" href="{% url 'vince:auto_tags' %}"></div>
+                  {% elif field.name == "attachment" %}
+                  <div class="row attachment">
+                    <div class="large-6 medium-6 columns">
+                      <label for="id_attachment" class="vulupload">Choose a File</label>
+                      {% render_field form.attachment class="form-control show-for-sr" %}
+                    </div>
+                    <div class="large-6 medium-6 columns">
+                      <div id="file-title-wrap">
+                        <div class="file-title-remove"><i class="fas fa-times"></i></div>
+                      </div>
+                    </div>
+                  </div>
+		  {% else %}
+                  {{ field }}
+                  {% if field.help_text %}<small class='form-text text-muted'>({% trans field.help_text %})</small>{% endif %}
+                  {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="modal-footer text-right">
+            <button type="submit" name="vrfSubmit" class="button primary"><i class="fas fa-plus"></i> Create Artifact</button>
+          </div>
+</div>
+</form>
+<button class="close-button" data-close aria-label="Close modal" type="button">
+  <span aria-hidden="true">&times;</span>
+</button>
+</div>
+{% endblock %}

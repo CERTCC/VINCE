@@ -1,0 +1,86 @@
+{% extends "vince/base.html" %}{% load i18n markdown_extras %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Vendor Status" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/vendorstatus.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Case <a href="{{ case.get_absolute_url }}"> {{ case.get_vuid }}</a> {{ object.contact.vendor_name }} Status Changes</h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vince:case' case.id %}#vulnote">Case</a></li>
+      <li><a href="{% url 'vince:vendorstatus' object.id %}">{{ object.contact.vendor_name }} Status</a></li>
+      <li><span class="show-for-sr">Current: </span> View Changes</li>
+    </ul>
+  </nav>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <div class="row column">
+      <table class="unstriped">
+	<thead>
+	  <tr>
+	    <td>Action</td>
+	    <td>Field</td>
+	    <td>Old</td>
+	    <td>New</td>
+	    <td>Date</td>
+	    <td>User</td>
+	  </tr>
+	</thead>
+	<tbody>
+	  {% for vul in activity %}
+	  <tr>
+	    <td>{{ vul.action.title }}</td>
+	    <td>{{ vul.field }}</td>
+	    <td>
+	      {% if vul.old_value == '1' %}<span class="label alert">Affected</span>
+              {% elif vul.old_value == '2' %} <span class="label success">Not Affected</span>
+              {% elif vul.old_value == '3' %} <span class="label warning">Unknown</span>
+              {% else %}
+	      {{ vul.old_value }}
+	      {% endif %}
+	    </td>
+	    <td>
+	      {% if vul.new_value == '1' %}<span class="label alert">Affected</span>
+              {% elif vul.new_value == '2' %} <span class="label success">Not Affected</span>
+              {% elif vul.new_value == '3' %} <span class="label warning">Unknown</span>
+              {% else %}
+              {{ vul.new_value }}
+              {% endif %}
+	    </td>
+	    <td>
+	      {{ vul.action.date|date:"Y-m-d" }}
+	    </td>
+	    <td>{% vcuser vul.action.user %}</td>
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

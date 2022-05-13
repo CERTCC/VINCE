@@ -1,0 +1,18 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+
+{% block vince_title %}{% trans "Delete Ticket Attachment" %}{% endblock %}
+{% block content %}
+<div class="row column">
+  
+  <h2>Delete Ticket Attachment</h2>
+
+  <p>Are you sure you wish to delete the attachment <i>{{ filename }}</i> from this ticket? The attachment data will be permanently deleted from the database, but the attachment itself will still exist on the server.</p>
+  
+  
+  <p><a href="{% url 'vince:ticket' ticket.id %}"><button class="button primary large">{% trans "Don't Delete" %}</button></a></p>
+  
+  <form method='post' action='./'>
+    <button class="button alert" type='submit'>{% trans "Yes, I Understand - Delete" %}&nbsp;{{ filename }}</button>
+    {% csrf_token %}</form>
+  </div>
+{% endblock %}

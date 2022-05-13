@@ -1,0 +1,105 @@
+{% extends "vince/modal.html" %}
+{% load i18n widget_tweaks %}
+{% load staticfiles %}
+
+{% block content %}
+<div class="fullmodal">
+  {{ vul_tags|json_script:"vul_tags" }}
+  {{ allowed_tags|json_script:"allowed_tags" }}
+  <form id="editvulform" method="post" action="{{ action }}" enctype='multipart/form-data'>
+    
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">{{ title }}</h5>
+      </div>
+      <div class="modal-body">
+	{% if allowed_tags %}
+	{% else %}
+	<div class="callout warning">
+	  <p>There are no tags defined for vulnerabilties.  Tags can be entered in the <a href="{% url 'vince:tags' %}">Tag Manager</a>.</p>
+	</div>
+	{% endif %}
+	{% if show_clone %}
+	<div class="callout alert">
+	  <p>This is a cloned vulnerability with a CVE ID.  You should change the CVE ID if appropriate.</p>
+	</div>
+	{% endif %}
+	<div class="row">
+	  <div class="large-6 columns">
+	    {% csrf_token %}
+	    {% for field in form %}
+	    <div class="row">
+	      <div class="large-12 columns">
+		<div class="form-group">
+		  <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+		  {% if field.name == "taggles" %}
+		  <div class="taggle_input custom martie" id="taggs"></div>
+		  {% else %}
+		  <small class='form-text text-muted'>Required for CVE submission</small>
+		  {{ field }}
+		  {% endif %}
+		  {% if field.help_text %}<small class='form-text text-muted'>({% trans field.help_text %}){{ field.name }}</small>{% endif %}
+		  {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+		</div>
+	      </div>
+	    </div>
+	    {% endfor %}
+	  </div>
+	  <div class="large-6 columns">
+	    <h3>CWE Information</h3>
+	    <div class="row">
+	      <div class="large-12 columns">
+		<small class='form-text text-muted'>Required for CVE submission</small>			    
+		{{ cwe_formset.management_form }}
+		<table class="unstriped" style="border:none; margin:-10px" id="cwe_formset" prefix="{{ cwe_formset.prefix }}">
+		  {% for subform in cwe_formset %}
+		  <tr class="cwe_formset">
+		    <td>
+		      <label for="cwe_cwe">Add a CWE:</label>
+		    </td>
+		    <td>
+		      {% if subform.id %}{{ subform.DELETE }}{% endif %}
+                      {{ subform.id }}
+		      {% render_field subform.cwe class="form-control" %}
+		    </td>
+		    <td></td>
+		  </tr>
+		  {% endfor %}
+		</table>
+	      </div>
+	    </div>
+	    <hr>
+	    <h3>References </h3>
+	   <small class='form-text text-muted'>Required for CVE submission. <span class="required">Must be a valid URL.</span></small>
+	    {{ ref_formset.management_form }}
+            <div id="refprefix" class="hidden">{{ ref_formset.prefix }}</div>
+            <table class="unstriped" style="border:none; margin:-10px">
+              {% for subform in ref_formset %}
+              <tr class="ref_formset">
+		<td>
+                  <label for="cve_ref">Reference Source:</label>
+                  {% render_field subform.ref_source class="form-control" %}
+		</td>
+		<td>
+                  <label for="cve_ref">Reference:</label>
+                  {% render_field subform.reference class="form-control" %}
+		</td>
+		<td class="text-right"></td>
+              </tr>
+              {% endfor %}
+            </table>
+	  </div>
+	</div>
+      </div>
+      <div class="modal-footer">
+	<div class="row column text-right">
+	  <button type="submit" name="vrfSubmit" class="button primary"><i class="fas fa-plus"></i> Save Vulnerability </button>
+	</div>
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>
+{% endblock %}

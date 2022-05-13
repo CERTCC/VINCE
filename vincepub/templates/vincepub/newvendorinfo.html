@@ -1,0 +1,105 @@
+{% load vulnote_tags markdown_extras %}
+{% if object_list %}
+<div id="accordion" class="ui-accordion ui-widget ui-helper-reset">
+  
+  {% for item in object_list %}
+  {% if forloop.counter > 10 %}
+  <div data-type="accordion-section" class="{{ item.vendorstatus_set.all|get_vt_filter:item }} extravendors" name="{{ item.contact.vendor_name }}" data-accordion-item>
+    {% else %}
+    <div data-type="accordion-section" class="{{ item.vendorstatus_set.all|get_vt_filter:item }}" name="{{ item.contact.vendor_name }}">
+      {% endif %}
+      <h3 class="accordion-header ui-accordion-header reloaded">
+	<span class="vendor_name"><a href="#{{ item.vendor|urlencode }}"> {{ item.contact.vendor_name }}</a>	  
+	  {% if item.approved %}{% else %} <i class="fas fa-exclamation-triangle alert" style="color:red;"></i>{% endif %}
+
+	  <span class="vendor-icons">
+	    {% if item.statement|prov_statement:item.vendorstatus.all %}
+	    <i class="fas fa-bullhorn" aria-hidden="true" title="Vendor provided information."></i>
+	    {% elif item.addendum|va_bullhorn %}
+	    <i class="fas fa-bullhorn" aria-hidden="true" title="Additional information provided."></i>
+	    {% elif item.references|exists %}
+            <i class="fas fa-bullhorn" aria-hidden="true" title="Additional information provided."></i>
+            {% endif %}
+	  </span>
+	</span>
+	<span class="vendor_status">
+	  {% autoescape off %}{% show_vp_status item.get_status %} {% endautoescape %}
+	</span>
+      </h3>
+      <div class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom">
+	   {% if item.approved %}
+	   {% else %}
+	   <div class="callout alert">
+	     This statement was not yet approved. It will not appear in a published vulnote.
+	   </div>
+	   {% endif %}
+	   <p>
+	  {% if item.contact_date %}
+	  Notified:&nbsp;&nbsp;{{item.contact_date|date:"F d, Y"}}
+	  <span class="updated-date">
+	  {% else %} <span> {% endif %}
+	  Updated:&nbsp;{{ item.date_modified|date:"F d, Y" }}</span>
+	</p>
+	{% if item.statement_date %}
+      <p><b>Statement Date:&nbsp;&nbsp; {{ item.statement_date|date:"F d, Y"}}</b></p>
+      {% endif %}
+      <table class="wrapper-table">
+      {% for vuln in case.vulnerability_set.all|vendor_vuls %}
+      {% with s1=item.vendorstatus_set|vendor_status:vuln %}
+      <tr><td width="200"><b>{{ vuln.vul }}</b></td><td> {% autoescape off %}{% show_vp_status s1.get_status_display %}{% endautoescape %}</td></tr>
+      {% if s1.statement %}
+      <tr><td colspan="2"><b>Vendor Statement:</b></td></tr>
+      <tr><td colspan="2">{{ s1.statement }}</td></tr>
+      {% endif %}
+      {% if s1.references %}
+      <tr><td colspan="2"><b> References: </b>
+          {% with refs=s1.references|splitlines %}
+          <ul class="ul_nobullet vendorref">
+            {% for ref in refs %}
+            <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+            {% endfor %}
+          </ul>
+        </td>
+      </tr>
+      {% endwith %}
+      {% endif %}
+      {% endwith %}
+      {% endfor %}
+      </table>
+
+      {% if item.statement|other_statement:item.vendorstatus_set.all %}
+      <h4>Vendor Statement</h4>
+      {% if item.statement|exists %}
+      <p>{{ item.statement | markdown | safe }}</p>
+       {% else %}
+      <p>We have not received a statement from the vendor.</p>
+      {% endif %}
+      {% endif %}
+      {% if item.references|exists %}
+	<h4>References</h4>
+	{% with refs=item.references|splitlines %}
+	<ul class="ul_nobullet">
+        {% for ref in refs %}
+        <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+        {% endfor %}
+      </ul>
+	{% endwith %}
+	{% endif %}
+	{% if item.addendum|exists %}
+	<h4>CERT Addendum</h4>
+	{{ item.addendum | markdown | safe }}
+	{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if object_list|length > 10 %}
+  <p class="more-vendors"><span class="moreVendors"><a href="#" id="moreVendorsLink">View all {{ object_list|length }} vendors <i aria-hidden="true" class="fas fa-angle-double-down"></i></a></span><span class="lessVendors"><a href="#" id="lessVendorsLink">View less vendors <i aria-hidden="true" class="fas fa-angle-double-up"></i></a></span></p>
+  {% endif %}
+  {% else %}
+  {% if filter != "All Vendors" %}
+  {% else %}
+  <p> No information available at this time. </p>
+  {% endif %}
+  {% endif %}
+

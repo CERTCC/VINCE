@@ -1,0 +1,117 @@
+{% load i18n static markdown_extras %}
+{% block content %}
+<div class="row" id="content">
+  <div class="large-9 medium-9 columns">
+    <div class="blog-post">
+      <div class="row">
+        <div class="large-12 columns">
+	  {% autoescape off %}
+	  {{ object.vulnote.content | markdown | safe }}
+	  {% endautoescape %}
+	</div>
+      </div>
+      <div class="row">
+	<div class="large-12 columns">
+	  <h3> Vendor Information </h3>
+	  {% if object.vulnote.vendors.all|length > 0 %}
+	  <div id="vendorinfo">
+	    One or more vendors are listed for this advisory. Please reference the full report for more information.
+	  </div>
+	  {% else %}
+	  <p>This advisory information is generic and does not describe any specific instance of this type of problem,
+	    so no vendors have been notified or listed here.
+	  <p>
+	    {% endif %}
+	</div>
+      </div>
+      <br/>
+      {% if object.cvss_basescore %}
+      <h3> CVSS Metrics </h3>
+      <div class="vulcontent">
+        <table>
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th>Score</th>
+              <th>Vector</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td> Base </td>
+              <td> {{ object.cvss_basescore }}</td>
+              <td> {{ object.cvss_basevector }}</td>
+            </tr>
+            <tr>
+              <td> Temporal </td>
+              <td> {{ object.cvss_temporalscore }}</td>
+              <td> {{ object.cvss_temporalvector }} </td>
+            </tr>
+            <tr>
+              <td> Environmental </td>
+              <td> {{ object.cvss_environmentalscore|floatformat:-1 }}</td>
+              <td> {{ object.cvss_environmentalvector }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <br/>
+      {% endif %}
+      {% if object.vulnote.references %}
+      <div class="row">
+	<div class="large-12 columns">
+	  <h3> References </h3>
+	  <ul>
+	    {% with refs=object.vulnote.references|splitlines %}
+	  {% for ref in refs %}
+	  <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+          {% endfor %}
+	  {% endwith %}
+	  </ul>
+	</div>
+      </div>
+      {% endif %}
+      <h3>Other Information</h3>
+        <div class="vulcontent">
+          <table class="unstriped">
+            <tbody>
+	      {% if object.vulnote.notevuls.all|length > 0 %}
+              <tr>
+                <td width="200"><b>CVE IDs:</b></td>
+		<td>
+		{% for vuln in object.vulnote.notevuls.all %}
+		{% if vuln.cve %}
+                <a href="http://web.nvd.nist.gov/view/vuln/detail?vulnId={{ vuln.cve }}">{{ vuln.vul }}  </a>
+		{% endif %}
+                {% endfor %}
+		</td>
+	      </tr>
+	      {% endif %}
+	      <tr>
+		<td>
+		  <b>Date Public:</b>
+		</td>
+                <td>{% if object.vulnote.publicdate %}{{ object.vulnote.publicdate|date:"Y-m-d" }}{% else %}{{object.datefirstpublished|date:"Y-m-d" }}{% endif %}</td>
+              </tr>
+              <tr>
+                <td><b>Date First Published:</b></td>
+                <td id="datefirstpublished">{{object.datefirstpublished|date:"Y-m-d" }}</td>
+              </tr>
+              <tr>
+                <td><b>Date Last Updated: </b></td>
+                <td>{{ object.vulnote.dateupdated|date:"Y-m-d H:i e" }}</td>
+              </tr>
+              <tr>
+                <td><b>Document Revision: </b></td>
+                <td>{{ object.vulnote.revision_number }} </td>
+              </tr>
+            </tbody>
+          </table>
+	</div>
+    </div>
+  </div>
+  
+</div>
+
+{% endblock %}
+

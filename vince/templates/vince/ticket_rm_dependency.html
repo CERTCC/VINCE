@@ -1,0 +1,25 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method='post' action={% if ticket %}"{% url 'vince:rmdep' ticket.id dependency.id %}"{% else %}"{% url 'vince:rmcasedep' case.id dependency.id %}"{% endif %}>
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">{% trans "Delete Dependency" %}</h5>
+      </div>
+      <div class="modal-body">
+	<p>Are you sure you wish to remove the dependency on this case/ticket?</p>
+	{% csrf_token %}
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input class="button primary" type='submit' value='{% trans "Yes, Delete" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>
+
+  
+{% endblock %}

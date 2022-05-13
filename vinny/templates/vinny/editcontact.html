@@ -1,0 +1,376 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/dropzone.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/dropzone.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
+<script type="text/javascript" src="{% static 'vinny/js/contact.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 medium-12 small-12 columns">
+      <h2>Edit My Contact Info</h2>
+    </div>
+  </div>
+</div>
+{% if error %}
+<div class="row columns">
+  <div class="callout alert" role="alert">
+    <strong>ERROR:</strong> Check required Email fields.
+  </div>
+</div>
+{% endif %}
+{% if collision %}
+<div class="row columns">
+  <div class="callout alert" role="alert">
+    <strong>ERROR:</strong> {{ collision }}
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{message.tags}}">{% autoescape off %}{{ message }}{% endautoescape %}</div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
+<form method="post" enctype="multipart/form-data" action="{% url 'vinny:addlogo' contact.id %}" id="addlogo">
+  {% csrf_token %}
+  <div class="row column text-center">
+    <div class="fallback">
+      {% render_field form.logo class="form-control show-for-sr" %}
+    </div>
+    {% if gc.logo %}
+    <div id="logo_instruct">
+      <p>Your organization logo</p>
+    </div>
+    {% endif %}
+    <div id="dropzonepreview" class="round-dropzone">
+      {% if gc.logo %}
+      <div class="logo-wrapper">
+	<img src={{ gc.get_logo }} class="logo-preview" id="currentlogo">
+	<span class="removecurrent"></span>
+      </div>
+      <div class="dz-default dz-message hidden">
+        <span> <i class="fas fa-cloud-upload-alt"></i> Add organization logo </span>
+	</div>
+      {% else %}
+      <div class="dz-default dz-message">
+        <span> <i class="fas fa-cloud-upload-alt"></i> Add organization logo </span>
+      </div>
+      {% endif %}
+      <div id="preview">
+	<div id="dz_template">
+          <span class="preview"><img data-dz-thumbnail /></span>
+	  <span data-dz-remove><span class="removecurrent"></span></span>
+          <div class="dz-filename">
+            <span data-dz-name></span>
+	  </div>
+	  <div class="dz-progress"><span class="dz-upload" data-dz-uploadprogress></span></div>
+	</div>
+      </div>
+    </div>
+    <div class="hidden" id="dropzone_error"></div>
+  </div>
+</form>
+
+<form name="cmgr" id="editcontactform" enctype="multipart/form-data" method="POST" action="{% url 'vinny:editcontact' contact.id %}">
+  {% csrf_token %}
+  <input type="hidden" name="version" value="{{ contact.version }}" />
+  <div class="row">
+    <div class="large-12 columns">
+      <ul class="category-list list-unstyled">
+	<li class="category-item media">
+	  <div class="category-icon">
+	    <span class="sei-icon"><i class="fas fa-envelope"></i></span>
+	  </div>
+	  <div class="media-body">
+	    <h1 class="category-title border-bottom border-sei-gray-lightest">Email Lists</h1>
+	    <div class="row column">
+	      <div class="callout warning">
+		<p>Only add group email lists/mailing lists. Group admins can add personal email addresses <a href="{% url 'vinny:admin' %}">on the admin page.</a>
+		</p>
+	      </div>
+		    
+	      {{ email_formset.management_form }}
+	      <div class="hidden" id="email_formset_prefix" value="{{ email_formset.prefix }}"></div>
+	      <table class="unstriped">
+		{% for subform in email_formset %}
+		<tr class="email-formset form-group">
+		  <td>
+		    <label>Public?</label>
+		    <div class="switch small">
+		      {% render_field subform.public class="switch-input" %}
+		      <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+			<span class="show-for-sr">Public?</span>
+			<span class="switch-active" aria-hidden="true">Yes</span>
+			<span class="switch-inactive" aria-hidden="true">No</span>
+		      </label>
+		    </div>
+		  </td>
+		  <td>{{ subform.email.label_tag }} {% if subform.id %}{{ subform.DELETE }}{% endif %}
+		    {{ subform.id }}
+		    {% render_field subform.email class="form-control" %}</td>
+		  <td>{{ subform.name.label_tag }} {% render_field subform.name class="form-control" %}</td>
+		  <td>{{ subform.email_type.label_tag }} {% render_field subform.email_type class="form-control" %}</td>
+		  <td></td>
+		</tr>
+		{% endfor %}
+	      </table>
+	    </div>
+	  </div>
+	</li>
+	<li class="category-item media">
+	  <div class="category-icon">
+	    <span class="sei-icon"><i class="fa-fw fas fa-key"></i></span>
+	  </div>
+	  <div class="media-body">
+	    <h1 class="category-title border-bottom border-sei-gray-lightest">PGP Keys</h1>
+	    <div class="row column">
+	      <div class="hidden" id="pgp_formset_prefix" value="{{ pgp_formset.prefix }}"></div>
+	      <table class="unstriped">
+		{{ pgp_formset.management_form }}
+		{% for subform in pgp_formset %}
+		<tr class="pgp-formset form-group">
+		  <td width="100">
+		    <label>Public?</label>
+		    <div class="switch small">
+		      {% render_field subform.public class="switch-input" %}
+		      <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+			<span class="show-for-sr">Public?</span>
+			<span class="switch-active" aria-hidden="true">Yes</span>
+			<span class="switch-inactive" aria-hidden="true">No</span>
+		      </label>
+		    </div>
+		  </td>
+		  <!--<td>
+		      <label for="pgp_protocol">PGP Protocol:</label>
+		      {% render_field subform.pgp_protocol class="form-control"%}
+		  </td>
+		  <td>
+		    <label for="startdate">Start Date (YYYYMMDD):</label>
+		    {% render_field subform.startdate class="form-control"%}
+		  </td>
+		  <td>
+		    <label for="enddate">End Date (YYYYMMDD):</label>
+		    {% render_field subform.enddate class="form-control"%}
+		  </td>-->
+		  
+		  <td width="700">
+		    <label for="pgp_key_data">PGP Key:<span class="required">*</span></label>
+		    {% render_field subform.pgp_key_data class="form-control"%}
+		    {% if subform.id %}{{ subform.DELETE }}{% endif %}
+		    {{ subform.id }}
+
+		  </td>
+		  <td>
+		    <label for="pgp_email">Email for PGP Key:<span class="required">*</span></label>
+		    {% render_field subform.pgp_email class="form-control" %}
+		    {% render_field subform.pgp_key_id class="form-control" %}
+		    {% if subform.id.value %}<b>KEY DETAILS:</b><br><b>KEY ID:</b> {{ subform.pgp_key_id.value }} <br/><b>Valid:</b> {{ subform.startdate.value }} - {{ subform.enddate.value }}{% endif %}
+		  </td>
+		  <td></td>
+		</tr>
+		{% endfor %}
+	      </table>
+	    </div>
+	  </div>
+	</li>
+	<li class="category-item media">
+          <div class="category-icon">
+            <span class="sei-icon"><i class="fa-fw fas fa-home"></i></span>
+          </div>
+          <div class="media-body">
+            <h1 class="category-title border-bottom border-sei-gray-lightest">Location</h1>
+	    {{ postal_formset.management_form }}
+	    {% for subform in postal_formset %}
+	    <div class="row column postalformset">
+	      <div class="hidden" id="postal_formset_prefix" value="{{ postal_formset.prefix }}"></div>
+	      <div class="postal-formset">
+		<div class="row">
+		  <div class="large-11 columns">
+		    <div class="row">
+		      <div class="large-2 medium-2 columns form-group">
+			<label>Public?</label>
+			<div class="switch small">
+			  {% render_field subform.public class="switch-input" %}	      
+			  <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+			    <span class="show-for-sr">Public?</span>
+			    <span class="switch-active" aria-hidden="true">Yes</span>
+			    <span class="switch-inactive" aria-hidden="true">No</span>
+			  </label>
+			</div>
+		      </div>
+		      <div class="large-6 columns">
+			<div class="form-group">
+			  <div class="required">
+			    <label for="country">Country:</label>
+			  </div>
+			  {% render_field subform.country class="form-control" %}
+			</div>
+		      </div>
+		      <div class="large-4 columns">
+		      </div>
+		    </div>
+		    <div class="row">
+		      <div class="large-2 medium-2 columns">
+			<div class="form-group">
+			  <label for="address_type">Type:</label>
+			  {% render_field subform.address_type class="form-control" %}
+			  {% if subform.id %}{{ subform.DELETE }}{% endif %}
+			  {{ subform.id }}
+			</div>
+		      </div>
+		      <div class="large-5 medium-5 columns">
+			<div class="form-group">
+			  <div class="required">
+			    {{ subform.street.label_tag }}
+			  </div>
+			  {% render_field subform.street class="form-control" %}
+			</div>
+		      </div>
+		      <div class="large-5 medium-5 columns">
+			<div class="form-group">
+			  {{ subform.street2.label_tag }}
+			  {% render_field subform.street2 class="form-control" %}
+			</div>
+		      </div>
+		    </div>
+		    <div class="row">
+		      <div class="large-5 medium-5 columns">
+			<div class="form-group">
+			  <div class="required">
+			    {{ subform.city.label_tag }}
+			  </div>
+			  {% render_field subform.city class="form-control" %}
+			</div>
+		      </div>
+		      <div class="large-2 medium-2 columns">
+			<div class="form-group">
+			  <div class="required">
+			    {{ subform.state.label_tag }}
+			  </div>
+			  {% render_field subform.state class="form-control" %}
+			</div>
+		      </div>
+		      <div class="large-5 medium-5 columns">
+			<div class="form-group">
+			  <div class="required">
+			    {{ subform.zip_code.label_tag }}
+			  </div>
+			  {% render_field subform.zip_code class="form-control" %}
+			</div>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+	      </div>
+	      {% endfor %}
+	    </div>
+	  </div>
+	</li>
+	<li class="category-item media">
+          <div class="category-icon">
+            <span class="sei-icon"><i class="fa-fw fas fa-mobile-alt"></i></span>
+          </div>
+          <div class="media-body">
+            <h1 class="category-title border-bottom border-sei-gray-lightest">Phone Numbers</h1>
+	    <div class="row column">
+	      <div class="hidden" id="phone_formset_prefix" value="{{ phone_formset.prefix }}"></div>
+	      <table class="unstriped">
+		{{ phone_formset.management_form }}
+		{% for subform in phone_formset %}
+		<tr class="phone-formset form-group">
+		  <td>
+		    <label>Public?</label>
+		    <div class="switch small">
+		      {% render_field subform.public class="switch-input" %}
+		      <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+			<span class="show-for-sr">Public?</span>
+			<span class="switch-active" aria-hidden="true">Yes</span>
+			<span class="switch-inactive" aria-hidden="true">No</span>
+		      </label>
+		    </div>
+		  </td>
+		  <td>
+		    <label for="phone_type">Type:</label>
+		    {% render_field subform.phone_type class="form-control" %}
+		    {% if subform.id %}{{ subform.DELETE }}{% endif %}
+		    {{ subform.id }}
+		  </td>
+		  <td><label for="country_code">Country Code:</label>
+		    {% render_field subform.country_code class="form-control" %}
+		  </td>
+		  <td><div class="required">
+		      {{ subform.phone.label_tag }}</div>
+		    {% render_field subform.phone class="form-control" %}
+		  </td>
+		  <td>
+		    {{ subform.comment.label_tag }}
+		    {% render_field subform.comment class="form-control" %}
+		  </td>
+		  <td></td>
+		</tr>
+		{% endfor %}
+	      </table>
+	    </div>
+	  </div>
+	</li>
+	<li class="category-item media">
+          <div class="category-icon">
+            <span class="sei-icon"><i class="fa-fw fas fa-globe-americas"></i></span>
+          </div>
+          <div class="media-body">
+            <h1 class="category-title border-bottom border-sei-gray-lightest">Website</h1>
+	    <div class="row column">
+	      <div class="hidden" id="web_formset_prefix" value="{{ web_formset.prefix }}"></div>
+	      <table class="unstriped">
+		{{ web_formset.management_form }}
+		{% for subform in web_formset %}
+		<tr class="web-formset form-group">
+		  <td>
+		    <label>Public?</label>
+		    <div class="switch small">
+		      {% render_field subform.public class="switch-input" %}
+		      <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+			<span class="show-for-sr">Public?</span>
+			<span class="switch-active" aria-hidden="true">Yes</span>
+			<span class="switch-inactive" aria-hidden="true">No</span>
+		      </label>
+		    </div>
+		  </td>
+		  <td><div class="required">{{ subform.url.label_tag }}</div>
+		    {% render_field subform.url class="form-control" placeholder="URL starting with http://"%}
+		    {% if subform.id %}{{ subform.DELETE }}{% endif %}
+		    {{ subform.id }}
+		    {{ subform.contact }}
+		  </td>
+		  <td>
+		    {{ subform.description.label_tag }}
+		    {% render_field subform.description class="form-control" placeholder="Optional description"%}
+		  </td>
+		  <td></td>
+		</tr>
+		{% endfor %}
+	      </table>
+	    </div>
+	  </div>
+	</li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+      <button type="submit" name="vrfSubmit" class="primary button"> Save Contact </button>
+      <a href="{% url 'vinny:contact' %}" class="secondary button">Cancel</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

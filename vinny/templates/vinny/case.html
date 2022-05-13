@@ -1,0 +1,457 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n humanize post_tags %}{% load filename %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Case" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vince/css/simplemde.min.css' %}">
+<link rel="stylesheet" href="{% static 'vince/css/show-hints.css' %}">
+<link rel="stylesheet" href="{% static 'vince/css/v4-shims.css' %}">
+<link rel="stylesheet" href="{% static 'vince/css/tooltipster.bundle.min.css' %}">
+<script src="{% static 'vince/js/simplemde.min.js' %}" type="text/javascript"></script>
+<script src="{% static 'vinny/js/show-hint.js' %}" type="text/javascript"></script>
+<script src="{% static 'vinny/js/usermentions-helper.js' %}" type="text/javascript"></script>
+<script type="text/javascript" src="{% static 'vinny/js/ics.deps.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vinny/js/ics.min.js' %}"></script>
+<!--<script type="text/javascript" src="{% static 'vince/js/tooltipster.bundle.min.js' %}"></script>-->
+<script type="text/javascript" src="{% static 'vinny/js/vinny.js' %}"></script>
+<script type="text/javascript" src="{% static 'vinny/js/addfile.js' %}"></script>
+
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+{{ auto_members|json_script:"members" }}
+<div class="hidden" id="loadmembers" href="{% url 'vinny:loadjson' case.id %}"></div>
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-9 medium-9 small-12 columns">
+      <h3> <span id="case_title">Case {{ case.get_title }}</span> {% autoescape off %}{{ case.get_status_html }}{% endautoescape %} </h3>
+    </div>
+    <div class="large-3 medium-3 columns small-12 text-right">
+      {% if vincetrack %}
+      <a class="button cmu" href="{% url 'vince:case' case.vince_id %}">VINCETrack</a>
+      {% else %}
+      <a href="{% url 'vinny:sendmsg' 2 case.id %}"><button class="default button small-only-expanded">Private Message Coordinators</button></a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+{% if show_vul_policy and case.team_owner.coordinatorsettings.disclosure_link %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning" data-closable>
+      <h5>Reminder!</h5>
+      <p>The coordination of this case is subject to our <a href="{{ case.team_owner.coordinatorsettings.disclosure_link }}" target="_blank" rel="noopener">Vulnerability Disclosure Policy.</a>
+      </p>
+      <button class="close-button" aria-label="Dismiss alert" type="button" data-close>
+	<span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if unseen_posts %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout success" data-closable>
+      <h5>Welcome back!</h5>
+      <p>There {% if unseen_posts == 1 %}is{% else %}are{% endif %} {{ unseen_posts }} new {% if unseen_posts == 1 %}post{% else %}posts{% endif %} since you last viewed this case.  The unread posts are highlighted in green below.</p>
+      <button class="close-button" aria-label="Dismiss welcome" type="button" data-close>
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if simulation %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert">
+      <h5>Hey!</h5>
+      <p>You are simulating this view as <b>{{ simulation.group.groupcontact.contact.vendor_name }}</b>. Any actions made on this view will still be attributed to you.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+<div class="row cert_message">
+  <div class="large-4 medium-4 small-12 columns">
+    <a class="dashboard-nav-card vin-card orig_report" href="{% url 'vinny:cr' case.id %}">
+      <i class="dashboard-nav-card-icon fas fa-file-alt" aria-hidden="true"></i>
+      <h3 class="dashboard-nav-title">View Original Report</h3>
+      <p class="dashboard-nav-summary">{% if case.team_owner %}{{ case.team_owner.groupcontact.contact.vendor_name }}{% else %}We{% endif %} received this report on {% if case.cr.date_submitted %}{{ case.cr.date_submitted|date:"Y-m-d" }}{% else %}{{ case.created|date:"Y-m-d" }}{% endif %}.</p>
+      <h5 class="dashboard-nav-card-action"><p class="btn-cta">View the report</p></h5>
+    </a>
+  </div>
+  {% if showstatus %}
+  <div class="large-4 medium-4 small-12 columns">
+    {% with checkvuls=vuls %}
+    {% if showupdatestatus %}
+    <a class="dashboard-nav-card vin-card {% if messages %}vin-card-success{% endif %}" href="{% url 'vinny:vuls' case.id %}"> 
+      <i class="dashboard-nav-card-icon fas fas fa-clipboard-check" aria-hidden="true"></i>
+      <h3 class="dashboard-nav-title">Status submitted for {{ checkvuls|length }} {% if checkvuls|length > 1 %}vulnerabilities {% else %} vulnerability {% endif %}</h3>
+      <p class="dashboard-nav-summary">
+	{% if messages %}
+	{% for message in messages %}
+	{{ message }}<br/>
+	{% endfor %}
+	{% else %}
+	We have identified {{ checkvuls|length }} {% if checkvuls|length > 1 %}vulnerabilities {% else %} vulnerability {% endif %}in this case. Your status was previously submitted on {% with s1=status|last_status %}{{ s1.date_modified|date:"Y-m-d" }} by {{ s1.user.vinceprofile.preferred_username }}{% endwith %}.
+	{% endif %}
+      </p>
+      <h5 class="dashboard-nav-card-action"><p class="btn-cta">View vuls and update your status</p></h5>
+    </a>
+    {% else %}
+    {% if checkvuls|length > 1 or multivendor %}
+    <a class="dashboard-nav-card vin-card vin-card-warning" href="{% url 'vinny:vuls' case.id %}" id="updatestatuspanel">
+      <i class="dashboard-nav-card-icon fas fa-exclamation-triangle" aria-hidden="true"></i>
+      <h3 class="dashboard-nav-title">Action Required</h3>
+      <h2 class="dashboard-nav-date">{{ checkvuls|length }} {% if checkvuls|length > 1 %}Vulnerabilities{% else %}Vulnerability{% endif %}</h2>
+      <p class="dashboard-nav-summary">We have identified {{ checkvuls|length }} {% if checkvuls|length > 1 %}vulnerabilities{% else %}vulnerability{% endif %} in this
+	case. Please let us know if your organization is vulnerable.</p>
+      <h5 class="dashboard-nav-card-action"><p class="btn-cta">View vulnerabilities and update status</p></h5>
+
+      {% elif checkvuls|length == 1 %}
+      <a class="dashboard-nav-card vin-card vin-card-warning" href="{% url 'vinny:vuls' case.id %}" id="updatestatuspanel">
+      <i class="dashboard-nav-card-icon fas fa-exclamation-triangle" aria-hidden="true"></i>
+      <h3 class="dashboard-nav-title">Action Required</h3>
+      <form method="post" id="updatestatus" action="{% url 'vinny:update_status' case.id %}"> 
+	{% csrf_token %}
+	<p class="dashboard-nav-summary-affected">Is your organization affected by this vulnerability?</p>
+	<ul class="statusone">
+	  {% for vul in checkvuls %}
+	  <li>
+	    <b>{{ vul.vul }}</b><br/>{{ vul.description }}<br/>
+	    <select name="status_{{vul.id}}">
+	      {% with s1=status|vulstatus:vul %}
+	      <option value="unknown" {% if s1 == 3 %} selected {% endif %}>Unknown</option>
+	      <option value="affected" {% if s1 == 1 %} selected {% endif %}>Affected</option>
+	      <option value="unaffected" {% if s1 == 2 %} selected {% endif %}>Not Affected</option>
+	      {% endwith %}
+	    </select>
+	  </li>
+	  {% endfor %}
+	</ul>
+	<div class="status_submit text-center">
+	  <input type="submit" class="tiny button primary" value="Submit">
+	</div>
+      </form>
+      </a>
+      {% endif %}
+      {% endif %}
+      {% endwith %}
+
+    <a class="dashboard-nav-card vin-card vin-card-success" href="{% url 'vinny:status' case.id %}" id="thankspanel">
+      <i class="dashboard-nav-card-icon fas fa-clipboard-check" aria-hidden="true"></i>
+      <h3 class="dashboard-nav-title">Your status has been updated</h3>
+      <p class="dashboard-nav-summary">
+	Would you like to provide a statement and/or references for this vulnerability?</p>
+      <h5 class="dashboard-nav-card-action"><p class="btn-cta">Add a statement</p></h5>
+    </a>
+  </div>
+  {% else %}
+  <div class="large-4 medium-4 small-12 columns">
+    <a class="dashboard-nav-card vin-card" href="{% url 'vinny:vuls' case.id %}" id="vulspanel">
+      <i class="dashboard-nav-card-icon fas fa-bug" aria-hidden="true"></i>
+      <h3 class="dashboard-nav-title">{{ vuls|length }} {% if vuls|length == 1 %}Vulnerability{% else %}Vulnerabilities{% endif %} Identified</h3>
+      <p class="dashboard-nav-summary">We have identified {{ vuls|length }} {% if vuls|length == 1 %}vulnerability{% else %}vulnerabilities{% endif %} in this case.
+	</p>
+      <h5 class="dashboard-nav-card-action"><p class="btn-cta">View vulnerabilities</p></h5>
+    </a>
+  </div>
+  {% endif %}
+  <div class="large-4 medium-4 small-12 columns">
+    <a class="dashboard-nav-card vin-card" {% if case.published %}href="{% url 'vincepub:vudetail' case.vuid %}" target="_blank" rel="noopener"{% else %}{% if case.note %} href="{% url 'vinny:vulnote' case.id %}" target="_blank" rel="noopener" {% elif case.publicurl %} href="{{ case.publicurl }}" target="_blank" {% elif case.publicdate %}href="#"{% elif case.due_date %}href="#" id="downloadics"{% endif %}{% endif %}>
+      {% if case.status == 2 %}
+      <i class="dashboard-nav-card-icon fas fa-calendar-check"></i>
+      {% else %}
+      <i class="dashboard-nav-card-icon fas fa-calendar-alt" aria-hidden="true"></i>
+      {% endif %}
+      {% if case.published %}
+      <h3 class="dashboard-nav-title">Vulnerability Note Published {{ case.note.datefirstpublished|date:"Y-m-d" }}</h3>
+      <p class="dashboard-nav-summary">
+        We published this vulnerability note on {{ case.note.datefirstpublished|date:"Y-m-d" }}.
+      </p>
+      <h5 class="dashboard-nav-card-action"><p class="btn-cta">
+          View the vulnerability note <i class="fas fa-external-link-alt"></i>
+      </h5>
+      {% elif case.publicdate %}
+      <h3 class="dashboard-nav-title">Vulnerability Public {{ case.publicdate|date:"Y-m-d" }}</h3>
+      <p class="dashboard-nav-summary">
+	{% if case.publicdate > today %}
+	We expect this vulnerability to become public on {{ case.publicdate|date:"Y-m-d" }}.
+	{% else %}
+        This vulnerability became public on {{ case.publicdate|date:"Y-m-d" }}.
+	{% endif %}
+      </p>
+      {% if case.publicurl %}
+      <h5 class="dashboard-nav-card-action"><p class="btn-cta">
+          View the notice <i class="fas fa-external-link-alt"></i>
+      </h5>
+      {% endif %}
+      {% else %}
+      <h3 class="dashboard-nav-title">
+        Expected Date Public: {% if case.due_date %}{{ case.due_date|date:"Y-m-d" }}{% else %}<b>TBD</b>{% endif %}
+        {% if case.note %}<span class="icsdownload" id="downloadics"><i class="far fa-calendar-plus"></i></span>{% endif %}
+      </h3>
+      <p class="dashboard-nav-summary">
+        We expect this vulnerability to become public on {% if case.due_date %}{{ case.due_date|date:"Y-m-d" }}{% else %}<b>TBD</b>{% endif %}.
+      </p>
+      {% if case.note or case.due_date %}
+      <h5 class="dashboard-nav-card-action"><p class="btn-cta">
+          {% if case.note %}View the draft vulnerability note <i class="fas fa-external-link-alt"></i>
+          {% else %} Download a calendar reminder {% endif %}
+      </h5>
+      {% endif %}
+      {% endif %}
+    </a>
+  </div>
+</div>
+<div class="row">
+  <div class="large-9 columns">
+
+    <div class="row">
+      <div class="large-9 columns">
+	<h3>Case Discussion</h3>
+      </div>
+      <div class="large-3 columns text-right">
+	<div class="hidden" id="paginate_by">{{ paginate_by }}</div>
+	{% if num_posts > 10 %}
+	<a href="#" class="expandreplies">Show all</a>
+	<span id="showall">Showing all {{ total_posts }} posts</span>
+	{% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="large-12 columns">
+	
+	<div id="pinnedposts">
+	  {% include "vinny/posts.html" with posts=pinned_posts page_obj=1 %}
+	</div>
+	
+	<div id="allposts">
+	  <div class="hidden" id="nextpostpage"></div>
+	  {% include "vinny/posts.html" with posts=posts %}
+	</div>
+	
+	
+	<div class="secondary callout" id="post_reply">
+	  <form method="post" id="postform" action="{% url 'vinny:post' case.id %}">{% csrf_token %}
+	    <div class="row">
+              <div class="large-12 columns">
+		<div class="form-group">
+		  {% render_field form.content class="form-control" %}
+		</div>
+	      </div>
+	    </div>
+	    <div class="row column subbuttons">
+              <input type="submit" value="Submit" name="vrfSubmit" class="primary button" id="sendbutton"/>
+	      <a href="#" class="cancelform secondary button"> Cancel</a>
+            </div>
+	  </form>
+	</div>
+      </div>
+    </div>
+  </div><!-- 9 columns -->
+
+  <div class="large-3 columns">
+    <div class="participant_type">
+      <div class="row column">
+	<h4>Coordinators</h4>
+      </div>
+      {% for coordinator in coordinators %}
+      <div class="participant">
+	<div class="participant-pic">
+	  {% if coordinator.participant %}
+	  {% autoescape off %}{{ coordinator.participant|userlogo:"profile-pic" }}{% endautoescape %}
+	  {% else %}
+	  {% autoescape off %}{{ coordinator|grouplogo:"profile-pic" }}{% endautoescape %}
+	  {% endif %}
+	</div>
+	<div class="participant-info">
+	  <span class="participant-name">
+	    {% if coordinator.group.groupcontact %}
+	    <a href="{{ coordinator.group.groupcontact.url }}" class="vendor-participant">{{ coordinator.group.groupcontact.contact.vendor_name }}</a>
+	    {% else %}
+	    {{ coordinator.participant.vinceprofile.vince_username }}
+	    {% endif %}
+	  </span>
+	</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="participant_type">
+      <div class="row column">
+	{% if participants|length > 1 %}
+	<h4>Reporters</h4>
+	{% else %}
+	<h4>Reporter</h4>
+	{% endif %}
+      </div>
+      {% for participant in participants %}
+      <div class="participant">
+	<div class="participant-pic">
+	  {% if participant.participant %}
+	  {% autoescape off %}{{ participant.participant|userlogo:"profile-pic" }}{% endautoescape %}
+	  {% else %}
+	  {% autoescape off %}{{ participant|grouplogo:"profile-pic" }}{% endautoescape %}
+	  {% endif %}
+	</div>
+	{% if participant.participant %}
+	<div class="participant-info"><span class="participant-name">{{ participant.participant.vinceprofile.vince_username }}</span></div>
+	{% else %}
+	 <div class="participant-info"><span class="participant-name"> {% if participant.group.groupcontact %}
+             <a href="{{ participant.group.groupcontact.url }}" class="vendor-participant">{{ participant.group.groupcontact.contact.vendor_name }}</a>
+	     {% endif %}
+	   </span>
+	   </div>
+	 {% endif %}
+      </div>
+      {% empty %}
+      <div class="participant"><div class="participant-info"><i>No Reporter</i></div></div>
+      {% endfor %}
+    </div>
+    {% if vendors %}
+    <div class="participant_type">
+      <div class="row column">
+	<h4>Vendors</h4>
+      </div>
+      {% if simulation %}
+      {% elif user.is_staff %}
+      <div class="participant">
+        <div class="addfilebutton">
+          <a href="{% url 'vinny:groupchatcase' case.id %}" class="button default text-center"><i class="fa fa-plus"></i> Private Thread</a>
+        </div>
+      </div>
+      {% endif %}
+      {% for vendor in vendors %}
+      {% if forloop.counter0 == 5 %}
+      <div id="hidevendors">
+	{% endif %}
+      {% if vendor.group.groupcontact.contact.vendor_name %}
+      <div class="participant">
+	<div class="participant-pic">
+	  {% autoescape off %}{{ vendor|grouplogo:"profile-pic" }}{% endautoescape %}
+	</div>
+	<div class="participant-info"><span class="participant-name"><a href="{% url 'vinny:groupcardcase' vendor.group.id case.id %}" class="vendor-participant">{{ vendor.group.groupcontact.contact.vendor_name }}</a></span>
+	  {% if vendor.share_status %}
+	  <a href="{% url 'vinny:statement' case.id vendor.id %}" class="openmodal {% show_status_class vendor.get_general_status %}" data-open="modal" title="View Statement">{% show_status vendor.get_general_status %}</a>
+	  {% endif %}
+	</div>
+	
+      </div>
+      {% endif %}
+      {% empty %}
+      <div class="participant">
+	<p><i>No vendors have been added</i></p>
+      </div>
+      {% endfor %}
+      {% if vendors|length > 5 %}
+      </div>
+      <div class="row columns">
+        <div id="moreVendors">
+          <a href="{% url 'vinny:loadvendors' case.id %}" id="moreVendor">SHOW ALL {{num_vendors}}</a>
+        </div>
+        <div id="lessVendors">
+          <a href="#" id="lessVendor">SHOW LESS</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+    <div class="large reveal" id="largemodal" data-reveal></div>
+    <div class="reveal" id="modal" data-reveal></div>
+
+    <div class="participant_type">
+      <div class="row">
+	<div class="large-12 columns">
+	  <h4>Documents </h4>
+	</div>
+      </div>
+      <div class="participant">
+	<div class="addfilebutton">
+	  <a href="{% url 'vinny:addfile' case.id %}" class="uploadfile button default text-center"><i class="fa fa-plus"></i> Add file</a>
+	</div>
+      </div>
+      <div class="reveal" id="upload-file" data-reveal></div>
+      {% for attachment in attachments %}
+      <div class="participant">
+	<div class="participant-pic">
+	  {% if attachment.file %}
+          <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ attachment.file.filename|showfileicon }}{% endautoescape %}</span></div>
+	  {% elif attachment.attachment %}
+	  <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ attachment.attachment.name|showfileicon }}{% endautoescape %}</span></div>
+	  {% endif %}
+	</div>
+
+	<div class="participant-info">
+	  {% if attachment.file %}
+	  <span class="participant-name"> <a href="{% url 'vinny:attachment' 'case' attachment.file.uuid %}" download="{{ attachment.file.filename }}">{{ attachment.file.filename }}</a>&nbsp; {% if attachment.action.user == user or user.is_staff %}<a href="{% url 'vinny:rmfile' case.id attachment.id %}" class="file-remove" ><i class="fas fa-trash"></i></a>{% endif %}</span>
+	  {% elif attachment.attachment %}
+	  <span class="participant-name"> <a href="{{ attachment.attachment.url }}">{{ attachment.attachment.name }}</a>&nbsp; {% if attachment.action.user == user %}<a href="{% url 'vinny:rmfile' case.id attachment.id %}" class="file-remove" ><i class="fas fa-trash"></i></a>{% endif %}</span>
+	  {% endif %}
+	  <div class="document-info">Uploaded by {{ attachment.action.user.vinceprofile.vince_username }} on {{ attachment.action.created|date:'Y-m-d' }}</div>
+	</div>
+      </div>
+      {% empty %}
+      <div class="participant"><div class="participant-info"><i>No files</i></div></div>
+      {% endfor %}
+    </div>
+    <div class="participant_type">
+      <div class="row">
+	<div class="large-12 columns">
+	  <h4>Notifications <span class="helptooltip" title="Is this case too chatty?  Turn off/on post notifications for this case only. You will still receive important notifications from the coordination team or if you are tagged in the case discussion."><i class="fas fa-question-circle"></i></span></h4>
+	</div>
+      </div>
+      <div class="participant">
+	<div class="addfilebutton">
+	  {% if case_muted %}
+	  <a href="{% url 'vinny:mute' case.id %}" class="mutecase button default text-center"><i class="fas fa-volume-up"></i> Unmute Case</a>
+	  {% else %}
+	  <a href="{% url 'vinny:mute' case.id %}" class="mutecase button default text-center"><i class="fas fa-volume-mute"></i> Mute Case</a>
+	  {% endif %}
+	</div>
+      </div>
+    </div>
+    
+    {% if showtracking %}
+     <div class="participant_type">
+      <div class="row">
+        <div class="large-12 columns">
+          <h4>Tracking <span class="helptooltip" title="Are you tracking this case in your organization's own tracking system? The group administrator can add the tracking number here and it will be included in the subject of any email sent to you. Only users in your organization will see this tracking number."><i class="fas fa-question-circle"></i></span></h4>
+        </div>
+      </div>
+      {% if tracking.tracking %}{% else %}
+      <div class="participant">
+	<div class="addfilebutton">
+          <a href="{% url 'vinny:addtrack' case.id %}" class="addtrack button default text-center"><i class="fa fa-plus"></i> Add tracking ID</a>
+        </div>
+      </div>
+      {% endif %}
+      {% if tracking.tracking %}
+      <div class="participant">
+	<div class="participant-info">
+	  <span class="participant-name"><p>{{ tracking.tracking }} <a href="{% url 'vinny:addtrack' case.id %}" class="addtrack"><i class="fas fa-edit edittrack"></i></a></p>
+	  </span>
+	  <div class="document-info">Added by {{ tracking.added_by.vinceprofile.vince_username }} on {{ tracking.dateupdated|date:'Y-m-d' }}</div>
+	</div>
+
+      </div>
+      {% endif %}
+     </div>
+     {% endif %}
+  </div>
+</div>
+<div class="hidden">
+  <span id="publishdate">{{ case.due_date|date:"m/d/Y" }}</span>
+  <span id="uid">{{ case.uid }}</span>
+</div>
+{% endblock %}

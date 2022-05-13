@@ -1,0 +1,94 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n markdown_extras %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/mathjax_config.js' %}"></script>
+<script id="MathJax-script" src="{% static 'vince/js/mathjax/tex-chtml.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/review.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-9 columns">
+      <h2>Vul Note Review for <a href="{% url 'vince:case' case.id %}">{{ case.vu_vuid }}</a></h2>
+    </div>
+    <div class="large-3 columns text-right">
+      <a class="button primary" id="applyreview" href="{% url 'vince:reviewapply' review.id %}">Apply to New Draft</a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vince:case' case.id %}#vulnote">VulNote</a></li>
+      <li><span class="show-for-sr">Current: </span> Review</li>
+    </ul>
+  </nav>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning" id="readonly">
+      This is a review.  You can not edit the vulnerability note on this page. Click "Apply to New Draft" to create a new revision and continue editing.
+    </div>
+  </div>
+</div>
+
+<div class="reveal" id="modal" data-reveal></div>
+
+{% if reviews %}
+<div class="row">
+  <div class="large-10 columns">
+    <div class="callout warning">
+      There {% if reviews|length > 1 %}are {{ reviews|length }} more reviews{% else %}is 1 more review{% endif %} for this revision. Click <a href="{% url 'vince:reviewdetail' next.id %}">Next</a> to see next review.
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="small-10 large-10 columns">
+    <p> <b>Review performed by {{ review.reviewer.usersettings.vince_username }} on {{ review.date_complete|date:"Y-m-d"}} </b> {% if review.ticket %}<a href="{{ review.ticket.get_absolute_url }}">{{ ticket.ticket_for_url }}</a>{% endif %}</p>
+    <div class="row">
+      <div class="large-12 columns">
+	{% if review.marks %}
+	{{ review.marksj|json_script:"marks" }}
+	{% endif %}
+	
+	<textarea name="content" cols="40" rows="30" class="form-control" required="" id="id_content"> {{ review.review }}</textarea>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	{% if review.feedback %}
+	<p><b>{{ review.reviewer.usersettings.vince_username }}'s Feedback:</b></p>
+	<p>{{ review.feedback }}</p>
+	{% else %}
+	<p><b>No additional feedback provided.</b></p>
+	{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="small-2 large-2 columns">
+    {% if reviews %}
+    <a href="{% url 'vince:reviewdetail' next.id %}">
+      <button class="orbit-next">
+	<div>Next Review</div>
+	<span class="show-for-sr">Next Slide</span>
+	<span class="nav fa fa-chevron-right fa-3x"></span>
+      </button>
+    </a>
+    {% endif %}
+  </div>
+  
+</div>
+
+{% endblock %}

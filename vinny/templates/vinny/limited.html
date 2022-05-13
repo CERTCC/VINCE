@@ -1,0 +1,54 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Dashboard" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vinny/js/case_search.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>All Cases</h2>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+</div>
+<form action="{% url 'vinny:limitedfilter' %}" method="post" enctype="multipart/form-data" name="ltdsearchform" id="searchform">
+  {% csrf_token %}
+<div class="row">
+  <div class="large-5 medium-5 small-8 columns">
+    {% render_field form.wordSearch errormsg=form.wordSearch.errors|first %}
+  </div>
+  <div class="large-4 columns medium-4 small-2">
+    <div class="dropdown-pane" id="status-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+	<div class="row column">
+	  <div class="form-check border-bottom mb-2 pb-2">
+	    <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
+	    <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
+	  </div>
+	  {% render_field form.status class="form_check_input" %}
+	</div>
+    </div>
+    <div class="filter-by-dropdown">
+      <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="status-dropdown">
+	Filter by status
+	<i aria-hidden="true" class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+  </div>
+  <div class="large-3 medium-3 columns"><input type="hidden" name="page" id="id_page" value="1"></div>
+</div>
+</form>
+<div class="row">
+  <div class="large-10 columns">
+    <div id="searchresults">
+      {% include 'vinny/include/cases.html' with cases=object_list %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,7 @@
+{
+    "app": "python3 app.py",
+     "context": {
+       "yaml_context": "context/bigvince-community.yaml"
+     }
+}
+

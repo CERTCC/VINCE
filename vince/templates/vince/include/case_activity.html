@@ -1,0 +1,136 @@
+{% load i18n humanize %}
+{% load widget_tweaks %}
+<div class="row">
+  <div class="large-12 columns">
+    <h3 class="section-title">{% trans "Activity" %}</h3>
+  </div>
+</div>
+
+<form type="post" id="filterform" action="{% url 'vince:commfilter' case.id %}">
+  {% csrf_token %}
+  <div class="row">
+    <div class="large-4 medium-4 small-8 columns">
+      <div class="input-group">
+	{% render_field form.keyword class="input-group-field form-control" errormsg=form.wordSearch.errors|first %}
+	<div class="input-group-button">
+          <button type="submit" class="button" ><i class="fas fa-search"></i></button>
+	</div>
+      </div>
+    </div>
+    <div class="large-2 columns">
+      <div class="dropdown-pane" id="vendor-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="row column">
+          <div class="form-check border-bottom mb-2 pb-2">
+            <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
+            <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
+          </div>
+	  {% for choice in vendors %}
+	  {% if forloop.counter0 == 5 %}
+	  <div id="hidevendors">
+	    {% endif %}
+	    <div class="vendorchoice">
+	      <input id="id_vendor_{{forloop.counter0}}" name="vendor" type="checkbox" value="{{choice.id}}">  {{ choice.contact.vendor_name }}
+	    </div>
+	    {% endfor %}
+	    {% if vendors|length > 5 %}
+	  </div>
+	  {% endif %}
+          <div class="row columns">
+            <div id="moreVendors">
+              <a href="#" id="moreVendor">SHOW MORE</a>
+            </div>
+	    <div id="lessVendors">
+              <a href="#" id="lessVendor">SHOW LESS</a>
+            </div>
+          </div>
+	  <div class="filter-by-dropdown__dropdown-footer">
+	  </div>
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="vendor-dropdown">
+          Vendor
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+    {% if participants %}
+    <div class="large-2 columns">
+      <div class="dropdown-pane" id="participant-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="row column">
+          <div class="form-check border-bottom mb-2 pb-2">
+            <input id="filter_by_dropdown_select_all_1" type="checkbox" class="form-check-input">
+            <label for="filter-by_dropdown_select_all_1" class="form-check-label"> Select all </label>
+          </div>
+	  {% render_field form.participants %}
+	  <div class="filter-by-dropdown__dropdown-footer">
+          </div>
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="participant-dropdown">
+          Participant
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+    {% endif %}
+    <div class="large-2 columns">
+      <div class="dropdown-pane" id="type-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="row column">
+          <div class="form-check border-bottom mb-2 pb-2">
+            <input id="filter_by_dropdown_select_all_2" type="checkbox" class="form-check-input">
+            <label for="filter-by_dropdown_select_all_2" class="form-check-label"> Select all </label>
+          </div>
+	  {% render_field form.communication_type %}
+	  <div class="filter-by-dropdown__dropdown-footer">
+          </div>
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="type-dropdown">
+          Type
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+    <div class="large-2 medium-2 hide-for-small-only columns">
+      <div class="dropdown-pane" id="date-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="input-group">
+          <span class="input-group-label">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+          {% render_field form.datestart class="input-group-field" placeholder="Start Date" %}
+        </div>
+        <div class="input-group">
+          <span class="input-group-label">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+          {% render_field form.dateend class="input-group-field" placeholder="End date" %}
+        </div>
+        <div class="filter-by-dropdown__dropdown-footer">
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+	<button type="button" class="filter-by-dropdown__toggle-button" data-toggle="date-dropdown">
+          Date
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+	</button>
+      </div>
+    </div>
+    {% if participants %}{% else %}
+    <div class="large-2 columns">
+    </div>
+    {% endif %}
+  </div>
+</form>
+<div class="row">
+  <div class="large-12 columns">
+    <div class="article-row-section">
+      <div class="article-row-section-inner" id="timeline">
+	{% include 'vince/include/case_timeline.html' %}
+      </div>
+    </div>
+  </div>
+</div>
+

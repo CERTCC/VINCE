@@ -1,0 +1,89 @@
+{% load i18n humanize%}
+{% load static %}
+{% load ticket_to_link %}
+{% load inbox_tags %}
+
+{% for thread in threads %}
+<li {% if thread.latest_message.sender != user %}class="timeline-inverted"{% endif %}>
+
+  <div class="timeline-badge {% if thread|unread:user %}warning{% else %}success{% endif %}">
+    <i class="fas fa-envelope"></i>
+  </div>
+  <div class="timeline-panel">
+    <div class="timeline-heading">
+      <h4 class="timeline-title">{{ thread.subject }}</h4>
+      </h4>
+      <p><small class="text-muted"><i class="far fa-clock"></i>&nbsp;<span class='byline text-info'>with {{ thread.users.all|join:", " }}</span> <span title='{{ thread.latest_message.sent_at|date:"r" }}'>{{ thread.latest_message.sent_at|naturaltime }}</span> <span class="text-right">({{ thread.num_messages }} Messages)</span> </small></p>
+    </div>
+<div class="timeline-body">
+  <p><b>Last Message:</b></p>
+      {{ thread.latest_message.content }}
+      {% if thread.number_attachments %}
+      <i class="fas fa-paperclip"></i> {{ thread.number_attachments }} attachments <br/>
+      {% endif %}
+      <hr>
+      <div class="btn-group">
+	<a href="{{thread.get_absolute_url}}"><button class="button tiny primary">View Thread</button></a>
+         <button class="button tiny alert"><i class="fas fa-trash"></i>&nbsp;{% trans 'Delete' %}</button>
+       </div>
+    </div>
+  </div>
+</li>
+{% endfor %}
+{% for notify in notifications %}
+
+<li {% if vendor %}class="timeline-inverted"{% endif %}>
+  <div class="timeline-badge {% if notify.casemessageaction %} {% if notify.casemessageaction.replied %} success {% else %} warning {% endif %}{% endif %}">
+    {% if notify.notification %}
+    {% if "Publish" in notify.title %}
+    <i class="fas fa-share-square"></i>
+    {% else %}
+    <i class="fas fa-edit"></i>
+    {% endif %}
+    {% elif notify.casemessageaction.message %}
+    {% if "Reply" in notify.title %}
+    <i class="fas fa-reply"></i>
+    {% else %}
+    <i class="fas fa-envelope"></i>
+    {% endif %}
+    {% elif notify.post %}
+    <i class="fas fa-sticky-note"></i>
+    {% else %}
+    <i class="fas fa-cogs"></i>
+    {% endif %}
+  </div>
+  <div class="timeline-panel">
+    <div class="timeline-heading">
+      <h4 class="timeline-title">
+      {% if notify.notification %}
+      {{ notify.title }}
+      {% elif notify.casemessageaction.message %}
+      <a href="{% url 'vinny:msg_detail' notify.casemessageaction.message %}">[Thread-{{ notify.casemessageaction.thread }}-{{notify.casemessageaction.message}}]</a> {{ notify.title }}
+      {% elif notify.post %}
+      <a href="{% url 'vinny:postcase' notify.post %}">{{ notify.title }}</a>
+      {% else %}
+      {{ notify.title }}
+      {% endif %}
+      </h4>
+      <p><small class="text-muted"><i class="far fa-clock"></i>&nbsp;<span class='byline text-info'>{% if notify.user %}by {{ notify.user }}{% endif %} <span title='{{ notify.date|date:"r" }}'>{{ notify.date|naturaltime }}</span>{% if notify.last_edit %} <span class="edit-time"> (Edited {{ notify.last_edit|naturaltime }})</span>{% endif %}</span></small></p>
+    </div>
+    <div class="timeline-body">  
+      {% if notify.comment %}
+      <p>{{ notify.comment|force_escape|smarter_urlize:50|num_to_link|linebreaksbr }}</p>
+      {% endif %}
+       <hr>
+       <div class="btn-group">
+	 {% if notify.casemessageaction.message %}
+	 <a href="{% url 'vinny:msg_detail' notify.casemessageaction.message %}"><button class="button tiny primary">View Thread</button></a>
+	 {% elif notify.post %}
+	 <a href="{% url 'vinny:postcase' notify.post %}"><button class="button tiny primary">View Post</button></a>
+	 {% elif notify.notification %}
+	 <a href="{% url 'vince:editnotify' case.id notify.notification.id %}"><button class="button tiny primary">View Post</button></a>
+	 {% endif %}
+	 
+	 <button class="button tiny alert"><i class="fas fa-trash"></i>&nbsp;{% trans 'Delete' %}</button>
+       </div>
+    </div>
+  </div>
+</li>
+{% endfor %}

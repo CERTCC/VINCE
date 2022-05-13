@@ -1,0 +1,51 @@
+{% load i18n markdown_extras ticket_to_link %}
+<div class="full_modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ cve.cve_id }}</h3>
+    </div>
+
+    <div class="modal-body">
+      {% if account_error or service_down %}
+      <div class="callout alert">
+	<p>Error requesting information from CVE Services. {% if account_error %}{{ account_error }}{% else %} Service is down. {% endif %}</p>
+      </div>
+      {% else %}
+      <p>
+	<b>Requested by:</b> {{ cve.requested_by.user }}
+	<br/>
+	<b>CNA:</b> {{ cve.requested_by.cna }}
+	<br/>
+	<b>Owning CNA:</b> {{ cve.owning_cna }}
+	<br/>
+	<b>Created:</b> {{cve.time.created }}
+	<br/>
+	<b>Modified:</b> {{cve.time.modified }}
+	<br/>
+	<b>State:</b> {{ cve.state }}
+	<br/>
+      </p>
+      {% if vince_request %}
+	<p>
+	  This CVE was requested via VINCE on <b>{{ vince_request.time_reserved|date:"Y-m-d" }}</b> by <b>{{ vince_request.user_reserved.usersettings.preferred_username }}.</b>
+	</p>
+	{% if vince_request.cve_info.vul %}
+	<b>Vulnerability:</b> <a href="{% url 'vince:vul' vince_request.cve_info.vul.id %}">{{ vince_request.cve_info.vul.vul }}</a>
+	<br/>
+	{% endif %}
+	{% if vince_request.cve_info.vul.case %}
+	<b>Case:</b> <a href="{% url 'vince:case' vince_request.cve_info.vul.case.id %}">{% if vince_request.cve_info.case|case_access:user %}{{ vince_request.cve_info.vul.case.vutitle }}{% else %}{{ vince_request.cve_info.vul.case.vu_vuid }}{% endif %}</a>
+	{% endif %}
+	</p>
+	{% endif %}
+      {% endif %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Done</a>
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+

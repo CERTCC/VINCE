@@ -1,0 +1,97 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize post_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Completed Associations" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Completed Contact Associations</h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <nav aria-label="You are here:" role="navigation">
+      <ul class="breadcrumbs">
+	<li><a href="{% url 'vince:contactlist' %}">Pending List</a></li>
+	<li><span class="show-for-sr">Current: </span> Completed</li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <div id="user-list">
+      {% if object_list %}
+      <div class="row list-row">
+        <div class="large-3 columns">
+	  <b>Ticket</b>
+	</div>
+        <div class="large-3 columns">
+	  <b>User</b>
+	</div>
+	<div class="large-2 columns">
+	  <b>Contact</b>
+	</div>
+	<div class="large-2 columns">
+	  <b>Status</b>
+        </div>
+	<div class="large-2 columns">
+	  <b>Date</b>
+	</div>
+      </div>
+      {% for u in object_list %}
+      <div class="row list-row">
+	<div class="large-3 columns">
+	  {% if u.ticket %}
+	  <a href="{{ u.ticket.get_absolute_url }}">[{{ u.ticket.ticket_for_url }}]</a>
+	  {% autoescape off %}{{ u.ticket.get_status_html }}{% endautoescape %}
+	  {% elif u.old_ticket %}
+	  <a href="{{ u.old_ticket.get_absolute_url }}">[{{ u.old_ticket.ticket_for_url }}]</a>
+	  {% autoescape off %}{{ u.old_ticket.get_status_html }}{% endautoescape %}
+	  {% endif %}
+	</div>
+	<div class="large-3 columns">
+	  {{ u.user }}
+	</div>
+	<div class="large-2 columns">
+	  <a href="{% url 'vince:contact' u.contact.id %}">{{ u.contact.vendor_name }}</a>
+	</div>
+	<div class="large-2 columns">
+	  {% if u.approval_requested %}
+	  Association Complete
+	  {% elif u.restart %}
+	  User Not Verified, Process Restarted
+	  {% else %}
+	  User Not Verified, Process Canceled 
+	  {% endif %}
+	</div>
+	<div class="large-2 columns">
+	  {{ u.ticket.modified|date:"Y-m-d" }}
+	</div>
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+

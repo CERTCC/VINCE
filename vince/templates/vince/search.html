@@ -1,0 +1,56 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Ticket Search" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/allsearch.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Search</h2>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-6 columns">
+    <div class="search-menu">
+      <ul class="menu simple">
+	<li><a href="#" {% if facet %}{% else %}class="menu-active"{% endif %}>All</a></li>
+	<li><a href="#" {% if facet == 'Tickets' %}class="menu-active"{% endif %}>Tickets</a></li>
+	<li><a href="#" {% if facet == 'Cases' %}class="menu-active"{% endif %}>Cases</a></li>
+	<li><a href="#" {% if facet == 'Contacts' %}class="menu-active"{% endif %}>Contacts</a></li>
+	<li><a href="#" {% if facet == 'Vuls' %}class="menu-active"{% endif %}>Vuls</a></li>
+	<li><a href="#" {% if facet == 'Vince' %}class="menu-active"{% endif %}>Vince</a></li>
+      </ul>
+    </div>
+      <form id="searchall" method="GET" action="{% url 'vince:results' %}">
+	{{ csrftoken }}
+	<div class="input-group">
+	  {% render_field form.searchbar|add_class:"input-group-field"|attr:"spellcheck:False" %}
+	  <div class="input-group-button">
+            <button type="submit" class="button"><i class="fas fa-search"></i></button>
+	  </div>
+	</div>
+	<input type="hidden" name="page" id="id_page" value="1">
+      </form>
+  </div>
+  <div class="large-6 columns">
+  </div>
+</div>
+
+<!--<div class="row">
+  <div class="large-9 medium-9 columns">-->
+<div id="searchresults">
+    <p class="loading text-center"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></p>
+</div>
+<!--  </div>
+  <div class="large-3 columns"></div>
+</div>-->
+{% endblock %}

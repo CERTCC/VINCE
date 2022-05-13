@@ -1,0 +1,67 @@
+[
+{
+  "model": "vince.ticketqueue",
+  "pk": 1,
+  "fields": {
+    "title": "CR",
+    "slug": "cr",
+      "new_ticket_cc": null,
+    "updated_ticket_cc": null,
+    "default_owner": 1,
+    "queue_type": 2,
+    "from_email": "vince-email"
+  }
+},
+{
+  "model": "vince.ticketqueue",
+  "pk": 2,
+  "fields": {
+    "title": "Case",
+    "slug": "case",
+    "new_ticket_cc": null,
+    "updated_ticket_cc": null,
+    "default_owner": null,
+    "queue_type": 3,
+    "from_email": "vince-email"
+  }
+},
+{
+  "model": "vince.ticketqueue",
+  "pk": 3,
+  "fields": {
+    "title": "Vendor",
+    "slug": "vendor",
+    "new_ticket_cc": null,
+    "updated_ticket_cc": null,
+    "default_owner": 1,
+    "queue_type": 4,
+    "from_email": "vince-email"
+  }
+},
+{
+  "model": "vince.ticketqueue",
+  "pk": 4,
+  "fields": {
+    "title": "General",
+    "slug": "general",
+    "new_ticket_cc": null,
+    "updated_ticket_cc": null,
+    "default_owner": 1,
+    "queue_type": 1,
+    "from_email": "vince-email"
+  }
+},
+{
+  "model": "vince.ticketqueue",
+  "pk": 5,
+  "fields": {
+    "title": "Inbox",
+    "slug": "inbox",
+    "new_ticket_cc": null,
+    "updated_ticket_cc": null,
+    "default_owner": null,
+    "queue_type": 4,
+    "from_email": "vince-email"
+  }
+}
+]

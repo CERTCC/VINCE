@@ -1,0 +1,158 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize contact_tags %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/scontact.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Contact Information Changes: <a href="{% url 'vince:contact' contact.id %}">{{ contact.vendor_name }}</a></h2>
+    </div>
+    <div class="large-4 columns text-right">
+      <a href="{% url 'vince:editcontact'  contact.id %}" class="ticket-edit"><button class="button cmu"><i class="fas fa-pencil-alt"></i> {% trans "Edit Contact" %}</button></a>
+    </div>
+  </div>
+</div>
+
+<div class="reveal large" data-reveal id="modal"></div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <button class="button default" id="previewchange" action="{% url 'vince:previewcontact' contact.id %}">Preview and Approve</button>
+    <button class="button secondary" id="rejectchange" action="{% url 'vince:rejectchange' contact.id %}">Reject All</button>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+
+<ul class="category-list list-unstyled">
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fas fa-envelope"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Emails</h1>
+      <div class="row">
+        <div class="large-12 columns">
+          <table class="unstriped">
+	    {% for email, type, name in emails %}
+	    <tr>
+              <td>{{ email }} ({{type}}){% if name %},  {{name}} {% endif %}</td>
+            </tr>
+	    {% endfor %}
+	    {% autoescape off %}{{ emaildiff|unpack_email }}{% endautoescape %}
+	  </table>
+        </div>
+      </div>
+    </div>
+  </li>
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-key"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">PGP Keys</h1>
+      <div class="row">
+        <div class="large-12 columns">
+          <table class="unstriped">
+	    {% for key_id, key_data, pgp_email in keys %}
+            <tr>
+              <td>{{ key_id }} {% if pgp_email %}, {{ pgp_email }}{% endif %} </td>
+            </tr>
+            {% endfor %}
+	    {% autoescape off %}{{ pgpdiff | unpack_pgp }}{% endautoescape %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-mobile-alt"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Phone Numbers</h1>
+      <div class="row">
+        <div class="large-12 columns">
+          <table class="unstriped">
+	    <table>
+	      {% for cc, phone, type, comment in phones %}
+	      <tr>
+		<td>{{ cc }} {{ phone }} ({{type}})</td><td>{% if comment %}{{ comment }}{% endif %}</td>
+	      </tr>
+	      {% endfor %}
+	      {% autoescape off %}{{ phonediff|unpack_phones }}{% endautoescape %}
+          </table>
+	</div>
+      </div>
+    </div>
+  </li>
+
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-home"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Location</h1>
+      <div class="row">
+        <div class="large-12 columns">
+          <table class="unstriped">
+	    {% for country, type, street, street2, city, state, zip in postals %}
+	    <tr>
+              <td>{{street}} {{street2}} {{city}} {{state}} {{country}} {{zip}} (<i>{{type}}</i>)</td>
+	    </tr>
+            {% endfor %}
+	    {% autoescape off %}{{ postaldiff|unpack_postal }}{% endautoescape %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-globe-americas"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Website</h1>
+      <div class="row">
+	<div class="large-12 columns">
+          <table class="unstriped">
+	    {% for url, d in sites %}
+	    <tr>
+	      <td>{{ url }} {% if d %}, {{ d }}{% endif %}</td>
+	    </tr>
+	    {% endfor %}
+	    {% autoescape off %}{{ webdiff|unpack_web }}{% endautoescape %}
+          </table>
+	</div>
+      </div>
+    </div>
+  </li>
+
+</ul>
+  </div>
+</div>
+
+		
+	    
+
+<hr/>
+<div class="row">
+  <div class="large-12 columns">
+    <h3>Change Log</h3>
+  </div>
+</div>
+<div class="row">
+  <div class="large-8 columns">
+    {% include 'vince/include/contact_changes.html' with change_list=object_list %}
+  </div><div class="large-4 columns"></div>
+</div>
+
+{% endblock %}

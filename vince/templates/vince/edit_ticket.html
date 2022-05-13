@@ -1,0 +1,109 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Edit Ticket" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/editticket.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Edit Ticket <a href="{{ ticket.get_absolute_url }}">[{{ ticket.queue }}-{{ ticket.id }}]</a></h2>
+    </div>
+    <div class="large-4 columns text-right">
+    </div>
+  </div>
+</div>
+
+{% if form.errors %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert">
+    <p class="errornote">
+      {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
+      {% for error in form.non_field_errors %}
+      <div>
+	{{ error|escape }}
+      </div>
+      {% endfor %}
+    </p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="small-12 large-8 columns">
+    <form method="post">{% csrf_token %}
+
+      <div class="callout warning">{% trans "Note" %}:</strong> {% blocktrans %}Editing a ticket does <em>not</em> send an e-mail to the ticket owner or submitter. No new details should be entered, this form should only be used to fix incorrect details or clean up the submission.{% endblocktrans %}</div>
+      {% for field in form %}
+      {% if field.name == "attachment" %}
+      <div class="form-group">
+	<label>Attach File</label>
+        <small class="form-text text-muted">
+	  You can attach a file such as a document or screenshot to this ticket.
+        </small>
+	
+	<div class="row attachment">
+          <div class="large-6 medium-6 columns">
+	    <label for="id_attachment" class="vulupload">Choose a File</label>
+	    {% render_field form.attachment class="form-control show-for-sr" %}
+          </div>
+          <div class="large-6 medium-6 columns">
+	    <div id="file-title-wrap">
+              <div class="file-title-remove"><i class="fas fa-times"></i></div>
+	    </div>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="form-group">
+        <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+        {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+        {{ field }}
+        {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+	
+      </div>
+      {% endif %}
+      {% endfor %}
+
+      {{ contactform.management_form }}
+      <div class="hidden" id="contact_formset_prefix" value="{{ contactform.prefix }}"></div>
+      {% for subform in contactform %}
+      <div class="contact-formset" prefix="{{contactform.prefix}}">
+	<div class="row">
+	    <div class="form-group">
+	      <div class="large-11 columns">
+
+		<label for="id_contact">Contact:</label>
+		{% if subform.help_text %}<small class='form-text text-muted'>{% trans subform.help_text %}</small>{% endif %}
+		{% if subform.id %}{{ subform.DELETE }}{% endif %}
+		{{ subform.id }}
+		<input type="text" value="{{subform.contact.value|contact_to_name:subform.contact.value}}" id="id_contact-{{forloop.counter0}}-contact" class="form-control" name="{{ subform.contact.name }}-{{ forloop.counter0 }}-{{subform.contact.name}}">
+
+
+	    </div>
+	  </div>
+	</div>
+      </div>
+      {% endfor %}
+
+      <div class="row submitrow">
+	<div class="large-12 columns">
+	  <input type="submit" value="Submit" name="vrfSubmit" class="primary button"/>
+	  <a href="{{ ticket.get_absolute_url }}" class="button secondary">Cancel</a>
+	</div>
+      </div>
+</form>
+</div>
+</div>
+
+
+{% endblock %}

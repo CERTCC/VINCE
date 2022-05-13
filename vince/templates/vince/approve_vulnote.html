@@ -1,0 +1,27 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method="POST" action="{% url 'vince:approvevulnote' vulnote.id %}">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Approve Vul Note for Publishing</h3>
+    </div>
+    <div class="modal-body">
+      <p>Any feedback to the author of this vul note should be added to <a href="{{ vulnote.ticket_to_approve.get_absolute_url }}">{{ vulnote.ticket_to_approve.ticket }}</a> prior to approving this vulnote.  By approving this vulnote, the ticket will automatically close.</p>
+      <p>By approving this vulnerability note, you confirm that you have read the note in it's entirety and believe it is ready for publication.</p>
+      {% csrf_token %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button primary" type='submit' value='{% trans "Yes, Approve" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  </form>
+</div>
+
+{% endblock %}
+
+    

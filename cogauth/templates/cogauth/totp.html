@@ -1,0 +1,54 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load i18n static qr_code %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vinny/js/profile.js' %}"></script>
+{% endblock %}
+{% block title %}VINCE Profile{% endblock %}
+
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 medium-6 small-12 columns">
+      <h2>Associate TOTP Token</h2>
+    </div>
+    <div class="large-6 medium-6 columns small-12 text-right">
+      
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+
+    <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-9 columns">
+    <p>Please scan the QR Code or enter the following secret key into any TOTP-generator, such as Google Authenticator, Duo, or LastPass Authenticator.  If you are re-associating your app with VINCE, you may be required to remove the VINCE token in your app.</p>
+    {% qr_from_text qrtext %}
+    <p><b>{{ secretcode }}</b></p>
+    <p>Once you have added the secret key into the app of your choice, it will generate a temporary password.  Please enter the temporary password below. Optionally, you may also add a friendly device name to remind you later of the application you used.
+      <form method="POST">
+	{% csrf_token %}
+	<input type="hidden" value="{{ secretcode }}" name="secretcode">
+	{% for field in form %}
+	<div class="form-row">
+          <label for="id_{{ field.name }}">{% trans field.label %}{% if field.field.required %} <span class="required">*</span>{% endif %}</label>
+          {% if field.help_text %}
+          <small class='form-text text-muted'>{% autoescape off %}{{ field.help_text }}{% endautoescape %}</small>{% endif %}
+          {{ field }}
+          {% for error in field.errors %}
+          <p style="color: red">{% autoescape off %}{{ error }} {% endautoescape %}</p>
+          {% endfor %}
+	</div>
+	{% endfor %}
+	<input type="submit" class="primary button" value="Submit">
+      </form>
+  </div>
+</div>
+{% endblock %}

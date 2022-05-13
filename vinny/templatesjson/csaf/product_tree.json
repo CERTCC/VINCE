@@ -1,0 +1,25 @@
+{"branches":
+ [
+     {"category": "vendor",
+      "name": "%(vendor_name)s",
+      "branches":
+      [
+	  {"category": "product_name",
+           "name": "%(product_name)s",
+           "branches":
+	   [
+	       {"category": "product_version",
+		"name": "%(product_version)s",
+		"product": {
+                    "product_id": "%(csaf_productid)s",
+                    "name": "%(product_fullname)s"
+		}
+               }
+	   ]
+	  }
+      ]
+     }
+ ]
+}
+
+

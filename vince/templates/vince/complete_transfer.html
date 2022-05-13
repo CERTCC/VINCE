@@ -1,0 +1,88 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize ticket_to_link %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/transfer.js' %}"></script>
+{% endblock %}
+									 
+{% block vince_title %}{% trans "Complete Case Transfer" %}{% endblock %}
+<!-- site-title  -->
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-10 medium-8 small-12 columns">
+      {% if form %}
+      <h2>Approve Transfer of Case <a href="{{ case.get_absolute_url }}">{{ case.vu_vuid }}</a> - {{ case.title }}</h2>
+      {% elif group_to_approve %}
+      <h2>Case Transfer Request of Case <a href="{{ case.get_absolute_url }}">{{ case.vu_vuid }}</a> - {{ case.title }}</h2>
+      {% else %}
+      <h2>Are you lost?</h2>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<div class="reveal" id="modal" data-reveal></div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% if cr %}
+    <b>Current Team Owner:</b> {% if case.team_owner %}{{ case.team_owner.name }}{% else %}None Set{% endif %}
+    <br/>
+    <b>Proposed Team Owner:</b> {{ cr.user_name }}
+    <br/>
+    <b>Requested By:</b> {{ cr.added_by }}
+    <br/>
+    {% if ticket %}
+    <b>Reason:</b> {{ ticket.description|force_escape|smarter_urlize:100|num_to_link|linebreaksbr }}
+    {% endif %}
+    <hr/>
+    {% endif %}
+  </div>
+</div>
+{% if form %}
+<form method='post' action="{% url 'vince:transfer' case.id %}">
+  {% csrf_token %}
+  <div class="row">
+    <div class="large-12 columns">
+      <label for="id_share_release">Do you approve the transfer of this case?</label>
+      <br/>
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-4 columns">
+      <div class="button-group-option" data-grouptype="OR">
+	<input type="submit" id="approve" class="button success radius" value="Yes">
+	<a id="reject" class="button alert radius" href="{% url 'vince:reject_transfer' case.id %}">No</a>
+      </div>
+    </div>
+    <div class="large-8 columns">
+      &nbsp;
+    </div>
+  </div>
+</form>
+{% elif group_to_approve %}
+<div class="row">
+  <div class="large-12 columns">
+    <h3>You must be a member of the {{ group_to_approve.name }} Team to approve this request.</h3>
+  </div>
+</div>
+{% else %}
+<div class="row">
+  <div class="large-12 columns">
+    <h3>No Case Transfer Request Available for {{ case.vu_vuid }}</h3>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+  

@@ -1,0 +1,153 @@
+{% extends VINCEPUB_BASE_TEMPLATE %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="row columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vincepub:initreport' %}">Report</a></li>
+      <li><a href="{% url 'vincepub:vulcoordrequest' %}">Vulnerability Reporting Form</a></li>
+      <li><span class="show-for-sr">Current: </span>Success</li>
+    </ul>
+  </nav>
+</div>
+<br/>
+<div class="row columns">
+  <h2>Got it! Thank you for your report.</h2>
+</div>
+ <div class="row" id="content">
+   <div class="large-8 medium-8 columns">
+     <div class="blog-post"> 
+       <p class="lead-body">This report submission is tracked as: <b>{{REPORT_ID}}{{ vrf_id }}</b></p>
+       {% if form.contact_email.value %}
+       <p>An acknowledgment email has also been sent to the email address you provided. Please check for an email from {{ CONTACT_EMAIL }} that confirms receipt of your report. (You may need to add {{ CONTACT_EMAIL }} to your address book to ensure it is not flagged as spam.)</p>
+       {% endif %}
+       <p>If you wish to contact us regarding this report, please <a href="{% url 'vinny:login' %}">login to your VINCE account</a> and <a href="{% url 'vinny:sendmsg' %}">send us a message.</a></p>
+       {% if user.is_authenticated %}
+       <p class="text-center"><a href="{% url 'vinny:reports' %}" class="button vulupload">View my reports</a></p>
+       {% endif %}
+       <h3 class="subtitle">Vulnerability Information</h3>       
+       <table class="unstriped">
+	 <tr>
+	   <td>Have you attempted to contact the vendor?</td>
+	   <td>{% if comm_attempt == "True" %}Yes{% else %}No{% endif %}</td>
+	 </tr>
+	 {% if comm_attempt == "True" %}
+	 {% if first_contact %}
+	 <tr><td> Date of First Contact </td><td> {{ first_contact }}</td></tr>
+	 {% endif %}
+	 {% if vendor_communication %}
+	 <tr><td>Summary of Previous Communications</td><td>{{ vendor_communication }}</td></tr>
+	 {% endif %}
+	 {% elif why_no_attempt %}
+	 <tr><td>Why have you not contacted the vendor directly?</td><td>{{ coord_choice }}</td></tr>
+	 {% if please_explain %}
+	 <tr><td>Explanation</td><td> {{ please_explain }}</td></tr>
+	 {% endif %}
+	 {% endif %}
+	 {% if vendor_name %}
+	 <tr><td>Vendor Name</td><td>{{ vendor_name }}</td></tr>
+	 {% endif %}
+	 {% if multiplevendors == "True" %}
+	 <tr><td>Are multiple vendors affected?</td><td>Yes</td></tr>
+	 {% if other_vendors %}
+	 <tr><td>Other Vendors</td><td> {{ other_vendors }} </td></tr>
+	 {% endif %}
+	 {% else %}
+	 <tr><td>Are multiple vendors affected?</td><td>No</td></tr>
+	 {% endif %}
+	 <tr><td>Product Affected</td><td>{{ product_name }}</td></tr>
+	 <tr><td>Product Version</td><td>{{ product_version }}</td></tr>
+	 <tr><td>Significant ICS/OT impact?</td><td>{{ ics_impact }}</td></tr>
+	 <tr><td>Description of vulnerability</td><td>{{ vul_description }}</td></tr>
+	 <tr><td>How does an attacker exploit this vulnerability?</td><td>{{ vul_exploit }}</td></tr>
+	 <tr><td>What is the impact of this vulnerability?</td><td>{{ vul_impact }}</td></tr>
+	 <tr><td>How was the vulnerability discovered?</td><td>{{ vul_discovery }}</td></tr>
+	 {% if vul_public == "True" %}
+	 <tr><td>Is the vulnerability publicly known?</td><td>Yes</td></tr>
+	 {% if public_references %}
+	 <tr><td>Public References</td><td>{{ public_references }}</td></tr>
+	 {% endif %}
+	 {% else %}
+	  <tr><td>Is the vulnerability publicly known?</td><td>No</td></tr>
+	 {% endif %}
+	 {% if vul_exploited == "True" %} 
+	 <tr><td>Is there evidence that this vulnerability is being actively exploited?</td><td>Yes</td></tr>
+	 {% if exploit_references %}
+	 <tr><td>Exploit References</td><td>{{ exploit_references }}</td></tr>
+	 {% endif %}
+	 {% else %}
+	 <tr><td>Is there evidence that this vulnerability is being actively exploited?</td><td>No</td></tr>
+	 {% endif %}
+	 {% if vul_disclose == "True" %}
+	 <tr><td>Do you plan to publicly disclose this vulnerability yourself?</td><td>Yes</td></tr>
+	 {% if disclosure_plans %}
+	 <tr><td>Disclosure Plans</td><td>{{ disclosure_plans }}</td></tr>
+	 {% endif %}
+	 {% else %}
+	 <tr><td>Do you plan to publicly disclose this vulnerability yourself?</td><td>No</td></tr>
+	 {% endif %}
+	 {% if user_file %}
+	 <tr><td>Uploaded File</td><td>{{ user_file }}</td></tr>
+	 {% endif %}
+       </table>
+       <h3 class="subtitle">Your Contact Information</h3>
+       <table class="unstriped">
+	 {% if contact_name %}
+	 <tr><td>Name</td><td>{{ contact_name }}</td></tr>
+	 {% endif %}
+	 {% if contact_org %}
+	 <tr><td>Organization</td><td>{{ contact_org }}</td></tr>
+	 {% endif %}
+	 {% if contact_email %}
+	 <tr><td>Email</td><td>{{ contact_email }}</td></tr>
+	 {% endif %}
+	 {% if contact_phone %}
+	 <tr><td>Telephone</td><td>{{ contact_phone }}</td></tr>
+	 {% endif %}
+	 {% if share_release == "True" %}
+	 <tr><td>Do you want us to share your contact information with vendors?</td><td>Yes</td></tr>
+	 {% else %}
+	 <tr><td>Do you want us to share your contact information with vendors?</td><td>No</td></tr>
+	 {% endif %}
+	 {% if credit_release == "True"  %}
+	 <tr><td>Do you want to be acknowledged by name in any published document about this vulnerability?</td><td>Yes</td></tr>
+	 {% else %}
+	 <tr><td>Do you want to be acknowledged by name in any published document about this vulnerability?</td><td>No</td></tr>
+	 {% endif %}
+	 {% if reporter_pgp %}
+	 <tr><td>PGP Key</td><td>{{ reporter_pgp }}</td></tr>
+	 {% endif %}
+	 {% if tracking %}
+	 <tr><td>Tracking IDs</td><td>{{ tracking }}</td></tr>
+	 {% endif %}
+	 {% if comments %}
+	 <tr><td>Private Comments</td><td>{{ comments }}</td></tr>
+	 {% endif %}
+       </table>
+	 
+       <!--{% for field in form %}
+	 {% if field.value %}
+	 <tr>
+           <td class="item">{{ field.label_tag }}</td>
+           <td>{% if field.name == "coord_status" %}
+	     {% for val in coord_choice %}
+	     <li>{{ val }}</li>
+	     {% endfor %}
+	     {% elif field.name == "why_no_attempt" %}
+	     {{ coord_choice }}
+	     {% else %}{{ field.value }}{% endif %}
+	   </td>
+	   
+         </tr>
+	 {% endif %}
+	 {% endfor %}
+	 
+       </table>-->
+       
+     </div>
+   </div>
+   <div class="large-4 medium-4 columns">
+   </div>
+</div>
+{% endblock %}
+

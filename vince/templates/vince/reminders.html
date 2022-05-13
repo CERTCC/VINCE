@@ -1,0 +1,76 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize widget_tweaks%}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/reminder.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+<div class="reveal" id="modal" data-reveal data-close-on-click=false></div>
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-9 columns">
+      <h2>Reminders</h2>
+    </div>
+    <div class="large-3 columns text-right">
+      <a href="{% url 'vince:newreminder' %}" id="newremind" class="cmu button"><i class="fas fa-plus"></i> New Reminder</button></a>&nbsp;&nbsp;
+    </div>
+  </div>
+</div>
+
+<div id="dismiss_alert" action="{% url 'vince:rmreminder' %}"></div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+<div class="row">
+  <div class="large-9 columns">
+    <h3>Your upcoming reminders</h3>
+    {% for r in my_reminders %}
+    <div class="callout primarys" data-closable="slide-out-right">
+      <h5>{% if r.ticket %}<a href="{{ r.ticket.get_absolute_url }}">{{ r.title }}</a>
+	{% elif r.case %}<a href="{{ r.case.get_absolute_url }}">{{ r.title }}</a>
+	{% else %}{{ r.title }}
+	{% endif %}
+
+      </h5>
+      <small><i class="fas fa-stopwatch"></i> Alert set for {{ r.alert_date|date:"Y-m-d" }} {% if r.user != user and r.created_by %}created by {{ r.created_by }} on {{ r.created|date:"Y-m-d" }}{% endif %}</small>
+      <button class="close-button" id="{{ r.id }}" aria-label="Dismiss alert" type="button" data-close>
+	<span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    {% empty %}
+    <p><b><i>No reminders set</i></b></p>
+    {% endfor %}
+
+    <h3>Reminders you set for others</h3>
+    {% for r in other_reminders %}
+    <div class="callout primarys" data-closable="slide-out-right">
+      <h5>{{ r.user.usersettings.preferred_username }}: {% if r.ticket %}<a href="{{ r.ticket.get_absolute_url }}">{{ r.title }}</a>
+        {% elif r.case %}<a href="{{ r.case.get_absolute_url }}">{{ r.title }}</a>
+        {% else %}{{ r.title }}
+        {% endif %}
+      </h5>
+      <small><i class="fas fa-stopwatch"></i> Alert set for {{ r.alert_date|date:"Y-m-d" }} {% if r.user != user %}created by {{ r.created_by.usersettings.preferred_username }} on {{ r.created|date:"Y-m-d" }}{% endif %}</small>
+      <button class="close-button" id="{{ r.id }}" aria-label="Dismiss alert" type="button" data-close>
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    {% empty %}
+    <p><b><i>No reminders set</i></b></p>
+    {% endfor %}
+    
+  </div>
+  <div class="large-3 medium-3 columns">
+    
+  </div>
+  
+</div>
+
+{% endblock %}

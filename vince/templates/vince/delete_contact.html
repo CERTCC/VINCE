@@ -1,0 +1,51 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Delete Contact" %}{% endblock %}
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>{% trans "Delete Contact" %} {{ contact.vendor_name }}</h2>
+    </div>
+    <div class="large-4 columns">
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <p>{% blocktrans with contact.vendor_name as contact_name %}Are you sure you want to delete this contact (<em>{{ contact_name }}</em>)? All traces of the contact, including vincecomm contacts, emails, and group admins will be irreversibly removed.{% endblocktrans %}</p>
+    <p>This will also remove the following vincecomm email addresses which may affect their access to certain cases:</p>
+    <ul>
+      {% for email in vinny_contact.vincecommemail_set.all %}
+      <li><b>{{ email.email}}</b></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+<br/>
+<br/>
+{% if cases %}
+<div class="row">
+  <div class="large-12 columns">
+    <p>This contact is included in the following cases.  Removing this contact requires administrator approval.</p>
+      <ul>
+      {% for case in cases %}
+      <li><b><a href="{% url 'vince:case' case.case.id %}">{{ case.case.vutitle }}</a></b></li>
+      {% endfor %}
+      </ul>
+  </div>
+</div>
+{% endif %}
+<br/>
+<br/>
+<form method='post' action='./'>
+  <div class="row">
+    <div class="large-12 columns">
+      <p><a href="{% url 'vince:contact' contact.id %}" class="button secondary">{% trans "Cancel" %}</a>
+	<input class="button alert" type="submit" value="{% trans "Delete Contact" %}" {% if requires_admin %}{% if user.is_superuser %}{% else%}disabled{% endif %}{% endif %}/>
+	{% csrf_token %}
+      </p>
+    </div>
+  </div>
+</form>
+
+{% endblock %}

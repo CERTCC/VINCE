@@ -1,0 +1,63 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Notifications sent to  <a href="{% url 'vince:contact' vendor.contact.id %}"> {{ vendor.contact.vendor_name }}</a> </h2>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-2">
+  <div class="large-12 columns">
+    {% if official_emails %}
+    <p>This vendor currently has the following email addresses configured for official notifications.</p>
+    <ul>
+      {% for email in official_emails %}
+      <li><b>{{ email }}</b></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="callout alert">This contact DOES NOT have any emails configured for official notifications.</div>
+    {% endif %}
+  </div>
+</div>
+
+<hr>
+
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <h3 class="section-title">Emails</h3>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <div class="vin_emails">
+    <table class="hover tickets">
+      <thead>
+	<tr><th>Title</th>
+	<th>Body</th>
+	<th>Emails</th>
+	  <th>Date</th>
+	<th>Sent By</th></tr>
+      </thead>
+      <tbody>
+
+	{% for object in object_list %}
+	<tr>
+	  <td>{% autoescape off %} {{ object.notification.subject }}{% endautoescape %}</td>
+	  <td>{% autoescape off %}{{ object.notification.email_body }}{% endautoescape %}</td>
+	  <td>{{ object.emails }}</td>
+	  <td>{{ object.notify_date|date:"Y-m-d"}}</td>
+	  <td>{{ object.user.usersettings.preferred_username }}</td>
+	</tr>
+	{% endfor %}
+    </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n markdown_extras %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Vendor Status" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/vendorstatus.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Case <a href="{{ case.get_absolute_url }}"> {{ case.get_vuid }}</a> {{ object.contact.vendor_name }} Status </h2>
+    </div>
+    <div class="large-4 columns text-right">
+      <button class="approveall cmu button" vendorid="{{ object.id }}"> <i class="far fa-thumbs-up"></i> Approve </button>
+      <a href="{% url 'vince:editvendorstatus' object.id %}" class="cmu button"><i class="fas fa-pencil-alt"></i> Edit</a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-9 columns">
+    {% if object.approved %}
+    <div class="callout success"><i class="fas fa-check-circle primary" title="All statements approved."></i>  Statement has been approved.</div>
+    {% elif status %}
+    <div class="callout warning"><i class="fas fa-exclamation-triangle warning" title="Statements require approval"></i>  Statement/Status requires approval.</div>
+    {% endif %}
+  </div>
+  <div class="large-3 columns">
+    <a href="{% url 'vinny:sendmsggroup' object.contact.id object.case.vuid %}"><button class="secondary expanded small button">  <i class="far fa-envelope"></i> Message Vendor </button></a>
+    <a href="{% url 'vince:vendorstmtchanges' object.id %}"><button class="primary expanded small button">  <i class="fas fa-list"></i> View All Changes </button></a>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <div class="row column">
+      <table class="unstriped">
+	<thead>
+	  <tr>
+	    <td>Vul</td>
+	    <td>Status</td>
+	    <td>Date</td>
+	    <td>Modified</td>
+	    <td>Approved</td>
+	    <td>Share Permission</td>
+	    <td>Statement</td>
+	  </tr>
+	</thead>
+	<tbody>
+	  {% for vul in vuls %}
+	  {% with s1=status|vendorstatus:vul %}
+	  <tr>
+	    <td><a href="{{ vul.get_absolute_url }}">{{ vul.vul }} {% if vul.cve %}({{ vul.cert_id }}){% endif %}</a></td>
+	    
+	    <td>{% if s1.status == 1 %}<span class="label alert">Affected</span>
+	      {% elif s1.status == 2 %} <span class="label success">Not Affected</span>
+	      {% elif s1.status == 3 %} <span class="label warning">Unknown</span>
+	      {% endif %}
+	    </td>
+	    <td>
+	    {% if initial_user or date_added %}
+	    {{ date_added|date:"Y-m-d" }} ({% vcuser initial_user %})
+	    {% endif %}
+	    </td>
+	    <td>
+	      {% if date_modified %}{{ date_modified|date:"Y-m-d" }} ({% vcuser modified_user %}){% endif %}
+	    </td>
+	    <td>{% if s1.user_approved %}{% if s1.approved %} <i class="fas fa-check primary"></i>{% else %}<i class="fas fa-user-edit warning"></i>{% endif %}{% endif %}</td>
+	    <td>{{ object.share|yesno:"share,no" }}</td>
+	    <td>{% if s1.statement or s1.references %}<button data-open="vul{{ s1.id }}" class="button">View Statement</button>{% endif %}</td>
+	  </tr>
+	  <div class="reveal" id="vul{{s1.id}}" data-reveal>
+	    <div class="modal-content">
+	      <div class="modal-header">
+		<h3 class="modal-title">Vendor Statement for {{ vul.vul }} {% if vul.cve %}({{ vul.cert_id }}){% endif %} </h3>
+	      </div>
+	      <div class="modal-body">
+		<div class="statement">
+		  <div class="row">
+		    <div class="form-group">
+		      <div class="large-3 columns text-right">
+                        <label for='id_description'>Description</label>
+                      </div>
+                      <div class="large-9 columns">
+			{{ vul.description }}
+                      </div>
+                    </div>
+                  </div>
+		  <div class="row">
+		    <div class="form-group">
+		      <div class="large-3 columns text-right">
+			<label for='id_statement'>Statement</label>
+		      </div>
+		      <div class="large-9 columns">
+			{{ s1.statement }}
+		      </div>
+		    </div>
+		  </div>
+		  <div class="row">
+		    <div class="form-group">
+		      <div class="large-3 columns text-right">
+			<label for='id_references'>References</label>
+		      </div>
+		      <div class="large-9 columns">
+			{{ s1.references }}
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		{% if s1.approved %}
+		{% else%}
+	      </div>
+	      <div class="modal-footer text-right">
+		<button class="approve primary button" vulid="{{ s1.id }}"><i class="fas fa-check"></i> Approve Statement </button>
+	      </div>{% endif %}
+	    </div>
+	    <button class="close-button" data-close aria-label="Close modal" type="button">
+	      <span aria-hidden="true">&times;</span>
+	    </button>
+	  </div>
+	  {% endwith %}
+	  {% empty %}
+	  <tr>
+	    <td colspan="7" class="text-center">
+	      <p>No vulnerabilities defined</p>
+	    </td>
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+      </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">    
+    {% if object.statement %}
+    <div class="statement">
+      <div class="row">
+	<div class="large-12 columns">
+	  <div class="form-group">
+            <label for='id_statement'>Statement</label>
+            {{ object.statement | markdown | safe }}
+          </div>
+	</div>
+      </div>
+    </div>
+    {% endif %}
+    {% if object.references %}
+    <div class="statement">
+      <div class="row">
+	<div class="large-12 columns">
+	  <div class="form-group">
+            <label for='id_references'>References</label>
+	    {% with refs=object.references|splitlines %}
+            <ul class="ul_nobullet">
+              {% for ref in refs %}
+              <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a>
+	      </li>
+              {% endfor %}
+	    </ul>
+	    {% endwith %}
+	  </div>
+	</div>
+      </div>
+    </div>
+    {% endif %}
+    {% if object.addendum %}
+    <div class="statement">
+      <div class="row">
+	<div class="large-12 columns">
+          <div class="form-group">
+            <label for='id_addendum'>CERT Addendum</label>
+	    {% if object.addendum %}
+            {{ object.addendum | markdown | safe }}
+	    {% else %}
+	    None
+	    {% endif %}
+          </div>
+	</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

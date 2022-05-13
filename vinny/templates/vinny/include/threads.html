@@ -1,0 +1,119 @@
+{% load inbox_tags %}
+{% for thread in threads %}
+<div class="case-list-item {% if thread|unread:user %}unread{% else %}read{% endif %}">
+  <a href="{{thread.get_absolute_url}}">
+    <div class="row">
+      <div class="large-2 small-4 medium-2 columns">
+	{% if thread.latest_message.sender.vinceprofile.logo %}
+	<div class="last-sender-icon">
+	  <img src="{{ thread.latest_message.sender.vinceprofile.logo }}" title="{{ thread.latest_message.sender.vinceprofile.vince_username }}, {{ thread.latest_message.sender.vinceprofile.org }}">
+	  </div>
+	{% else %}
+	<div class="last-sender-icon text-center" style="background-color:{{ thread.latest_message.sender.vinceprofile.logocolor }};" title="{{ thread.latest_message.sender.vinceprofile.vince_username }}, {{ thread.latest_message.sender.vinceprofile.org }}">
+	  <span class="logo-initial">{{ thread.latest_message.sender.vinceprofile.vince_username|first }}</span>
+	</div>
+	{% endif %}
+	{% if thread.num_messages > 1 %}
+	<div class="thread-participant-logs">
+	  {% with other_users=thread|not_last_users %}
+	  {% if other_users|length == 1 %}
+	  {% for u in other_users %}
+	  {% if u.vinceprofile.logo %}
+	  <div class="not-last-sender-icon">
+	    <img src="{{ u.vinceprofile.logo }}" title="{{ u.vinceprofile.vince_username }}, {{ u.vinceprofile.org }}">
+	  </div>
+	  {% else %}
+	  <div class="not-last-sender-icon text-center" style="background-color:{{ u.vinceprofile.logocolor }};" title="{{ u.vinceprofile.vince_username }}, {{ u.vinceprofile.org }}">
+            <span class="logo-initial">{{ u.vinceprofile.vince_username|first }}</span>
+          </div>
+	  {% endif %}
+	  {% endfor %}
+	  {% else %}
+	  {% for u in other_users %}
+          {% if u.vinceprofile.logo %}
+          <div class="not-last-sender-icon-{{ forloop.counter }}" title="{{ u.vinceprofile.vince_username }}, {{ u.vinceprofile.org }}">
+            <img src="{{ u.vinceprofile.logo }}">
+          </div>
+          {% else %}
+          <div class="not-last-sender-icon-{{ forloop.counter }} text-center" style="background-color:{{ u.vinceprofile.logocolor }};" title="{{ u.vinceprofile.vince_username }}, {{ u.vinceprofile.org }}">
+            <span class="logo-initial">{{ u.vinceprofile.vince_username|first }}</span>
+          </div>
+          {% endif %}
+          {% endfor %}
+	  {% endif %}
+	  {% endwith %}
+	</div>
+	{% endif %}
+      </div>
+      <div class="large-7 small-7 medium-7 columns">
+	<div class="participants">
+	  {{ thread.latest_message.sender.vinceprofile.vince_username }},
+	  {% if thread.from_group %}
+	  {{ thread.from_group }}
+	  {% endif %}
+	  {% if thread.to_group %}
+	  {% if thread.from_group %}, {% endif %}{{ thread.to_group }}
+	  {% endif %}
+	  {% if thread|not_in_group|length %}{% if thread.to_group or thread.from_group %}, {% endif %}{{ thread|not_in_group|join:", " }}
+	  {% endif %}
+        </div>
+	<div class="row column">
+          <div class="latest-message">
+            <p class="subject">{{ thread.subject }} {% if thread.number_attachments %} <i class="fas fa-paperclip"></i> {% endif %}</p>
+            <p class="content">{{ thread.latest_message.content }}</p>
+          </div>
+	  <div class="attachment">
+	    {% if thread.number_attachments %}
+	    <i class="fas fa-paperclip"></i> {{ thread.number_attachments }} attachments <br/>
+	    {% for i in thread.latest_message.messageattachment_set.all %}
+	    {% endfor %}
+	    {% endif %}
+	  </div>
+	</div>
+      </div>
+      <div class="large-2 small-12 medium-2 columns">
+	<div class="last-received-date">
+	  {{thread.latest_message.created }}
+	</div>
+      </div>
+      <div class="large-1 small-1 medium-1 columns">
+	<div class="edit-delete-hover">
+	  <button type="button" class="edit-btn button"><i aria-hidden="true" class="fas fa-reply"></i></button>
+	  <button type="button" action="{% url 'vinny:thread_delete' thread.pk %}" class="delete-btn button"><i aria-hidden="true" class="fas fa-trash-alt"></i></button>
+	</div>
+      </div>
+    </div>
+  </a>
+</div>
+{% empty %}
+<div class="inbox-list-item text-center"> {{ empty_msg }} </div>
+{% endfor %}
+<ul class="pagination text-center" role="navigation" aria-label="Pagination">
+  {% if threads.has_previous %}
+  <li class="pagination-previous"><a href="#" next="{{ threads.previous_page_number }}" class="{{ page_class }}">Previous</a></li>
+  {% else %}
+  <li class="pagination-previous disabled">Previous</li>
+  {% endif %}
+  {% for i in threads.paginator.page_range %}
+  {% if threads.number == i %}
+  <li class="current"><span class="show-for-sr">You're on page</span> {{ threads.number }}</li>
+  {% elif i > threads.number|add:'-3' and i < threads.number|add:'3' %}
+   <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="{{ page_class }}">{{ i }}</a></li>
+   {% else %}
+   {% if i == 1 %}
+  <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="{{ page_class }}">{{ i }}</a></li>
+  <li class="ellipsis"></li>
+  {% elif forloop.last %}
+  <li class="ellipsis"></li>
+  <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="{{ page_class }}">{{ i }}</a></li>
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+  {% if threads.has_next %}
+  <li class="pagination-next"><a href="#" next="{{ threads.next_page_number }}" aria-label="Next page" class="{{ page_class }}">Next</a></li>
+  {% else %}
+  <li class="pagination-next disabled">Next</li>
+  {% endif %}
+</ul>
+
+<div id="deletemodal" class="reveal" data-reveal></div>

@@ -1,0 +1,37 @@
+<div class="row">
+  <div class="sorticons">
+    <input class="hidesort" type="hidden" method="status" id="hidesort"/>
+    <div class="large-3 columns">
+      <div id="vuid">{{ object.idnumber }}</div>
+      <label>Filter by status:</label>
+      <select id="vendorstatus">
+        <option value="all" selected>All</option>
+        <option value="affected">Affected</option>
+        <option value="notaffected">Not Affected</option>
+        <option value="unknown">Unknown</option>
+      </select>
+    </div>
+    <div class="large-1 columns show-for-large"> &nbsp;</div>
+    <div class="large-5 columns">
+      <label>Filter by content:</label>
+      <input id="info_checkbox" type="checkbox"><label for="checkbox1"><i class="fas fa-bullhorn" aria-hidden="true"></i> Additional information available</label>
+    </div>
+    <div class="large-3 columns">
+      <label><i class="fas fa-sort-amount-down" aria-hidden="true"></i>&nbsp;Sort by:</label>
+      <select id="vendorsort">
+        <option value="status" selected>Status</option>
+        <option value="alpha">Alphabetical</option>
+      </select>
+    </div>
+  </div>
+</div>
+<div class="row iconkey">
+  <div class="large-6 medium-4 small-4 columns">
+    <span class="accordion-expand-collapse"><a href="#" id="expandall">Expand all</a></span>
+  </div>
+  <div class="large-6 medium-8 small-8 columns text-right">
+    <!--<i class="fas fa-exclamation-triangle" aria-hidden="true" style="color:red;" title="Status: Affected"></i> Affected &nbsp;
+    <i class="fas fa-question-circle" aria-hidden="true" title="Status: Unknown"></i> Unknown &nbsp;
+    <i class="fas fa-check-circle" aria-hidden="true" style="color:green;" title="Status: Affected"></i> Unaffected-->
+  </div>
+</div>

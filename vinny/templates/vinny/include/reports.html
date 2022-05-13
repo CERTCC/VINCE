@@ -1,0 +1,12 @@
+<div class="case-category">  
+  <h3>{% if title %}{{ title }}{% else %}Your recent submissions{% endif %}</h3>
+  <ul class="case-list">
+    {% for report in object_list %}
+    <li>{% include 'vinny/include/report.html' %}</li>
+    {% empty %}
+    <i>No reports matched your filter criteria</i>
+    {% endfor %}
+  </ul>
+</div>
+
+

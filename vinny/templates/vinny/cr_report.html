@@ -1,0 +1,145 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n humanize post_tags filename %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vinny/js/report.js' %}"></script>
+<script type="text/javascript" src="{% static 'vinny/js/addfile.js' %}"></script>
+{% endblock %}
+									 
+{% block vince_title %}{% trans "Vulnerability Report" %}{% endblock %}
+<!-- site-title  -->
+{% block content %}
+{% load widget_tweaks %}
+
+{{ artifactsjs|json_script:"artifacts" }}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-9 columns">
+      <h2>{{ report.get_title }} {% autoescape off %}{{ report.get_status_html }}{% endautoescape %}</h2>
+    </div>
+    <div class="large-3 columns text-right">
+      {% if report.case and case_permission %}
+      <a href="{% url 'vinny:case' report.case.id %}" class="cmu button">View Related Case</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if report.get_status == _("Open") %}
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <div class="callout warning">This submission has been selected for coordination assistance and is now being tracked as {{ CASE_ID }}{{ report.new_vuid }}.  {% if case_permission %}<a href="{% url 'vinny:case' report.case.id %}">View Case</a> or <a href="{% url 'vinny:sendmsg' 2 report.case.id %}">contact the coordinators</a> about this report.{% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row" id="ticket-info">
+  <div class="large-12 columns">
+    {% include 'vinny/cr_table.html' with ticket=report %}
+  </div>
+</div>
+
+<hr>
+
+<div class="row">
+  <div class="small-6 large-6 columns">
+    <h3 class="section-title">Files</h3>
+  </div>
+  <div class="small-6 large-6 columns text-right">
+    <button class="button default" id="addartifact" action="{% url 'vinny:addreportfile' report.id %}"><i class="fas fa-plus"></i> Add File</button>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <div id="addartifactmodal" class="reveal" data-reveal></div>
+    {% if report.user_file %}
+    <div class="participant">
+      <div class="participant-pic">
+	<div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ report.user_file.name|showfileicon }}{% endautoescape %}
+	  </span>
+	</div>
+      </div>
+      <div class="participant-info"><span class="participant-name"> <a href="{% url 'vinny:vrf_attachment' report.id %}" download="{{ report.user_file.name }}">{{ report.user_file.name }}</a>&nbsp;</span>
+        <div class="document-info">Uploaded by {{ report.user.vinceprofile.vince_username }} on {{ report.date_submitted|date:'Y-m-d' }}</div>
+      </div>
+    </div>
+    {% endif %}
+    {% for attachment in attachments %}
+    <div class="participant">
+      <div class="participant-pic">
+	{% if attachment.file %}
+        <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ attachment.file.filename|showfileicon }}{% endautoescape %}</span></div>
+	{% elif attachment.attachment %}
+        <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ attachment.attachment.name|showfileicon }}{% endautoescape %}</span></div>
+	{% endif %}
+      </div>
+
+      <div class="participant-info"><span class="participant-name">
+	  {% if attachment.file %}
+	  <a href="{% url 'vinny:attachment' 'report' attachment.file.uuid %}">{{ attachment.file.filename }}</a>
+	  {% elif attachment.attachment %}
+	  <a href="{{ attachment.attachment.url }}">{{ attachment.attachment.name }}</a>
+	  {% endif %}
+	  </span>
+          <div class="document-info">Uploaded by {{ attachment.action.user.vinceprofile.vince_username }} on {{ attachment.action.date|date:'Y-m-d' }}</div>
+      </div>
+    </div>
+    {% empty %}
+    {% if report.user_file %}
+    {% else %}
+    <div class="participant"><div class="participant-info"><i>No files have been uploaded for this report.</i></div></div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<hr>
+
+{% include 'vinny/cr_activity.html' %}
+
+<hr>
+{% if report.get_status == _("Open") and case_permission %}
+
+{% else %}
+{% if case_permission %}
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <div class="callout warning">
+      <p>This report is now being tracked as <a href="{% url 'vinny:case' report.case.id %}">Case {{ report.case.vu_vuid }}</a>. Please comment in the related case if appropriate.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+<div class="row" id="comment">
+  <div class="small-12 large-12 columns">
+    <h3 class="section-title">Comment</h3>
+    <form method="post" action="{% url 'vinny:reportupdate' report.id %}" enctype='multipart/form-data'>
+      {% csrf_token %}
+      <div class="row">
+        <div class="large-8 columns">
+          <div class="form-group">
+            <label for='commentBox'>{% trans "Coordinator/Reporter Comments" %}</label>
+            <textarea rows='8' cols='70' name='comment' id='commentBox'></textarea>
+          </div>
+	  <input type="submit" value="Add Comment" name="vrfSubmit" class="primary button"/>
+        </div>
+        <div class="large-4 columns"></div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+  

@@ -1,0 +1,79 @@
+{% load i18n humanize %}
+<div class="row">
+  <div class="large-12 medium-12 columns">
+    {% if total %}
+    <div class="resultCount"> Showing results {{ object_list.start_index }} - {{ object_list.end_index }} of {{ total }} Results </div>
+    {% elif paginator.count %}
+    <div class="resultCount"> {{ paginator.count }} Results </div>
+    {% endif %}
+    {% if object_list %}
+    <hr>
+      <div class="column row">
+	<table class="unstriped">
+	  <thead>
+	    <th> Name </th>
+	    <th> Tags/Vince Username</th>
+	    <th> Status </th>
+	  </thead>
+	  {% for contact in object_list %}
+	  <tr>
+	    {% if contact.vendor_type == "Contact" %}
+	    <td> <i class="far fa-address-book" title="Contact"></i>  <a href="{% url 'vince:contact' contact.id %}">{{ contact.vendor_name }}</a> </td>
+	    <td> {% autoescape off %}{{ contact.get_tag_html }}{% endautoescape %} </td>
+	    {% elif contact.vendor_type == "Vendor" %}
+	    <td> <i class="fas fa-building" title="Vendor"></i>  <a href="{% url 'vince:contact' contact.id %}">{{ contact.vendor_name }}</a> </td>
+	    <td> {% autoescape off %}{{ contact.get_tag_html }}{% endautoescape %} </td>
+	    {% elif contact.srmail_peer_name %}
+	    <td><i class="fas fa-users" title="Group"></i> <a href="{% url 'vince:group' contact.id %}" title="Group">{{ contact.name }}</a></td>
+	    <td> {{ contact.srmail_peer_name }} </td>
+	    {% else %}
+	    <td> <i class="fas fa-user" title="VINCE User"></i>  <a href="{% url 'vince:vcuser' contact.user.id %}">{% if contact.user.get_full_name %}{{ contact.user.get_full_name }}{% else %}{{ contact.preferred_username }}{% endif %}</a></td>
+	    <td> {{ contact.preferred_username }} </td>
+	    {% endif %}
+	    {% if contact.active %}
+	    <td> <i class="fas fa-check" style="color:green"></i> </td>
+	    {% else %}
+	    {% if contact.user.last_login %}
+	    <td> <i class="fas fa-check" style="color:green"></i> </td>
+	    {% else %}
+	    <td> <i class="fas fa-times" style="color:red"></i></td>
+	    {% endif %}
+	    {% endif %}
+	  </tr>
+	  {% endfor %}
+	</table>
+      </div>
+      {% endif %}
+  </div>
+</div>
+<div class="row column text-center">
+  <ul class="pagination" role="navigation" aria-label="Pagination">
+    {% if object_list.has_previous %}
+    <li class="pagination-previous"><a href="#" next="{{ object_list.previous_page_number }}" class="search_notes">Previous</a></li>
+    {% else %}
+    <li class="pagination-previous disabled">Previous</li>
+    {% endif %}
+    {% for i in object_list.paginator.page_range %}
+    {% if object_list.number == i %}
+    <li class="current"><span class="show-for-sr">You're on page</span> {{ object_list.number}}</li>
+    {% elif i > object_list.number|add:'-3' and i < object_list.number|add:'3' %}
+    <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+    {% else %}
+    {% if i == 1 %}
+    <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+    <li class="ellipsis"></li>
+    {% elif forloop.last %}
+    <li class="ellipsis"></li>
+    <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    {% if object_list.has_next %}
+    <li class="pagination-next"><a href="#" next="{{ object_list.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
+    {% else %}
+    <li class="pagination-next disabled">Next</li>
+    {% endif %}
+  </ul>
+</div>
+
+	

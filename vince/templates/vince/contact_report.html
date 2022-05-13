@@ -1,0 +1,67 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Contact Reports" %}{% endblock %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Contact Reports</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
+<div class="user_admin_options">
+  <div class="row">
+    <div class="large-4 columns">
+      <a href="{% url 'vince:contactreports' 1 %}" class="query">
+	<div class="callout">Contacts with users & 0 admins</div>
+      </a>
+      <a class="query" href="{% url 'vince:contactreports' 2 %}">
+	<div class="callout">Contacts with 0 users</div>
+      </a>
+      
+      <a class="query" href="{% url 'vince:contactreports' 3 %}">
+	<div class="callout">
+	  Inactive Contacts</div>
+      </a>
+      <a class="query" href="{% url 'vince:contactreports' 4 %}">
+	<div class="callout">
+	  Users without MFA
+	</div>
+      </a>
+    </div>
+    
+    <div class="large-8 columns">
+      <div class="activity-table">
+	<div class="activity-header">
+	  <h5 class="text-center">Query Results {% if results %}({{ results|length }} results) {% endif %}</h5>
+	</div>
+	{% for x in results %}
+	<div class="contact-query-list">
+	  {% if x.username %}
+	  <a href="{% url 'vince:vcuser' x.id %}">{{ x.username }}</a>
+	  {% else %}
+	  <a href="{% url 'vince:contact' x.id %}">{{ x.vendor_name }}</a>
+	  {% endif %}
+	</div>
+	{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

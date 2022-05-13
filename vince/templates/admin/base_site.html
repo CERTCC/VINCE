@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% block title %}{{ title }} | {{ site_title|default:_('Vince Site Administration') }}{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static 'vince/css/admin.css' %}">
+{% endblock %}
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Vince Site administration') }}</a></h1>
+{% endblock %}
+
+{% block extrahead %}
+    <style>
+        .field-__str__ {
+            font-family: Consolas, monospace;
+        }
+    </style>
+{% endblock %}

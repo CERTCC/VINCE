@@ -1,0 +1,17 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+{% block content_title %}<h3>Password Reset Complete</h3>{% endblock %}
+
+
+{% block content %}
+  <p>
+    Your password has been reset.  You may now login.
+  </p>
+    <a href="{% url 'cogauth:login' %}" class="button primary expanded search-button">Login</a>
+    
+{% endblock %}
+
+
+

@@ -1,0 +1,30 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method='post' action="{% url 'vince:initiate_reset' vc_user.id %}">
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">{% trans "Initiate Reset MFA" %}</h5>
+      </div>
+      <div class="modal-body">
+	<p>Are you sure you want to initiate the process to reset this user's MFA?  Upon submission, VINCE will send an email to <b>{{vc_user.email}}</b> and request a reply to confirm their request. If you do not enter a ticket below, a new ticket will be created and assigned to you.  You should <i>NOT</i> reset this user's MFA until you receive a response to the confirmation email.</p>
+	{% csrf_token %}
+	<div class="form-group">
+	  Do you have a ticket that you are currently tracking this request?
+	  <label for="ticket_id">Enter ticket ID here:</label>
+	  <input type="text" name="ticket_id" class="form-control" id="id_ticket_id">
+	  </div>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input class="button primary" type='submit' value='{% trans "Submit" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>
+
+  
+{% endblock %}

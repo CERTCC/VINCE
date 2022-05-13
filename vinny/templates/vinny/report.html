@@ -1,0 +1,149 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n report_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Reports" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/reports.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Reports</h2>
+    </div>
+    <div class="large-4 columns text-right">
+      <a href="{% url 'vinny:printreport' month year %}" class="button cmu"><i class="fas fa-print"></i> Print Report</a>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <div class="text-center">
+      <ul class="pagination-pointed pagination text-center" role="navigation" aria-label="Pagination">
+	<li class="pagination-previous"><a class="pagination-pointed-button" href="?month={{ month|add:"-1" }}&year={{year}}" aria-label="Previous month">Previous <span class="show-for-sr">page</span></a></li>
+	{% blocktrans %}
+	<li class="current"><span class="show-for-sr">You're on page</span> {{ monthstr }} {{ year }}</li>
+	{% endblocktrans %}
+	{% if show_next %}
+	<li class="pagination-next"><a class="pagination-pointed-button" href="?month={{ month|add:"1"}}&year={{year}}" aria-label="Next page">Next <span class="show-for-sr">page</span></a></li>
+	{% else %}
+	<li class="pagination-next disabled"><a class="pagination-pointed-button" href="#" aria-label="Next page">Next <span class="show-for-sr">page</span></a></li>
+	{% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+<hr>
+
+<div class="row">
+  <div class="large-12 columns">
+    <h3 class="section-title">Vulnerability Notes</h3>
+    
+    <ul class="stats-list">
+      <li class="stats-list-positive">
+	{{ newnotes|length }} <span class="stats-list-label">New</span>
+      </li>
+      <li>
+	{{ updated | length }} <span class="stats-list-label">Updated</span>
+      </li>
+    </ul>
+
+    <div class="thread-messages"><b> Published {{ monthstr }} {{ year }} </b></div>
+    <ul>
+    {% for note in newnotes %}
+    <li><a href="{% url 'vinny:case_summary' note.id %}">{{ note.get_title }}</a></li>
+    {% empty %}
+    <i>No vulnerability notes published this month</i>
+    {% endfor %}
+    </ul>
+
+
+    <div class="thread-messages"><b> Updated {{ monthstr }} {{ year }} </b></div>
+    <ul>
+    {% for note in updated %}
+    <li><a href="{% url 'vinny:case_summary' note.id %}">{{ note.get_title }}</a></li>
+    {% empty %}
+    <i>No vulnerability notes updated this month</i>
+    {% endfor %}
+    </ul>
+    
+  </div>
+</div>
+
+<hr>
+<div class="row">
+  <div class="large-12 columns">
+    <h3 class="section-title">Cases</h3>
+    <ul class="stats-list">
+      <li class="stats-list-positive">
+        {{ case_stats.new_cases | length }} <span class="stats-list-label">New Cases</span>
+      </li>
+      <li class="stats-list-neutral">
+        {{ case_stats.active_cases | length }} <span class="stats-list-label">Active Cases</span>
+      </li>
+      <li class="stats-list-negative">
+        {{ case_stats.unpublished_active_cases | length }} <span class="stats-list-label">Active, Non-public Cases</span>
+      </li>
+      <li class="stats-list-positive">
+        {{ case_stats.published_active_cases | length }} <span class="stats-list-label">Active, Public Cases</span>
+      </li>
+      
+    </ul>
+    <div class="thread-messages"><b> New Cases {{ monthstr }} {{ year }} </b></div>
+    <div>
+      {% for note in case_stats.new_cases %}
+      {% if forloop.counter0 == 5 %}
+      <div id="hidevendors">
+	{% endif %}
+      <div><a href="{% url 'vinny:case_summary' note.id %}">{{ note.get_title }}</a></div>
+      {% empty %}
+      <i>No new cases opened this month</i>
+      {% endfor %}
+    </div>
+    {% if case_stats.new_cases|length > 5 %}
+      </div>
+    <div class="showmore">
+      <div id="moreVendors"><small>
+        <a href="#" id="moreVendor">SHOW ALL {{ case_stats.new_cases|length }} CASES</a></small>
+      </div>
+      <div id="lessVendors">
+        <small><a href="#" id="lessVendor">SHOW LESS</a></small>
+      </div>
+    </div>
+    {% endif %}
+    
+
+    {% if case_stats.unpublished_active_cases|length > 0 %}
+    <div class="thread-messages"><b> Active, Non-public Cases {{ monthstr }} {{ year }} </b></div>
+    {% for note in case_stats.unpublished_active_cases %}
+    <div><a href="{% url 'vinny:case_summary' note.id %}">{{ note.get_title }}</a></div>
+    {% endfor %}
+    {% endif %}
+
+    {% if case_stats.published_active_cases|length > 0 %}
+    <div class="thread-messages"><b> Active, Public Cases {{ monthstr }} {{ year }} </b></div>
+    {% for note in case_stats.published_active_cases %}
+    <div><a href="{% url 'vinny:case_summary' note.id %}">{{ note.get_title }}</a></div>
+    {% endfor %}
+    {% endif %}
+    
+  </div>
+</div>
+
+
+<hr>
+<div class="row">
+  <div class="large-6 columns">
+    <h3 class="section-title">New Users in {{ monthstr }} {{ year }}</h3>
+    <h1><i class="fas fa-user-plus"></i> {{ new_users }}</h1>
+  </div>
+  <div class="large-6 columns">
+    <h3 class="section-title">Total VINCE Users</h3>
+    <h1><i class="fas fa-user"></i> {{ total_users }}</h1>
+  </div>
+</div>
+
+{% endblock %}

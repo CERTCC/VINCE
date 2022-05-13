@@ -1,0 +1,197 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load post_tags inbox_tags %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/vcuser.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>VINCE User: {{ vc_user.vinceprofile.preferred_username }}</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      {% if vc_user.is_active %}
+      <a class="button default" href="{% url 'vinny:sendmsgus' vc_user.id %}"><i class="fas fa-comment" alt="message user" title="message user"></i> Message User</a>
+      <a class="button cmu" id="rmuser" href="{% url 'vince:vcuser_rm' vc_user.id %}"><i class="fas fa-trash"></i> Remove User</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+{% for message in messages %}
+<div class="callout {{ message.tags }}">{{ message }}</div>
+{% endfor %}
+  </div>
+</div>
+<div class="reveal" id="modal" data-reveal></div>
+<div id="filterform" action="{% url 'vince:vcuserthread' vc_user.id %}"></div>
+
+<div class="card-profile-stats">
+  <div class="row column">
+    <div class="card-profile-stats-intro">
+      {% autoescape off %}{{ vc_user|userlogo:"card-profile-stats-intro-pic" }}{% endautoescape %}
+      <h3>{{ vc_user.vinceprofile.preferred_username }}</h3>
+    </div>
+  </div>
+</div>
+{% if vc_user.vinceprofile.pending %}
+<div class="row" id="pendingwarning">
+  <div class="large-12 columns">
+    <div class="callout warning">
+      <p>This user is in pending mode.</p>
+      <p><a href="{% url 'vince:approveuser' vc_user.id %}" class="approve button default">Approve</a></p>
+    </div>
+  </div>
+</div>
+{% endif %}
+<div class="row">
+  <div class="large-12 columns">
+    {% if vc_user.vinceprofile.multifactor %}
+    <p>
+      <a id="initiatereset" href="{% url 'vince:initiate_reset' vc_user.id %}"><button class="tiny button warning">Initiate MFA Reset</button></a>
+      {% if reset_mfa %}
+      <a id="resetusermfa" href="{% url 'vince:resetusermfa' vc_user.id %}"><button class="tiny button alert">Reset MFA</button></a>
+      {% endif %}
+      {% endif %}
+      <a href="{% url 'vince:newemailuser' 'user' vc_user.id %}"><button class="tiny button primary">Email User</button></a></p>
+
+    {% if vc_user.is_active %}{% else %}
+    <div class="callout alert">This user is inactive</div>
+    {% endif %}
+  </div>
+</div>
+<div class="row">
+  <div class="large-6 columns">
+    
+    <p>
+      {% if vc_user.vinceprofile.service %}
+      <b>This is an API service account.</b><br/>
+      {% endif %}
+      <b>Full Name:</b>  {{ vc_user.get_full_name }}<br/>
+      <b>Organization:</b>  {{ vc_user.vinceprofile.org }}<br/>
+      <b>Title:</b>   {{ vc_user.vinceprofile.title }}<br/>
+      <b>Email:</b>   {{ vc_user.email }}<br/>
+      <b>Groups:</b>   {{ vc_user.groups.all|join:", " }}<br/>
+      <b>Contacts:</b> {% for c in contact %}<a href="{% url 'vince:contact' c.contact.id %}">{{ c.contact.vendor_name }}</a>,{% endfor %}<br/>
+      <b>Last Login:</b>   {{ vc_user.last_login }}<br/>
+      {% if vc_user.vinceprofile.service %}
+      <b>MFA Enabled:</b> Not required <br/>
+      {% else %}
+      <b>MFA Enabled:</b> {{ vc_user.vinceprofile.multifactor|yesno }} <br/>
+      {% endif %}
+    </p>
+  </div>
+  <div class="large-6 columns">
+    <p>
+      <b>Emails Sent: </b> {{ bounce_stats.total_emails_sent }}
+      <br/>
+      {% if bounce_stats.total_emails_sent > 0 %}
+      <b>VinceComm Emails:</b> {{ bounce_stats.vc_emails }}
+      <br/>
+      <b>Vendor Notifications:</b> {{ bounce_stats.notifications }}
+      <br/>
+      <b>Other Emails:</b> {{ bounce_stats.other_emails }}
+      <br/>
+      {% endif %}
+      <b>Email Bounces:</b> {{ bounce_stats.num_bounces }}
+      <br/>
+      {% if bounce_stats.num_bounces %}
+      <b>First Bounce:</b> {{ bounce_stats.first_bounce|date:"Y-m-d" }}
+      <br/>
+      <b>Last Bounce:</b> {{ bounce_stats.last_bounce|date:"Y-m-d" }}
+      <br/>
+      <b>Permanent Bounces:</b> {% if bounce_stats.permanent_bounces %}<span class="required">{{ bounce_stats.permanent_bounces }}</span>{% else %}0{% endif %}
+      <br/>
+      <b>Transient Bounces:</b> {{ bounce_stats.transient_bounces }}
+      {% endif %}
+    </p>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <div class="case-container">
+      <ul class="tabs" data-tabs id="case-tabs" data-deep-link="true" data-update-history="true">
+	<li class="tabs-title is-active"><a href="#tickets" aria-selected="true"><i class="fas fa-clipboard-list"></i>  Tickets</a></li>
+	<li class="tabs-title"><a href="#threads" data-tabs-target="threads"><i class="fas fa-envelope"></i>  Threads</a></li>
+	<li class="tabs-title"><a data-tabs-target="activity" href="#activity"><i class="fas fa-cogs"></i>  Activity</a></li>
+	<li class="tabs-title"><a data-tabs-target="bounces" href="#bounces"><i class="fas fa-basketball-ball"></i> Bounces</a></li>
+      </ul>
+      <div class="tabs-content" data-tabs-content="case-tabs">
+	<div class="tabs-panel is-active" id="tickets">
+	  <div class="row">
+            <div class="large-3 columns">
+              <div class="input-group">
+                <span class="input-group-label">Status</span>
+                <select class="input-group-field" id="filterstatus">
+                  <option value="0">All</option>
+                  <option value="1">Open</option>
+                  <option value="4">Closed</option>
+                </select>
+              </div>
+            </div>
+	    <div class="large-6 columns">
+              <div class="input-group">
+                <input class="input-group-field" type="text" placeholder="Filter tasks" id="filter_tasks" href="{% url 'vince:ticketresults' %}" name="{{ vc_user.username }}">
+                <div class="input-group-button">
+                  <button type="submit" class="button"><i class="fas fa-search"></i></button>
+                </div>
+              </div>
+            </div>
+	    <div class="large-3 columns"></div>
+	  </div>
+	  <div id="case_tasks">
+	    {% include 'vince/include/case_tasks.html' %}
+          </div>
+	</div>
+	<div class="tabs-panel" id="threads">
+	  {% include 'vince/include/threads.html' %}
+	</div>
+	<div class="tabs-panel" id="activity">
+	  <h3>User Activity</h3>
+	  {% for act in activity %}
+	  <article class="article-row">
+	    <div class="article-row-img">
+	      {% autoescape off %}{{ act.user|userlogo:"profile-pic" }}{% endautoescape %}
+	    </div>
+	    <div class="article-row-content">
+	      <p class="article-row-content-description">
+		{{ act.title }}
+	      </p>
+	      <time class="article-row-content-time"><i class="far fa-clock"></i> {{ act.created|timesince }}
+	      </time>
+	    </div>
+	  </article>
+	  {% endfor %}
+	</div>
+	<div class="tabs-panel" id="bounces">
+	  {% if bounces %}
+	  <table>
+	    <tr>
+	      <td>Ticket</td>
+	      <td>Bounce Type</td>
+	      <td>Date</td>
+	    </tr>
+	  {% for bounce in bounces %}
+	    <tr>
+	      <td><a href="{{ bounce.ticket.get_absolute_url }}">{{ bounce.ticket.ticket_for_url }} {% autoescape off %}{{ bounce.ticket.get_status_html }}{% endautoescape %}</td>
+	      <td>{{ bounce.get_bounce_type_display }}</td>
+              <td>{{ bounce.bounce_date|date:"Y-m-d" }}</td>
+
+	    </tr>
+	    {% endfor %}
+	  </table>
+	  {% else %}
+	  <p>No email bounces for this user.</p>
+	  {% endif %}
+	</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,21 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <form method="post" action="{{ action }}" id="rmpostform">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ title }}</h3>
+    </div>
+
+    <div class="modal-body">
+      {% csrf_token %}
+      <p>This action can't be undone.</p>
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button alert" type='submit' value='{% trans "Yes, Remove" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

@@ -1,0 +1,134 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize ticket_to_link %}
+{% block vince_title %}{% trans "Write Vendor Notification" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vulnote.js' %}"></script>
+ <style>
+  #selectable .ui-selecting { background: #FECA40; }
+  #selectable .ui-selected { background: #F39814; color: white; }
+  #selectable { list-style-type: none; margin: 0; padding: 0; width: 100%; }
+  #selectable li { margin: 3px; padding: 0.2em; }
+  .liheader {font-size: 1.2em;}
+  .licontent {display:none;}
+ </style>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Case <a href="{{ case.get_absolute_url }}"> {{ case.get_vuid }}</a> Post </h2>
+    </div>
+    <div class="large-4 columns text-right">
+    </div>
+  </div>
+</div>
+
+<div id="case_id" class="hidden">{{case.id}}</div>
+
+<div class="row">
+  <div class="small-12 large-12 columns">
+    {% if notify_id %}
+    <h3>Edit Pinned Post</h3>
+    {% else %}
+    <h3>Write Pinned Post </h3>
+    {% endif %}
+    <small class='form-text text-muted'>{% trans form.content.help_text %} Select the Case Request Fields on the left you wish to add to the post, then hit the arrow button to transfer them to the post. </small>
+
+    <form method="post" action="{% url 'vince:notify' case.id %}" name="createnotification">{% csrf_token %}
+      <input type="hidden" name="version" value="{{ form.version.value }}" />
+      {% if form.errors %}
+      <p class="errornote">
+        {% if form.errors.items|length == 1 %}"Please correct the error below."{% else %}"Please correct the errors below."{% endif %}
+      </p>
+      {% endif %}
+      <div class="row">
+	<div class="large-4 columns">
+	  <ol id="selectable">
+	    <li class="ui-widget-content">
+              <div class="liheader">General Report Information <a href="#" class="viewtext"><i class="fas fa-eye"></i></a></div>
+              <div class="licontent">CERT/CC received a report via {{ cr.submission_type }} submission on {{ cr.date_submitted|date:"Y-m-d" }} concerning {% if cr.vendor_name %}{{ cr.vendor_name }} and {% endif %}{{ cr.product_name }} {% if cr.product_version %}({{ cr.product_version }}){% endif %}</div></li>
+	    <li class="ui-widget-content">
+              <div class="liheader">Reporter Information <a href="#" class="viewtext"><i class="fas fa-eye"></i></a></div>
+	      {% if cr.share_release %}
+              <div class="licontent">The reporter is {{ cr.reporter_name }}{% if cr.reporter.org %} from {{ cr.report_org }}{% endif %}.
+		<br>Email: {{ cr.reporter_email }} {% if cr.reporter_phone %}
+		<br>Phone: {{ cr.reporter_phone }}{% endif %}
+	      </div>
+	    {% else %}
+	    <div class="licontent">The reporter prefers to not share their contact information</div>
+	    {% endif %}
+	    </li>
+	    <li class="ui-widget-content">
+
+	      <div class="liheader">Description <a href="#" class="viewtext"><i class="fas fa-eye"></i></a></div>
+	      <div class="licontent">{{ cr.vul_description|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}</div></li>
+	    {% if cr.vul_exploit %}
+            <li class="ui-widget-content">
+              <div class="liheader">Exploit <a href="#" class="viewtext"><i class="fas fa-eye"></i></a></div>
+              <div class="licontent">{{ cr.vul_exploit|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}</div></li>
+	    {% endif %}
+	    {% if cr.vul_impact %}
+            <li class="ui-widget-content">
+              <div class="liheader">Impact <a href="#" class="viewtext"><i class="fas fa-eye"></i></a></div>
+              <div class="licontent">{{ cr.vul_impact|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}</div></li>
+	    {% endif %}
+	    {% if cr.vul_discovery %}
+            <li class="ui-widget-content">
+              <div class="liheader">Discovery <a href="#" class="viewtext"><i class="fas fa-eye"></i></a></div>
+              <div class="licontent">{{ cr.vul_discovery|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}</div></li>
+	    {% endif %}
+	    {% if cr.vul_exploited %}
+            <li class="ui-widget-content">
+              <div class="liheader">Exploit References <a href="#" class="viewtext"><i class="fas fa-eye"></i></a></div>
+	      {% if cr.exploit_references %}
+              <div class="licontent">{{ cr.exploit_references|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}</div></li>
+	    {% else %}
+	      <div class="licontent">The reporter has indicated this vulnerability has been exploited but has not provided references</div></li>
+             {% endif %}
+	    {% endif %}
+	    {% if cr.vul_public %}
+	    <li class="ui-widget-content">
+              <div class="liheader">Public References <a href="#" class="viewtext"><i class="fas fa-eye"></i></a></div>
+	      {% if cr.public_references %}
+              <div class="licontent">{{ cr.public_references|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}</div></li>
+	    {% else %}
+	    <div class="licontent">The reporter has indicated this vulnerability is public but has not provided references</div></li>
+             {% endif %}
+	    {% endif %}
+	    {% if cr.vul_disclose %}
+	    <li class="ui-widget-content">
+              <div class="liheader">Disclosure Plans <a href="#" class="viewtext"><i class="fas fa-eye"></i></a></div>
+	      {% if cr.disclosure_plans %}
+              <div class="licontent">{{ cr.disclosure_plans|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}</div></li>
+	      {% else %}
+	      <div class="licontent">The reporter intends to disclose this vulnerability but has not provided disclosure plans</div></li>
+              {% endif %}
+	    {% endif %}
+	  </ol>
+	</div>
+	<div class="large-1 columns text-center"><h1><a href=# class="transferbutton"><i class="fas fa-arrow-circle-right"></i></a></h1></div>
+	<div class="large-7 columns">
+	  <div class="form-group">
+	    {% if disabled %}
+	    {% render_field form.content|add_class:"form-control white-space:pre"|append_attr:"readonly:readonly" %}
+	    {% else %}
+            {{ form.content }}
+	    {% endif %}
+            {% if form.content.errors %}<dd class="error"> {{ form.content.errors }}</dd>{% endif %}
+          </div>
+	</div>
+</div>
+<div class="row column">
+  <input type="submit" value="Save" name="vrfSubmit" class="primary button"/>
+</div>
+    </form>
+  </div>
+</div>
+
+
+{% endblock %}

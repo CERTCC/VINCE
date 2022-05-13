@@ -1,0 +1,50 @@
+{% extends template %}
+{% load post_tags %}
+{% block content %}
+{% if full %}
+<div class="card-profile-stats">
+  <div class="row column">
+    <div class="card-profile-stats-intro">
+      {% autoescape off %}{{ object|grouplogo:"card-profile-stats-intro-pic" }}{% endautoescape %}
+      <h3>{{ object.contact.vendor_name }}</h3>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% include 'vinny/include/publiccontact.html' %}
+  </div>
+</div>
+{% else %}
+<div class="card-user-container">
+  <!--card's image-->
+  <div class="card-user-avatar">
+    {% autoescape off %}{{ object|grouplogo:"user-image" }}{% endautoescape %}
+  </div>
+
+  <!--user info name, bio and location-->
+  <div class="card-user-bio">
+    <h4>{{ object.group.groupcontact.contact.vendor_name }}</h4>
+    {% for web in object.get_public_site %}
+    <a href="{{ web.url }}" target="_blank">{{ web.url }}</a><br/>
+    {% endfor %}
+    <span class="location"><span class="location-icon fa fa-map-marker"></span><span class="location-text">{{ object.contact.countrycode }}</span></span>
+    <ul class="no-bullet">
+      {% if case %}
+      {% for user in case %}
+      <li>
+        <i class="fas fa-user"></i> {{ user.vinceprofile.vince_username }}<br/>
+      </li>
+      {% endfor %}
+      {% else %}
+      {% for user in object.get_vince_users %}
+      <li>
+	<i class="fas fa-user"></i> {{ user.vinceprofile.vince_username }}<br/>
+      </li>
+      {% endfor %}
+      {% endif %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

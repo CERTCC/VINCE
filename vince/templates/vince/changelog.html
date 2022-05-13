@@ -1,0 +1,26 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize%}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/diffview.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/diff.js' %}"></script>
+{% endblock %}
+
+{% block vince_title %}{% trans "Vul Note Changelog" %}{% endblock %}
+<!-- site-title  -->
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Vulnerability Note Changelog for <a href="{% url 'vince:case' case.id %}#vulnote">Case {{ case.vu_vuid }}</a></h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% include 'vince/include/changelog.html' %}
+  </div>
+</div>
+{% endblock %}
+	    

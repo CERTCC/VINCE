@@ -1,0 +1,22 @@
+{% load i18n humanize vendor_tags %}
+{% load widget_tweaks %}
+{% if case.lotus_notes %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning">
+      <p>You cannot notify vendors until you add this case to VinceComm.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 columns">
+    <p class="text-center"><b><a href="#" class="allvendors">{{ vendors.count }} vendors</a> | {% with notify=vendors|notified_filter %} {% if notify < vendors.count %}<a href="#" class="notnotified" title="filter vendors that have not been notified" style="color:red" >{{ notify }} notified </a>{% else %}{{ notify }} notified {% endif %}{% endwith %} {% if zero_user_vendors %}| <a href="#" style="color:red" title="filter vendors with no users" class="vendorsnousers">{{ zero_user_vendors }} vendors with no users </a> {% endif %} | <a href="#" title="filter vendors that have viewed the case" class="vendorsseen">{{ vendors|seen_filter }} seen</a> | <a href="#" title="filter vendors that have provided status/statement" class="vendorsresponded">{{ vendors|stmt_filter }} responded</a> | <a href="#" style="color:green" class="vendorapproved">{{ vendors|approved_filter }} approved</a> | {% with r=vendors|requires_approval_filter %} {% if r > 0 %}<a href="#" style="color:red" class="reqapproval">{{ r }} require approval </a>{% else %} {{ r }} require approval {% endif %}{% endwith %}</b></p>
+  </div>
+</div>
+<div id="vendor_notify" action="{% url 'vince:vnotifydraft' case.id %}"></div>
+
+
+
+		  

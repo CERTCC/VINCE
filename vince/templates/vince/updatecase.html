@@ -1,0 +1,29 @@
+{% block content %}
+<div class="fullmodal">
+  <form method="post" id="commentform" action="{{ action }}">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Change Case Status</h3>
+    </div>
+    <div class="modal-body">
+      {% csrf_token %}
+      Are you sure you want to change the status of the case from {{ case.get_status_display }} to
+      {% if case.status == 1 %}
+      <b>INACTIVE</b>
+      <input name="new_status" value="2" type="hidden" />
+      {% else %}
+      <b>ACTIVE</b>
+      <input name="new_status" value="1" type="hidden" />
+      {% endif %}?
+    </div>
+    <div class="modal-footer text-right">
+      <button class="secondary button" data-close aria-label="Close modal" type="button">Cancel</button>
+      <input type="submit" value="Update" class="primary button" />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  </form>
+</div>
+{% endblock %}

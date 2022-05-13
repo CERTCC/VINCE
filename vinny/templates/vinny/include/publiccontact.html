@@ -1,0 +1,136 @@
+<div class="row">
+  <div class="large-12 columns">
+<ul class="category-list list-unstyled">
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fas fa-envelope"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Emails</h1>
+      <div class="row">
+	<div class="large-8 columns">
+	  <table class="unstriped">
+	    
+	    {% for email in object.get_public_emails %}
+	    <tr>
+	      <td>{{ email.email }}</td>
+	      <td>{{ email.name }}</td>
+	      <td>{{ email.email_type}}</td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+	<div class="large-4 columns"></div>
+      </div>
+    </div>
+  </li>
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-key"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">PGP Keys</h1>
+      <div class="row">
+	<div class="large-12 columns">
+	  <table class="unstriped">
+	    {% for crypto in object.get_public_keys %}
+	    <tr>
+	      <td><b>Key ID:</b> {{ crypto.pgp_key_id }}</td>
+	      <td><b>Valid:</b> {{ crypto.startdate }} - {{ crypto.enddate }}</td>
+	      <td>{% if crypto.revoked %}<b>[REVOKED]</b>{% endif %}</td>	      
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+    </div>
+  </li>
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-home"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Location</h1>
+      <div class="row">
+	<div class="large-12 columns">
+	  <table class="unstriped">
+	    {% for postal in object.get_public_postal %}
+	    <tr>
+	      <td>
+		{% if postal.address_type == "School" %}
+		<i class="fas fa-school" title="School"></i>
+		{% elif postal.address_type == "Home" %}
+		<i class="fas fa-home" title="home"></i>
+		{% elif postal.address_type == "Work" %}
+		<i class="fas fa-building" title="Work"></i>
+		{% else %}
+		<i class="fas fa-address-card" title="Other"></i>
+		{% endif %}
+	      </td> 
+	      <td>{{ postal.street }}</td>
+	      <td>{% if postal.street2 %}{{postal.street2}}{% endif %}</td>
+	      <td>{{ postal.city }}</td>
+	      <td>{{ postal.state }}</td>
+	      <td>{{ postal.zip_code }}</td>
+	      <td>{{ postal.country }}</td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+    </div>
+  </li>
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-mobile-alt"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Phone Numbers</h1>
+      <div class="row">
+	<div class="large-12 columns">
+	  <table class="unstriped">
+	    {% for phone in object.get_public_phone %}
+	    <tr>
+	      <td>{% if phone.phone_type == "Fax" %}
+		<i class="fas fa-fax" title="fax"></i>
+		{% elif phone.phone_type == "Mobile" %}
+		<i class="fas fa-mobile-alt" title="mobile"></i>
+		{% elif phone.phone_type == "Home" %}
+		<i class="fas fa-home" title="home"></i>
+		{% elif phone.phone_type == "Office" %}
+		<i class="fas fa-building" title="office"></i>
+		{% else %}
+		<i class="fas fa-phone" title="hotline"></i>
+		{% endif %}
+		{{ phone.country_code }} {{ phone.phone }} {% if phone.comment %}({{ phone.comment }}){% endif %}</td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+    </div>
+  </li>
+  <li class="category-item media">
+    <div class="category-icon">
+      <span class="sei-icon"><i class="fa-fw fas fa-globe-americas"></i></span>
+    </div>
+    <div class="media-body">
+      <h1 class="category-title border-bottom border-sei-gray-lightest">Website</h1>
+      <div class="row">
+	<div class="large-12 columns">
+	  <table class="unstriped">
+	    {% for web in object.get_public_site %}
+	    <tr>
+	      <td><a href="{{ web.url }}">{{ web.url }}</a> {% if web.description %}({{ web.description }}){% endif %}</td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+    </div>
+  </li>
+</ul>
+  </div>
+</div>
+
+

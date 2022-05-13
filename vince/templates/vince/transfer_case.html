@@ -1,0 +1,27 @@
+{% load i18n %}
+<div class="fullmodal">
+  {% if form %}<form method='post' action="{% url 'vince:reqtransfer' case.id %}" id="assignteamform">{% endif %}
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Request Team Transfer" %}</h5>
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+	{% if form %}
+	{{ form }}
+	<p><small>Once transfer is complete, you may no longer be able to edit this case.</small></p>
+	{% else %}
+	<p>There are no other teams to transfer this case to.</p>
+	{% endif %}
+								 
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button cancel_confirm" data-close type="cancel">Cancel</a>
+        {% if form %}<input class="button alert" type='submit' value='{% trans "Transfer" %}' />{% endif %}
+      </div>
+    </div>
+    <button class="close-button cancel_confirm" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  {% if form %}</form>{% endif %}
+</div>

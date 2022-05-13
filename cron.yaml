@@ -1,0 +1,12 @@
+version: 1
+cron:
+ - name: "dailydigest"
+   url: "/vcworker/daily/"
+   schedule: "0 9 * * *"
+ - name: "vtdailydigest"
+   url: "/vinceworker/daily/"
+   schedule: "0 9 * * *"
+ - name: "vtgenreminders"
+   url: "/vinceworker/reminder/"
+   schedule: "0 9 * * *"
+   

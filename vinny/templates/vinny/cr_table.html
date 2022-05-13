@@ -1,0 +1,286 @@
+{% load i18n humanize ticket_to_link %}
+<div class="row align">
+  <div class="large-9 medium-8 small-12 columns">
+    <h3>Vulnerability Report</h3>
+    {% if ticket.user %}
+    <p>Reported by {% if user.is_staff %}<a href="{% url 'vince:vcuser' ticket.user.id %}">{{ ticket.user.vinceprofile.vince_username }}</a>{% else %}{{ ticket.user.vinceprofile.vince_username }}{% endif %} [{{ ticket.user.get_full_name }}] on {{ ticket.date_submitted|date:"Y-m-d, H:i" }} ({{ ticket.date_submitted|timesince }} ago) via web submission.</p>
+    {% else %}
+    {% if user.is_superuser %}
+    <button class="tiny default button">Add reporter</button>
+    {% endif %}
+    {% endif %}
+    <p><b>ID:</b> {{REPORT_ID}}{{ ticket.vrf_id }}</p>
+  </div>
+  <div class="large-3 medium-4 small-12 columns">
+    {{ cr.coordinator.name }}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-10 columns">
+    <div class="row">
+      <div class="large-6 columns">
+	<label>Have you attempted to contact the vendor?</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{% if ticket.comm_attempt %}Yes{% else %}No{% endif %}</span>
+      </div>
+    </div>
+    {% if ticket.comm_attempt %}
+    {% if ticket.first_contact %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label>Date of First Contact</label>
+      </div>
+      <div class="large-6 columns"><span class="vrfinfo">{{ ticket.first_contact|date:"Y-m-d" }}</span>
+      </div>
+    </div>
+    {% endif %}
+    {% if ticket.vendor_communication %}
+    <div class="row">
+      <div class="large-12 columns">
+        <label for="description">Summary of Previous Communications</label>
+	{{ ticket.vendor_communication }}
+      </div>
+    </div>
+    {% endif %}
+    {% elif ticket.get_why_no_attempt_display == "Other" %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label>Why have you not contacted the vendor directly?</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">	{{ ticket.please_explain }}</span>
+      </div>
+    </div>
+    {% else %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label>{% trans "Why have you not contacted the vendor directly?" %}</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.get_why_no_attempt_display }}</span>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+      <div class="large-6 columns">
+	<label>Affected Vendor</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.vendor_name }}<br/>
+	  {% if ticket.multiplevendors %} {{ ticket.other_vendors|linebreaksbr }}{% endif %}
+	</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-6 columns">
+	<label for="reporter">Affected Product</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.product_name }}</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-6 columns">
+	<label for="reporter">Affected Version</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.product_version }}</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-6 columns">
+        <label for="reporter">Significant ICS/OT impact?</label>
+      </div>
+      <div class="large-6 columns">
+        <span class="vrfinfo">{{ ticket.ics_impact }}</span>
+      </div>
+    </div>
+    {% if ticket.contact_name %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label for="reporter">Reporter Name</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.contact_name }}</span>
+      </div>
+    </div>
+    {% endif %}
+    {% if ticket.contact_email %}
+    <div class="row">
+      <div class="large-6 columns">
+        <label for="reporter">Reporter Email</label>
+      </div>
+      <div class="large-6 columns">
+        <span class="vrfinfo">{{ ticket.contact_email }}</span>
+      </div>
+    </div>
+    {% endif %}
+    {% if ticket.contact_org %}
+    <div class="row">
+      <div class="large-6 columns">
+        <label for="reporter">Reporter Organization</label>
+      </div>
+      <div class="large-6 columns">
+        <span class="vrfinfo">{{ ticket.contact_org }}</span>
+      </div>
+    </div>
+    {% endif %}
+    {% if ticket.contact_phone %}
+    <div class="row">
+      <div class="large-6 columns">
+        <label for="reporter">Reporter Phone</label>
+      </div>
+      <div class="large-6 columns">
+        <span class="vrfinfo">{{ ticket.contact_phone }}</span>
+      </div>
+    </div>
+    {% endif %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label for="reporter">Do you want to be acknowledged by name in any published document about this vulnerability?</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">
+	{% if ticket.credit_release %}
+	YES
+	{% else %}
+	NO
+	{% endif %}
+	</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-6 columns">
+	<label>Do you want us to share your contact information with vendors?</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">
+	{% if ticket.share_release %}
+	YES
+	{% else %}
+	NO
+	{% endif %}
+	</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="description">Description</label>
+	{{ ticket.vul_description|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="exploit">{% trans "Exploit" %}</label>
+	{{ ticket.vul_exploit|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="impact">{% trans "Impact" %}</label>
+	{{ ticket.vul_impact|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="discovery">Discovery</label>
+	{{ ticket.vul_discovery|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="large-6 columns">
+	<label>{% trans "Is there evidence that this vulnerability is being actively exploited?" %}</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.vul_exploited|yesno:"YES,NO" }}</span>
+      </div>
+    </div>
+    {% if ticket.vul_exploited %}
+    <div class="row">
+      <div class="large-6 columns">
+	Exploit References
+      </div>
+      <div class="large-6 columns">
+	{{ ticket.exploit_references|force_escape|urlizetrunc:50|num_to_link|linebreaksbr}}
+      </div>
+    </div>
+    {% endif %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label>{% trans "Is the vulnerability publicly known?" %} </label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.vul_public|yesno:"YES,NO" }}</span>
+      </div>
+    </div>
+    {% if ticket.vul_public %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label>Public References</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.public_references|force_escape|urlizetrunc:50|num_to_link|linebreaksbr}}</span>
+      </div>
+    </div>
+    {% endif %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label>{% trans "Do you plan to publicly disclose this vulnerability yourself?" %} </label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.vul_disclose|yesno:"YES,NO" }}</span>
+      </div>
+    </div>
+    {% if ticket.vul_disclose %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label>Disclosure Plans</label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.disclosure_plans|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}</span>
+      </div>
+    </div>
+    {% endif %}
+    {% if ticket.tracking %}
+    <div class="row">
+      <div class="large-6 columns">
+	<label>Related Tracking: </label>
+      </div>
+      <div class="large-6 columns">
+	<span class="vrfinfo">{{ ticket.tracking }}</span>
+      </div>
+    </div>
+    {% endif %}
+    {% if ticket.comments %}
+    <div class="row">
+      <div class="large-12 columns">
+	<label>{% trans "Comments" %}</label>
+	{{ ticket.comments }}
+      </div>
+    </div>
+    {% endif %}
+  </div>    
+  <div class="large-2 columns">
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% if ticket.resolution %}
+    {% trans "Resolution" %}{% ifequal ticket.get_status_display "Resolved" %} <a href='?close'><button type="button" class="btn btn-warning btn-xs">{% trans "Accept and Close" %}</button></a>
+    {% endifequal %}<br/>
+    {{ ticket.resolution|force_escape|urlizetrunc:50|linebreaksbr }}
+    {% endif %}
+  </div>
+</div>
+
+
+
+
+
+  
