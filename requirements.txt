@@ -29,7 +29,7 @@ django-qr-code==1.1.0
 django-ses==1.0.3
 django-storages==1.7.1
 django-widget-tweaks==1.4.3
-djangorestframework==3.10.3
+djangorestframework==3.11.2
 docutils==0.14
 ecdsa==0.13.2
 envs==1.3
