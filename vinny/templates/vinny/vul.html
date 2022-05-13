@@ -1,0 +1,174 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load i18n humanize%}
+{% load widget_tweaks post_tags %}
+{% block vince_title %}{% trans "Vulnerability Detail" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+{% endblock %}
+
+<!-- site-title  -->
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Vulnerability {{ vul.vul }} <a href="{{ vul.case.get_absolute_url }}">({{ vul.case.vu_vuid }})</a></h2>
+    </div>
+    <div class="large-4 columns text-right">
+      {% if showstatus %}
+      <a id='showstatusbutton' href="{% url 'vinny:status' vul.case.id %}"><button class="default button small-only-expanded">Update Status</button></a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if showstatus %}
+<div class="row">
+  <div class="large-12 columns">
+    {% if status %}
+    <div class="callout success">
+      {% for s in status %}
+      <p>{{ s.member.group.groupcontact.contact.vendor_name }} submitted status <b>{{ s.status|statusvalue }}</b> on {{ s.date_modified|date:"Y-m-d" }}.</p>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="callout alert">
+      <p>No status/statement has been submitted for this vulnerability.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 columns">
+    <h3>Vulnerability Information</h3>
+    <p>
+      <b>CVE:</b><span id="exportId">{% if vul.cve %} CVE-{{ vul.cve }} {% else %} Unspecified {% endif %}</span>
+      <br/>
+      <b>ID:</b> {{ vul.cert_id }}
+      <br/>
+      <b>Case:</b> <a href="{{ vul.case.get_absolute_url }}"> {{ vul.case.get_title }} </a><br/>
+      <b>Date Added:</b> {{ vul.date_added|date:"Y-m-d" }}<br/>
+      <b>Description:</b> {{ vul.description }}<br/>
+      {% if cvss %}
+      <b>CVSS Base Score:</b> {{ cvss.score }}<br/>
+      <b>CVSS Severity:</b> {{ cvss.severity }}<br/>
+      <b>CVSS Vector String:</b> {{ cvss.vector }}<br/>
+      {% endif %}
+      <!--<b>CWE:</b> {% for cwe in vul.vulcwe_set.all %}{{ cwe.cwe }}, {% endfor %}<br/>-->
+
+    </p>
+  </div>
+</div>
+
+<!--<div class="row">
+  <div class="large-8 columns">
+    <h3 class="section-title">SSVC Decision Tree</h3>
+  </div>
+  <div class="large-4 columns text-right">
+    <a href="#" class="button default" id="dt_start" title="Start walking the SSVC Decision tree" class="button default"><i class="fas fa-plus"></i> Start Decision</a>
+    <button id="dt_full_tree" data-toggle="tooltip" title="boosh" class="hidden button default"><i class="fas fa-plus"></i> Start Decision</button>
+    <button id="dt_clear" data-toggle="tooltip" title="boosh" class="hidden button default"><i class="fas fa-plus"></i> Start Decision</button>
+  </div>
+</div>
+<div id="graph" class="position-relative"></div>
+{% if vul.vulssvc.json_file %}
+<div id="ssvc_decision">
+  {{ vul.vulssvc.json_file|json_script:"ssvc_file" }}
+  {% else %}
+  <div id="ssvc_decision" class="hidden">
+    {% endif %}
+  <hr/>
+  <div class="row">
+    <div class="large-8 columns">
+      <h3 class="section-title">SSVC Decision</h3>
+    </div>
+    <div class="large-4 columns text-right">
+      <button id="download_ssvc" data-toggle="tooltip" title="Download JSON File" class="button default"><i class="fas fa-download"></i> Download</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+      <div id="something" action="{% url 'vince:vulssvc' vul.id %}">
+      </div>
+    </div>
+  </div>
+</div>-->
+
+<div class="reveal" data-reveal id="mwb">
+
+ <div class="modal-content">
+   <div class="modal-header">
+     <h5 class="modal-title" id="exampleModalLabel">Mission & Well-Being impact value</h5>
+   </div>
+   <div class="modal-body">
+     <form id="wbform">
+       <table class="table table-dark table-stripped" id="wbtable">
+	 <tr><td>
+	     Mission Prevelance
+	     &nbsp; 
+	     <a href="javascript:void(0)"
+		class="circletext"
+		onclick="$('#mwb_addon').show()">
+	       &quest; </a>
+	   </td>
+	   <td>
+	     <select id="mp" class="form-control">
+	       <option value=0>Minimal</option>
+	       <option value=1>Support</option>
+	       <option value=2>Essential</option>
+	     </select>
+	 </td></tr>
+	 <tr><td>
+	     Public Well-Being Impact
+	     <a href="javascript:void(0)"
+		class="circletext"
+		onclick="$('#public_well_being_addon').show()">
+	       &quest; </a>
+	   </td><td>
+	     <select id="wb" class="form-control">
+	       <option value=0>Minimal</option>
+	       <option value=1>Material</option>
+	       <option value=2>Irreversible</option>
+	     </select>
+       </td></tr></table>
+     </form>
+     <div id="wsdiv" style="display:none">
+       Cumulative MWB rating is <strong id="wscore"></strong>
+     </div>
+     <div class="modal-footer text-right">
+       <a href="#" id="cancelvendor" class="hollow button" data-close type="cancel">Cancel</a>
+       <button type="button" class="button primary" id="finishcalc"> Calculate</button>
+     </div>
+     <button class="close-button" data-close aria-label="Close modal" type="button">
+       <span aria-hidden="true">&times;</span>
+     </button>
+   </div>
+ </div>
+</div>
+<hr>
+<div class="row">
+  <div class="large-12 columns">
+    <h3 class="section-title">Exploit Information</h3>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <div id="exploits">
+      {% include 'vinny/exploits.html' %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+	  

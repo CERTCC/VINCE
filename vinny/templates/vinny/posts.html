@@ -1,0 +1,74 @@
+{% if posts.has_next %}
+<div class="callout loadmore text-center">
+  <p>View older posts ...</p>
+</div>
+<div class="hidden" id="nextpostpage">{{ posts.next_page_number }}</div>
+{% endif %}
+{% comment %}
+{% elif num_posts > 10 %}
+<div class="callout loadmore text-center">
+  <p>View older posts ...</p>
+</div>
+{% endcomment %}
+{% for post in posts reversed %}
+{% if post.deleted %}
+<div class="callout secondary deletedpost">
+  <div class="text-center">
+    {% if post.author.is_staff %}
+    <p>A post was removed by a coordinator.</p>
+    {% else %}
+    <p>A post was removed by a user.</p>
+    {% endif %}
+  </div>
+  {% if post.num_replies > 0 %}
+  <div class="row column text-right">
+    <div class="post_reply_count loadreply"> <i class="far fa-comment-dots"></i> {{ post.num_replies }} replies <i class="fas fa-caret-down"></i></div>
+    <div class="post_reply_count collapsereply"> <i class="far fa-comment-dots"></i> {{ post.num_replies }} replies <i class="fas fa-caret-down"></i></div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+{% include "vinny/post.html" %}
+{% endif %}
+<div class="replies">
+  {% for reply in post.replies %}
+  {% if reply.deleted %}
+  <div class="row hidereply">
+    <div class="large-1 small-1 medium-1 columns"></div>
+    <div class="large-11 small-11 medium-11 columns">
+      <div class="callout secondary deletedpost">
+	<div class="text-center">
+	  {% if reply.author.is_staff %}
+	  <p>A post was removed by a coordinator.</p>
+	  {% else %}
+	  <p>A post was removed by a user.</p>
+	  {% endif %}
+	</div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="row hidereply">
+    <div class="large-1 small-1 medium-1 columns"></div>
+    <div class="large-11 small-11 medium-11 columns">
+      {% include "vinny/post.html" with post=reply replypost=1 replypinned=post.pinned %}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+{% if post.num_replies > 3 %}
+<!--<div class="row">
+  <div class="large-1 small-1 medium-1 columns"></div>
+  <div class="large-11 small-11 medium-11 columns">
+    <div class="callout loadreply text-center">
+      <p>View more replies <i class="fas fa-caret-down"></i></p>
+    </div>
+    <div class="callout collapsereply text-center">
+      <p>View less <i class="fas fa-caret-up"></i></p>
+    </div>
+  </div>
+</div>-->
+{% endif %}
+</div>
+{% endfor %}
+

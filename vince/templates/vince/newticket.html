@@ -1,0 +1,107 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Create Ticket" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/tickets.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/editticket.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Submit a new ticket</h2>
+    </div>
+    <div class="large-4 columns text-right">
+    </div>
+  </div>
+</div>
+
+{% if team %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning">
+      <p>Looks like you're a member of multiple teams. You are currently creating a ticket for the <b>{{ team }}</b> Team. Switch to {% for x in other_teams %}<a href="{% url 'vince:newteamticket' x.id %}">{{ x }} Team</a>{% endfor %}.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      {% if form.errors %}
+      <div class="callout alert">
+        {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
+      </div>
+      {% endif %}
+
+      <div class="row">
+	<div class="large-8 columns">
+	  {% for hidden in form.hidden_fields %}
+	  {{ hidden }}
+	  {% endfor %}
+	  {% for field in form.visible_fields %}
+          {% if field.name == "attachment" %}
+	  <div class="form-group">
+	    <label>Attach File</label>
+            <small class="form-text text-muted">
+	      You can attach a file such as a document or screenshot to this ticket.
+            </small>
+
+	    <div class="row attachment">
+              <div class="large-6 medium-6 columns">
+		<label for="id_attachment" class="vulupload">Choose a File</label>
+		{% render_field form.attachment class="form-control show-for-sr" %}
+              </div>
+              <div class="large-6 medium-6 columns">
+		<div id="file-title-wrap">
+                  <div class="file-title-remove"><i class="fas fa-times"></i></div>
+		</div>
+              </div>
+            </div>
+	  </div>
+	  {% elif field.name == "case" %}
+	  {% if case %}
+	  <div class="form-group">
+	    {% else %}
+	    <div class="form-group" id="casefield">
+	      {% endif %}
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+            {{ field }}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+
+          </div>
+	    {% elif field.name == "role" %}
+	    {% if show_role %}
+	    <div class="form-group hidden" id="assignrole">	      
+              <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+              {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+              {{ field }}
+              {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+            </div>
+	    {% endif %}
+	    {% else %}
+          <div class="form-group">
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+            {{ field }}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+
+          </div>
+          {% endif %}
+          {% endfor %}
+	  <input type="submit" value="Submit" name="vrfSubmit" class="button primary"/>
+	</div>
+	<div class="large-4 columns">
+	</div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{% endblock %}

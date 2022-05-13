@@ -1,0 +1,232 @@
+{% load static report_tags %}
+<html>
+  <head>
+    <style>
+      table {
+      border: 1px solid black;
+      }
+
+      th, td {
+      border-bottom: 1px solid black;
+      }
+      
+      th, td {
+      padding: 10px;
+      }
+
+      .vince_logo {
+      color: #b00;
+      font-family: "Open Sans";
+      font-weight: 600;
+      }
+      
+      .header img {
+      float: left;
+      width: 150px;
+      height: 150px;
+      }
+
+      .header {
+        overflow: hidden;
+      }
+      
+      .header h2 {
+      position: relative;
+      top: 20px;
+      left: 10px;
+      }
+      
+    </style>
+  <title>Report for {{ monthstr }} {{ year }}</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="{% static 'vince/css/images/cert-seal-black.png' %}">
+      <h2><span class="vince_logo">CERT/CC VINCE</span> Report for {{ monthstr }} {{ year }}</h2>
+    </div>
+    <div>
+    <hr>
+    <h3>Vulnerability Notes</h3>
+    <table>
+      <tr>
+	<td>
+	  New Notes
+	</td>
+	<td>
+	{{ newnotes | length }}
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  Updated Notes
+	</td>
+	<td>
+	  {{ updated | length }}
+	</td>
+      </tr>
+    </table>
+    {% if newnotes %}
+    <h3>New Vulnerability Notes</h3>
+    <table>
+      <tr>
+	<th>Title</th>
+	<th>Date Published</th>
+      </tr>
+      {% for note in newnotes %}
+      <tr>
+	<td>
+	  {{ note.get_title }}
+	</td>
+	<td>
+	  {{ note.note.datefirstpublished|date:"Y-m-d"}}
+	</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    {% if updated %}
+    <h3>Updated Vulnerability Notes</h3>
+    <table>
+      <tr>
+	<th>Title</th>
+	<th>Date Last Published</th>
+      </tr>
+      {% for note in updated %}
+      <tr>
+        <td>
+          {{ note.get_title }}
+        </td>
+	<td>
+          {{ note.note.dateupdated|date:"Y-m-d"}}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
+    <h3>Cases</h3>
+    <table>
+      <tr>
+        <td>
+          New Cases
+        </td>
+        <td>
+          {{ case_stats.new_cases | length }}
+
+        </td>
+      </tr>
+      <tr>
+        <td>
+	  Active Cases
+        </td>
+        <td>
+          {{ case_stats.active_cases | length }}
+        </td>
+      </tr>
+      <tr>
+	<td>
+	  <span style="color:red">Active, Non-public Cases</span>
+	</td>
+	<td>
+          {{ case_stats.unpublished_active_cases | length }}
+	</td>
+      </tr>
+      <tr>
+	<td>
+          Active, Public Cases
+	</td>
+	<td>
+          {{ case_stats.published_active_cases | length }}
+	</td>
+      </tr>
+    </table>
+
+    {% if case_stats.new_cases %}
+    <h3>New Cases</h3>    
+    <table>
+      <tr>
+	<th>Case Name</th>
+	<th>Date Created</th>
+	<th>Expected Public Date</th>
+	</tr>
+      {% for note in case_stats.new_cases %}
+      <tr>
+	<td>
+	  {{ note.get_title }}
+	</td>
+	<td>
+	  {{ note.created|date:"Y-m-d" }}
+	</td>
+	<td>
+	  {% if note.due_date %}{{ note.due_date|date:"Y-m-d" }}{% else %}<b>TBD</b>{% endif %}
+	</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    {% if case_stats.unpublished_active_cases %}
+    <h3 style="color:red">Active, Non-public Cases</h3>
+    <table>
+      <tr>
+        <th>Case Name</th>
+	<th>Created</th>
+        <th>Expected Public Date</th>
+        </tr>
+      {% for note in case_stats.unpublished_active_cases %}
+      <tr>
+        <td>
+          {{ note.get_title }}
+        </td>
+        <td>
+          {{ note.created|date:"Y-m-d" }}
+        </td>
+	<td>
+	  {% if note.due_date %}{{ note.due_date|date:"Y-m-d" }}{% else %}<b>TBD</b>{% endif %}
+	</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
+    {% if case_stats.published_active_cases %}
+    <h3 style="color:green">Active, Public Cases</h3>
+    <table>
+      <tr>
+        <th>Case Name</th>
+	<th>Date Created</th>
+        <th>Date Published</th>
+        </tr>
+      {% for note in case_stats.published_active_cases %}
+      <tr>
+        <td>
+          {{ note.get_title }}
+        </td>
+        <td>
+          {{ note.created|date:"Y-m-d" }}
+        </td>
+	<td>
+	  {% if note.due_date %}{{ note.due_date|date:"Y-m-d" }}{% else %}<b>TBD</b>{% endif %}
+	</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
+
+    {% if new_users %}
+    <h3>New Users</h3>
+    <table>
+      <tr>
+        <th>Users Registered {{ monthstr }} {{ year }}</th>
+        <th>{{ new_users }}</th>
+      </tr>
+    </table>
+    {% endif %}
+	 
+    </div>
+		  
+
+
+
+  </body>
+  </html>

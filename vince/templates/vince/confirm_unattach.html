@@ -1,0 +1,21 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <form method="post" action="{% url 'vince:unattachfile' file.id %}" id="rmfileform">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Remove file from {% if file.vulnote %}Vulnerability Note{% else %}Post{% endif %}</h3>
+    </div>
+
+    <div class="modal-body">
+      {% csrf_token %}
+      <p>Are you sure you want to unlink this file from the {% if file.vulnote %}vulnote{% else %}post{% endif %}?  If you publish this {% if file.vulnote %}vulnote{% else %}post{% endif %} with the file linked in the content, you will be publishing content with a broken link.  Confirming will not remove the link in the content.  You must do this manually.</p>
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button alert" type='submit' value='{% trans "Yes, Remove" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

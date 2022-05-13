@@ -1,0 +1,34 @@
+ <table class="hover unstriped">
+   <thead>
+     <tr>
+       <th>ID</th>
+       <th>Vendor Record?</th>
+       <th width="300">Description</th>
+       <th>CVE</th>
+       <th>CWE</th>
+       <th width="150">Date Added</th>
+       {% if edit %}
+       <th width="100">Action</th>
+       {% endif %}
+     </tr>
+   </thead>
+   <tbody>
+     {% for vul in vuls %}
+     <tr>
+       <td>{{ vul.cert_id }}</td>
+       <td>{{ vul.ask_vendor_status|yesno:"Yes,No" }}</td>
+       <td>{{ vul.description }}</td>
+       <td>{% if vul.cveallocation %}<a href="{% url 'vince:cve' vul.cveallocation.id %}">{{ vul.cve }}</a>   <a href="#" class="downloadcve" vulid="{{ vul.cveallocation.id }}" title="download json file"><i class="fas fa-file-download"></i></a>{% else %} {{ vul.cve }}{% endif %}</td>
+       <td>{% for cwe in vul.vulcwe_set.all %}{{ cwe.cwe }}, {% endfor %}</td>
+       <td>{{ vul.date_added|date:"Y-m-d" }}</td>
+       {% if edit %}
+       <td><a vulid="{{ vul.id }}" class="openeditmodal" href="#"><i class="fas fa-edit"></i></a>&nbsp;&nbsp;<a href="{% url 'vince:rmvul' case.id vul.id %}"><i class="fas fa-trash-alt"></i></a></td>
+       {% endif %}
+     </tr>
+     {% empty %}
+     <tr>
+       <td colspan="5"><b><i>No Vuls have been added</i></b></td>
+     </tr>
+     {% endfor %}
+   </tbody>
+ </table>

@@ -1,0 +1,70 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load i18n humanize widget_tweaks%}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+{% endblock %}
+{% block content %}
+</script>
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-11 columns">
+      <h2>Update Your Email Preferences</h2>
+    </div>
+    <div class="large-1 columns"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <form method="post">
+      {% csrf_token %}
+      <h4>Which email format do you prefer?</h4>
+      {% render_field form.email_preference %}
+
+      <h4>Do you prefer to receive case notifications immediately or once daily?</h4>
+      <div class="text-muted">
+        {% trans form.email_daily.help_text %}
+      </div>
+      {% render_field form.email_daily %}
+
+      <hr>
+      
+      {# Include the hidden fields #}
+      {% for hidden in form.hidden_fields %}
+      {{ hidden }}
+      {% endfor %}
+
+      <h4>Tell us which notifications you'd like to receive:</h4>
+      <ul class="list-unstyled">
+      {% for field in form.visible_fields %}
+      {% if field.name in "email_preference,email_daily" %}
+      {% else %}
+      <li class="mb-2">
+	<div class="form-check">
+	  {% render_field field class="form-check-input mr-2" %}
+	  <div class="form-check-label">
+	    <strong>{% trans field.label %}</strong>
+	    <div class="text-muted">
+	      {% trans field.help_text %}
+	    </div>
+	  </div>
+	</div>
+      </li>
+      {% endif %}
+      {% endfor %}
+      </ul>
+      <input type="submit" class="button primary" value="Save Changes">
+    </form>
+  </div>
+</div>
+{% endblock %}

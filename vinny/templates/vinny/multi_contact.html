@@ -1,0 +1,35 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load i18n humanize %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>My Contact Groups</h2>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-9 columns">
+    <div class="callout warning">
+      <p>You are a member of more than one group.  Please choose one of the following options to view contact information:</p>
+    </div>
+  </div>
+  <div class="large-3 columns"></div>
+</div>
+{% for object in contacts %}
+<div class="row">
+  <div class="large-9 columns">
+    <a href="{% url 'vinny:contact' object.id %}">
+      <div class="callout secondary">
+	<h4>{{ object.vendor_name }}</h4>
+    </div></a>
+  </div>
+  <div class="large-3 columns"></div>
+</div>
+{% endfor %}
+
+{% endblock %}

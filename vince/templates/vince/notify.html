@@ -1,0 +1,87 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Write Vendor Notification" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vulnote.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Case <a href="{{ case.get_absolute_url }}"> {{ case.get_vuid }}</a> Post </h2>
+    </div>
+    <div class="large-4 columns text-right">
+      {% if edit %}<a href="{% url 'vince:editpost_crview' case.id notify_id %}" class="button cmu">{% else %}<a href="{% url 'vince:post_crview' case.id %}" class="button cmu">{% endif %}Side-by-side view</a>
+    </div>
+  </div>
+</div>
+
+<div id="case_id" class="hidden">{{case.id}}</div>
+<div class="reveal" id="confirmmodal" data-reveal></div>
+
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <form method="post" name="createnotification">{% csrf_token %}
+      <input type="hidden" name="version" value="{{ form.version.value }}" />
+      {% if form.errors %}
+      <p class="errornote">
+        {% if form.errors.items|length == 1 %}"Please correct the error below."{% else %}"Please correct the errors below."{% endif %}
+      </p>
+      {% endif %}
+      {% if edit %}
+      <h3>Edit Pinned Post</h3>
+      {% else %}
+      <h3>Write Pinned Post</h3>
+      {% endif %}
+      <div class="row">
+	<div class="large-8 columns">
+	  <div class="form-group">
+            <small class='form-text text-muted'>{% trans form.content.help_text %} {% if edit %}<a href="{% url 'vince:editpost_crview' case.id notify_id %}">{% else %}<a href="{% url 'vince:post_crview' case.id %}">{% endif %}Switch to side-by-side view with case request</a></small>
+	    {% if disabled %}
+	    {% render_field form.content|add_class:"form-control"|append_attr:"readonly:readonly" %}
+	    {% else %}
+            {{ form.content }}
+	    {% endif %}
+            {% if form.content.errors %}<dd class="error"> {{ form.content.errors }}</dd>{% endif %}
+          </div>
+	  <a href="{% url 'vince:case' case.id %}" class="button secondary">Cancel</a>
+	  <input type="submit" value="Save" name="vrfSubmit" class="primary button"/>
+	</div>
+	<div class="large-4 columns">
+	  <div class="row column">
+	    <div class="row column" id="filelist">
+	      {% include 'vince/vulnote_files.html' %}
+	    </div>
+	    <br/>
+	    {% if vuls %}
+	    <h4>Add Vulnerabilities</h4>
+	    <br/>
+	    {% for vul in vuls %}
+	    <input type="checkbox" title="{% if vul.cve %}{{ vul.cve }}{% else %}{{ vul.vul }}{% endif %}" name="vuls[]" value="{{ vul.id }}" class="vul_check" {% if vul.added_to_post %} checked {% endif %}/>&nbsp;&nbsp;<span title="{{ vul.description }}">{{ vul.vul }}</span>
+	    <br/>
+	    {% endfor %}
+	  </div>
+	  {% endif %}
+	  <br/>
+	  {% if artifacts %}
+	  <div class="row column">
+	    <h4>Add Artifacts</h4>
+	    <br/>
+	    {% for art in artifacts %}
+	    <input type="checkbox" name="artifacts[]" title="{{ art.title }}" value="{{ art.id }}" class="artifact_check" href="{% url 'vince:post_artifact_share' 'post' art.id %}" {% if art.added_to_post %} checked {% endif %}>&nbsp;&nbsp;<span title="{{ art.description }}">{{ art.title }}&nbsp;&nbsp;<i>({{ art.type }})</i></span><br/>
+	    {% endfor %}
+	  </div>
+	  {% endif %}
+	</div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{% endblock %}

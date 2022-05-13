@@ -1,0 +1,108 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Create Email" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/email.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>New Email</h2>
+    </div>
+    <div class="large-4 columns text-right">
+    </div>
+  </div>
+</div>
+
+{% if messages %}
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{% autoescape off %}{{ message }}{% endautoescape %}</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      {% if form.errors %}
+      <p class="errornote">
+        {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
+      </p>
+      {% endif %}
+
+      <div class="row">
+	<div class="large-8 columns">
+	  
+	{% for field in form %}
+	  {% if field.name == "pgp_key_id" %}
+	  
+          {% elif field.name == "new_certificate" %}
+	  <div class="form-group certificate_email">
+	    <label>{% trans field.label %}</label>
+	    {% if field.help_text %}
+            <small class="form-text text-muted">
+	      {% trans field.help_text %}
+            </small>
+	    {% endif %}
+	    <div class="row attachment">
+              <div class="large-6 medium-6 columns">
+		<label for="id_new_certificate" class="vulupload">Upload a certificate</label>
+		{% render_field form.new_certificate class="form-control show-for-sr" %}
+              </div>
+              <div class="large-6 medium-6 columns">
+		<div id="file-title-wrap">
+                  <div class="file-title-remove"><i class="fas fa-times"></i></div>
+		</div>
+              </div>
+            </div>
+	  </div>
+	  {% else %}
+	  {% if field.name == "pgp_key" %}
+	  <div class="row">
+	    <div id="pgp_keys">
+	      <div class="form-group">
+		<div class="large-4 columns">
+		  <label for="pgp_keys">PGP Key ID:</label>
+		  <small class="form-text text-muted">(Auto-populated by Contact selection)</small>
+		  <select name="pgp_key_id" multiple></select>
+		</div>
+		<div class="large-8 columns">
+		  <label for="pgp_key_info">PGP Key Details:</label>
+		  <table id="pgp_key_info"></table>
+		</div>
+	      </div>
+	      </div>
+	  </div>
+	  <div id="pgp_key_email">
+	    {% elif field.name == "certificate" %}
+	    
+	    <div class="certificate_email">
+	      {% else %}
+              <div class="form-group">
+		{% endif %}
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+            {{ field }}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+
+          </div>
+	      {% endif %}
+          {% endfor %}
+	  <input type="submit" value="Submit" name="vrfSubmit" class="button primary"/>
+	</div>
+	<div class="large-4 columns">
+	</div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{% endblock %}

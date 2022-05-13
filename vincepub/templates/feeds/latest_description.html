@@ -1,0 +1,6 @@
+{% load markdown_extras %}
+{% if object.clean_desc %}
+{{ obj.clean_desc }}
+{% else %}
+{{ obj.overview | markdown | safe }}
+{% endif %}

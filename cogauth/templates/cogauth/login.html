@@ -1,0 +1,68 @@
+{% extends "vince/login.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+<script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+{% if token_login %}
+<script type="text/javascript" src="{% static 'vince/js/vtoken_login.js' %}"></script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{% if form.non_field_errors %}
+{% for error in form.non_field_errors %}
+<div class="callout error">
+    {{ error }}
+</div>
+{% endfor %}
+{% endif %}
+
+
+
+<div id="content-main">
+
+  {% if user.is_authenticated %}
+  <p class="errornote">
+    You are authenticated as {{ user.username }}. Go to <a href="{% url 'vinny:dashboard' %}">my dashboard</a> or <a href="{% url 'cogauth:logout' %}">login as a different user.</a>
+  </p>
+  {% endif %}
+
+<div id="dash" class="hidden" href="{% url 'vinny:dashboard' %}"></div>
+<div id="login" class="hidden" href="{% url 'vinny:login' %}"></div>
+<form action="{% url 'cogauth:login' %}?next={{request.GET.next}}" method="post" id="login-form">
+  {% csrf_token %}
+    <div class="row column">
+      {% if form.username.errors %}
+      <div class="callout error">
+	{{ form.username.errors }}
+      </div>
+      {% endif %}
+      {{ form.username.label_tag }} {{ form.username }}
+    </div>
+    <div class="row column">
+      {{ form.password.errors }}
+      {{ form.password.label_tag }} {{ form.password }}
+      <input type="hidden" name="next" value="{{ next }}" />
+    </div>
+    <div class="row columns text-center">
+      <p><small>Note: both fields are case-sensitive.</small></p>
+    </div>
+    {% url 'cogauth:init_password_reset' as password_reset_url %}
+    <div class="row columns">
+    <div class="password-reset-link">
+      {% if password_reset_url %}
+      <div>
+	<a href="{{ password_reset_url }}">{% trans 'Forgot your password?' %}</a>
+      </div>
+	{% endif %}
+      <a href="{% url 'vinny:signup' %}">Signup for a VINCE account</a>
+    </div>
+    </div>
+      <label>&nbsp;</label><input type="submit" class="primary button expanded search-button" value="{% trans 'Log in' %}" />
+  </form>
+</div>
+{% if token_login %}
+<div id="tokenlogin" class="hidden" token="{% url 'vinny:tokenlogin' %}"></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,97 @@
+{% load i18n humanize ticket_to_link %}
+{% if show_params %}
+{% else %}
+<div class="row">
+  <div class="large-12 columns">
+    <span class="searchtag">Search parameters: </span>
+    <div class="tag-cloud">
+      {% if form.tag.value %}
+      <span class="tag-cloud-individual-tag"><i class="fas fa-tag"></i> {{form.tag.value}}<a href="#" class="removetag"><i class="fa fa-times-circle" aria-hidden="true"></i></a></span>
+      {% endif %}
+      {% for v in form.status.value %}
+      {% if case %}
+      <span class="tag-cloud-individual-tag">{{v|case_status_repr}}<a href="#" class="removestatus" val="{{ v }}"><i class="fa fa-times-circle" aria-hidden="true"></i></a></span>
+      {% else %}
+      <span class="tag-cloud-individual-tag">{{v|status_repr}}<a href="#" class="removestatus" val="{{ v }}"><i class="fa fa-times-circle" aria-hidden="true"></i></a></span>
+      {% endif %}
+      {% endfor %}
+      {% for v in form.owner.value %}
+      <span class="tag-cloud-individual-tag"><i class="fas fa-user"></i> {{v|owner_repr}}<a href="#" class="removeowner" val="{{ v }}"><i class="fa fa-times-circle" aria-hidden="true"></i></a></span>
+      {% endfor %}
+      {% for v in form.team.value %}
+      <span class="tag-cloud-individual-tag">{{v|team_repr}}<a href="#" class="removeteam" val="{{ v }}"><i class="fa fa-times-circle" aria-hidden="true"></i></a></span>
+      {% endfor %}
+      {% for v in form.queue.value %}
+      <span class="tag-cloud-individual-tag">{{v|queue_repr}}<a href="#" class="removequeue" val="{{ v }}"><i class="fa fa-times-circle" aria-hidden="true"></i></a></span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+<div class="row">
+  <div class="large-12 medium-12 columns">
+    <div class="blog-post">
+      <div class="row">
+	<div class="large-12 medium-12 small-12 columns">
+          {% if total %}
+          <div class="resultCount"> Showing results {{ object_list.start_index }} - {{ object_list.end_index }} of {{ total }} Results </div>
+          {% elif paginator.count %}
+          <div class="resultCount"> {{ paginator.count }} Results </div>
+          {% endif %}
+	</div>
+      </div>
+      
+      {% if object_list %}
+      {% for ticket in object_list %}
+      <div class="vulnerability-list">
+	<h4>
+          <a href="{{ ticket.get_absolute_url }}">
+	    {% if ticket.queue %}
+	    [{{ ticket.queue }}-{{ ticket.id }}] {{ ticket.title }}</a> {% autoescape off %}{{ ticket.get_status_html }} {{ ticket.get_tag_html }}{% endautoescape %}
+	  {% else %}
+	  {% if ticket|case_access:user %}{{ ticket.get_title }}{% else %}{{ ticket.vu_vuid }}{% endif %}</a> {% autoescape off %}{{ ticket.get_status_html }} {{ ticket.get_tag_html }} {{ ticket.get_owner_html }}{% endautoescape %}
+{% endif %}
+</h4>
+<h6>{% if ticket.queue %}Submitted by {% if ticket.contact_email %}{% autoescape off %}{{ ticket.contact_email|vince_user }}{% endautoescape %}{% else %}{% autoescape off %}{{ ticket.submitter_email|vince_user }}{% endautoescape %} {% endif %}<span class="px-1">·</span> {% endif %} Last updated {{ ticket.modified|date:"Y-m-d" }} ({{ ticket.modified|naturaltime }})</h6>
+      {% if note.dateupdated != note.datefirstpublished %}
+      <span class="updated-date">Updated {{ note.dateupdated|date:"F d, Y" }}</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+    
+    <ul class="pagination text-center" role="navigation" aria-label="Pagination">
+      {% if object_list.has_previous %}
+      <li class="pagination-previous"><a href="#" next="{{ object_list.previous_page_number }}" class="search_notes">Previous</a></li>
+      {% else %}
+      <li class="pagination-previous disabled">Previous</li>
+      {% endif %}
+      {% for i in object_list.paginator.page_range %}
+      {% if object_list.number == i %}
+      <li class="current"><span class="show-for-sr">You're on page</span> {{ object_list.number }}</li>
+      {% elif i > object_list.number|add:'-3' and i < object_list.number|add:'3' %}
+        <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+        {% else %}
+        {% if i == 1 %}
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      <li class="ellipsis"></li>
+      {% elif forloop.last %}
+      <li class="ellipsis"></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      {% if object_list.has_next %}
+      <li class="pagination-next"><a href="#" next="{{ object_list.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
+      {% else %}
+      <li class="pagination-next disabled">Next</li>
+      {% endif %}
+    </ul>
+    {% else %}
+    <br/>
+    <h3> No Results Found </h3>
+    <br/>
+    <br/>
+    {% endif %}
+  </div>
+</div>
+</div>

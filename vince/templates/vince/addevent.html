@@ -1,0 +1,34 @@
+{% extends "vince/modal.html" %}
+{% load i18n widget_tweaks %}
+
+{% block content %}
+<div class="modal form_modal">
+  <form method="post" id="eventform" action="{% url 'vince:triage_add' %}">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add an event</h5>
+      </div>
+      <div class="modal-body">
+	{% csrf_token %}
+        {% for field in form.visible_fields %}
+	
+	<div class="form-group">
+          <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+          {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+          {{ field }}
+        </div>
+	{% endfor %}
+	{% for field in form.hidden_fields %}
+	{{ field }}
+	{% endfor %}
+      </div>
+      <div class="modal-footer text-right">
+	<button type="submit" name="vrfSubmit" class="button primary"><i class="fas fa-plus"></i> Create Event</button>
+      </div>
+    </div>
+  </form>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

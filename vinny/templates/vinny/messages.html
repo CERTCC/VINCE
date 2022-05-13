@@ -1,0 +1,55 @@
+{% load i18n humanize markdown_extras filename post_tags%}
+<div class="thread-messages">
+  {% for message in thread.messages.all %}
+  <div class="row">
+    {% if message.sender == user %}
+    <div class="large-5 columns"></div>
+    <div class="large-7 columns">
+      <div class="message-byline">
+      </div>
+      <div class="callout sent-by-me thread-message">
+	{% else %}
+	<div class="large-7 columns">
+          <div class="message-byline">
+            <!--<div class="message-from">{{ message.sender.vinceprofile.vince_username }}                                                                 		</div>-->
+            <!--<div class="message-sent"> {{ message.created }}
+            </div>-->
+          </div>
+          <div class="callout secondary thread-message">
+	    {% endif %}
+            <div class="message-content">{{ message.content | markdown | safe }}</div>
+            <div class="message-attachment">{% for i in message.messageattachment_set.all %}
+	      <div class="participant-pic">
+		{% if i.file %}
+		<a download="{{ i.file.filename }}" href="{% url 'vinny:attachment' 'msg' i.file.uuid %}" target="_blank" class="dl_file">
+                  <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ i.file.filename|showfileicon }}{% endautoescape %}</span></div>
+		</a>
+		{% elif i.attachment %}
+		<a download="{{ i.attachment.name }}" href="{{ i.attachment.url }}" target="_blank" class="dl_file">
+		  <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ i.attachment.name|showfileicon }}{% endautoescape %}</span></div>
+		</a>
+		{% endif %}
+	      </div>
+	      <div class="participant-info">
+		{% if i.file %}
+		<a download="{{ i.file.filename }}" href="{% url 'vinny:attachment' 'msg' i.file.uuid %}" target="_blank" class="dl_file">{{ i.file.filename }}</a>
+		{% elif i.attachment %}
+		<a download="{{ i.attachment.name }}" href="{{ i.attachment.url }}" target="_blank" class="dl_file">{{ i.attachment.name }}</a>
+		{% endif %}
+	      </div>
+	      <br/>
+              {% endfor %}
+	    </div>
+          </div><!--callout-->
+          {% if message.sender != user %}
+          <div class="message-from">{{ message.sender.vinceprofile.vince_username }} ({% if message.sender.get_full_name %}{{ message.sender.get_full_name }}, {% endif %}{{ message.sender.vinceprofile.association}})
+          </div>
+          {% endif %}
+	  <div class="message-sent text-right small-text-left"> {{ message.created|date:"Y-m-d" }} ({{message.created|naturaltime }}) </div>
+	</div><!--columns-->
+	{% if message.sender != user %}
+	<div class="large-5 columns"></div>
+	{% endif %}
+      </div><!--row-->
+      {% endfor %}
+    </div>

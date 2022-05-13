@@ -1,0 +1,139 @@
+{% extends "vince/modal.html" %}
+{% load i18n humanize ticket_to_link%}
+{% block content %}
+<div class="fullmodal">
+  <div class="modal-header">
+    <h5>Original report</h5>
+  </div>
+  <div class="modal-content">
+    <div class="crview">
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="reporter">Affected Vendor</label>
+	{{ object.vendor_name }} <br/>
+	{% if object.multiplevendors %} {{ object.other_vendors }}{% endif %}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="reporter">Affected Product</label>
+	{{ object.product_name }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="reporter">Affected Version</label>
+	{{ object.product_version }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="id_ics_impact">Significant ICS/OT impact?</label>
+	<span class="label {{ object.ics_impact|yesno:"alert,success" }}">{{ object.ics_impact|yesno }}</span></label>
+      </div>
+    </div>
+    
+
+    {% if object.share_release %}
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="reporter">Reporter</label>
+	{% if object.contact_name %}
+	{{ object.contact_name }}
+	[{{ object.contact_email }}]
+	{% elif object.contact_email %}
+	{{ object.contact_email }}
+	{% else %}
+	Reporter did not provide name or email
+	<br/>
+	{% endif %}
+	{% if object.contact_org %}
+	{{ object.contact_org }}
+	<br/>
+	{% endif %}
+	{% if object.contact_phone %}
+	{{ object.contact_phone }}
+	{% endif %}
+      </div>
+    </div>
+    {% endif %}
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="comm_attempt">{% trans "Vendor contacted?" %}</label>
+	<span class="label {{object.comm_attempt|yesno:"success,alert"}}">{{ object.comm_attempt|yesno }}</span>
+	{% if object.comm_attempt %}
+	{{ object.vendor_communication|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+	{% else %}
+	{% if object.why_no_attempt == "Other" %}
+	<tr>
+	  <th>{% trans "Explanation" %}</th>
+	  <td>{{ object.please_exlain %}</td>
+	</tr>
+	{% else %}
+	<tr>
+	  <th>{% trans "No attempt to contact" %}</th>
+	  <td>{{ object.why_no_attempt }}</td>
+	</tr>
+	{% endif %}
+	{% endif %}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="description">Description</label>
+	{{ object.vul_description|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="exploit">{% trans "Exploit" %}</label>
+	{{ object.vul_exploit|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="impact">{% trans "Impact" %}</label>
+	{{ object.vul_impact|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="large-12 columns">
+	<label for="discovery">Discovery</label>
+	{{ object.vul_discovery|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label>{% trans "Has been exploited?" %}
+	  <span class="label {{ object.vul_exploited|yesno:"alert,success" }}">{{ object.vul_exploited|yesno }}</span> </label>
+	{% if object.vul_exploited %}
+	{{ object.exploit_references|force_escape|urlizetrunc:50|num_to_link|linebreaksbr}}
+	{% endif %}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label>{% trans "Is public?" %}
+	  <span class="label {{ object.vul_public|yesno:"alert,success" }}">{{ object.vul_public|yesno }}</span></label>
+	{% if object.vul_public %}
+	{{ object.public_references|force_escape|urlizetrunc:50|num_to_link|linebreaksbr}}
+	{% endif %}
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<label>{% trans "Disclosure Plans?" %}
+	  <span class="label {{ object.vul_disclose|yesno:"alert,success" }}">{{ object.vul_disclose|yesno }}</span></label>
+	{% if object.vul_disclose %}
+	{{ object.disclosure_plans|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+	{% endif %}
+      </div>
+    </div>
+    </div>
+    </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

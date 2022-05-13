@@ -1,0 +1,68 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n static %}
+
+{% block vince_title %}{% trans "Create New User" %}{% endblock %}
+{% load staticfiles %}
+
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Create New User</h2>
+    </div>
+    <div class="large-6 columns text-right">
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <p>Using this form will allow you to create a new user.  The user will be immediately notified of their username and temporary password via email. Ideally users should create the account themselves or a group administrator would invite a user to signup.  Make sure to add this email address to the correct Contact, if vendor association is appropriate.</p>
+  </div>
+</div>
+<div class="row">
+  <div class="large-9 columns">
+    <div class="dashdiv">
+      <form method="post" id="signupform">
+	{% csrf_token %}
+	<div class="login-form">
+	  {% if form.errors %}
+	  <div class="callout alert">
+	    {% if form.errors.items|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+	    {% if form.non_field_errors %}
+	    <br/><strong>reCAPTCHA Error!</strong> Invalid reCAPTCHA. Please try to submit again.
+	    {% endif %}
+	  </div>
+	  {% endif %}
+	  {% for field in form %}
+	  <div class="form-row">
+	    <label for="id_{{ field.name }}">{% trans field.label %}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
+	    {% if field.help_text %}
+	    <small class='form-text text-muted'>{% autoescape off %}{{ field.help_text }}{% endautoescape %}</small>{% endif %}
+	    {{ field }}
+	    {% for error in field.errors %}
+	    <p style="color: red">{% autoescape off %}{{ error }} {% endautoescape %}</p>
+	    {% endfor %}
+	  </div>
+	  {% endfor %}
+	  
+	</div>
+	<button type="submit" class="primary button" id="vrfSubmit">{% trans 'Create User' %}</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+

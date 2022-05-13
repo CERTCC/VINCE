@@ -1,0 +1,83 @@
+{% load user_tags %}
+<div class="reveal-for-large off-canvas position-left navsidebar" id="offCanvasLeft" data-off-canvas>
+  <div class="row column">
+    <ul class="vertical menu vincesidemenu">
+      <li class="has-submenu {{ dashboard|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:dashboard' %}"><i class="fa-fw fa-lg fas fa-tachometer-alt"></i> Dashboard</a>
+      </li>
+      <li class="has-submenu {{ inboxpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:inbox' %}" class="menu-notify"><i class="fa-fw fa-lg fas fa-envelope"></i> Inbox {% if unread_msg_count %}<span class="badge success">{{ unread_msg_count }}</span>{% endif %}</a>
+      </li>
+      <li class="has-submenu {{ casepage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:casesearch' %}"><i class="fa-fw fa-lg fas fa-briefcase"></i> Cases</a>
+      </li>
+      {% if user.vinceprofile.is_vendor_admin %}
+      <li class="has-submenu {{ contactpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:contact' %}"><i class="fa-fw fa-lg fas fa-mobile-alt"></i>My Contact Info</a>
+      </li>
+      {% endif %}
+      {% if user.vinceprofile.is_vendor %}
+      <li class="has-submenu {{ adminpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:admin' %}"><i class="fa-fw fa-lg fas fa-user"></i> User Management</a>
+      </li>
+      {% endif %}
+      <li class="has-submenu {{ crpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:reports' %}"><i class="fa-fw fa-lg fas fa-archive"></i> My Vulnerability Reports</a>
+      </li>
+      <li class="has-submenu {{ reportpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:report' %}" target="_blank" rel="noopener"><i class="fa-fw fa-lg fas fa-file-alt"></i> Report a Vulnerability <span class="show-onhover"><i class="fas fa-external-link-alt"></i></span></a>
+      </li>
+      {% if user|limited %}
+      <li class="has-submenu {{ reportspage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:vcreport' %}"><i class="fa-fw fa-lg fas fa-chart-bar"></i> Reports</a>
+      </li>
+      {% endif %}
+    </ul>
+  </div><!--rowcol-->
+  {% if user.vinceprofile.is_track %}
+  <div class="row column tracklink">
+    <ul class="vertical menu"><li><a href="{% url 'vince:dashboard' %}"><i class="fa-fw fa-lg fas fa-chart-line"></i>VINCETrack Dashboard</a></li></ul>
+  </div>
+  {% endif %}
+</div><!--reveal-->
+<div class="reveal-for-medium show-for-medium-only position-left navsidebar off-canvas" id="offCanvasLeft1" data-off-canvas>
+  <div class="row column">
+    <ul class="vertical menu vincesidemenu">
+      <li class="has-submenu {{ dashboard|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:dashboard' %}"><i class="fa-fw fa-lg fas fa-tachometer-alt"></i></a>
+      </li>
+      <li class="has-submenu {{ casepage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:casesearch' %}"><i class="fa-fw fa-lg fas fa-briefcase"></i></a>
+      </li>
+      <li class="has-submenu {{ inboxpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:inbox' %}" class="menu-notify"><i class="fa-fw fa-lg fas fa-envelope"></i></a>
+      </li>
+      {% if user.vinceprofile.is_vendor_admin %}
+      <li class="has-submenu {{ contactpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:contact' %}"><i class="fa-fw fa-lg fas fa-mobile-alt"></i></a>
+      </li>
+      {% endif %}
+      {% if user.vinceprofile.is_vendor %}
+      <li class="has-submenu {{ adminpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:admin' %}"><i class="fa-fw fa-lg fas fa-user"></i></a>
+      </li>
+      {% endif %}
+      <li class="has-submenu {{ crpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:reports' %}"><i class="fa-fw fa-lg fas fa-archive"></i></a>
+      </li>
+      <li class="has-submenu {{ reportpage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:report' %}" target="_blank" rel="noopener"><i class="fa-fw fa-lg fas fa-file-alt"></i></a>
+      </li>
+      {% if user|limited %}
+      <li class="has-submenu {{ reportspage|yesno:'is,not' }}-active">
+        <a href="{% url 'vinny:vcreport' %}"><i class="fa-fw fa-lg fas fa-chart-bar"></i></a>
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+  {% if user.vinceprofile.is_track %}
+  <div class="row column tracklink">
+    <ul class="vertical menu"><li><a href="{% url 'vince:dashboard' %}"><i class="fa-fw fa-lg fas fa-chart-line"></i></a></li></ul>
+  </div>
+  {% endif %}
+</div>

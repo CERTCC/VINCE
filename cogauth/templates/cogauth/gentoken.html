@@ -1,0 +1,32 @@
+{% extends "vince/modal.html" %}
+
+{% block content %}
+{% load widget_tweaks %}
+<div class="fullmodal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">API Key</h5>
+    </div>
+      {% csrf_token %}
+    <div class="modal-body">
+      
+      <p>An API Key has been generated for you to access the VINCE API.
+	Do not share this key with anyone. Copy this key to a safe place.
+	This key will not be shared again.  You will have to generate a new
+	key if you lose access to this key.
+      </p>
+      <p><b> {{ token }} </b></p>
+    </div>
+    <div class="modal-footer">
+      <div class="row column text-right">
+        <button  name="vrfSubmit" data-close class="closemodal primary button"> Ok </button>
+      </div>
+    </div>
+    </form>
+  </div>
+  <button class="close-button closemodal" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}
+

@@ -1,0 +1,41 @@
+{% extends "vince/modal.html" %}
+{% load i18n %}
+{% load widget_tweaks %}
+{% load staticfiles %}
+{% block content %}
+<div class="fullmodal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Provide a statement for this vulnerability</h5>
+    </div>
+    <form id="providestatementform" method="post" action="{{ action }}" enctype="multipart/form-data">      
+      <div class="modal-body">
+	<p>The statement and references provided below will be included in our vulnerability note on <a href="{% url 'vincepub:index' %}" target="_blank">our website</a> if we publish about this vulnerability. <br/>
+	  This statement is for vulnerability <b>{{ vul.vul }}: {{ vul.description }}</b>.</p>
+	{% csrf_token %}
+	{% for field in form %}
+	<div class="row">
+	  <div class="form-group">
+	    <div class="large-3 columns text-right">
+              <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %}
+		<span class='required'>*</span>{% endif %}</label>
+	    </div>
+	    <div class="large-9 columns">
+              {{ field }}
+              {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+	    </div>
+	  </div>
+	</div>
+	{% endfor %}
+      </div>
+      <div class="modal-footer text-right">
+	<a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+	<button type="submit" name="vrfSubmit" class="button primary"> Save Statement </button>
+      </div>
+    </form>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

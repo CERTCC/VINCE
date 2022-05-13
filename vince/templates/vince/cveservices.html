@@ -1,0 +1,84 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "CVE Services" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+
+<script type="text/javascript" src="{% static 'vince/js/cve_service.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>CVE Services Management for {{ my_team }} </h2>
+    </div>
+    <div class="large-4 columns text-right">
+      <a href="{% url 'vince:cve_manage' %}"><button class="button cmu"><i class="fas fa-plus"></i> Add CVE Account</button></a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+
+<div class="reveal small" id="smallmodal" data-reveal></div>
+
+{% if accounts %}
+<div class="user_admin_options">
+  <div class="row">
+    <div class="large-4 columns">
+      <h3 class="section-title">Choose Account</h3>
+      {% for account in accounts %}
+      <a class="query {% if forloop.first %}active{% endif %}" href="{% url 'vince:cve_detail' account.id %}">
+        <div class="callout">
+	  <div class="row">
+	    <div class="large-1 medium-1 small-1 columns">
+	      <i class="fas fa-lightbulb {% if account.active %}primary{% else %}warning{% endif %}"></i>
+	    </div>
+	    <div class="large-10 medium-10 small-10 columns">
+	      Organization: {{ account.org_name }}<br/>  Email: {{ account.email }}</div>
+	  </div>
+	  <div class="large-1 small-1 medium-1 columns">
+	    {% if user.is_superuser %}
+            <div class="edit-delete-hover">
+	      <button type="button" action="{% url 'vince:cve_services_delete' account.id %}" class="delete-btn button"><i aria-hidden="true" class="fas fa-trash-alt"></i></button>
+	    </div>
+	    {% endif %}
+	  </div>
+
+	</div>
+      </a>
+      {% endfor %}
+    </div>
+    <div class="large-8 columns">
+      <div id="results">
+	{% include 'vince/cve_detail.html' %}
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert">
+      <p>No accounts available for this team.  Please add an account.</p>
+    </div>
+  </div>
+</div>
+       
+{% endif %}
+
+
+
+    
+
+{% endblock %}

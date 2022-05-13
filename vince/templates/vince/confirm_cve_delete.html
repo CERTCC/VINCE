@@ -1,0 +1,25 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <form method="post" action="{% url 'vince:cve_services_delete' account.id %}">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Delete CVE Services Account</h3>
+    </div>
+
+    <div class="modal-body">
+      {% csrf_token %}
+      {% if user.is_superuser %}
+      <p>Are you sure you want to remove this account?</p>
+      {% else %}
+      <p>Only superusers can completely remove this account. By submitting this form you will make this account inactive.</p>
+      {% endif %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button alert" type='submit' value='{% trans "Yes, Remove" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

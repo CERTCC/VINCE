@@ -1,0 +1,48 @@
+{% load i18n contact_tags %}
+<table class="unstriped hover">
+  <tbody>
+    {% for change in change_list %}
+    <tr>
+      <td>
+        {% if change.field == "NEW" %}
+        <i class="fas fa-plus primary"></i>
+        {{ change.field }} {{ change.model }}
+	{% if change.new_value %}
+        {{ change.new_value }}
+        {% endif %}
+        {% elif change.field == "REMOVED" %}
+        <i class="fas fa-minus warning"></i>
+        {{ change.field }} {{ change.model }}
+        {% if change.old_value %}
+	 {{ change.old_value }}
+        {% endif %}
+	{% else %}
+        <i class="fas fa-edit"></i>
+	MODIFY {{ change.model }}:<b>{{ change.field }}</b>
+	{% if change.old_value %}
+         <span class="removedata">{{ change.old_value }} </span>
+         {% endif %}
+	 {% if change.new_value %}
+         <span class="adddata">{{ change.new_value }}</span>
+         {% endif %}
+        {% endif %}
+
+      </td>
+      <td>
+        {{ change.action.user.vinceprofile.preferred_username }} ({{ change.action.user.email }}) {% if change.action.user.email|is_groupadmin:contact %}<i class="fas fa-crown" title="Group Admin"></i>{% endif %}
+      </td>
+      <td>
+        {{ change.action.created }}
+      </td>
+      <td>
+	{% if change.approved %}
+	<span class="label success">Approved</span>
+	{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+
+

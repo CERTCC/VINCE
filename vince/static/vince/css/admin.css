@@ -1,0 +1,87 @@
+body{
+  background-color: #fff;
+  color: rgba(0, 0, 0, 0.65);
+  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: subpixel-antialiased;
+ /* display: flex;*/
+/*  flex-direction: column;*/
+}
+
+
+h1, h2, h3, h4, h5, h6{
+  font-family: "Open Sans", "Helvetica", sans-serif;
+  font-weight: 300;
+}
+
+
+#header {
+    background: #b00;
+    color: #fefefe;
+}
+
+
+#branding h1 {
+    color: #FFF;
+    font-weight: 500;
+}
+
+#branding h1 a:link, #branding h1 a:visited {
+    color: #FFF;
+}
+
+#branding h1 a:hover {
+    color: #f4f4f4;
+}
+
+.button, input[type=submit], input[type=button] {
+    background: #b00;
+}
+
+.button.default, input[type=submit].default {
+    background: #b00;
+}
+
+.selector-chosen h2 {
+    background: #b00 !important;
+}
+
+.module caption, .module h2 {
+    background: #b00;
+}
+
+a:link, a:visited {
+    color: rgba(0, 0, 0, 0.65);
+}
+
+a:hover {
+    opacity: 0.5;
+}
+
+div.breadcrumbs {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.object-tools a.addlink {
+    border: 2px solid #b00 !important;
+    color: #b00 !important;
+    padding: 1.0rem !important;
+    font-weight:400 !important;
+    text-align: center;
+    line-height: 1.0 !important;
+    background-color: #fff !important;
+    border-radius: 5px;
+    background-image: none;
+
+
+}
+
+.object-tools a.addlink:hover {
+    background-color: #b00 !important;
+    border: 2px solid #fff !important;
+    color: #fff !important;
+    text-decoration: none !important;
+
+}

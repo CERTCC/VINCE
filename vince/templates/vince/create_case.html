@@ -1,0 +1,242 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Create New Case Request" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/vincecr.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Create a new case request</h2>
+    </div>
+    <div class="large-4 columns text-right">
+    </div>
+  </div>
+</div>
+
+{% if team %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning">
+      <p>Looks like you're a member of multiple teams. You are currently creating a ticket for the <b>{{ team }}</b> Team. Switch to {% for x in other_teams %}<a href="{% url 'vince:newteamcr' x.id %}?case=1">{{ x }} Team</a>{% endfor %}.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if misconfiguration %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert">
+      <p>ERROR: VINCE hasn't been configured correctly.  Please add a case ticket queue before proceeding and/or give your team access to a case queue.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+  
+
+<div class="row">
+  <div class="small-8 large-8 columns">
+      <div class="caseform">
+	<form method="post">{% csrf_token %}
+	{% if form.errors %}
+        <p class="errornote">
+          {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
+	</p>
+	{% for error, msg in form.errors.items|dictsort:"0.lower" %}
+	  <p class="errornote">
+	    {{ error }}: {{ msg|escape }}
+	  </p>
+	  {% endfor %}
+	  {% for error in form.non_field_errors %}
+	  <p class="errornote">
+            {{ error|escape }}
+	  </p>
+	  {% endfor %}
+	{% endif %}
+	<div class="row column">
+	  {% if form.vrf_id.value %}
+	  <h5>{{ REPORT_ID }}: {{ form.vrf_id.value }}</h5>
+	  <h6>Submitted on: {{ form.date_submitted.value }}</h6>
+	  {% else %}
+	  <div class="callout success">{% if create_case %}
+	    You requested to create a Case.  Please fill in the required information before creating the case.
+	    {% else %}
+	    You requested to create a Case Request.  Please fill in the following information to submit the request.
+	    {% endif %}
+	  </div>
+	  {% endif %}
+	  <div style="display:none">{% render_field form.vrf_id %}{% render_field form.date_submitted %}{% render_field form.ticket_ref %}</div>
+	</div>
+
+	{{ form.queue }}
+	{{ form.create_case }}
+	
+	<div class="row column">
+	  <h4>Vulnerability Information</h4>
+          <div class="form-group">
+            <label for="id_product_name">What is the name of the affected product or software? <span class="required">*</span></label>
+            <small class="form-text text-muted">{{ form.product_name.help_text }}</small>
+            {% render_field form.product_name class="form-control" %}
+          </div>
+          <div class="form-group">
+            <label for="id_product_version">What version number of the product or software is affected? </label>
+            <small class="form-text text-muted">{{ form.product_version.help_text }}</small>
+            {% render_field form.product_version class="form-control" %}
+          </div>
+          <div class="form-group">
+            <label for="id_vul_description">What is the vulnerability?</label>
+            <small class="form-text text-muted">{{ form.vul_description.help_text }}</small>
+            {% render_field form.vul_description class="form-control" %}
+          </div>
+          <div class="form-group">
+            <label for="id_vul_exploit">How does an attacker exploit this vulnerability? </label>
+            <small class="form-text text-muted">{{ form.vul_exploit.help_text }}</small>
+            {% render_field form.vul_exploit class="form-control" %}
+          </div>
+	  
+          <div class="form-group">
+            <label for="id_vul_impact">What does an attacker gain by exploiting this vulnerability? (i.e. what is the impact?) </label>
+            <small class="form-text text-muted">{{ form.vul_impact.help_text }}</small>
+            {% render_field form.vul_impact class="form-control" %}
+          </div>
+	  
+          <div class="form-group">
+            <label for="id_vul_discovery">How was the vulnerability discovered?</label>
+            <small class="form-text text-muted">{{ form.vul_discovery.help_text }}</small>
+            {% render_field form.vul_discovery class="form-control" %}
+          </div>
+          <div class="form-group">
+            <label for="id_vul_public">Is this vulnerability publicly known? </label>
+            {% render_field form.vul_public class="form-control" %}
+          </div>
+          <div class="form-group" id="pub_ref">
+            {{ form.public_references.label_tag }}
+            {% render_field form.public_references class="form-control" %}
+	    
+          </div>
+	  <div class="form-group">
+            <label for="id_vul_exploited">Is there evidence that this vulnerability is being actively exploited? </label>
+            {% render_field form.vul_exploited class="form-control" %}
+          </div>
+          <div class="form-group" id="exploit_ref">
+            {{ form.exploit_references.label_tag }}
+            {% render_field form.exploit_references class="form-control" %}
+          </div>
+          <div class="form-group">
+            <label for="id_vul_disclose">Does the reporter plan to publicly disclose this vulnerability? </label>
+            {% render_field form.vul_disclose class="form-control" %}
+          </div>
+          <div class="form-group" id="dis_plan">
+            {{ form.disclosure_plans.label_tag }}
+            {% render_field form.disclosure_plans class="form-control" %}
+	  </div>  
+	  <div class="form-group">
+            <label for="id_tracking">CERT/CC Tracking IDs</label>
+            <small class="form-text text-muted">{{ form.tracking.help_text }}</small>
+            {% render_field form.tracking class="form-control" %}
+          </div>
+          <div class="form-group">
+            <label for="id_comments">Private Comments</label>
+            <small class="form-text text-muted">{{ form.comments.help_text }}</small>
+            {% render_field form.comments class="form-control" %}
+          </div>
+	</div>
+
+	<div class="row column">
+	  <h4>Coordination Information</h4>
+	  <div class="form-group">
+            <label for="id_vendor_name">{{ form.vendor_name.label_tag }}</label>
+            {% render_field form.vendor_name class="form-control" %}
+          </div>
+	  <div class="form-group">
+            <label> Has there been an attempt to contact the vendor?</label>
+	    {% render_field form.comm_attempt class="form-control" %}
+	  </div>
+	  <div id="whynot" style="display:none">
+            <div class="form-group">
+              <label for="id_why_no_attempt">{{ form.why_no_attempt.label_tag }}</label>
+              {% render_field form.why_no_attempt class="form-control" %}
+            </div>
+            <div id="pleasexplain" style="display:none">
+                <div class="form-group">
+                  <label>Please explain why the reporter has not been able to contact the vendor.</label>
+                  {% render_field form.please_explain class="form-control" %}
+                </div>
+            </div>
+          </div>
+	  <div id="contactinfo">
+            <div class="form-group">
+              {{ form.first_contact.label_tag }}
+              {% if form.date_first_contacted.errors %}
+              <div class="callout alert" role="alert">
+                <strong>Check date format and don't choose a future date!</strong>
+                Please enter your date in the format YYYY-MM-DD.
+                The date must not be a future date (we need to know what you have already done in the past).
+              </div>
+              {% endif %}
+              {% render_field form.first_contact class="form-control" %}
+            </div>
+            <div class="form-group">
+              {{ form.vendor_communication.label_tag }}
+              <small class="form-text text-muted">{{ form.vendor_communication.help_text }}</small>
+              {% render_field form.vendor_communication class="form-control" %}
+            </div>
+          </div>
+	</div>
+	
+	<div class="row column">
+	  <h4>Reporter Information</h4>
+	  
+	  <table class="unstriped form-group">
+	    <tr>
+	      <td width="250">{{ form.contact_name.label_tag }}</td>
+	      <td>{% render_field form.contact_name class="form-control caseinput" %}</td> 
+	    </tr>
+	    <tr>
+              <td>{{ form.contact_org.label_tag }}</td>
+              <td>{% render_field form.contact_org class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+              <td>{{ form.contact_email.label_tag }}</td>
+	      <td>{% render_field form.contact_email class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+              <td>{{ form.contact_phone.label_tag }}</td>
+	      <td>{% render_field form.contact_phone class="form-control caseinput" %}</td>
+            </tr>
+	    <tr>
+	      <td><label>Share contact with vendors?</label></td>
+	      <td>{% render_field form.share_release class="form-control" %}</td>
+	    </tr>
+	    <tr>
+	      <td><label>Wants credit?</label></td>
+	      <td>{% render_field form.credit_release class="form-control" %}</td>
+	    </tr>
+	    <tr>
+	      <td><label>Submitted via:</label></td>
+	      <td>{% render_field form.submission_type class="form-control" %}</td>
+	    </tr>
+	  </table>
+	</div>
+	
+        <div class="row">
+          <div class="large-3 columns">
+	    <input type="submit" name="vrfSubmit" class="vulsubmit" value="Submit"/>
+          </div>
+          <div class="large-9 columns">
+          </div>
+        </div>
+      </div>
+      </form>
+  </div>
+  <div class="large-4 columns"></div>
+</div>
+
+
+{% endblock %}

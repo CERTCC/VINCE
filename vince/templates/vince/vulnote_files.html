@@ -1,0 +1,8 @@
+<h4>Files to Publish</h4>
+<br/>
+<ul id="appendlist">
+  {% for vul in files %}
+  <input type="hidden" name="vincefiles[]" value="{{vul.id}}">
+  <li>{{ vul.filename }} {% if vul.to_remove %}<b>(REMOVE on PUBLISH)</b>{% else %} <a title="remove this file from the published files" href="{% url 'vince:unattachfile' vul.id %}" class="file-remove" ><i class="fas fa-trash"></i></a>{% endif %}</li>
+  {% endfor %}
+</ul>

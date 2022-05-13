@@ -1,0 +1,63 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "My Reports" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/vinny_dashboard.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>My Vulnerability Reports</h2>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-5 medium-5 small-8 columns">
+    <div class="input-group">
+      <input class="input-group-field form-control" type="text" placeholder="Filter cases" id="filter_threads" href="{% url 'vinny:dashboardfilter' %}">
+      <div class="input-group-button">
+	<button type="submit" class="button"><i class="fas fa-search"></i></button>
+      </div>
+    </div>
+  </div>
+  <div class="large-2 columns medium-4 small-4">
+    {% if user.is_staff %}
+    <div class="dropdown-pane" id="role-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+      <form>
+	<div class="row column">
+	  <div class="form-check border-bottom mb-2 pb-2">
+	    <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
+	    <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
+	  </div>
+	  {% render_field form.owner class="form_check_input" %}
+	</div>
+      </form>
+    </div>
+    <div class="filter-by-dropdown">
+      <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="role-dropdown">
+	Filter by role
+	<i aria-hidden="true" class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+    {% endif %}
+  </div>
+  <div class="large-5 medium-3 columns"><input type="hidden" name="page" id="id_page" value="1"></div>
+</div>
+
+<div class="row">
+  <div class="large-9 columns">
+    <div id="casecontainer">
+      {% include 'vinny/include/reports.html' %}
+    </div>
+  </div>
+  <div class="large-3 columns">
+  </div>
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,23 @@
+[
+    {
+	"model": "auth.group",
+	"pk": 1,
+	"fields": {
+	    "name": "vincetrack"
+	}
+    },
+    {
+        "model": "auth.group",
+        "pk": 2,
+        "fields": {
+            "name": "vince_group_admin"
+        }
+    },
+    {
+        "model": "auth.group",
+        "pk": 3,
+        "fields": {
+            "name": "vince_limited"
+        }
+    }
+]

@@ -1,0 +1,104 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n user_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Dashboard" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/vinny_dashboard.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 medium-6 columns">
+      <h2>Dashboard</h2>
+    </div>
+    <div class="large-6 medium-6 columns text-right">
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="large-5 medium-5 small-8 columns">
+    <div class="input-group">
+      <input class="input-group-field form-control" type="text" placeholder="Filter active cases" id="filter_threads" href="{% url 'vinny:dashboardfilter' %}">
+      <div class="input-group-button">
+	<button type="submit" class="button"><i class="fas fa-search"></i></button>
+      </div>
+    </div>
+  </div>
+  <div class="large-3 columns medium-4 small-4">
+    {% if user.vinceprofile.is_track %}
+    <div class="dropdown-pane" id="role-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+      <form>
+	<div class="row column">
+	  <div class="form-check border-bottom mb-2 pb-2">
+	    <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
+	    <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
+	  </div>
+	  {% render_field form.owner class="form_check_input" %}
+	</div>
+      </form>
+    </div>
+    <div class="filter-by-dropdown">
+      <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="role-dropdown">
+	Filter by coordinator
+	<i aria-hidden="true" class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+    {% endif %}
+  </div>
+  <div class="large-4 medium-3 columns"><input type="hidden" name="page" id="id_page" value="1"></div>
+</div>
+
+{% if cases %}
+{% if num_new_cases %}
+<div class="row">
+  <div class="large-10 columns">
+    <div class="callout success">Welcome to VINCE! You have <b>{{ num_new_cases }}</b> new {% if num_new_cases > 1 %}cases{% else %}case{% endif %} to view.</div>
+  </div>
+  <div class="large-2 columns"></div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 columns">
+    <div id="casecontainer">
+      {% include 'vinny/include/cases.html' %}
+    </div>
+  </div>
+  <!--<div class="large-2 columns">
+  </div>-->
+</div>
+{% endif %}
+{% if pending %}
+<div class="row">
+  <div class="large-12 columns">
+    {% include 'vinny/include/reports.html' with object_list=pending title="Your pending reports" %}
+  </div>
+</div>
+{% endif %}
+{% if cases or pending %}
+{% else %}
+<div class="row">
+  <div class="large-12 columns">
+    {% if user.vinceprofile.is_vendor %}
+    <div class="callout success">Welcome to VINCE! We currently do not have any active cases involving your organization. You can <a href="{% url 'vinny:report' %}">submit a new vulnerability report</a> or <a href="{% url 'vinny:sendmsg' 5 %}">contact us</a> about your membership.</div>
+    {% else %}
+    <div class="callout success">Welcome to VINCE! If you are a member of a vendor organization, please send a <a href="{% url 'vinny:sendmsg' 10 %}">private message the VINCE coordinators</a> to request access.</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

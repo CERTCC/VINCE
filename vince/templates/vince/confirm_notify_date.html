@@ -1,0 +1,28 @@
+{% load i18n %}
+<div class="fullmodal">
+  <form method='post' action="{% url 'vince:editvendordate' vendor.id %}" id="changedateform">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Change Vendor Notification Date" %}</h5>
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+	{% if first_notify_date %}
+	<p>Are you sure you want to change the notification date for this vendor <i>{{ vendor.contact.vendor_name }}</i>?  <b>VINCE has a first notification date of {{ first_notify_date.notify_date|date:"Y-m-d" }}</b>.</p>
+	{% else %}
+	<p>This vendor has not been notified via VINCE. Are you sure you want to add a notification date?</p>
+	{% endif %}
+	<div class="hidden">
+	  <input type="date" name="new_date" value="{{ new_date }}">
+	</div>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button cancel_confirm" data-close type="cancel">Cancel</a>
+        <input class="button alert" type='submit' value='{% trans "Yes, Change" %}' />
+      </div>
+    </div>
+    <button class="close-button cancel_confirm" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>

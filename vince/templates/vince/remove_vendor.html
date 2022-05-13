@@ -1,0 +1,21 @@
+{% load i18n %}
+<div class="fullmodal">
+  <form method='post' action="{{ action }}" id="removevendorform">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Remove Vendor from Case" %}</h5>
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+        <p>{% blocktrans with object.vendor as user_name %}Are you sure you want to remove this vendor (<em>{{ user_name }}</em>)? This organization has already been notified via email and they will not be able to view the case after they are removed.{% endblocktrans %}</p>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input class="button alert" type='submit' value='{% trans "Yes, Remove" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>

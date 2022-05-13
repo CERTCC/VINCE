@@ -1,0 +1,181 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Create New Case Request" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/editcr.js' %}"></script>
+{% endblock %}
+<!-- site-title  -->
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Edit Case Request <a href="{{ ticket.get_absolute_url }}">[{{ ticket.queue }}-{{ ticket.id }}]</a></h2>
+    </div>
+    <div class="large-4 columns text-right">
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="small-12 large-8 columns">
+    <div class="caseform">
+      <form method="post">{% csrf_token %}
+	{% if form.errors %}
+        <p class="errornote">
+          {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
+        </p>
+	{% endif %}
+	{% render_field form.queue %}
+	<div class="row column">
+	  <h4>Reporter Information</h4>
+	  <table class="unstriped">
+	    <tr>
+	      <td width="200">Name</td>
+	      <td>{% render_field form.contact_name class="form-control caseinput" %}</td> <!--<span class="hovertoedit">{{ form.reporter_name.value }}</span>
+		<a class="editicon"><i class="fas fa-pencil-alt"></i></a><button class="doneedit"><i class="fas fa-check"></i></button><button class="canceledit"><i class="fas fa-times"></i></button></div></td>-->
+	    </tr>
+	    <tr>
+              <td>Organization</td>
+              <td>{% render_field form.contact_org class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+              <td>Email</td>
+	      <td>{% render_field form.contact_email class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+              <td>Phone</td>
+	      <td>{% render_field form.contact_phone class="form-control caseinput" %}</td>
+            </tr>
+	    <tr>
+	      <td>Share Info</td>
+	      <td>{% render_field form.share_release class="form-control" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Wants credit</td>
+	      <td>{% render_field form.credit_release class="form-control" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Submitted via:</td>
+	      <td>{% render_field form.submission_type class="form-control" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Submitted On:</td>
+	      <td>{% render_field form.date_submitted class="form-control" %}</td>
+            </tr>
+	  </table>
+	</div>
+	
+	<div class="row column">
+	  <h4>Coordination Information</h4>
+	  <table class="unstriped">
+	    <tr>
+	      <td width="200">Vendor Name</td>
+	      <td>{% render_field form.vendor_name class="form-control" %}</td>
+	    </tr>
+            <tr>
+              <td width="200">Communication Attempt</td>
+	      <td>{% render_field form.comm_attempt class="form-control caseinput" %}</td>
+            </tr>
+	    {% if form.comm_attempt.value == "No" %}
+	    <tr>
+	      <td>Explain no contact</td>
+              <td>{% render_field form.why_no_attempt class="form-control" %}</td>
+            </tr>
+	    <tr>
+	      <td>Explanation</td>
+	      <td>{% render_field form.please_explain class="form-control" %}</td>
+	    </tr>
+	    
+	    {% else %}
+	    <tr>
+	      <td>First Contact</td>
+	      <td>{% render_field form.first_contact class="form-control" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Communication</td>
+	      <td>{% render_field form.vendor_communication class="form-control" %}</td>
+            </tr>
+	    {% endif %}
+	    </table>
+	</div>
+
+	<div class="row column">
+	  <h4>Vulnerability Information</h4>
+	  <table class="unstriped">
+	    <tr>
+	      <td width="200">Product Name</td>
+	      <td>{% render_field form.product_name class="form-control caseinput"%}</td>
+	    </tr>
+	    <tr>
+	      <td>Product Version</td>
+	      <td>{% render_field form.product_version class="form-control caseinput" %}</td>
+	    </tr>
+            <tr>
+              <td>Significant ICS/OT impact?</td>
+              <td>{% render_field form.ics_impact class="form-control caseinput" %}</td>
+            </tr>
+	    <tr>
+	      <td>Vulnerability Description</td>
+	      <td>{% render_field form.vul_description class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Vulnerability Exploit</td>
+	      <td>{% render_field form.vul_exploit class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Vulnerability Impact</td>
+	      <td>{% render_field form.vul_impact class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Vulnerability Discovery</td>
+	      <td>{% render_field form.vul_discovery class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Vulnerability Public</td>
+	      <td>{% render_field form.vul_public class="form-control" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Public References</td>
+	      <td>{% render_field form.public_references class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Exploited</td>
+	      <td>{% render_field form.vul_exploited class="form-control" %}</td>
+	    </tr>
+	    <tr>
+	      <td>References</td>
+	      <td>{% render_field form.exploit_references class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Plans for Disclosure</td>
+	      <td>{% render_field form.vul_disclose class="form-control" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Disclosure Plans</td>
+	      <td>{% render_field form.disclosure_plans class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Tracking</td>
+	      <td>{% render_field form.tracking class="form-control caseinput" %}</td>
+	    </tr>
+	    <tr>
+	      <td>Comments</td>
+	      <td>{% render_field form.comments class="form-control caseinput" %}</td>
+	    </tr>
+	  </table>
+	</div>
+	
+        <div class="row columns">
+          <input type="submit" name="vrfSubmit" class="button primary" value="Update"/>
+	  <a href="{{ ticket.get_absolute_url }}" class="secondary button">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="large-4 columns"></div>
+</div>
+
+
+{% endblock %}

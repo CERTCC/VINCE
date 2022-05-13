@@ -1,0 +1,163 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load i18n humanize user_tags %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vinny/js/gadmin.js' %}"></script>
+{% endblock %}
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-9 medium-9 small-12 columns">
+      <h2>User Management {% if vendor_name %}for {{ vendor_name }}{% endif %}</h2>
+    </div>
+    <div class="large-3 medium-3 small-12 columns text-right">
+      {% if object %}
+      <button class="button cmu small-only-expanded" data-open="addusermodal"><i class="fas fa-user-plus"></i> {% trans "Invite User" %}</button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+
+{% if object %}
+{% if groupcontact %}
+<div class="row">
+  <div class="large-3 medium-5 small-6 columns">
+    <p>Default User Case Access <span class="helptooltip" title="If this switch is enabled, all users listed below will have access to all current and new cases. If disabled, only admins will have access until permission is granted to general users."><i class="fas fa-question-circle"></i></span></p>
+  </div>
+  <div class="large-2 medium-2 small-2 columns">
+    <form id="accessForm">
+      {% csrf_token %}
+    <div class="switch">
+      <input class="switch-input" id="accessSwitch" type="checkbox" href="{% url 'vinny:changeaccess' groupcontact.id %}" name="accessSwitch" {% if groupcontact.default_access %} checked {% endif %}>
+      <label class="switch-paddle" for="accessSwitch">
+	<span class="show-for-sr">Default Case Access</span>
+      </label>
+    </div>
+    </form>
+  </div>
+  <div class="large-7 medium-5 small-4 columns"></div>
+</div>
+
+<div id="user_table" href="{% url 'vinny:adminusers' groupcontact.id %}">
+  {% include 'vinny/admin_users.html' %}
+</div>
+<div class="row">
+  <div class="large-12 medium-12 small-12 columns">
+    <small>
+    <p>* Eligible users are emails that are associated with your account but have not yet created a VINCE account.</p>
+    <p>** Invited users are emails that were sent a VINCE invitation by a group admin.</p>
+    <p><i class="fas fa-crown" title="Group Admin"></i> Group administrators are assigned by the VINCE coordinators or another group administator. <br/>Group administrators have access to <b>all</b> cases that the organization is involved in. Please <a href="{% url 'vinny:sendmsg' 4 %}">contact the VINCE coordination team</a> for questions about group administrators.</p>
+    </small>
+  </div>
+</div>
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Service Account</h2>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% if service %}
+    <p>Your service account is listed as <b>{{ service.email }}</b>. To modify or remove this account, please <a href="{% url 'vinny:sendmsg' %}">message the VINCE coordinators</a>.</p>
+    <p><b>API KEY:</b> {% if service.vinceprofile.api_key %}ENABLED{% else %}NOT SET{% endif %} <button id="gentoken" action="{% url 'cogauth:genservicetoken' groupcontact.id %}" class="button default">{% if service.vinceprofile.api_key %}Generate New Key{% else %}Generate API Key{% endif %}</button></p>
+    
+    {% else %}
+    <p>You do not have a service account for this group. A service account is used for API access only.  This account will not have VINCE UI access and will only be able to access your case information via the VINCE API. </p>
+    <p>
+      <a href="{% url 'vinny:createservice' groupcontact.id %}" id="createservice" class="button tiny cmu"><i class="fas fa-plus"></i> Create a service account</a>
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+<div id="errormodal" class="reveal" data-reveal data-close-on-click='false'>
+  <div class="modal-header">
+    <h5 class="modal-title">Error</h5>
+  </div>
+  <div class="modal-content">
+    <div class="modal-body">
+      <p id="errormsg"></p>
+    </div>
+    <div class="modal-footer">
+      <div class="text-right">
+	<a href="#" class="hollow button" data-close type="cancel">Ok</a>
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</div>
+
+
+<div class="reveal small" id="rmusermodal" data-reveal data-close-on-click='false'></div>
+
+<div class="reveal" id="addusermodal" data-reveal data-close-on-click='false'>
+  <div class="modal-header">
+    <h5 class="modal-title"> Invite User to VINCE</h5>
+  </div>
+  <div class="modal-content">
+    <form id="adduserform"  action="{% url 'vinny:adduser' object.id %}" method="post" reload="list">
+      
+      <div class="modal-body">
+	<p class="lead">Provide their email address and we'll send them an email inviting them to create an account.</p>
+	<p>By inviting a user as a Group Admin, you are granting the user permission to all cases your organization has access to.</p>
+	{% csrf_token %}
+	<div class="row">
+	  <div class="large-2 columns text-right">
+	    <label for="adduser">Email: <span class="required">*</span></label>
+	  </div>
+	  <div class="large-10 columns">
+            <input id="adduser" class="form-control" type="text" name="adduser" required/>
+	  </div>
+	</div>
+	<div class="row">
+          <div class="large-2 columns text-right">
+            <label for="adduser">Name: <span class="required">*</span></label>
+          </div>
+	  <div class="large-10 columns">
+	    <input id="username" class="form-control" type="text" name="username" required/>
+	  </div>
+	</div>
+      </div>
+      <div class="modal-footer">
+	<div class="text-right">
+          <input type="submit" class="button primary" value="Submit">
+	</div>
+      </div>
+    </form>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% else %}
+<div class="row">
+  <div class="large-12 columns">
+    <p>This organization does not have any users.</p>
+  </div>
+</div>
+{% endif %}
+{% else %}
+<div class="row">
+  <div class="large-12 columns">
+    <p> You must be the designated group administrator to view information about users in your group.  Please <a href="{% url 'vinny:sendmsg' 4 %}">contact the VINCE coordinators</a> to request group adminstrator privileges.</p>
+  </div>
+</div>
+{% endif %}
+
+
+{% endblock %}

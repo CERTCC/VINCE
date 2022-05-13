@@ -1,0 +1,67 @@
+{% load i18n dashboard_tags post_tags %}
+<div class="chart chart--dev">
+  <span class="hidden" id="duedatechart">
+    Your active, unpublished cases
+    <ul>
+      <li><i class="fas fa-circle overdue"></i> Past expected publish date - overtime!</li>
+      <li><i class="fas fa-circle crunch"></i> Fourth quarter</li>
+      <li><i class="fas fa-circle almost"></i> Third quarter</li>
+      <li><i class="fas fa-circle half"></i> Second quarter</li>
+      <li><i class="fas fa-circle start"></i> Within first quarter </li>
+    </ul>
+  </span>
+  <h3>Your Cases <span class="helptooltip" id="showcharttip" title="Your active, unpublished cases "><i class="fas fa-question-circle"></i></span>
+  </h3>
+  <ul class="chart--horiz">
+    {% for case in redlight %}
+    <li class="case_chart_item">
+      <div class="chart-bar">
+        {% autoescape off %} {{ case.case.due_date|due_date_chart }}{% endautoescape %}
+      </div>
+      <div class="float-container">
+        <div class="post-light">
+	  <a href="{% url 'vinny:vincase' case.case.id %}">{% autoescape off %}{{ case.case.vuid|new_post_light:user.username }}{% endautoescape %}
+	  </a>
+	</div>
+        <div class="chart__label">
+          <a href="{% url 'vince:casetickets' case.case.id %}" class="filtercase" activity_href="{% url 'vince:dashactivity' case.case.id %}"><i class="fas fa-filter"></i></a> <a href="{{ case.case.get_absolute_url }}" title="{{ case.case.get_title }}">{{ case.case.get_title }}</a>
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+    {% for case in cases %}
+    <li class="case_chart_item">
+      <div class="chart-bar">
+        {% autoescape off %} {{ case.case.due_date|due_date_chart }}{% endautoescape %}
+      </div>
+      <div class="float-container">
+        <div class="post-light"><a href="{% url 'vinny:vincase' case.case.id %}">{% autoescape off %}{{ case.case.vuid|new_post_light:user.username }}{% endautoescape %}
+	</a></div>
+        <div class="chart__label">
+          <a href="{% url 'vince:casetickets' case.case.id %}" class="filtercase" activity_href="{% url 'vince:dashactivity' case.case.id %}"><i class="fas fa-filter"></i></a> <a href="{{ case.case.get_absolute_url }}" title="{{ case.case.get_title }}">{{ case.case.get_title }}</a>
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  <span class="hidden" id="publishchart">
+    Your active, published cases.<br/>
+    Wahoo! you did it!
+  </span>
+  <h3>Your Published Cases <span class="helptooltip" id="showpubtip" title="Your active, published cases"><i class="fas fa-question-circle"></i></span></h3>
+  <ul>
+    {% for case in publishedcases %}
+    <li>
+      <div class="chart-bar">
+        {% autoescape off %} {{ case.case.due_date|published_chart }}{% endautoescape %}
+      </div>
+      <div class="float-container">
+        <div class="post-light">{% autoescape off %}{{ case.case.vuid|new_post_light:user.username }}{% endautoescape %}</div>
+        <div class="chart__label">
+          <a href="{% url 'vince:casetickets' case.case.id %}" class="filtercase" activity_href="{% url 'vince:dashactivity' case.case.id %}"><i class="fas fa-filter"></i></a> <a href="{{ case.case.get_absolute_url }}" title="{{ case.case.get_title }}">{{ case.case.get_title }}</a>
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>

@@ -1,0 +1,24 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block content %}
+
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>VINCE Misconfiguration</h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <h3>Uh oh! You forgot to configure your VINCE teams. You must add a Group in the <a href="{% url 'admin:index' %}">Admin</a> view and associate it with a VINCE contact.</h3>
+    <br/>
+    <p class="lead-body">
+      See the <a href="https://github.com/CERTCC/VINCE">VINCE Documentation</a> for more information.
+    </p>
+    </p>
+  </div>
+</div>
+
+{% endblock %}

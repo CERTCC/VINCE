@@ -1,0 +1,57 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize post_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Pending Users" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/puser.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Pending Users</h2>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-10 columns">
+    <div id="user-list">
+      {% include 'vince/pending_users.html' %}
+    </div>
+  </div>
+</div>
+
+{% if last_week %}
+<div class="row signin">
+  <div class="large-12 columns">
+    <h3>Approved users that have registered in the last week</h3>
+  </div>
+</div>
+<div class="row">
+  <div class="large-10 columns">
+    {% include 'vince/pending_users.html' with pending_users=last_week %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row signin">
+  <div class="large-12 columns">
+    <p>View <a href="{% url 'vince:ignoredusers' %}">Ignored Users</a></p>
+  </div>
+</div>
+<div class="reveal" id="modal" data-reveal></div>
+{% endblock %}
+
+
+

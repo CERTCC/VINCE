@@ -1,0 +1,52 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Reports" %}{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Report: Cases without vendors</h2>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 medium-12 columns">
+    <div class="blog-post">
+      <div class="row column">
+        {% if paginator.count %}
+	<div class="resultCount"> Showing results {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ paginator.count }} Results </div>
+        {% endif %}
+      </div>
+      {% if object_list %}
+      {% for ticket in object_list %}
+      <div class="vulnerability-list">
+        <h4>
+	  <i class="fas fa-briefcase"></i> <a href="{{ ticket.get_absolute_url }}"> {{ ticket.get_title }}</a> {% autoescape off %}{{ ticket.get_status_html }}{% endautoescape %}
+	</h4>
+      </div>
+      {% endfor %}
+      <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page=1">&laquo; first</a>
+        <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+	
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+      </div>
+      
+      {% else %}
+      <br/>
+      <h3> No Results Found </h3>
+      <br/>
+      <br/>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

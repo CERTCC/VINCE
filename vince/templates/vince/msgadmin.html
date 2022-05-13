@@ -1,0 +1,32 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <div class="modal-content">
+    <form id="msgadminform" action="{% url 'vince:msgadminadduser' contact.id %}" method="post">
+      <div class="modal-header">
+        <h5 class="modal-title">Message Admins</h5>
+      </div>
+      {% csrf_token %}
+      <div class="modal-body">
+	<div id="vendor-results">
+	  <b>{{ text }} </b>
+	</div>
+	<p>It is recommended to send a message to the {{ contact.vendor_name }} admins to add the user. Change <b>"[EMAIL]"</b> below with the email of the user that you wish to add.
+	</p>
+	<p><a href="{% url 'vince:initcontactverify' contact.id %}">Send email instead of message.</a></p>
+	<div id="msgvendor">
+	  <label for='id_msg'>Message to Admins:</label>
+	  <textarea name="msg" cols="40" rows="8" id="id_msg">{{ msg_body }}</textarea>
+	</div>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input type="submit" id="msgabutton" disabled class="primary button" value="Message Admins">
+      </div>
+  </div>
+  </form>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

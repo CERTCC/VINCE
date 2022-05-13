@@ -1,0 +1,34 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% load widget_tweaks %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vinny/js/addtracking.js' %}"></script>
+{% endblock %}
+{% block content %}
+<div class="fullmodal">
+  <form id="addtracking" method="post" action="{% url 'vinny:addtrack' case.id %}">
+    <div class="modal-content">    
+      <div class="modal-header">
+	<h5 class="modal-title">{{ title }}</h5>
+      </div>
+      <div class="modal-body">
+        <div class="hidden callout alert" id="errormsg">
+          <p>The tracking number can be max. 100 characters.</p>
+        </div>
+	{% csrf_token %}
+	<div class="form-group">
+	  {{ form.as_p }}
+	</div>
+      </div>
+      <div class="modal-footer text-right">
+	<button type="submit" name="vrfSubmit" class="button primary">Save</button>
+      </div>
+    </div>
+  </form>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
+{% endblock %}

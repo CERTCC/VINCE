@@ -1,0 +1,166 @@
+{% extends "vincepub/vudetail.html" %}
+{% load i18n static markdown_extras vulnote_tags %}
+{% block extra_head_tags %}
+<title class="swiftype" data-type="string">{{ case.vu_vuid }} - {{ revision.title }}</title>
+{% endblock %}
+{% block notice %}
+
+  {% if revision %}
+    <div class="callout primary">
+      <strong>{% trans "Previewing revision" %}:</strong>
+      {% include "vince/include/revision_info.html" %}
+    </div>
+  {% endif %}
+
+  {% if merge %}
+    <div class="callout primary">
+      <strong>{% trans "Previewing merge between" %}:</strong>
+      {% include "vince/include/revision_info.html" with revision=merge1 %}
+      <strong>{% trans "and" %}</strong>
+      {% include "vince/include/revision_info.html" with revision=merge2 %}
+    </div>
+    {% if merge1.deleted %}
+    <div class="callout alert">
+      <strong>{% trans "You cannot merge with a deleted revision" %}</strong>
+    </div>
+    {% endif %}
+    {% endif %}
+{% endblock %}
+{% block content %}    
+<div class="row columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vincepub:index' %}">Home</a></li>
+      <li><a href="{% url 'vincepub:viewbypublish' 'desc' %}">Notes</a></li>
+      <li><span class="show-for-sr">Current: </span> {{ case.vu_vuid }}</li>
+    </ul>
+  </nav>
+</div>
+{% include 'vincepub/include/vuheader.html' with title=revision.title object=case %}
+{% if revision and revision.deleted %}
+<div class="callout alert">
+  <strong>{% trans "This revision has been deleted." %}</strong>
+  <p>{% trans "Restoring to this revision will mark the article as deleted." %}</p>
+</div>
+{% endif %}
+<div class="row" id="content">
+  <div class="large-9 medium-9 columns">
+    <div class="blog-post">
+      <div class="row">
+        <div class="large-12 columns">
+	  {{ content | markdown | safe }}
+	</div>
+      </div>
+      <div class="row">
+	<div class="large-12 columns">
+	  <h3 name="VendorInformation">Vendor Information</h3>
+	  {% if case.vulnerablevendor_set|undeleted|length > 0 %}
+	  {% include 'vincepub/vendorswitch.html' with object=case %}
+	  <div id="vendorinfo">
+	    {% include 'vincepub/newvendorinfo.html' with object_list=case.vulnerablevendor_set|undeleted|vendor_filter_status %}
+	  </div>
+	  {% else %}
+          <p>This advisory information is generic and does not describe any specific instance of this type of problem,
+            so no vendors have been notified or listed here.
+          <p>
+	  {% endif %}
+	</div>
+      </div>
+      <br/>
+      {% if pubnote.cvss_basescore %}
+      <h3 name="Cvss">CVSS Metrics</h3>
+      <div class="vulcontent">
+        <table>
+          <thead>
+	    <tr>
+	      <th>Group</th>
+	      <th>Score</th>
+	      <th>Vector</th>
+	    </tr>
+          </thead>
+          <tbody>
+	    <tr>
+	      <td> Base </td>
+	      <td> {{ pubnote.cvss_basescore }}</td>
+	      <td> {{ pubnote.cvss_basevector }}</td>
+	    </tr>
+	    <tr>
+	      <td> Temporal </td>
+	      <td> {{ pubnote.cvss_temporalscore }}</td>
+	      <td> {{ pubnote.cvss_temporalvector }} </td>
+	    </tr>
+	    <tr>
+	      <td> Environmental </td>
+	      <td> {{ pubnote.cvss_environmentalscore|floatformat:-1 }}</td>
+	      <td> {{ pubnote.cvss_environmentalvector }}</td>
+	    </tr>
+          </tbody>
+        </table>
+      </div>
+      <br/>
+      {% endif %}
+      {% if references %}
+      <div class="row">
+	<div class="large-12 columns">
+	  <h3 name="References">References</h3>
+	  <ul>
+	  {% for ref in references %}
+	  <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+          {% endfor %}
+	  </ul>
+	</div>
+      </div>
+      {% endif %}
+      <h3 name="Other">Other Information</h3>
+        <div class="vulcontent">
+          <table class="unstriped">
+            <tbody>
+	      
+
+	      {% if case.vulnerability_set.all|undeleted|length > 0 %}
+              <tr>
+                <td width="200"><b>CVE IDs:</b></td>
+		<td>
+		{% for vuln in case.vulnerability_set.all|undeleted %}
+		{% if vuln.cve %}
+                  <a href="http://web.nvd.nist.gov/vuln/detail/CVE-{{ vuln.cve }}">CVE-{{ vuln.cve }}  </a>
+		{% endif %}
+                  {% endfor %}
+		</td>
+	      </tr>
+	      {% endif %}
+	      <tr>
+		<td>
+		  <b>Date Public:</b>
+		</td>
+                <td>{{ case.publicdate|date:"Y-m-d" }}</td>
+              </tr>
+              <tr>
+                <td><b>Date First Published:</b></td>
+                <td id="datefirstpublished">{{case.vulnote.date_published|date:"Y-m-d" }}</td>
+              </tr>
+              <tr>
+                <td><b>Date Last Updated: </b></td>
+		{% if pubnote %}
+		<td>{{ pubnote.dateupdated|date:"Y-m-d H:i e" }}</td>
+		{% else %}
+                <td>{{ case.vulnote.datelastpublished|date:"Y-m-d H:i e" }}</td>
+		{% endif %}
+              </tr>
+              <tr>
+                <td><b>Document Revision: </b></td>
+		{% if pubnote %}
+		<td>{{ pubnote.revision }}
+		  {% else %}
+                <td>{{ case.vulnote.current_revision.revision_number }} </td>
+		{% endif %}
+              </tr>
+            </tbody>
+          </table>
+	</div>
+    </div>
+  </div>
+</div>
+    
+{% endblock %}
+    

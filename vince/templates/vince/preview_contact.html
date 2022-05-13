@@ -1,0 +1,23 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method='post' action="{% url 'vince:previewcontact' contact.id %}">
+    {% csrf_token %}
+    <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">{% trans "Preview Contact" %} {{ vccontact.vendor_name }}</h5>
+    </div>
+    <div class="modal-body">
+      {% include 'vinny/include/mycontact.html' with object=vccontact show_users=1%}
+      {% include 'vince/include/user_emails.html' with object=vccontact %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button primary" type='submit' value='{% trans "Approve" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

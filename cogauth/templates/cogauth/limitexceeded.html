@@ -1,0 +1,17 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+{% block content_title %}<h3>VINCE Error</h3>{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<p>Uh Oh!</p>
+<p> An error occurred when trying to verify your account: Attempt limit exceeded, please try after some time.</p>
+<p><a href="{% url 'vinny:dashboard' %}">VINCE Dashboard</a></p>
+
+{% endblock %}
+
+
+

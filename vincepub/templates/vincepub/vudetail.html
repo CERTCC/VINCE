@@ -1,0 +1,180 @@
+{% extends VINCEPUB_BASE_TEMPLATE %}
+{% block extra_head_tags %}
+<meta property="og:title" content="{{ ORG_NAME }} Vulnerability Note {{ object.vuid }}" />
+<meta property="og:description" content="{{ object.name }}" />
+<title class="swiftype" data-type="string">{{ object.vuid }} - {{ object.name }}</title>
+<META class="swiftype" name="sei_date_published" data-type="date" content="{{ object.datefirstpublished|date:'Y-m-d' }}" />
+<META class="swiftype" name="sei_year_published" data-type="integer" content="{{ object.datefirstpublished|date:'Y' }}" />
+<META class="swiftype" name="published_at" data-type="date" content="{{ object.datefirstpublished|date:'Y-m-d' }}" />
+<META class="swiftype" name="Description" data-type="string" id="Description" content="{{ object.overview|get_summary|escape }}" />
+<META name="sei_title" content="{{ object.name|escape }}" class="swiftype" data-type="string">
+<META property="st:type" content="asset" />
+<META name="st:robots" content="follow, index">
+<META name="sei_topic" class="swiftype" data-type="string" content="Vulnerability Analysis">
+<META name="AssetTypeName" id="AssetTypeName" content="Vulnerability" class="swiftype" data-type="string" />
+<META name="siteDomain" content="{{ VINCEPUB_URL }}" class="swiftype" data-type="string">
+{% if object.keywords_str %}
+<meta name="keywords"             value="{{ object.keywords_str }}">
+{% endif %}
+{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vincepub/js/vulaccordion.js' %}"></script>
+{% endblock %}
+{% block content %}
+<div id="fb-root"></div>
+<div class="row columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vincepub:index' %}">Home</a></li>
+      <li><a href="{% url 'vincepub:viewbypublish' 'desc' %}">Notes</a></li>
+      <li><span class="show-for-sr">Current: </span> {{ object.vuid }}</li>
+    </ul>
+  </nav>
+</div>
+{% include 'vincepub/include/vuheader.html' %}
+<div class="row" id="content">
+  <div class="large-9 medium-9 columns">  
+    <div class="blog-post">
+      <div class="row">
+	<div class="large-12 columns">
+	  <h3 id="overview">Overview</h3>
+	  <div class="vulcontent">
+	    {% if htmlrec.overview %}
+	    <p> {% autoescape off %}{{ htmlrec.overview }}{% endautoescape %}</p>
+	    {% else %}
+	    <p> {{ object.overview }} </p>
+	    {% endif %}
+	  </div>
+	  <h3 id="description">Description</h3>
+	  {% load static %}
+	  <p>{% autoescape off %}{{ htmlrec.description }}{% endautoescape %}</p>
+	  <h3 id="impact">Impact</h3>
+	  <p> {% autoescape off %}{{ htmlrec.impact }}{% endautoescape %} </p>
+	  <h3 id="solution">Solution</h3>
+	  <p> {% autoescape off %}{{ htmlrec.solution }} {% endautoescape %}</p>
+	  <h3 id="vendor-information">Vendor Information</h3>
+	  <div class="vulcontent">	  
+	    {% if htmlrec.systems %}
+	    <p> {% autoescape off %}{{ htmlrec.systems }}{% endautoescape %}</p>
+	    {% endif %}
+	  </div>
+	</div>
+      </div>
+      {% if vendors %}
+      {% include 'vincepub/vendorswitch.html' %}
+      {% endif %}
+      
+      <div id="vendorinfo">
+	<noscript><center><b>Javascript is disabled.  Click <a href="{% url 'vincepub:vendor' object.vuid %}">here</a> to view vendors.</b></center> </noscript>
+	{% include 'vincepub/vendorinfo.html' with object_list=affectedvendors %}
+      </div>
+      <br/>
+      <h3 id="cvss-metrics">CVSS Metrics</h3>
+      <div class="vulcontent">
+	<table>
+	  <thead>
+	    <tr>
+	      <th>Group</th>
+	      <th>Score</th>
+	      <th>Vector</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    <tr>
+	      <td> Base </td>
+	      <td> {{ object.cvss_basescore }}</td>
+	      <td> {{ object.cvss_basevector }}</td>
+	    </tr>
+	    <tr>
+	      <td> Temporal </td>
+	      <td> {{ object.cvss_temporalscore }}</td>
+	      <td> {{ object.cvss_temporalvector }} </td>
+	    </tr>
+	    <tr>
+	      <td> Environmental </td>
+	      <td> {{ object.cvss_environmentalscore|floatformat:-1 }}</td>
+	      <td> {{ object.cvss_environmentalvector }}</td>
+	    </tr>
+	  </tbody>
+	</table>
+      </div>
+      <br/>
+      <h3 id="references">References</h3>
+      <div class="vulcontent">
+	{% if object.public|is_list:"list" %}
+	<ul>
+	  {% for ref in object.public %}
+	  <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+	  {% endfor %}
+	</ul>
+	{% else %}
+	<p><a href="{{ object.public }}" class="vulreflink" target="_blank" rel="noopener">{{ object.public }}</a></p>
+	{% endif %}
+      </div>
+      <h3 id="acknowledgements">Acknowledgements</h3>
+      {% if htmlrec.ack %}
+      <p> {% autoescape off %}{{ htmlrec.ack }}{% endautoescape %} </p>
+      {% else %}
+      <div class="vulcontent">
+	<p>
+	  {{ object.thanks }}
+	</p>
+	<p id="authors">
+	  {{ object.author }}
+	</p>
+      </div>
+      {% endif %}
+      <h3 id="other-information">Other Information</h3>
+      <div class="vulcontent">
+	<table class="unstriped">
+	  <tbody>
+	    <tr>
+	      <td width="200"><b>CVE IDs:</b></td>
+	      {% if object.cveids|is_list:"list" %}
+	      <td>
+		{% for cve in object.cveids %}
+		{% if forloop.last %}
+		<a href="http://web.nvd.nist.gov/vuln/detail/{{ cve|subCAN }}">{{ cve|subCAN }}</a>
+		{% else %}
+		<a href="http://web.nvd.nist.gov/vuln/detail/{{ cve|subCAN }}">{{ cve|subCAN }}</a>, 
+		{% endif %}
+		{% endfor %}
+	      </td>
+	      {% else %}
+	      <td><a href="http://web.nvd.nist.gov/vuln/detail/{{ object.cveids|subCAN }}">{{ object.cveids|subCAN }}</a></td>
+	      {% endif %}
+	    </tr>
+	    <tr>
+	      <td>
+		<b>Date Public:</b>
+	      </td>
+	      <td>{{ object.publicdate|date:"Y-m-d" }}</td>
+	    </tr>
+	    <tr>
+	      <td><b>Date First Published:</b></td>
+	      <td id="datefirstpublished">{{object.datefirstpublished|date:"Y-m-d" }}</td>
+	    </tr>
+	    <tr>
+	      <td><b>Date Last Updated: </b></td>
+	      <td>{{ object.dateupdated|date:"Y-m-d H:i e" }}</td>
+	    </tr>
+	    <tr>
+	      <td><b>Document Revision: </b></td>
+	      <td>{{ object.revision}} </td>
+	    </tr>
+	  </tbody>
+	</table>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar hide-for-small-only">
+    {% include "vincepub/detail_sidebar.html" %}
+  </div>
+  
+</div>
+<div class="modal"></div>
+  
+{% endblock %}
+ 

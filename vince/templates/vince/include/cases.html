@@ -1,0 +1,34 @@
+{% load i18n humanize %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="ticket-table">
+      <div class="ticket-header">
+	<h5>{% if cases_list_caption %}{{ case_list_caption }}{% else %}{% trans "Your Cases" %}{% endif %}
+	</h5>
+      </div>
+      <!-- /.panel-heading -->
+      <table class="hover">
+	<thead>
+          <tr>
+            <th>{% trans "Title" %}</th>
+            <th>{% trans "Status" %}</th>
+            <th>{% trans "Last Update" %}</th>
+	    <th>{% trans "Due Date" %}</th>
+          </tr>
+	</thead>
+	<tbody>
+	  {% for case in case_list %}
+          <tr>
+            <td><a href='{{ case.case.get_absolute_url }}' title="{{ case.case.get_title }}">{{ case.case.get_title }}</a></td>
+            <td>{{ case.case.get_status }}</td>
+            <td><span title='{{ case.case.modified|date:"r" }}'>{{ case.case.modified|naturaltime }}</span></td>
+	    <td>{{ case.case.due_date|naturaltime }}</td>
+          </tr>
+          {% empty %}
+          <tr>{% if case_list_empty_message %}<td colspan='6'>{{ case_list_empty_message }}</td>{% else %}<td colspan='6'>{% trans "You do not have any assigned cases." %}</td>{% endif %}</tr>
+          {% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </div>
+</div>

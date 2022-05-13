@@ -1,0 +1,78 @@
+
+<!--<div class="row column">
+  <div id="notifyparticipant" class="reveal small" data-reveal></div>
+  {% if participants %}
+  <span id="change_type_block">
+    <div id="coord_type">
+      <select name="coord_assign" class="coord_assign">
+	<option value="reporter">Reporter</option>
+	<option value="coordinator">Coordinator</option>
+      </select>
+      <button type="button" id="type_submit"><i class="fas fa-check"></i></button><button type="button" id="type_cancel"><i class="fas fa-times"></i></button>
+    </div>
+  </span>-->
+  <!--<table class="unstriped hover">
+    <thead>
+      <tr>
+	<th>User</th>
+	<th>Date Notified</th>
+	<th>Role</th>
+	<th>Status</th>
+	<th width="100">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      {% for user in participants %}
+      <tr>
+	<td>
+	  {% if user.group %}
+	  {% contactid user.user_name as uid %}
+
+	  {% else %}
+	  {% vcid user.user_name as uid %}
+	  {% if uid %}
+	  <a href="{% url 'vince:vcuser' uid %}">{{ user.user_name }}</a>
+	  {% else %}
+	  {{ user.user_name }}
+	  {% endif %}
+	  {% endif %}
+	</td>
+	<td>
+	  {{ user.added_to_case|date:'Y-m-d' }}
+	</td>
+	<td>
+	  <span class="coordtype" href="{% url 'vince:partype' user.id %}">{{ user.coordinator|yesno:"Coordinator,Reporter" }} <a href="#" class="changetype"> <i class="fas fa-edit"></i></a></span>
+	</td>
+	<td>
+	  {% if user.status %}
+	  {{ user.status }}{% else %}Staged{% endif %}
+	</td>
+	<td>
+	  {% if case.lotus_notes %}<a class="disabled" href="#" title="Case must be available in VINCEComm to invite user"><i class="fas fa-share-square"></i></a>{% else %}<a href="#" class="notifyparticipant" cpid="{{ user.id }}" title="Invite User to Case"><i class="fas fa-share-square"></i></a>{% endif %} &nbsp;&nbsp;	  {% if 'Notified' in user.status  %}<a href="{% url 'vince:rmparticipant' user.id %}" class="rmparticipant"><i class="fas fa-times-circle"></i></a>{% else %}<a href="{% url 'vince:rmpartnoconfirm' user.id %}"><i class="fas fa-times-circle"></i></a>{% endif %}
+	</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+<p>There are no participants in this case </p>
+  {% endif %}
+</div>-->
+    
+<div class="reveal" id="error-participant" data-reveal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Error</h3>
+    </div>
+    <div class="modal-body">
+      <p><b><span id="error-participant-msg">Please only notify 1 participant at a time.</span></b></p>
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Ok</a>
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

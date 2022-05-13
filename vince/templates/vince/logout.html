@@ -1,0 +1,31 @@
+{% extends "vince/login.html" %}
+{% load i18n %}
+{% load staticfiles %}
+
+{% block extrahead %}
+<script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/token_logout.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="row column">
+<p>{% trans "See you again soon." %}</p>
+</div>
+<div class="row columns">
+  <a class="primary button expanded search-button" href="{% url 'vince:login' %}">{% trans 'Log in' %}</a>
+</div>
+
+{% endblock %}
+
+{% block footer %}
+<div id="login-footer">
+  <div id="footer-info">
+    <div id="cmu-logo">
+      <img src="{% static 'vince/css/images/CMUSEICERT.png' %}">
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

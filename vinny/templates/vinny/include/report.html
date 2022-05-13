@@ -1,0 +1,15 @@
+<li class="case-list-item">
+  <div class="row case-row">
+    <div class="large-10 medium-10 columns">
+      <div class="case-list-body">
+        <a href="{% url 'vinny:cr_report' report.id %}">{{ report.get_title }}</a>
+      </div>
+      <div class="case-stats hide-for-small-only">
+	<i class="fas fa-file-alt"></i> Created {{ report.date_submitted|timesince }} ago
+      </div>
+    </div>
+    <div class="large-2 medium-2 columns">
+      {% autoescape off %}{{ report.get_status_html }}{% endautoescape %}
+    </div>
+  </div>
+</li>

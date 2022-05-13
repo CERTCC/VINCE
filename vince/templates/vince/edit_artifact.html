@@ -1,0 +1,37 @@
+{% extends "vince/modal.html" %}
+{% load i18n widget_tweaks %}
+{% block content %}
+{{ tags|json_script:"artifact_tags" }}
+
+<div id="editartifact" class="modal form_modal">
+  <form id="editartifactform" action="{{ action }}" method="post" enctype='multipart/form-data'>
+    {% csrf_token %}
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title"> {{ title }} </div>
+      </div>
+      <div class="modal-body">
+	{% for field in form %}
+	<div class="form-group">
+          <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+          {% if field.name == "taggles" %}
+          <div class="taggle_input custom martie" id="taggs" href="{% url 'vince:auto_tags' %}"></div>
+          {% else %}
+          {{ field }}
+          {% if field.help_text %}<small class='form-text text-muted'>({% trans field.help_text %})</small>{% endif %}
+          {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+          {% endif %}
+	</div>
+	{% endfor %}
+      </div>
+      <div class="modal-footer text-right">
+	<button class="primary button" id="submitaddtask"><i class="fas fa-plus"></i> Save Artifact</button>
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>
+
+{% endblock %}

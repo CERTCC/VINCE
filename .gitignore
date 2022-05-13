@@ -1,0 +1,25 @@
+# Created by .ignore support plugin (hsz.mobi)
+### Python template
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+*~
+templates/vince/*~
+web/vince/migrations/*
+management/commands/*~
+media/*
+env/*
+.idea
+.aws-sam
+bigvince/.env
+app_versions/
+venv*
+.swp
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+.elasticbeanstalk/config.yml

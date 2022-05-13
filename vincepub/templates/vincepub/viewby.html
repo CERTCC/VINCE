@@ -1,0 +1,105 @@
+{% extends VINCEPUB_BASE_TEMPLATE %}
+
+{% block content %}
+
+<div class="row columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vincepub:index' %}">Home</a></li>
+      <li><span class="show-for-sr">Current: </span> Notes</li>
+    </ul>
+  </nav>
+</div>
+<div class="row column">
+  <h2 class="subtitle"> {{ ORG_NAME }} {{ WEB_TITLE }}</h2>
+</div>
+<br/>
+ <div class="row" id="content">
+      <div class="large-12 medium-12 columns">
+	<div class="blog-post">
+	  <table class="searchby unstriped scroll">
+	    <thead>
+	      <tr class="tablesort">
+		<th width="100"class="{{ publishclass }}"> <a href="{% url 'vincepub:viewbypublish' asc_or_desc %}" class="sorter">Published</a> </th>
+		<th width="110" class="{{ publicclass }}"> <a href="{% url 'vincepub:viewbypublic' asc_or_desc %}" class="sorter">Public </th>
+		<th width="100" class="{{ updateclass }}"> <a href="{% url 'vincepub:viewbyupdate' asc_or_desc %}" class="sorter">Updated </th>
+		<th> ID </th>
+		<th class="{{ cvssclass }}"> <a href="{% url 'vincepub:viewbycvss' asc_or_desc %}" class="sorter">CVSS </th>
+		<th> Title </th>
+	      </tr>
+	    </thead>
+	    <tbody>
+              {% for note in object_list %}
+		<tr>
+                  <td>
+                    {{ note.datefirstpublished|date:"Y-m-d" }}
+		    </td>
+		  <td>
+		    {% if note.publicdate %}
+                    {{ note.publicdate|date:"Y-m-d" }}
+		    {% elif note.vulnote.publicdate %}
+		    {{ note.vulnote.publicdate|date:"Y-m-d" }}
+		    {% else %}
+		    {{ note.datefirstpublished|date:"Y-m-d" }}
+		    {% endif %}
+		  </td>
+		  <td>
+                    {{ note.dateupdated|date:"Y-m-d" }}
+		  </td>
+                  <td>
+                    {{ note.vuid }}
+                  </td>
+		  <td>
+                  {{ note.cvss_environmentalscore|floatformat:-1 }}
+		  </td>
+
+		  <td>
+                {% with '/vuls/id/'|add:note.idnumber as vul_link %}
+                <a href="{{ vul_link }}">
+                  {{ note.name }}
+		  {% endwith %}
+		    </a>
+                  </td>
+		</tr>
+              {% endfor %}
+          </tbody></table>
+
+	  {% if is_paginated %}
+          <ul class="pagination text-center" role="navigation" aria-label="Pagination">
+	   {% if page_obj.has_previous %}
+	   <li class="pagination-previous"><a href="?page={{ page_obj.previous_page_number }}" class="notlink">Previous</a></li>
+	   {% else %}
+	  <li class="pagination-previous disabled">Previous</li>
+	  {% endif %}
+	  {% for i in paginator.page_range %}
+	    {% if page_obj.number == i %}
+	   <li class="current"><span class="show-for-sr">You're on page</span> {{ page_obj.number }}</li>
+	   {% elif i > page_obj.number|add:'-4' and i < page_obj.number|add:'4' %}
+           <li><a href="?page={{ i }}" aria-label="Page {{ i }}" class="notlink">{{ i }}</a></li>
+	   {% else %}
+	   {% if i == 1 %}
+	   <li><a href="?page={{ i }}" aria-label="Page {{ i }}" class="notlink">{{ i }}</a></li>
+	   <li class="ellipsis"></li>
+	   {% elif forloop.last %}
+	   <li class="ellipsis"></li>
+	   <li><a href="?page={{ i }}" aria-label="Page {{ i }}" class="notlink">{{ i }}</a></li>
+	   
+	   {% endif %}
+	   {% endif %}
+	   {% endfor %}
+	   
+	   {% if page_obj.has_next %}
+	   <li class="pagination-next"><a href="?page={{ page_obj.next_page_number }}" aria-label="Next page" class="notlink">Next</a></li>
+	   {% else %}
+	   <li class="pagination-next disabled">Next</li>
+	   {% endif %}
+	</ul>
+	{% endif %}
+	
+      </div>
+ </div>
+
+ </div>
+
+{% endblock %}
+ 

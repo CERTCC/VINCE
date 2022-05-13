@@ -1,0 +1,28 @@
+{% load i18n %}
+<div class="fullmodal">
+  <form method='post' action="{% url 'vince:complete_contact' contact_request.id %}" id="requestauthform">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Complete Contact Association" %}</h5>
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+	<p>Has sufficient evidence been provided to complete contact's association? By clicking yes, this user will automatically be added to the contact {{ contact_request.contact.vendor_name }} and made Group Administrator.</p>
+      </div>
+      <div class="modal-footer">
+	<div class="row">
+	  <div class="large-6 columns">
+	    <button class="button alert" id="removeassoc">{% trans "No, Remove" %}</button>
+	  </div>
+	<div class=" large-6 columns text-right">
+          <a href="#" class="hollow button cancel_confirm" data-close type="cancel">Cancel</a>
+          <input class="button primary" type='submit' value='{% trans "Yes" %}' />
+	</div>
+	</div>
+      </div>
+    </div>
+    <button class="close-button cancel_confirm" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>

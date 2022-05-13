@@ -1,0 +1,101 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+  <head>
+
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title_header %}VINCE{% endblock %}</title>
+
+{% load static %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/foundation.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/style.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery-ui.min.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery.qtip.min.css' %}" />
+{#<link rel="stylesheet" type="text/css" href="{% static 'vince/css/dropzone.css' %}" />#}
+<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+
+{% block js %}
+<script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+{#<script type="text/javascript" src="{% static 'vince/js/jquery.overlay.js' %}"></script>#}
+<script type="text/javascript" src="{% static 'vince/js/jquery-ui.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/jquery.qtip.min.js' %}"></script>
+{#<script type="text/javascript" src="{% static 'vince/js/clipboard.min.js' %}"></script>#}
+{#<script type="text/javascript" src="{% static 'vince/js/dropzone.js' %}"></script>#}
+{% endblock %}
+  </head>
+  <body>
+
+<div class="off-canvas-wrapper">
+  <div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+    <div class="off-canvas position-left reveal-for-large" id="side-data" data-off-canvas data-position="left">
+      <div class="row column">
+	<br>
+        <h1>VINCE</h1>
+	<div id="nav-area">
+          <ul class="nav">
+            <li class ="nav-item ">
+              <a href="{% url 'vince:dashboard' %}" class="home">Dashboard</a></li>
+            <li class ="nav-item ">
+              <a href="{% url 'vince:newticket' %}" class="upload">New Ticket</a></li>
+            <li class="nav-item ">
+              <a href="{% url 'vince:create' %}"  class="search">Cases</a></li>
+            <li class ="nav-item ">
+              <a href="{% url 'vince:create' %}"  class="results">Contacts</a></li>
+            <li class ="nav-item ">
+              <a href="{% url 'vince:create' %}" class="settings">Help</a></li>
+          </ul>
+          <div class="admin-div">
+            <p> Welcome, {{ user.username }} <br/>
+              Last Login: {{ user.last_login }} </p>
+            <a href="/admin/password_change/">Change password</a> <br/>
+            <a href="{% url 'vince:logout' %}">Log out</a>
+          </div>
+	</div> <!--nav-area -->
+      </div> <!--row-column -->
+    </div> <!-- offcanvas positionleft -->
+    <div class="off-canvas-content" data-off-canvas-content>
+      <div class="title-bar hide-for-large">
+        <div class="title-bar-left">
+          <button class="menu-icon" type="button" data-open="side-data"></button>
+          <span class="title-bar-title">Vince</span>
+        </div>
+      </div>
+      {% if header == None %}
+      <!-- Tab panes -->
+      <div class="tab-content">
+        <div class="tab-pane" id="home">
+	   <div class="row">
+            <div class="large-9 columns">
+	      <h1>{% block vince_title %}Dashboard{% endblock %}</h1>
+            </div>
+	   </div>
+        </div>
+      </div>
+      {% endif %}
+      <!--END Home content-->
+      {% block content %}
+      {% endblock %}
+
+      <hr>
+      </div> <!-- tab-content -->
+    </div>
+  </div>
+</div>
+{% block footer %}
+
+<script type="text/javascript" src="{% static 'vince/js/foundation.min.js' %}"></script>
+<script>
+  $(document).foundation();
+</script>
+
+{% endblock %}
+
+
+</body>
+</html>
+
+

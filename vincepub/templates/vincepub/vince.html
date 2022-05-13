@@ -1,0 +1,18 @@
+{% extends VINCEPUB_BASE_TEMPLATE %}
+<!-- site-title  -->
+{% block content %}
+{% load static %}
+
+<div class="row">
+  <div class="columns small-12 medium-8 large-8">
+    <h1>VINCE</h1>
+    <p class="lead-body">Welcome to the Vulnerability Information and Coordination Environment (VINCE). If you are a vendor and would like to communicate with us about a vulnerability or update your contact information, please create an account or sign in. You can also <a href="{% url 'vincepub:initreport' %}">report a vulnerability</a> to us, with or without a VINCE account. </a>
+  </div>
+  <div class="columns small-12 medium-4 large-4 vince-index">
+    <a href="{% url 'cogauth:register' %}" class="vulcontact button expanded">Create an Account</a>
+    <a href="{% url 'cogauth:login' %}" class="vulcontact button expanded">Sign In</a>
+    
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Tag Manager" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/tagmanager.js' %}"></script>
+
+{% endblock %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Tag Manager</h2>
+    </div>
+    <div class="large-6 columns text-right">
+    </div>
+  </div>
+</div>
+
+<div class="reveal" id="modal" data-reveal></div>
+
+{% if team %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning">
+      <p>Looks like you're a member of multiple teams. You are currently creating a ticket for the <b>{{ team }}</b> Team. Switch to {% for x in other_teams %}<a href="{% url 'vince:tags' x.id %}">{{ x }} Team</a>{% endfor %}.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="large-9 columns">
+    {% for t,y in tag_types.items %}
+    <div class="callout secondary">
+      <div class="row">
+        <div class="large-8 columns">
+          <h3>{{ y }} </h3>
+        </div>
+        <div class="large-4 columns text-right">
+          <a href="{% url 'vince:newtag' t group.id%}" class="add_tag button tiny primary">Add tag</a>
+        </div>
+      </div>
+    </div>
+    <table class="unstriped">
+      {% for u in tags|type_tags:t %}
+      {% if forloop.first %}
+      <tr>
+        <td>
+          <b>Tag</b>
+        </td>
+        <td><b>Description</b></td>
+        <td><b>Created by</b></td>
+        <td></td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td>
+          {{ u.tag }} {% if u.alert_on_add %}<i class="fas fa-bell warning" title="Alert on add to case"></i>{% endif %}
+        </td>
+        <td>
+          {{ u.description }}
+        </td>
+        <td>
+          {{ u.user.usersettings.preferred_username }} (on {{ u.created|date:"Y-m-d" }})
+        </td>
+        <td class="text-right">
+	  {% if u.team %}
+          <a href="{% url 'vince:newtag' t group.id %}" class="rm_tag" value="{{ u.id }}" title="remove tag"><i class="fas fa-trash-alt"></i></a>
+	  <a href="{% url 'vince:newtag' t group.id %}" class="edit_tag" value="{{ u.id }}" title="edit "><i class="fas fa-edit"></i></a>
+
+	  {% else %}
+	  <b>GLOBAL</b>
+	  {% endif %}
+        </td>
+	
+      </tr>
+      {% empty %}
+      <tr><td colspan=3>No tags for this object.</td></tr>
+      {% endfor %}
+    </table>
+    {% endfor %}
+  </div>
+  
+  <div class="large-3 columns">
+    <div class="activity-table">
+      <div class="activity-header">
+	<h5 class="text-center">Recent Tag Additions</h5>
+      </div>
+      
+      {% for action in activity %}
+      <div class="activity-log">
+	
+	<div class="row">
+	  <div class="small-1 large-1 columns">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+	  </div>
+	  <div class="small-11 large-11 columns">
+	    {{ action.user.usersettings.preferred_username }} added tag <b>{{ action.tag }}</b>
+	    <br/><span class="activity_time">
+              {{ action.created|date:"Y-m-d" }} ({{ action.created|timesince }} ago)
+	    </span>
+	  </div>
+	</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

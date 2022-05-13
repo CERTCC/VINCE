@@ -1,0 +1,24 @@
+{% autoescape off %}
+
+=======================================================================
+THIS IS AN AUTOMATED EMAIL CONFIRMING RECEIPT OF YOUR REPORT.
+THIS EMAIL IS SENT FROM AN ACCOUNT THAT IS NOT MONITORED.
+DO NOT REPLY TO THIS EMAIL, OR WE WILL BE UNABLE TO RESPOND.
+=======================================================================
+
+Hello {% if contact_name %}{{ contact_name }}{% endif %},
+
+Thank you for submitting a report.
+
+We have received your vulnerability report and request for coordination
+assistance, and confirm the following details:
+
+* {{ vrf_id }}
+* Title: {{ product_name }}{{ affected_website }}
+* Date Submitted: {{ vrf_date_submitted }}
+
+The rest of the details of your report have not been included in this
+email for security reasons, but have been received.
+
+{% endautoescape %}
+ 

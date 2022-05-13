@@ -1,0 +1,61 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Send a Message" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/dropzone.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/dropzone.css' %}">
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vinny/js/sendmsgall.js' %}"></script>
+
+{% endblock %}
+
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>{% if title %}{{ title }}{% else %}Send Message to VINCE Users{% endif %}</h2>
+    </div>
+  </div>
+</div>
+<div class="reveal" id="errormodal" data-reveal></div>
+
+<div class="row">
+  <div class="large-9 columns">
+    <div class="new-message">
+      <form class="comment-form" id="sendmsgform" method="post" enctype="multipart/form-data" action="{{ action }}" success="{% url 'vinny:inbox' %}">
+        {% csrf_token %}
+	{% for field in form.hidden_fields %}
+	{{ field }}
+	{% endfor %}
+	{% for field in form.visible_fields %}
+          {% if field.name == "attachment" %}
+	<div class="fallback">
+          {% render_field form.attachment class="form-control show-for-sr" %}
+        </div>
+        <div id="dropzonepreview" class="dropzone">
+          <div class="dz-default dz-message">
+            <span> <i class="fas fa-cloud-upload-alt"></i> Drop files to attach to message </span>
+          </div>
+        </div>
+	{% else %}
+	<div class="form-group">
+          <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+          {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+          {{ field }}
+          {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+        </div>
+        {% endif %}
+	{% endfor %}
+        <button class="primary button" id="sendbutton"><i class="fas fa-paper-plane"></i> Send</button>
+      </form>
+    </div>
+  </div>
+  <div class="large-3 columns">
+  </div>
+</div>
+
+{% endblock %}

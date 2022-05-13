@@ -1,0 +1,18 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Delete Ticket" %}{% endblock %}
+{% block content %}
+
+
+<div class="row column">
+  <h2>{% trans "Delete Ticket" %}</h2>
+  
+  <p>{% blocktrans with ticket.title as ticket_title %}Are you sure you want to delete this ticket (<em>{{ ticket_title }}</em>)? All traces of the ticket, including followups, attachments, and updates will be irreversibly removed.{% endblocktrans %}</p>
+  
+  <p><a href="{% url 'vince:ticket' ticket.id %}"><button class="button primary large">{% trans "No, Don't Delete It" %}</button></a></p>
+  
+  <form method='post' action='./'>
+    <button class="button alert" type='submit'>{% trans "Yes I Understand - Delete It Anyway" %}</button>
+    {% csrf_token %}
+  </form>
+</div>
+{% endblock %}

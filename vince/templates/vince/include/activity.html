@@ -1,0 +1,27 @@
+{% load i18n humanize %}
+<div class="dashboard-activity-table">
+  <div class="activity-header">
+    <h5>{% trans "Activity" %}</h5>
+  </div>
+  {% for item in activity %}
+  <div class="activity-log">
+    <div class="row">
+      <div class="large-6 columns">
+	<small><i class="fas {% if item.title == 'Ticket Opened' %}fa-plus-square{% else %}{% if item.ticketchange_set.all %}fa-cogs{% else %}{% if item.user %}fa-share{% else %}fa-plus-square{% endif %}{% endif %}{% endif %}"></i> by {% if item.user %}{{ item.user.usersettings.vince_username }}{% else %}web submission{% endif %}</small>
+      </div>
+      <div class="large-6 columns text-right">
+	<small><i class="far fa-clock"></i> {{ item.date|timesince }}</small>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+	<p><a href='{{ item.ticket.get_absolute_url }}'>{{ item.ticket.ticket }}</a> {{ item.ticket.title }}</p>
+	<p><i>{{ item.title }}</i></p>
+      </div>
+    </div>
+  </div>
+    {% empty %}
+    <p>{% trans "There is no recent activity" %}</p>
+  {% endfor %}
+</div>
+

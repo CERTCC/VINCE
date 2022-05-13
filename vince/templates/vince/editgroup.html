@@ -1,0 +1,200 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/jquery.multi-select.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/jquery.quicksearch.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vincegroup.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/multi-select.css' %}" />
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Edit Group: {{ group.name }}</h2>
+    </div>
+    <div class="large-4 columns text-right">
+    </div>
+  </div>
+</div>
+
+{% if errors %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert" role="alert">
+      <strong>ERROR:</strong> {{ errors }}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if collision %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert" role="alert">
+      <strong>ERROR:</strong> {{ collision }}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if contacts_without_keys or expired_keys_contacts or contacts_without_emails %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning" role="alert">
+      <p><b> <span style="color:red;">WARNING</span> - see below for details </b><br/>
+	{% if contacts_without_keys %}
+	This group has contact(s) without keys<br/>
+	{% endif %}
+	{% if expired_keys_contacts %}
+	This group has contact(s) with expired keys<br/>
+	{% endif %}
+	{% if contacts_without_emails %}
+	This group has contact(s) without email addresses<br/>
+	{% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+<form name="mainForm" enctype="multipart/form-data" method="POST" action="{% url 'vince:editgroup' group.id %}">
+<div class="row">
+  <div class="large-6 medium-6 columns">
+  {% csrf_token %}
+  <input type="hidden" name="version" value="{{ group.version }}" />
+    <div class="row">      
+      <div class="form-group">
+        <div class="large-4 medium-4 columns">
+          {{ form.status.label_tag }}{% render_field form.status class="form-control" %}
+        </div>
+        <div class="large-8 medium-8 columns">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-8 medium-8 columns">
+	<div class="form-group">
+          <div class="required">{{ form.name.label_tag }}</div>
+          {% render_field form.name class="form-control" %}
+        </div>
+      </div>
+      <div class="large-4 columns"></div>
+    </div>
+    <div class="row">
+      <div class="large-8 medium-8 columns">
+        <div class="form-group">
+          <div class="required"><label for="srmail_peer_name">SRMail Peer Name: </label></div>
+          {% render_field form.srmail_peer_name class="form-control"%}
+        </div>
+      </div>
+      <div class="large-4 columns"></div>
+    </div>
+
+    <div class="row">
+      <div class="large-8 medium-8 columns">
+	<div class="form-group">
+          <div class="required">{{ form.group_type.label_tag }}</div>
+	  {% render_field form.group_type class="form-control"%}
+        </div>
+      </div>
+      <div class="large-4 columns"></div>
+    </div>
+    <div class="row">
+      <div class="large-8 medium-8 columns">
+	<div class="form-group">
+	  <div class="required">{{ form.description.label_tag }}</div>
+	  {% render_field form.description class="form-control"%}
+        </div>
+      </div>
+      <div class="large-4 columns"></div>
+    </div>
+  </div>
+  <div class="large-6 columns">
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 medium-12 columns">	
+    <label>Add Contacts to the Group: </label>
+    <select multiple="multiple" id="id_group_select" name="group_select[]">
+      <optgroup label='Contacts'>
+	{% for member in contacts %}
+	{% if member.id in members %}
+	{% if member.active is False %}
+	<option value="{{ member.vendor_name }}" selected>{{ member.vendor_name }} (inactive)</option>
+	{% else %}
+	<option value="{{ member.vendor_name }}" selected>{{ member.vendor_name }}</option>
+	{% endif %}
+	{% else %}
+	<option value="{{ member.vendor_name }}">{{ member.vendor_name }}</option>
+	{% endif %}
+	{% endfor %}
+	<optgroup label='Groups'>
+	  {% for g in groups %}
+	  {% if g in groupmembers %}
+	  <option value="{{ g.name }}" selected>{{ g.name }}</option>
+	  {% else %}
+	  <option value="{{ g.name }}">{{ g.name }}</option>
+	  {% endif %}
+	  {% endfor %}
+    </select>
+    <p style="font-size:10px;">Double-click a contact to add or remove from Group.</p>
+  </div>
+</div>
+<br/>
+<div class="row">
+  <div class="form-group">
+    <div class="large-12 medium-12 columns">
+      {{ form.comment.label_tag }}
+      {% render_field form.comment class="form-control"%}
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <input type="submit" value="Update Group" class="primary button">
+    <a href="{% url 'vince:group' group.id %}" class="button secondary">Cancel</a>
+  </div>
+</div>
+
+</form>
+<br/>
+{% if contacts_without_keys %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert" role="alert">
+      <strong>WARNING:</strong> The following contact(s) do not have a PGP key on file:<br/>
+      {% for contact in contacts_without_keys %}
+      <a href="{% url 'vince:contact' contact.id %}">{{ contact }}</a><br/>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if expired_keys_contacts %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert" role="alert">
+      <strong>WARNING:</strong> The following contact(s) have expired PGP Keys on file:<br/>
+      {% for contact in expired_keys_contacts %}
+      <a href="{% url 'vince:contact' contact.id %}">{{ contact }}</a><br/>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if contacts_without_emails %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert" role="alert">
+      <strong>WARNING:</strong> The following contact(s) do not have an EMAIL on file:<br/>
+      {% for contact in contacts_without_emails %}
+      <a href="{% url 'vince:contact' contact.id %}">{{ contact }}</a><br/>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+

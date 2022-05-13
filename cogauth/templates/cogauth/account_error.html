@@ -1,0 +1,17 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+{% block content_title %}<h2>VINCE Registration Error</h2>{% endblock %}
+
+{% block content %}
+  <div class="callout alert">
+    There was an error confirming your account:<br/>
+    {{ error_msg }}
+  </div>
+<p>If you typed in the wrong code by mistake, <a href="{% url 'cogauth:account_activation_sent' %}">please try again.</a></p>
+<p>Otherwise, please email {{ CONTACT_EMAIL }} for assistance</p>
+
+{% endblock %}
+
+

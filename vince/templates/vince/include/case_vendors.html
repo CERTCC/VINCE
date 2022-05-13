@@ -1,0 +1,30 @@
+<div class="prev_comm_sidebar">
+  <h5>Vendor Last Notified</h5>
+  {% for vendor in not_notified %}
+  <div class="group-list">
+    <div class="row">
+      <div class="large-8 columns">
+	<a href="{{ vendor.contact.get_absolute_url }}">{{ vendor.contact.vendor_name }}</a>
+      </div>
+      <div class="large-4 columns text-right">
+	<b>N/A</b>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% for vendor in prev_notifications %}
+  <div class="group-list">
+    <div class="row">
+      <div class="large-8 columns">
+	<a href="{{ vendor.vendor.contact.get_absolute_url }}">{{ vendor.vendor.contact.vendor_name }}</a>
+      </div>
+      <div class="large-4 columns text-right">
+	{{ vendor.notify_date|date:"Y-m-d" }}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+    
+		  

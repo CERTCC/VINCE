@@ -1,0 +1,11 @@
+{"title": %(title)s,
+ "notes":[{
+     "category": "summary",
+     "text": %(description)s
+ }],
+ "product_status": {
+     "known_affected": [
+	 "%(csaf_productid)s"
+     ]
+ }
+}

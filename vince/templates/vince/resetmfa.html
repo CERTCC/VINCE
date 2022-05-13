@@ -1,0 +1,28 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method='post' action="{% url 'vince:resetusermfa' vc_user.id %}">
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">{% trans "Remove User MFA Setting" %}</h5>
+      </div>
+      <div class="modal-body">
+	<p>Are you sure you want to remove this user's MFA settings?  This cannot be undone.  The user will be prompted to enable MFA at next login. Any open tickets related to this request will be closed.</p>
+	{% if sms %}
+	<p><b>Confirm this user's phone number is {{ sms }}.</b></p>
+	{% endif %}
+	{% csrf_token %}
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input class="button primary" type='submit' value='{% trans "Confirm" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>
+
+  
+{% endblock %}

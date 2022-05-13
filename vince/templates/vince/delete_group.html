@@ -1,0 +1,31 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Delete Group" %}{% endblock %}
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>{% trans "Delete Group" %} {{ contactgroup.name }}</h2>
+    </div>
+    <div class="large-4 columns">
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <p>{% blocktrans with contactgroup.name as contact_name %}Are you sure you want to delete this contact group (<em>{{ contact_name }}</em>)? {% endblocktrans %}</p>
+  </div>
+</div>
+<br/>
+<br/>
+<div class="row">
+  <div class="large-1 columns">
+    <p><a href="{% url 'vince:group' contactgroup.id %}"><button class="button primary">{% trans "Cancel" %}</button></a></p>
+  </div>
+  <div class="large-11 columns">
+    <form method='post' action='./'>
+      <button class="button alert" type='submit'>{% trans "Delete Group" %}</button>
+      {% csrf_token %}
+    </form>
+  </div>
+</div>
+{% endblock %}

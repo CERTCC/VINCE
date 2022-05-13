@@ -1,0 +1,27 @@
+{% load i18n %}
+
+<div class="fullmodal">
+  <form method='post' action="{{ action }}">
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">{% trans "Encrypt and Send Ticket" %}</h5>
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+	<p>{% blocktrans with ticket.title as ticket_title %}Are you sure you want to send this ticket (<em>{{ ticket_title }}</em>) to the following users? {% endblocktrans %}</p>
+	<ul>
+	  {% for email in emails %}
+	  <li> {{ email.name }}: {{ email.email }} </li>
+	  {% endfor %}
+	</ul>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input class="button alert" type='submit' value='{% trans "Send" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>

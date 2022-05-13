@@ -1,0 +1,93 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Create Case" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/newcase.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Create a new case</h2>
+    </div>
+    <div class="large-4 columns text-right">
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <form method="post" id="caseform" onsubmit="vrfSubmit.disabled = true; return true;">{% csrf_token %}
+      {% if form.errors %}
+      <div class="row">
+	<div class="large-8 columns">
+	  <div class="callout alert">
+            {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
+	  </div>
+	</div>
+	<div class="large-4 columns"></div>
+      </div>
+      {% endif %}
+
+      <div class="row">
+	<div class="large-8 columns">
+	  {% for field in form %}
+	  {% if field.is_hidden %}
+	  {{ field }}
+	  {% else %}
+	  {% if field.name == "auto_assign" %}
+	  {% if show_role %}
+	  <div class="form-group">
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+            {% if field.name == "vuid" %}
+            {% render_field form.vuid|add_class:"form-control"|append_attr:"readonly:readonly" %}
+            {% else %}
+            {{ field }}
+            {% endif %}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+	    {% else %}
+	    <div class="form-group hidden">
+	      {{ field }}
+	    </div>
+	    {% endif %}
+	    {% elif field.name == "role" %}
+          {% if show_role %}
+          <div class="form-group hidden" id="assignrole">
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+            {{ field }}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+          </div>
+          {% endif %}
+	  {% else %}
+          <div class="form-group">
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+	    {% if field.name == "vuid" %}
+	    {% render_field form.vuid|add_class:"form-control"|append_attr:"readonly:readonly" %}
+	    {% else %}
+	    {{ field }}
+	    {% endif %}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+
+          </div>
+	  {% endif %}
+	  {% endif %}
+          {% endfor %}
+	  <input type="submit" value="Submit" name="vrfSubmit" class="primary button"/>
+	</div>
+	<div class="large-4 columns">
+	</div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{% endblock %}

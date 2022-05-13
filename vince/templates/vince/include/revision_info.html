@@ -1,0 +1,22 @@
+{% load i18n %}
+{% if not hidedate %}{{ revision.created }}{% endif %} {% if not hidenumber %}(#{{ revision.revision_number }}) {% trans "by" %}{% endif %} {% if revision.user %}{{ revision.user }}{% endif %}
+{% if revision.revision_number == shared %}
+  <strong>(shared)</strong>
+  {% endif %}
+  {% if revision.revision_number == published %}
+  <strong>(published)</strong>
+  {% endif %}
+	    
+ {% if revision.deleted %}
+<span class="badge badge-important">{% trans "deleted" %}</span>
+{% endif %}
+{% if revision.previous_revision.deleted and not revision.deleted %}
+<span class="badge badge-success">{% trans "restored" %}</span>
+{% endif %}
+{% if revision.locked %}
+<span class="badge">{% trans "locked" %}</span>
+{% endif %}
+{% if revision.previous_revision.locked and not revision.locked %}
+<span class="badge">{% trans "unlocked" %}</span>
+{% endif %}
+  

@@ -1,0 +1,98 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Team Settings" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/teamsettings.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>{{ team.name }} Team Settings</h2>
+    </div>
+    <div class="large-4 columns text-right">
+
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
+<div class="user_admin_options">
+  <div class="row">
+    <div class="large-8 columns">
+      <form method="post" enctype="multipart/form-data">{% csrf_token %}
+	{% if form.errors %}
+	<div class="callout alert">
+          {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
+	</div>
+	{% endif %}
+	
+	{% for hidden in form.hidden_fields %}
+	{{ hidden }}
+	{% endfor %}
+	{% for field in form.visible_fields %}
+	<div class="form-group">
+	  <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+          {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+          {{ field }}
+          {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+	</div>
+	{% endfor %}
+	<input type="submit" value="Submit" name="vrfSubmit" class="button primary"/>
+      </form>
+    </div>
+    
+    <div class="large-4 columns">
+      <div class="activity-table">
+	<div class="activity-header">
+	  <h5 class="text-center">Recent Activity</h5>
+	</div>
+	
+	{% for action in activity %}
+	<div class="activity-log">
+	  
+	  
+	  {% if "created" in action.title %}
+	  <div class="row">
+	    <div class="small-1 large-1 columns">
+              <i class="fas fa-user-plus" aria-hidden="true"></i>
+	    </div>
+	    <div class="small-11 large-11 columns">
+	      {{ action.user.usersettings.preferred_username }} added user <b>{{ action.email }}</b>
+	      <br/><span class="activity_time">
+		{{ action.date|date:"Y-m-d" }} ({{ action.date|timesince }} ago)
+	    </div>
+	  </div>
+	  {% else %}
+	  <div class="row">
+            <div class="small-1 large-1 columns">
+              <i class="fas fa-user-edit" aria-hidden="true"></i>
+            </div>
+            <div class="small-11 large-11 columns">
+              <b>{{ action.title }}</b>
+              <br/><span class="activity_time">
+		{{ action.date|date:"Y-m-d" }} ({{ action.date|timesince }} ago)
+            </div>
+          </div>
+	  {% endif %}
+	</div>
+	{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

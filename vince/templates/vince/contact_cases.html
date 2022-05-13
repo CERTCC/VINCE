@@ -1,0 +1,57 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize post_tags ticket_to_link %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Contact Cases" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      {% if old %}
+      <h2>Pre-VINCE Cases including {{ contact.vendor_name }}</h2>
+      {% else %}
+      <h2>VINCE Cases including {{ contact.vendor_name }}</h2>
+      {% endif %}
+      
+    </div>
+  </div>
+</div>
+
+{% if old %}
+<div class="row">
+  <div class="12 columns">
+    <p>This list may not show coordinator or participant roles in cases.</p>
+  </div>
+</div>
+{% endif %}
+<div class="row">
+  <div class="large-12 columns">
+    {% for part in participants %}
+    <div class="contact-case-list">
+      <div class="row">
+	<div class="large-8 columns">
+	  <h4>
+            <a href="{{ part.case.get_absolute_url }}">
+               {% if part.case|case_access:user %}{{ part.case.get_title }}{% else %}{{ part.case.vu_vuid }}{% endif %}</a>
+	  </h4>
+	  <h6> Last updated {{ part.case.modified|naturaltime }} </h6>
+	</div>
+	<div class="large-4 columns">
+	  {% autoescape off %}{{ part.case.get_status_html }} {{ part.get_owner_html }}{% endautoescape %} <span class="label badge-tag-primary">{% if part.coordinator %}Coordinator{% elif part.participant %}Participant{% else %}Vendor{% endif %}</span>
+	</div>
+      </div>
+    </div>
+    {% empty %}
+    <h3>No cases found</h3>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
+
+
+

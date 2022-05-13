@@ -1,0 +1,29 @@
+{% load i18n %}
+<div class="fullmodal">
+  <form method='post' action="{{ action }}">
+    <div class="modal-content">
+      <div class="modal-header">
+	{% if public %}
+        <h5 class="modal-title">{% trans "UnShare Artifact" %}</h5>
+	{% else %}
+	<h5 class="modal-title">{% trans "Share Artifact" %}</h5>
+	{% endif %}
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+	{% if public %}
+	<p>Are you sure you want to remove this file from the case discussion?</p>
+	{% else %}
+        <p>Are you sure you want to share this file with the case participants?</p>
+	{% endif %}
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input class="button alert" type='submit' value='{% trans "Yes" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>

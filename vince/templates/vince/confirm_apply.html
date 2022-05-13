@@ -1,0 +1,26 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method="POST" action="{% url 'vince:reviewapply' review.id %}">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Confirm Action</h3>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to create a new draft with the contents of this review?</p>
+      {% csrf_token %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button primary" type='submit' value='{% trans "Yes" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  </form>
+</div>
+
+{% endblock %}
+
+    

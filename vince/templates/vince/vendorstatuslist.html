@@ -1,0 +1,47 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Ticket Search" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Vendor Statements Requiring Approval</h2>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% if object_list %}
+    {% for ticket in object_list %}
+    <div class="vulnerability-list">
+      <h4>
+	<a href="{% url 'vince:vendorstatus' ticket.vendor.id %}">
+	  {{ ticket.vendor.vendor }} submitted status for 
+	  {{ ticket.vendor.case.get_title }} [{{ ticket.vendor.case.get_status }}]
+	</a>
+      </h4>
+      <h6> Last updated {{ ticket.date_added|naturaltime }}  </h6>
+      {% if note.dateupdated != note.datefirstpublished %}
+      <span class="updated-date">Updated {{ note.dateupdated|date:"F d, Y" }}</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <br/>
+    <h3 class="subtitle"> No Results Found </h3>
+    <br/>
+    <br/>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+
+

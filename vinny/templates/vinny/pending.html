@@ -1,0 +1,20 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+{% block content_title %}<h3>Your account is pending approval.</h3>{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<p>Your account is currently in pending state.  Once a coordinator approves your account you will be
+  able to login to view your cases.  You will receive an email as soon as your account is approved.
+</p>
+<div><a href="{% url 'vinny:report' %}" class="button primary expanded search-button">Submit a Report</a>
+  </div>
+
+
+{% endblock %}
+
+
+

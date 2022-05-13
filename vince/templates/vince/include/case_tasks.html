@@ -1,0 +1,28 @@
+{% load i18n humanize %}
+<table class="unstriped hover">
+  <thead>
+    <tr>
+      <th width="125">#</th>
+      <th width="200">{% trans "Title" %}</th>
+      <th>{% trans "Assignee" %}</th>
+      <th>{% trans "Status" %}</th>
+      <th>{% trans "Resolution" %}</th>
+      <th>{% trans "Last Update" %}</th>
+    </tr>
+  </thead>
+  <tbody>
+ {% for ticket in ticket_list %}
+ <tr class="case_ticket" href="{{ ticket.get_absolute_url }}">
+   <td><a href='{{ ticket.get_absolute_url }}'>{{ ticket.ticket }}</a></td>
+   <td><a href='{{ ticket.get_absolute_url }}'>{{ ticket.title }}</a></td>
+   <td class="assigned"><div class="reassign">{{ ticket.get_assigned_to }} &nbsp;<a href="#" class="edit"><i class="fas fa-pen" title="reassign"></i></a></div></td>
+   <td class="task_status">{{ ticket.get_status }}&nbsp;{% if ticket.get_status == _('Open') or ticket.get_status == _('In progress') %}<a href="#" class="edit" val="4"><i class="fas fa-check" title="mark done"></i></a>{% elif ticket.get_status == _('Reopened') %}<a href="#" class="edit" val="4"><i class="fas fa-check" title="mark done"></i></a>{% else %}<a href="#" class="edit" val="2"><i class="fas fa-check-square" title="reopen"></i></a>{% endif %}</td>
+   <td>{{ ticket.resolution }}</td>
+   <td><span title='{{ ticket.modified|date:"r" }}'>{{ ticket.modified|date:"Y-m-d" }}</span></td>
+   <!--<td><a href='#'><button class='button tiny secondary'><i class="far fa-check"></i>&nbsp;{% trans "Done" %}</button></a></td>-->
+ </tr>
+ {% empty %}
+ <tr>{% if ticket_list_empty_message %}<td colspan='6'>{{ ticket_list_empty_message }}</td>{% else %}<td colspan='6'>{% trans "You do not have any pending tickets." %}</td>{% endif %}</tr>
+ {% endfor %}
+  </tbody>
+</table>

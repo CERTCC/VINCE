@@ -1,0 +1,25 @@
+{% extends "vince/login.html" %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% load i18n static %}
+
+{% block content_title %}<h3>VINCE Verify Phone Number</h3>{% endblock %}
+
+{% block content %}
+<p>
+    Please verify your phone number by entering the code that was just sent to you.<br/>
+    <b>Codes are only valid for 3 minutes.</b>
+  </p>
+  
+  <form action="." method="post" class="form">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" class="primary button expanded search-button" value="{% trans 'Submit' %}">
+  </form>
+  
+{% endblock %}
+
+
+

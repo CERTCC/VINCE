@@ -1,0 +1,51 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize%}
+{% load widget_tweaks %}
+{% block vince_title %}{% trans "Edit Vuls" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vulmodal.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/addvuls.js' %}"></script>
+{% endblock %}
+
+<!-- site-title  -->
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>Case <a href="{{ case.get_absolute_url }}"> {{ case.get_vuid }} </a>Vulnerabilities </h2> 
+    </div>
+    <div class="large-4 columns text-right">
+      <a href="{% url 'vince:addvul' case.id %}" class="addvulmodal"><button class="button cmu"><i class="fas fa-plus"></i> Add Vulnerability</button></a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="reveal small" id="editvulmodal" data-reveal></div>
+<div class="reveal small" id="addvulmodal" data-reveal></div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <div class="vendorlist">
+      {{ vulsjs|json_script:"vuls_data" }}
+      <div id="vuls-table" class="tabulator bootstrap"></div>
+      {#{% include 'vince/include/vuls.html' with edit=1 %}#}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+	  

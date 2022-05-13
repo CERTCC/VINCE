@@ -1,0 +1,42 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div id="reminderform" class="modal form_modal">
+  <form method="post" id="newreminder" enctype="multipart/form-data" action="{% url 'vince:newreminder' %}">{% csrf_token %}
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title"> New Reminder </div>
+      </div>
+      <div class="modal-body">
+      {% if form.errors %}
+      <div class="callout alert">
+        {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
+      </div>
+      {% endif %}
+      
+      {% for hidden in form.hidden_fields %}
+      {{ hidden }}
+      {% endfor %}
+      {% for field in form.visible_fields %}
+      <div class="form-group">
+        <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+        {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+        {{ field }}
+        {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+	
+      </div>
+      {% endfor %}
+      </div>
+      <div class="modal-footer text-right">
+        <button class="primary button" id="submitadd"><i class="fas fa-plus"></i> Add Reminder</button>
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>
+
+
+{% endblock %}

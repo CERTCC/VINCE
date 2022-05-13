@@ -1,0 +1,52 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize post_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Ignored Users" %}{% endblock %}
+{% load staticfiles %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Ignored Users</h2>
+    </div>
+  </div>
+</div>
+<div class="row signin">
+  <div class="large-12 columns">
+    <p>To approve the following users, you must login to the admin panel of VinceComm and uncheck the Ignored field on their Profile.</p>
+  </div>
+</div>
+ 
+<div class="row">
+  <div class="large-10 columns">
+    <div id="user-list">
+      {% for u in ignored_users %}
+      <div class="row list-row">
+	<div class="large-1 columns">
+	  <div class="article-row-img">
+	    {% autoescape off %}{{ u|userlogo:"profile-pic" }}{% endautoescape %}
+	  </div>
+	</div>
+	<div class="large-11 columns">
+	  <div class="article-row-content">
+	    <p class="article-row-content-description">
+              <a href="{% url 'vince:vcuser' u.id %}">
+		{{ u.vinceprofile.preferred_username }}
+              </a> {% if u.get_full_name %}- {{ u.get_full_name }}{% endif %}
+              <span class="email">({{ u.email }})</span>
+	    </p>
+	    <time class="article-row-content-time"><i class="far fa-clock"></i> Joined {{ u.date_joined|naturaltime }} </time>
+	  </div>
+	</div>
+      </div>
+      {% empty %}
+      <h3 class="subtitle">No ignored users</h3>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+

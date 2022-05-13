@@ -1,0 +1,32 @@
+{% extends "vince/modal.html" %}
+
+{% block content %}
+{% load widget_tweaks %}
+<div class="fullmodal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Change MFA Method</h5>
+    </div>
+    <form method="post" action="{% url 'cogauth:rmmfa' %}">
+      {% csrf_token %}
+    <div class="modal-body">
+      
+      <p>Please enter your password to remove the current multi-factor authentication (MFA) from your
+	account. Once you remove the current MFA, you will be prompted to enable a new form of MFA.
+      </p>
+      <label for="password">Password <span class="required">*</span>
+      <input type="password" name="password" autocomplete="off" autofocus="autofocus" required />
+    </div>
+    <div class="modal-footer">
+      <div class="row column text-right">
+        <button type="submit" name="vrfSubmit" class="primary button"> Save </button>
+      </div>
+    </div>
+    </form>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}
+

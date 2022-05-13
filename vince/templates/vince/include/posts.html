@@ -1,0 +1,39 @@
+{% load i18n markdown_extras %}
+<a href="{% url 'vince:notify' case.id %}"><button class="button cmu tiny"><i class="fas fa-plus"></i> Create New Post</button></a>
+
+{% for post in case.vendornotificationcontent_set.all %}
+
+<div class="callout secondary">
+  <div class="row">
+    <div class="large-7  medium-6 small-12 columns">
+      {% if post.version == 0 %}
+      <i class="fas fa-plus"></i> Post created on {{ post.created }} by {{ post.user.usersettings.vince_username }}  {% if post.published %}<b>(published)</b>{% endif %}
+      <div class="text-muted"><small>{% if post.published %}pushed on {{ post.published_date|date:"Y-m-d"}}{% else %}DRAFT{% endif %}</small></div>
+      {% else %}
+      <i class="fas fa-pencil-alt"></i> Post last modified on {{ post.modified }} by {{ post.user.usersettings.vince_username }}
+      <div class="text-muted"><small>{% if post.published %}pushed on {{ post.published_date|date:"Y-m-d"}}{% endif %}</small></div>
+      {% endif %}
+    </div>
+    <div class=" large-5 medium-6 small-12 columns text-right">
+      <button class="openpost button tiny" href="{% url 'vince:post' post.id %}">
+	<span class="fa fa-eye fa-fw"></span>
+	{% trans "View" %}
+      </button>
+      {% if post.published %}
+      <button class="disabled button tiny">
+        <span class="fas fa-paper-plane"></span>
+        {% trans "Published" %}
+      </button>
+      {% else %}
+      <a href="{% url 'vince:push_notify' post.id %}" class="confirmpush button tiny"> <i class="fas fa-paper-plane"></i> {% trans "Publish" %} </a>
+      <a href="{% url 'vince:delete_post' post.id %}" class="postremove button tiny"> <i class="fas fa-trash"></i> {% trans "Delete" %} </a>
+      {% endif %}
+      <a href="{% url 'vince:editnotify' post.case.id post.id %}" class="button tiny">
+        <span class="fas fa-pencil-alt"></span>
+        {% trans "Edit post" %}
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endfor %}

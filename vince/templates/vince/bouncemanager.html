@@ -1,0 +1,105 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n contact_tags %}
+{% block vince_title %}{% trans "VINCE Bounce Manager" %}{% endblock %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/bouncemgr.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 medium-8 columns">
+      <h2>VINCE Bounce Manager</h2>
+    </div>
+    <div class="large-4 medium-4 columns text-right">
+    </div>
+  </div>
+</div>
+
+{% if messages %}
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{% autoescape off %}{{ message }}{% endautoescape %}</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+<div class="reveal small" data-reveal data-close-on-click="false" id="modal"></div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <div class="case-container">
+      <ul class="tabs" data-tabs id="case-tabs" data-deep-link="true" data-update-history="true">
+	<li class="tabs-title is-active"><a href="#permanent" data-tabs-target="permanent"> <i class="fas fa-skull-crossbones"></i> Permanent</a></li>
+	<li class="tabs-title"><a data-tabs-target="transient" href="#transient"><i class="fas fa-info-circle"></i> Transient</a></li>
+      </ul>
+
+      <div class="tabs-content" data-tabs-content="case-tabs">
+	<div class="tabs-panel" id="permanent">
+	  <table>
+	    <tr>
+	      <td>Ticket</td>
+	      <td>Date</td>
+	      <td>Email</td>
+	      <td>VINCE User</td>
+	      <td>Subject</td>
+	    </tr>
+	    {% for bounce in permanent %}
+	    <tr>
+	      <td><a href="{{ bounce.ticket.get_absolute_url }}">{{ bounce.ticket.ticket_for_url }} {% autoescape off %}{{ bounce.ticket.get_status_html }}{% endautoescape %}</td>
+	      <td>{{ bounce.bounce_date|date:"Y-m-d" }}</td>
+	      <td>{% if bounce.user_id %}
+                <a href="{% url 'vince:vcuser' bounce.user_id %}">{{ bounce.email }}</a></td>
+	      {% with t=bounce.email|vince_user_link %}
+	      <td>{% if t.is_active %}User Active <button class="removeuser assignme button tiny alert" action="{% url 'vince:vcuser_rm' bounce.user_id %}?tkt={{bounce.ticket.id}}">Remove User</button>{% else %}User Removed{% endif %}</td>
+	      {% endwith %}
+              {% else %}{{ bounce.email }}</td>
+                 <td>No User</td>{% endif %}
+	      <td>{{ bounce.subject }}</td>
+              </tr>
+           {% empty %} 
+<tr><td colspan="5" class="text-center">No permanent bounces</td><tr>
+          {% endfor %}
+	  </table>
+	</div>
+
+	<div class="tabs-panel" id="transient">
+	  <table>
+            <tr>
+              <td>Ticket</td>
+              <td>Date</td>
+              <td>Email</td>
+	      <td>VINCE User</td>
+              <td>Email Subject</td>
+            </tr>
+            {% for bounce in transient %}
+            <tr>
+              <td><a href="{{ bounce.ticket.get_absolute_url }}">{{ bounce.ticket.ticket_for_url }} {% autoescape off %}{{ bounce.ticket.get_status_html }}{% endautoescape %}</td>
+              <td>{{ bounce.bounce_date|date:"Y-m-d" }}</td>
+              <td>{% if bounce.user_id %}
+		<a href="{% url 'vince:vcuser' bounce.user_id %}">{{ bounce.email }}</a></td>
+	      {% with t=bounce.email|vince_user_link %}
+	      <td>{% if t.is_active %}User Active{% else %}User Removed{% endif %}</td>
+	      {% endwith %}
+		{% else %}{{ bounce.email }}</td>
+               <td>No User</td>{% endif %}
+              <td>{{ bounce.subject }}</td>
+</tr>
+{% empty %} 
+<tr><td colspan="5" class="text-center">No open transient bounces</td><tr>
+            {% endfor %}
+          </table>
+
+	  
+	</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

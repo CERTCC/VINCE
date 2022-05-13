@@ -1,0 +1,130 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/mathjax_config.js' %}"></script>
+<script id="MathJax-script" src="{% static 'vince/js/mathjax/tex-chtml.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/review.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-10 columns">
+      <h2>Vulnerability Note Review for <a href="{% url 'vince:case' case.id %}">{{ case.vu_vuid }}</a></h2>
+    </div>
+    <div class="large-2 columns"></div>
+  </div>
+</div>
+
+<div id="case_id" class="hidden">{{case.id}}</div>
+
+<div class="reveal" id="confirmmodal" data-reveal></div>
+
+{% if marks %}
+{{ marks|json_script:"marks" }}
+{% endif %}
+<form id="reviewform" method="post" action="{{ action }}">{% csrf_token %}
+  <div class="row">
+    <div class="small-8 large-8 columns">
+      {% if warning or nocredit %}
+      <div class="callout alert">
+	
+        <p>{% if warning %}The reporter has indicated they would not like their contact information shared with vendors.<br/>{% endif %}
+	  {% if nocredit %}
+	  The reporter <b>DOES NOT</b> wish to be credited in the vul note.
+	  {% endif %}</p>
+      </div>
+      {% endif %}
+      <div class="vulnote-form">
+	{% if form.errors %}
+	<div class="callout alert">
+	{% for field in form %}
+        {% for error in field.errors %}
+	<p>
+          {{ error|escape }}
+        </p>
+        {% endfor %}
+	{% endfor %}
+	{% for error in form.non_field_errors %}
+        <p>
+          {{ error|escape }}
+        </p>
+	  {% endfor %}
+        </div>
+	{% endif %}
+	
+	<div class="row">
+	  <div class="large-12 columns">
+	    <div class="form-group">
+	      {{ form.current_revision }}
+	      <label for="id_title">Title:</label>
+
+	      <small class="form-text text-muted">Vulnerability Note Title. This field is read-only in review.</small>
+	      <input type="text" name="title" class="form-control" value="{{ vulnote.current_revision.title }}" readonly>
+
+	    </div>
+	  </div>
+	</div>
+	<div class="row">
+          <div class="large-12 columns">
+	    <div class="form-group">
+              {{ form.content.label_tag }}
+              {% render_field form.content class="form-control" %}
+	      <small class='form-text text-muted'>{% trans form.content.help_text %}</small>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="large-12 columns">
+            <div class="form-group">
+              {{ form.feedback.label_tag }}
+	      <small class='form-text text-muted'>{% trans form.feedback.help_text %}</small>
+              {% render_field form.feedback class="form-control" %}
+            </div>
+          </div>
+        </div>
+        {% for error in field.errors %}
+        <p style="color: red">{% autoescape off %}{{ error }} {% endautoescape %}</p>
+        {% endfor %}
+        <div class="row column">
+	  <button type="submit" name="save" value="2" class="primary button">{% trans "Complete Review" %}</button>
+	  <button type="submit" name="save" value="1" class="primary button">{% trans "Save" %}</button>
+	  <a href="{% url 'vince:case' case.id %}#vulnote" class="button secondary">Cancel</a>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</form>
+
+<div class="reveal" data-reveal id="modal">
+  <div class="full_modal">
+    <form method="post" id="approveform">
+      <div class="modal-content">
+	<div class="modal-header">
+	  <h3 class="modal-title">Vul Note Review Complete</h3>
+	</div>
+	<div class="modal-body">
+	  {% csrf_token %}
+	  <p>Do you approve this vulnerability note for publication?</p>
+	  <p>By approving this vulnerability note, you confirm that you have read the note in it's entirety and believe it is ready for publication.</p>
+	  <p>If you select No, the author will have to make the appropriate changes and reopen the ticket for further review.  You will be unable to edit this review after completing it.</p>
+	</div>
+	<div class="modal-footer text-right">
+	  <button class="button alert" type='submit' value='1'>{% trans "No" %}</button>
+	  <button class="button primary" type='submit' value='2'>{% trans "Yes" %}</button>
+	</div>
+      </div>
+      <button class="close-button" data-close aria-label="Close modal" type="button">
+	<span aria-hidden="true">&times;</span>
+      </button>
+  </div>
+</div>
+
+
+{% endblock %}

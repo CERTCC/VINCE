@@ -1,0 +1,119 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Ticket Search" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/triage.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>{{ my_cr.team.name }} Triage Dashboard</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      <a href="{% url 'vince:roles' %}">Triage:</a>{% if triage_user %} {% for triage in triage_user %} {{ triage.usersettings.vince_username }} {% endfor %}{% else %}  <b>Unassigned</b>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-4 medium-4 columns dashboard-my-tickets">
+    <a class="dashboard-nav-card card-cr" href="{% url 'vince:bouncemanager' %}">
+      <i class="dashboard-nav-card-icon fas fa-briefcase" aria-hidden="true"></i>
+      <h2 class="dashboard-nav-stat">{{ pbounces | length }}</h2>
+      <h5 class="dashboard-nav-card-title">Permanent Bounces</h5>
+    </a>
+  </div>
+  <div class="large-4 medium-4 columns dashboard-my-tickets">
+    <a class="dashboard-nav-card card-msg" href="{% url 'vince:pendingusers' %}">
+      <i class="dashboard-nav-card-icon fas fa-users" aria-hidden="true"></i>
+      <h2 class="dashboard-nav-stat">{{ pending_users }}</h2>
+      <h5 class="dashboard-nav-card-title">Pending Users</h5>
+    </a>
+  </div>
+  <div class="large-4 medium-4 columns dashboard-my-tickets">
+    <a class="dashboard-nav-card card-contacts" href="{% url 'vince:contactupdates' %}">
+      <i class="dashboard-nav-card-icon fas fa-address-book" aria-hidden="true"></i>
+      <h2 class="dashboard-nav-stat">{{ contact_changes }}</h2>
+      <h5 class="dashboard-nav-card-title">Contact Updates</h5>
+    </a>
+  </div>
+</div>
+
+<hr>
+<div class="row">
+  <div class="large-8 columns">
+    <h3>Unassigned Tickets for {{ my_cr.team.name }}</h3>
+  </div>
+  <div class="large-4 columns text-right">
+    {% if teams|length > 1 %}
+    <button class="tiny button default dropdown menu float-right" data-dropdown-menu type="button" data-toggle="switchteam" aria-haspopup="true" aria-expanded="false" id="switchteambutton">Switch Team</button>
+    <div class="dropdown-pane hoverable bottom" id="switchteam" data-dropdown data-hover="true" data-hover-pane="true">
+      <ul class="menu vertical">
+	{% for t in teams %}
+	{% if t == my_cr %} {% elif t.team %}
+        <li><a class="dropdown-item" href="{% url 'vince:triage' t.id %}">{{ t.team.name }}</a></li>
+	{% endif %}
+	{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<form action="{% url 'vince:triage' my_cr.id %}" method="post" enctype="multipart/form-data" name="searchform" id="searchform">
+  <div class="row">
+    <div class="large-4 medium-4 small-6 columns">
+      {% with WIDGET_ERROR_CLASS='searchform_error' %}
+      {% csrf_token %}
+      {% render_field form.wordSearch errormsg=form.wordSearch.errors|first %}
+    </div>
+    <div class="large-2 columns medium-2 small-6">
+      <div class="dropdown-pane" id="queue-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="row column">
+          <div class="form-check border-bottom mb-2 pb-2">
+            <input id="filter_by_dropdown_select_all_2" type="checkbox" class="form-check-input">
+            <label for="filter-by_dropdown_select_all_2" class="form-check-label"> Select all </label>
+          </div>
+          {% render_field form.queue %}
+          <div class="filter-by-dropdown__dropdown-footer">
+          </div>
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+	<button type="button" class="filter-by-dropdown__toggle-button" data-toggle="queue-dropdown">
+          Queue
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+	</button>
+      </div>
+    </div>
+    <div class="large-3 medium-2 hide-for-small-only columns">
+      <div class="input-group">
+        <span class="input-group-label">
+          <i class="fas fa-calendar-alt"></i>
+        </span>
+        {% render_field form.datestart class="input-group-field" placeholder="Start Date" %}
+      </div>
+    </div>
+    <div class="large-3 medium-2 hide-for-small-only columns">
+      <div class="input-group">
+        <span class="input-group-label">
+          <i class="fas fa-calendar-alt"></i>
+        </span>
+        {% render_field form.dateend class="input-group-field" placeholder="End date" %}
+      </div>
+    </div>
+    {% endwith %}
+  </div>
+  <div><input type="hidden" name="page" id="id_page" value="1"></div>
+</form>
+<div id="searchresults">
+  <p class="loading text-center"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></p>
+</div>
+{% endblock %}
+
+

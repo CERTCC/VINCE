@@ -1,0 +1,166 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize widget_tweaks%}
+{% load staticfiles %}
+{% block content %}
+</script>  
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Preferences</h2>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+<div class="row">
+  <div class="large-9 columns">
+    <form method="post">
+      {% csrf_token %}
+      <h4>Which email format do you prefer?</h4>
+      {% render_field form.email_preference %}
+      <hr>
+      <h5>Case Template</h5>
+      <div class="form-group">
+	<p><small class="form-text text-muted">{{ form.case_template.help_text }}</small></p>
+	<table>
+	  <tr>
+	    <th width="250">Default Case Template</th>
+	    <td>
+	      {% render_field form.case_template class="form-control" %}
+	    </td>
+	  </tr>
+	</table>
+      </div>
+
+      <h5>Ticket Queues</h5>
+      <table class="unstriped">
+	<thead>
+	  <tr>
+	    <th width="250">
+	      Queue
+	    </th>
+	    <th>
+	      New Ticket Email
+	    </th>
+	  </tr>
+	</thead>
+	<tbody>
+	  {% for queue in queues %}
+	  <tr>
+	    <td>
+	      {{ queue.title }}
+	    </td>
+	    <td>
+	      <input type="checkbox" title="{{ queue.title }}" name="new_tickets[]" value="{{ queue.id }}" {% if user.username in queue.new_ticket_cc %}checked {% endif %}>
+	    </td>
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+      <h5>Ticket Preferences</h5>
+      <table class="unstriped">
+        <thead>
+          <tr>
+            <th width="250">
+              Action
+            </th>
+            <th>
+              Email
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Email on Ticket Change</td>
+            <td> {% render_field form.email_on_ticket_change %}</td>
+          </tr>
+          <tr>
+            <td>Email on Ticket Assign</td>
+            <td>{% render_field form.email_on_ticket_assign %}</td>
+          </tr>
+	</tbody>
+      </table>
+
+      
+      <h5>Case Preferences (for cases assigned to you)</h5>
+      <table class="unstriped">
+	<thead>
+          <tr>
+            <th width="350">
+	      Action
+            </th>
+	    <th>
+              Email Preference
+            </th>
+          </tr>
+	</thead>
+	<tbody>
+	  <tr>
+	    <td>Case Changes<br/>(status, details, artifacts, vendors, vuls)</td>
+	    <td> {% render_field form.email_case_changes %}</td>
+	  </tr>
+	  <tr>
+	    <td>New Posts in VinceComm</td>
+	    <td>{% render_field form.email_new_posts %}</td>
+	  </tr>
+	  <tr>
+	    <td>New Messages</td>
+	    <td>{% render_field form.email_new_messages %}</td>
+          </tr>
+	  <tr>
+	    <td>Vendor Status Updates</td>
+	    <td>{% render_field form.email_new_status %}</td>
+          </tr>
+	  <tr>
+	    <td>New Case Tasks <br/>(emails, bounces, tickets)</td>
+	    <td>{% render_field form.email_tasks %}</td>
+          </tr>
+	</tbody>
+      </table>
+
+      <h5>Reminder Preferences</h5>
+      <table class="unstriped">
+        <tbody>
+	  <tr>
+	    <td width="350">Remind me about tickets open > 14 days</td>
+	    <td>{% render_field form.reminder_tickets %}</td>
+	  </tr>
+	  <tr>
+	    <td>Remind me about case expected publish dates</td>
+	    <td>{% render_field form.reminder_publication %}</td>
+	  </tr>
+	  <tr>
+	    <td>Remind me about vendors that have not viewed a case</td>
+	    <td>{% render_field form.reminder_vendor_views %}</td>
+	  </tr>
+	  <tr>
+	    <td>Remind me about vendors that have not submitted status</td>
+	    <td>{% render_field form.reminder_vendor_status %}</td>
+	  </tr>
+          <tr>
+            <td>Remind me about cases that haven't been modified in > 14 days</td>
+            <td>{% render_field form.reminder_cases %}</td>
+          </tr>
+	</tbody>
+      </table>
+
+      
+      <input type="submit" class="button default" value="Submit">
+    </form>
+  </div>
+  <div class="large-3 medium-3 columns">
+    
+  </div>
+    
+  </div>
+
+{% endblock %}

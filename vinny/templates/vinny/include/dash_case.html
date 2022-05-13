@@ -1,0 +1,83 @@
+<li class="case-list-item">
+  <div class="row case-row">
+  </div>
+  <div class="row case-row">
+    <div class="large-8 medium-8 columns">
+      <div class="case-list-body">
+	{% if limitedaccess %}
+	<a href="{% url 'vinny:case_summary' case.id %}">{{ case.get_title }}</a> 
+	{% else %}
+        <a href="{% url 'vinny:case' case.id %}">{{ case.get_title }}</a>
+	{% endif %}
+      </div>
+      <div class="case-stats hide-for-small-only">
+	{% if limitedaccess %}
+	<i class="fas fa-briefcase"></i> Created {{ case.created|date:"Y-m-d" }} (Modified {{ case.modified|timesince }} ago)
+	{% else %}
+	<i class="fas fa-briefcase"></i> Created {{ case.created|date:"Y-m-d" }} ({{ case.created|timesince }} ago)
+	{% endif %}
+        <!--<i class="fas fa-comments"></i> {{ case.post_set.count }} replies &nbsp;&nbsp; {% with first_post=case|post_order:"first" %} {{ first_post.created|timesince }} ago &nbsp;&nbsp;  {{ first_post.author.get_username }} {% endwith %}-->
+      </div>
+    </div>
+    {% if limitedaccess %}
+      <div class="large-4 medium-4 columns">
+	<div class="row">
+	  <div class="large-12 columns">
+	    {% if case.published %}
+	    <div class="case-stats text-right hide-for-small-only">Published {{ case.note.datefirstpublished|date:"Y-m-d"}}</div>
+	    {% else %}
+	    <div class="case-stats text-right hide-for-small-only">Expected Public Date: {% if case.due_date %}{{ case.due_date|date:"Y-m-d"}}{% else %}<b>TBD</b>{% endif %} </div>
+	    {% endif %}
+	  </div>
+	</div>
+	<div class="row column">
+	  {% autoescape off %}{{ case.get_status_html }}{% endautoescape %}
+	</div>
+    </div>
+    {% else %}
+    {% if case.post_set.count > 0 %}
+    <div class="large-4 medium-4 columns">
+      <div class="row">
+	<div class="large-6 medium-6 columns"></div>
+	<div class="large-6 medium-6 columns">
+	  
+	  <div class="case-comments"><i class="fas fa-comments"></i> {{ case.post_set.count }} posts</div>
+	</div>
+      </div>
+      <div class="row">
+	  <div class="large-6 medium-6 columns text-right">
+	    {% with last_post=case|post_order:"last" %}
+	    {% if last_post.author.vinceprofile.logo %}
+	    <img class="profile-pic hide-for-small-only" src="{{ last_post.author.vinceprofile.logo }}">
+	    {% else %}
+	    <div class="last-poster text-center hide-for-small-only" style="background-color:{{ last_post.author.vinceprofile.logocolor }};">
+              <span class="logo-initial">{{ last_post.author.vinceprofile.vince_username|first }}</span>
+             </div>
+	    {% endif %}
+	  </div>
+	<div class="large-6 medium-6 columns">
+	  <div class="last-reply">
+            <div class="case-last-poster">{{ last_post.author.vinceprofile.vince_username }}</div>
+            <div class="case-last-reply">{{ last_post.modified|timesince }} ago</div>
+	    {% endwith %}	    
+	  </div>
+	</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="large-4 medium-4 columns">
+      <div class="row">
+        <div class="large-6 medium-6 columns"></div>
+        <div class="large-6 medium-6 columns">
+          <div class="case-comments"><i class="fas fa-comments"></i> {{ case.post_set.count }} posts</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+  <div class="row case-row">
+    <div class="large-12 columns">
+    </div>
+  </div>
+</li>

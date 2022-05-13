@@ -1,0 +1,34 @@
+{% load i18n humanize%}
+<table class="hover unstriped">
+  <thead>
+    <tr>
+      <th>Vendor</th>
+      <th>Status</th>
+      <th>Notified</th>
+      <th>Seen</th>
+      <th>Remove </th>
+      <th>Notify <input id="select_all_vendors" type="checkbox"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for vendor in vendors %}
+    <tr>
+      <td><a href="{{ vendor.contact.get_absolute_url }}">{{ vendor.contact.vendor_name }}</a></td>
+      <td><a href="{% url 'vince:vendorstatus' vendor.id %}">{{ vendor.get_status }}</a></td>
+      <td>{{ vendor.contact_date|date:"Y-m-d" }}</td>
+      <td>{{ vendor.seen }}</td>
+      {% if vendor.contact_date %}
+      <td><a href="{% url 'vince:rmvendorconfirm' vendor.id %}" class="rmvendorconfirm"><i class="fas fa-trash-alt"></i></a></td>
+      {% else %}
+      <td><a href="{% url 'vince:rmvendor' vendor.id %}"><i class="fas fa-trash-alt"></i></a></td>
+      {% endif %}
+      <td><input type="checkbox" class="checkvendors" name="vendors" value="{{ vendor.contact.id }}" title="{{ vendor.contact.vendor_name }}"></td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="6"><b><i>No Vendors have been added</i></b></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+	    

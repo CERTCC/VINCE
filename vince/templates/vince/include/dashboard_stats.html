@@ -1,0 +1,23 @@
+{% load i18n dashboard_tags %}
+<div class="row">
+  <div class="large-2 medium-2 small-6 columns dash_header">
+    <a href="{% url 'vince:dashboardtickets' 'Open' %}" class="filtercase" id="ticketdash" activity_href="{% url 'vince:dashqueue' 'Open' %}"><h2><i class="fas fa-clipboard-list"></i> {{ breakdown|get_status:"Open"}}</h2>
+      <h5>Open Tickets</h5></a><div class="hidden">Open Tickets</div>
+  </div>
+    <div class="large-2 medium-2 small-6 columns dash_header">
+    <a href="#" class="filtercase reminder" activity_href="#" id="reminderdash"><h2><i class="fas fa-stopwatch"></i> {{ len_reminders }}</h2>
+      <h5>Reminders</h5></a><div class="hidden">Case Queue</div>
+  </div>
+  <div class="large-2 medium-2 small-6 columns dash_header">
+    <a href="#" class="filtercase post" activity_href="#" id="postdash"><h2><i class="fas fa-sticky-note"></i> {{ new_posts }}</h2>
+      <h5>New Posts</h5></a><div class="hidden">Case Queue</div>
+  </div>
+  <div class="large-3 medium-3 small-6 columns dash_header">
+    <a href="{% url 'vince:dashboardtickets' 'Progress' %}" class="filtercase" id="progressdash" activity_href="{% url 'vince:dashqueue' 'Progress' %}"><h2><i class="fas fa-tasks"></i> {{ breakdown|get_status:"Progress"}}</h2>
+      <h5>In Progress Tickets</h5></a><div class="hidden">In Progress Tickets</div>
+  </div>
+  <div class="large-3 medium-3 small-6 columns dash_header">
+    <a href="{% url 'vince:dashboardtickets' 'Message' %}" class="filtercase" id="msgdash" activity_href="{% url 'vince:dashqueue' 'Message' %}"><h2><i class="fas fa-inbox"></i> {{ new_messages }}</h2>
+      <h5>New Messages</h5></a><div class="hidden">Message Tickets</div>
+  </div>
+</div>

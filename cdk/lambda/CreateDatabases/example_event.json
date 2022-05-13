@@ -1,0 +1,16 @@
+{
+    "RequestType": "Create",
+    "ServiceToken": ":redacted:",
+    "ResponseURL": ":redacted:",
+    "StackId": ":redacted:",
+    "RequestId": "b2876747-5093-43a8-b4bf-fc582b3f931b",
+    "LogicalResourceId": "CreateDatabases",
+    "ResourceType": "Custom::CreateDatabases",
+    "ResourceProperties": {
+        "ServiceToken": ":redacted:",
+        "Master": "MasterUser",
+        "Pub": "RDSPubSecret",
+        "Comm": "RDSTrackSecret",
+        "Track": "RDSCommSecret"
+    }
+}

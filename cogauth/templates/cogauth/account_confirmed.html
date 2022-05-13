@@ -1,0 +1,18 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+{% block content_title %}<h3>Registration Complete</h3>{% endblock %}
+
+{% block content %}
+
+  <div class="callout success">
+    Your account has been confirmed.  You may now login.
+  </div>
+  <div>
+  <a href="{% url 'cogauth:login' %}" class="button primary expanded search-button">Login</a>
+  </div>
+{% endblock %}
+
+
+

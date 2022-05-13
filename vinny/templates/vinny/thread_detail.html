@@ -1,0 +1,129 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n markdown_extras %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Thread Detail" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/dropzone.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/dropzone.css' %}">
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vinny/js/replymsg.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+{% load inbox_tags %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Message</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      <a class="button cmu" data-open="deletemodal"> <i class="fas fa-trash-alt"></i> Delete Thread</a>
+    </div>
+  </div>
+</div>
+
+<div id="deletemodal" class="reveal" data-reveal>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Delete Thread</h5>
+    </div>
+    <div class="modal-body">
+      <p>{% trans "Are you sure you want to delete this thread?" %}</p>
+    </div>
+    <div class="modal-footer text-right">
+      {% url "vinny:thread_delete" thread.pk as post_url %}
+      <form action="{{ post_url }}" method="POST">
+	{% csrf_token %}
+	<a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+	<button class="alert button">Delete</button>
+      </form>
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
+<div class="thread-detail-container">
+  <div class="thread-subject">
+    <div class="row">
+      <div class="large-12 columns">
+	<h3>{{ thread.subject }} <span class="thread_participants">with 
+	     {{ thread.latest_message.sender.vinceprofile.vince_username }},
+            {% if thread.from_group %}
+            {{ thread.from_group }}
+            {% endif %}
+            {% if thread.to_group %}
+	    {% if thread.to_group == thread.from_group %}
+	    {% else %}
+            {% if thread.from_group %}, {% endif %}{{ thread.to_group }}
+	    {% endif %}
+            {% endif %}
+	    {% if thread|not_in_group|length %}{% if thread.to_group or thread.from_group %}, {% endif %}{{ thread|not_in_group|join:", " }}{% endif %}
+	  </span>
+	</h3>
+	{% if thread.case %}<small>Related to <a href="{{ thread.case.get_absolute_url }}">Case {{ thread.case.get_title }}</a></small>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div id="msglist">
+    {% include 'vinny/messages.html' %}
+  </div>
+  <div class="row">
+    <div class="large-12 columns">
+      <form id="replyform" class="comment-form" action="{% url "vinny:thread_detail" thread.pk %}" method="post" enctype="multipart/form-data">
+	<div class="msgreply">
+	  {% csrf_token %}
+	  {% for field in form %}
+	  {% if field.name == "attachment" %}
+	  <label>Attach File</label>
+	  <small class="form-text text-muted">                                                           
+            You can attach a file such as a document or screenshot to this message.                       
+	  </small>
+	  <div class="fallback">
+            {% render_field form.attachment class="form-control show-for-sr" %}
+	  </div>
+	  <div id="dropzonepreview" class="dropzone">
+            <div class="dz-default dz-message">
+              <span> <i class="fas fa-cloud-upload-alt"></i> Drop files to attach to message </span>
+            </div>
+	  </div>
+	  {% else %}
+	  <div class="message-reply form-group">
+            <!--<label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>-->
+            {{ field }}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+	  </div>
+	  {% endif %}
+	  {% endfor %}
+	  <button type="submit" id="sendbutton" class="primary button"><i class="fas fa-paper-plane"></i> Send</button>
+	</div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="reveal" id="error_modal" data-reveal>
+  <div class="fullmodal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Error" %}</h5>
+      </div>
+      <div class="modal-body">
+	<p>You must add content or an attachment to send a message.
+        </p>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Ok</a>
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</div>
+
+
+{% endblock %}

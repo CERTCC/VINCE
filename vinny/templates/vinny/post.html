@@ -1,0 +1,75 @@
+{% load i18n static markdown_extras post_tags %}
+<div class="callout {% if last_viewed %}{% if post.author == user %}{% else %}{% if post.created > last_viewed %}unseen{% endif %}{% endif %}{% endif %} {% if post.pinned %}pinned{% elif reply %}replypost{% else %}cmu{% endif %}">
+  <div class="row">
+    <div class="small-12 medium-3 large-4 columns">
+      <div class="row">
+        <div class="large-3 medium-3 column">
+          {% autoescape off %}{{ post|postlogo:"post-logo" }}{% endautoescape %}
+
+	  {% if post.pinned %}
+	  <div class="post-pinned"><div class="tooltippy" title="A pinned post is a post pinned (by a coordinator) to the top of the case discussion because of it's importance or value."><i class="fas fa-thumbtack"></i> Pinned Post</div></div>
+	  {% elif replypost %}
+	  <div class="post-pinned"><i class="fas fa-reply"></i> Reply</div>
+	  {% endif %}
+        </div>
+        <div class="large-9 medium-9 column text-left">
+	  {% if post.author %}
+          <div class="post_author">{{ post.author.vinceprofile.vince_username }}</div>
+	  {% else %}
+	  <div class="post_author">User Removed</div>
+	  {% endif %}
+          <div class="post_org">{{ post.get_org_name }}</div>
+	  {% if post.author.vinceprofile.title %}<div class="post_author_title">{{ post.author.vinceprofile.title }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="small-12 medium-8 large-7 columns contentpost">
+      <div class="post-stats">{{ post.created|date:"Y-m-d" }} ({{ post.created|timesince }} ago) {% if post.postrevision_set.count > 1 %}<a diff_url="{% url 'vinny:diff' post.current_revision.id %}" class="show-diff"> {{ post.postrevision_set.all|length|add:"-1" }} edits </a>{% endif %}
+      </div>
+
+      <div class="postcontent">
+	{{ post.current_revision.content|markdown_filter:auto_members | safe }}
+      </div>
+    </div>
+    {% if user.is_superuser or post.author == user %}
+    <div class="tester medium-1 large-1 columns hide-for-small-only">
+      <a href="#showtip" class="editpost" data-toggle="edit-post-{{post.id}}"><i class="fas fa-ellipsis-h"></i></a>
+
+      <div class="dropdown-pane" id="edit-post-{{post.id}}" data-dropdown data-hover="true" data-hover-pane="true">
+        <a href="#remove" title="Remove this post" class="remove-post" action="{% url 'vinny:rmpost' post.id %}"><i class="fa fa-times remove-icon" aria-hidden="true"></i> Delete this post</a><br/>
+        <a href="#edit" title="Edit this post" class="edit-post" item="{{post.id}}"><i class="fa fa-pencil-square-o remove-icon" aria-hidden="true"></i> Edit this post </a>
+	{% if user.is_staff %}
+	{% if post.pinned %}
+	<br/><a href="#unpinthispost" title="Unpin this post" class="pin-post" item="{{post.id}}"><i class="fas fa-thumbtack remove-icon" aria-hidden="true"></i> Unpin this post </a>{% else %}	
+	<br/><a href="#pinthispost" title="Pin this post" class="pin-post" item="{{post.id}}"><i class="fas fa-thumbtack remove-icon" aria-hidden="true"></i> Pin this post </a>{% endif %}
+	{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="tester medium-1 large-1 columns hide-for-small-only">
+       {% if last_viewed %}{% if post.author == user %}{% else %}{% if post.created > last_viewed %}<span class="unseenpost">New!</span>{% endif %}{% endif %}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="row">
+    <div class="medium-3 large-3 columns hide-for-small-only"></div>
+    <div class="large-9 medium-9 small-12 columns">
+      <!--<div class="postcontent">
+	{{ post.current_revision.content | markdown | safe }}
+      </div>-->
+      <div class="editcontent" post_url="{% url 'vinny:editpost' post.id %}" post_id="{{post.id}}">
+      </div>
+    </div>
+  </div>
+  {% if post.author != user %}
+  <div class="row column text-right reply-button">
+    <button post_id="{{ post.id }}" class="reply-to-post button tiny primary {% if post.pinned or replypinned %}pinned{% endif %}">Reply</button>
+  </div>
+  {% endif %}
+  {% if post.num_replies > 0 %}
+  <div class="row column text-right">
+    <div class="post_reply_count loadreply"> <i class="far fa-comment-dots"></i> {{ post.num_replies }} replies <i class="fas fa-caret-down"></i></div>
+    <div class="post_reply_count collapsereply"> <i class="far fa-comment-dots"></i> {{ post.num_replies }} replies <i class="fas fa-caret-down"></i></div>
+  </div>
+  {% endif %}
+</div>

@@ -1,0 +1,56 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+{% block vince_title %}{% trans "Create Case" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/editcase.js' %}"></script>
+{% endblock %}
+<!-- site-title  -->
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Edit Case <a href="{{ object.get_absolute_url }}">{{ CASE_ID }}{{ object.vuid }}</a></h2>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="small-12 large-12 columns">
+    <form method="post" id="caseform">{% csrf_token %}
+      {% if form.errors %}
+      <p class="errornote">
+        {% if form.errors.items|length == 1 %}"Please correct the error below."{% else %}"Please correct the errors below."{% endif %}
+      </p>
+      {% endif %}
+      <div class="row">
+	<div class="large-8 columns">
+	  {% for field in form %}
+	  {% if field.is_hidden %}
+	  {{ field }}
+	  {% else %}
+          <div class="form-group">
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+	    {% if field.name == "vuid" %}
+	    {% render_field form.vuid|add_class:"form-control"|append_attr:"readonly:readonly" %}
+	    {% else %}
+	    {{ field }}
+	    {% endif %}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+
+          </div>
+	  {% endif %}
+          {% endfor %}
+	  <input type="submit" value="Submit" name="vrfSubmit" class="primary button"/>
+	  <a href="{{ object.get_absolute_url }}" class="button secondary">Cancel</a>
+	</div>
+	<div class="large-4 columns">
+	</div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{% endblock %}

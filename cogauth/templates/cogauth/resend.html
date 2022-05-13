@@ -1,0 +1,22 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+{% block content_title %}<h3>VINCE Resend Confirmation Code</h3>{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<p>Use your VINCE username to resend the confirmation code or <a href="{% url 'cogauth:login' %}">Login</a></p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-row">
+      {{ form.username.label_tag }} {{ form.username }}
+      </div>
+
+    <div class="submit-row">
+      <label>&nbsp;</label><input type="submit" value="{% trans 'Submit' %}" class="vulupload" />
+    </div>
+  </form>
+{% endblock %}
+

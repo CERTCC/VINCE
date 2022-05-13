@@ -1,0 +1,12 @@
+{% load i18n humanize ticket_to_link %}
+<html>
+<head>
+  <title>VRF {{object.vrf_id}}</title>
+</head>
+{% load staticfiles %}
+<body>
+
+{{ object.description|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}
+
+</body>
+</html>

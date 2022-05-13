@@ -1,0 +1,66 @@
+{% if object_list %}
+<div id="accordion" class="ui-accordion ui-widget ui-helper-reset">
+  
+  {% for item in object_list %}
+  {% if forloop.counter > 10 %}
+  <div data-type="accordion-section" class="{{ item|get_filter }} extravendors" name="{{ item.vendor }}">
+    {% else %}
+    <div data-type="accordion-section" class="{{ item|get_filter }}" name="{{ item.vendor }}">
+      {% endif %}
+      <h3 class="accordion-header ui-accordion-header reloaded">
+	<span class="vendor_name"><a href="#{{ item.vendorrecordid }}">{{ item.vendor }} </a>
+	  <span class="vendor-icons">
+	    {% if item.vendorinformation|vi_bullhorn %}
+	    <i class="fas fa-bullhorn" aria-hidden="true" title="Vendor provided information"></i>
+	    {% elif item.statement|vs_bullhorn %}
+	    <i class="fas fa-bullhorn" aria-hidden="true" title="Vendor provided information"></i>
+	    {% elif item.addendum|va_bullhorn %}
+	    <i class="fas fa-bullhorn" aria-hidden="true" title="Vendor provided information"></i>
+	    {% endif %}
+	  </span>
+	</span>
+	<span class="vendor_status">
+	  {% autoescape off %}{% show_vp_status item.status %} {% endautoescape %}
+	</span>
+      </h3>
+      <div class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom">
+	<p>
+	  {% if item.datenotified %}
+	  Notified:&nbsp;&nbsp;{{item.datenotified|date:"F d, Y"}} <span class="updated-date"> Updated:&nbsp;{{ item.datelastupdated|date:"F d, Y" }}
+            {% else %}
+            Updated:&nbsp;&nbsp;{{ item.datelastupdated|date:"F d, Y" }}
+            {% endif %}
+	  </span>
+	</p>
+	{% if item.dateresponded %}
+	<p><b>Statement Date:&nbsp;&nbsp; {{ item.dateresponded|date:"F d, Y"}}</b></p>
+	{% endif %}
+	<h3>Status</h3>
+	<p>{% autoescape off %}{% show_vp_status item.status %} {% endautoescape %}</p>
+	<h3>Vendor Statement</h3>
+	<p>{% autoescape off %}{{ vendorhtml|get_statement:item.vendorrecordid }}{% endautoescape %}</p>
+	{% if item.vendorinformation %}
+	<h3>Vendor Information </h3>
+	<p>{% autoescape off %}{{ vendorhtml|get_information:item.vendorrecordid }}{% endautoescape %}</p>
+	{% endif %}
+	{% if item.vendorurls != 'None' %}
+	<h3>Vendor References</h3>
+	<p>{% autoescape off %}{{ vendorhtml|get_references:item.vendorrecordid }}{% endautoescape %}</p>
+	{% endif %}
+	{% if item.addendum|addendum_boilerplate %}
+	<h3>Addendum</h3>
+	<p>{% autoescape off %}{{ vendorhtml|get_addendum:item.vendorrecordid }}{% endautoescape %}</p>
+	{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if vendors > 10 %}
+  <p class="more-vendors"><span class="moreVendors"><a href="#" id="moreVendorsLink">View all {{ vendors }} vendors <i aria-hidden="true" class="fas fa-angle-double-down"></i></a></span><span class="lessVendors"><a href="#" id="lessVendorsLink">View less vendors <i aria-hidden="true" class="fas fa-angle-double-up"></i></a></span></p>
+  {% endif %}
+  {% else %}
+  {% if filter != "All Vendors" %}
+  {% else %}
+  <p> No information available at this time. </p>
+  {% endif %}
+  {% endif %}

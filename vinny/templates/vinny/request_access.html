@@ -1,0 +1,23 @@
+{% load i18n %}
+<div class="fullmodal">
+  <form method="post" action="{{ action }}">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Request Full Case Access" %}</h5>
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+        <p>Click confirm to request access to this case.
+
+	</p>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input class="button alert" type='submit' value='{% trans "Confirm" %}' />
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </form>
+</div>

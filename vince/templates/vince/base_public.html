@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:url"           content="https://{{ VINCETRACK_URL }}"/>
+    <meta property="og:type"          content="website" />
+    <meta property="og:image:alt"      content="{{ ORG_NAME }}" />
+
+    {% block extra_head_tags %}
+    <meta property="og:title"         content="VINCETrack" />
+    <meta property="og:description"   content="Software for multi-party vulnerability coordination." />
+    <title class="swiftype" data-type="string">VINCETrack</title>
+    {% endblock %}
+    
+    {% load static %}
+    
+    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/foundation.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/style.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery-ui.min.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery.qtip.min.css' %}" />
+    {#<link rel="stylesheet" type="text/css" href="{% static 'vince/css/dropzone.css' %}" />#}
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/fontawesome/all.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/taggle.css' %}">
+    <link rel="shortcut icon" href="{% static 'vince/images/favicon.ico' %}" type="image/x-icon" />
+    
+    {% block js %}
+    <script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vince/js/jquery-ui.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vince/js/jquery.qtip.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vince/js/vince.js' %}"></script>
+    {#<script type="text/javascript" src="{% static 'vince/js/jquery.overlay.js' %}"></script>#}
+    {#<script type="text/javascript" src="{% static 'vince/js/clipboard.min.js' %}"></script>#}
+    {#<script type="text/javascript" src="{% static 'vince/js/dropzone.js' %}"></script>#}
+    <script type="text/javascript" src="{% static 'vince/js/taggle.js' %}"></script>
+    {% endblock %}
+  </head>
+  
+  <body id="top-body">
+    <div class="off-canvas-wrapper">
+      <div class="off-canvas position-top" id="offCanvas" data-off-canvas>
+        <div class="row column">
+          <ul class="vertical menu">
+	    <li class="menu-close"><a href="#" data-close title="Close menu">&times;</a></li>
+	    <li class="has-submenu {{ dashboard|yesno:'is,not' }}-active">
+	      <a href="{% url 'vince:dashboard' %}"><i class="fa-fw fa-lg fas fa-tachometer-alt"></i> Dashboard</a>
+	    </li>
+            <li class="has-submenu {{ ticketpage|yesno:'is,not' }}-active">
+              <a href="{% url 'vince:ticketsearch' %}?owner={{ user.id }}"><i class="fa-fw fa-lg fas fa-clipboard-list"></i> Tickets</a>
+            </li>
+	    <li class="has-submenu {{ casepage|yesno:'is,not' }}-active">
+              <a href="{% url 'vince:casesearch' %}"><i class="fa-fw fa-lg fas fa-briefcase"></i> Cases</a>
+            </li>
+	    {% if user|contact_access %}
+	    <li class="has-submenu {{ contactpage|yesno:'is,not' }}-active">
+              <a href="{% url 'vince:searchcontacts' %}"><i class="fa-fw fa-lg fas fa-mobile-alt"></i>Contacts</a>
+	    </li>
+	    {% endif %}
+	    <li class="has-submenu {{ reportpage|yesno:'is,not' }}-active">
+              <a href="{% url 'vince:reports' %}"><i class="fa-fw fa-lg fas fa-chart-bar"></i> Reports</a></li>
+	    <li class="has-submenu {{ triagepage|yesno:'is,not' }}-active">
+              <a href="{% url 'vince:triage' %}"><i class="fa-fw fa-lg fas fa-notes-medical"></i> Triage</a></li>
+	    <li class="has-submenu {{ activitypage|yesno:'is,not' }}-active">
+	      <a href="{% url 'vince:activity' %}"><i class="fa-fw fa-lg fas fa-cogs"></i>
+		Activity</a></li>
+	    {% if user.is_staff %}
+	    <li class="has-submenu {{ emailpage|yesno:'is,not' }}-active">
+	      <a href="{% url 'vince:email' %}"><i class="fa-fw fa-lg far fa-paper-plane"></i>
+		Email</a></li>
+	    {% endif %}
+	    <li class="has-submenu {{ reminderpage|yesno:'is,not' }}-active">
+              <a href="{% url 'vince:reminders' %}"><i class="fa-fw fa-lg fas fa-stopwatch"></i>
+                Reminders</a></li>
+	    <!--<li class="has-submenu {{ triagepage|yesno:'is,not' }}-active">
+              <a href="{% url 'vince:triage' %}"><i class="fa-fw fa-lg fas fa-globe"></i> Management</a></li>-->
+	    <li class="has-submenu"><a href="{% url 'vince:casemgmt' %}">Case Templates</a></li>
+	    <li class="has-submenu"><a href="{% url 'vince:emailtmpls' %}">Email Templates</a></li>
+	    <li class="has-submenu"><a href="{% url 'vince:tags' %}">Tag Manager</a></li>
+            <li class="has-submenu"><a href="{% url 'vince:preferences' %}">Preferences</a></li>
+	    <li class="has-submenu"><a href="{% url 'vince:teams' %}">Teams</a></li>
+	    <li class="has-submenu"><a href="{% url 'vinny:dashboard' %}">VinceComm Dashboard</a></li>
+
+	    {% if user.is_staff %}
+            <li><a href="{% url 'admin:index' %}">Admin</a></li>
+	    <li><a href="{% url 'vince:useradmin' %}">User Admin</a></li>
+            {% endif %}
+            <li><a href="{% url 'vince:logout' %}">Log out</a></li>
+	  </ul>
+	</div>
+      </div>
+      <header id="header" class="header" data-sticky-container>
+        <div class="headernav" data-sticky data-options="marginTop:0;" style="width:100%" data-top-anchor="top-body:top">
+          <div class="title-bar {{ VINCE_DEV_SYSTEM }}">
+            <div class="title-bar-left">
+            </div>
+	    <div class="title-bar-right">
+              <div class="show-for-small-only text-right">
+                <button type="button" class="vulcoord-menu-btn" data-toggle="offCanvas"><i class="fas fa-bars"></i></button>
+              </div>
+              <div class="menu hide-for-small-only">
+                <ul class="dropdown menu" data-dropdown-menu>
+                  <li class="is-dropdown-submenu-parent"><a href="#">Hello, <b>{{ user.usersettings.vince_username }}</b></a>
+		    <ul class="menu">
+                      <li><a href="{% url 'vince:casemgmt' %}">Case Templates</a></li>
+		      <li><a href="{% url 'vince:emailtmpls' %}">Email Templates</a></li>
+		      <li><a href="{% url 'vince:tags' %}">Tag Manager</a></li>
+                      <li><a href="{% url 'vince:preferences' %}">Preferences</a></li>
+		      <li><a href="{% url 'vince:roles' %}">Triage</a></li>
+		      <li><a href="{% url 'vince:teams' %}">Teams</a></li>
+		      
+                      {% if user.is_staff %}
+                      <li><a href="{% url 'admin:index' %}">Admin</a></li>
+		      <li><a href="{% url 'vince:useradmin' %}">User Admin</a></li>
+                      {% endif %}
+		      <li><a href="{% url 'vince:logout' %}">Log out</a></li>
+                    </ul>
+		  </li>
+		</ul>
+	      </div>
+	    </div><!-- top bar right-->
+          </div><!-- topbar-->
+	  <div class="topbar-redbar">
+            <div class="row expanded">
+              <!-- logo -->
+              <div class="small-12 medium-6 large-8 columns">
+		<h1 class="vince_logo d-lg-none"><a href="{% url 'vince:dashboard' %}">VINCETrack</a> <small class="h2 subtitle">Vulnerability Information and Coordination Environment</small></h1>
+		<h1 class="vince_logo_small d-sm-none">
+		  <a href="{% url 'vince:dashboard' %}">VINCETrack</a> </h1>
+		
+		<!--<a href="{% url 'vince:index' %}"
+                    title="VINCE">
+                    <img border="0" src="{% static 'vince/css/images/largerVINCE.png' %}" class="vince_logo">
+		</a>-->
+                <!--<span class="vince-site-header"><h1><a href="{% url 'vince:index' %}">VINCETrack</a></h1>
+                    <h6>Vulnerability INformation and Coordination Environment</h6></span>-->
+              </div>
+              <div class="medium-6 large-4 small-12 columns">
+		{% if not searchpage %}
+		<div class="quicksearch">
+		  <form action="{% url 'vince:quicksearch' %}" method="GET" id="myform" name="queryForm">
+		    <div class="input-group">
+		      <input class="input-group-field form-control" name="searchbar" id="searchbar" type="search" placeholder="Search" required>
+		      <div class="input-group-button">
+			<button type="submit" class="button"><i class="fas fa-search"></i></button>
+		      </div>
+		    </div>
+		  </form>
+		</div>
+		{% endif %}
+              </div>
+            </div><!--row-->
+          </div><!--topbar-->
+        </div>
+      </header>
+
+      <div class="off-canvas-wrapper">
+        <div class="reveal-for-large off-canvas position-left navsidebar" id="TRoffCanvasLeft" data-off-canvas>
+          <div class="row column">
+	    <!--<div class="sticky" data-sticky data-anchor="content">-->
+            <ul class="vertical menu vincesidemenu">
+              <li class="has-submenu {{ dashboard|yesno:'is,not' }}-active">
+		<a href="{% url 'vince:dashboard' %}"><i class="fa-fw fa-lg fas fa-tachometer-alt"></i> Dashboard</a>
+              </li>
+              <li class="has-submenu {{ ticketpage|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:ticketsearch' %}?owner={{user.id}}"><i class="fa-fw fa-lg fas fa-clipboard-list"></i> Tickets</a>
+              </li>
+              <li class="has-submenu {{ casepage|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:casesearch' %}"><i class="fa-fw fa-lg fas fa-briefcase"></i> Cases</a>
+              </li>
+	      {% if user|contact_access %}
+              <li class="has-submenu {{ contactpage|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:searchcontacts' %}"><i class="fa-fw fa-lg fas fa-mobile-alt"></i>Contacts</a>
+	      </li>
+	      {% endif %}
+	      <li class="has-submenu {{ reportpage|yesno:'is,not' }}-active">
+		<a href="{% url 'vince:reports' %}"><i class="fa-fw fa-lg fas fa-chart-bar"></i> Reports</a></li>
+	      <li class="has-submenu {{ triagepage|yesno:'is,not' }}-active">
+		<a href="{% url 'vince:triage' %}"><i class="fa-fw fa-lg fas fa-notes-medical"></i> Triage</a></li>
+	      <li class="has-submenu {{ activitypage|yesno:'is,not' }}-active">
+		<a href="{% url 'vince:activity' %}"><i class="fa-fw fa-lg fas fa-cogs"></i> Activity</a></li>
+	      {% if user.is_staff %}
+	      <li class="has-submenu {{ emailpage|yesno:'is,not' }}-active">
+		<a href="{% url 'vince:email' %}"><i class="fa-fw fa-lg far fa-paper-plane"></i> Email</a></li>
+	      {% endif %}
+	      <li class="has-submenu {{ reminderpage|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:reminders' %}"><i class="fa-fw fa-lg fas fa-stopwatch"></i> Reminders</a></li>
+            </ul>
+	    <!--</div>-->
+	  </div>
+          <div class="row column tracklink">
+            <ul class="vertical menu"><li><a href="{% url 'vinny:dashboard' %}"><i class="fa-fw fa-lg fas fa-comment-dots"></i>VINCEComm Dashboard</a></li></ul>
+          </div>
+	</div>
+	<div class="reveal-for-medium show-for-medium-only position-left navsidebar off-canvas" id="TRoffCanvasLeft1" data-off-canvas>
+          <div class="row column">
+            <ul class="vertical menu vincesidemenu">
+	      <li class="has-submenu {{ dashboard|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:dashboard' %}"><i class="fa-fw fa-lg fas fa-tachometer-alt"></i></a>
+              </li>
+              <li class="has-submenu {{ ticketpage|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:ticketsearch' %}?owner={{user.id}}"><i class="fa-fw fa-lg fas fa-clipboard-list"></i></a>
+              </li>
+              <li class="has-submenu {{ casepage|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:casesearch' %}"><i class="fa-fw fa-lg fas fa-briefcase"></i></a>
+              </li>
+	      {% if user|contact_access %}
+              <li class="has-submenu {{ contactpage|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:searchcontacts' %}"><i class="fa-fw fa-lg fas fa-mobile-alt"></i></a>
+              </li>
+	      {% endif %}
+              <li class="has-submenu {{ reportpage|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:reports' %}"><i class="fa-fw fa-lg fas fa-chart-bar"></i></a>
+	      </li>
+	      <li class="has-submenu {{ triagepage|yesno:'is,not' }}-active">
+		<a href="{% url 'vince:triage' %}"><i class="fa-fw fa-lg fas fa-notes-medical"></i></a></li>
+	      <li class="has-submenu {{ activitypage|yesno:'is,not' }}-active">
+		<a href="{% url 'vince:activity' %}"><i class="fa-fw fa-lg fas fa-cogs"></i></a></li>
+	      {% if user.is_staff %}
+	      <li class="has-submenu {{ emailpage|yesno:'is,not' }}-active">
+		<a href="{% url 'vince:email' %}"><i class="fa-fw fa-lg far fa-paper-plane"></i></a></li>
+	      {% endif %}
+	      <li class="has-submenu {{ reminderpage|yesno:'is,not' }}-active">
+                <a href="{% url 'vince:reminders' %}"><i class="fa-fw fa-lg fas fa-stopwatch"></i></a></li>
+            </ul>
+	  </div>
+          <div class="row column tracklink">
+            <ul class="vertical menu"><li><a href="{% url 'vince:dashboard' %}"><i class="fa-fw fa-lg fas fa-comment-dots"></i></a></li></ul>
+          </div>
+	</div>
+	<div class="off-canvas-content" data-off-canvas-content>
+          <div class="vtmainbody">
+            {% block content %}
+            {% endblock %}
+	    <a href="#" class="scrollup"><i class="fas fa-arrow-up"></i></a>
+          </div>
+
+	  <div class="footer vtfooter">
+            <div class="commentbar">
+              <div class="row">
+                <div class="large-6 medium-6 medium-push-6 medium-text-right columns">
+                    <a href="https://github.com/CERTCC/VINCE" target="_blank" class="font-weight-bold">VINCE Help</a>
+                </div>
+		<div class="large-6 medium-6 medium-pull-6 columns">
+                  <i class="far fa-comments">&nbsp;</i>Do you have any comments? Give us <a href="{% url 'vinny:sendmsg' 8 %}" class="font-weight-bold">feedback</a>!
+                </div>
+              </div>
+            </div>
+            <div class="bottom-footer" id="bottom-footer">
+              <div class="row">
+                <div class="large-6 medium-6 small-4 columns text-left">
+		</div>
+                <div class="large-6 medium-6 small-12 columns">
+                  <div class="bottom-footer__copyright">
+                    <ul class="vertical menu medium-text-right text-left ul_nobullet">
+		      <li>
+			<div>© 2022 {{ ORG_NAME }}</div>
+		      </li>
+		      <li><div><a href="#" target="_blank" rel="noopener">Disclosure Policy</a></div></li>
+                      <li><div><a href="#" target="_blank" rel="nopener">Terms of Use</a></div></li>
+		      <li><div><span class="font-weight-bold">V.{{ VERSION }}</span></div></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div><!-- endfooter--->
+        </div><!--endmainbody-->
+      </div>
+      <!--</div>-->
+    </div>
+    <script type="text/javascript" src="{% static 'vince/js/foundation.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vince/js/vincefoundation.js' %}"></script>
+  </body>
+</html>

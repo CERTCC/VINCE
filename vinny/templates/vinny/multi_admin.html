@@ -1,0 +1,35 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load i18n humanize %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>My Organizations</h2>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-9 columns">
+    <div class="callout warning">
+      <p>You are the administrator of more than one group.  Please choose one of the following options to view and manage users:</p>
+    </div>
+  </div>
+  <div class="large-3 columns"></div>
+</div>
+{% for object in groups %}
+<div class="row">
+  <div class="large-9 columns">
+    <a href="{% url 'vinny:admin' object.contact.id %}">
+      <div class="callout secondary">
+	<h4>{{ object.contact.vendor_name }}</h4>
+    </div></a>
+  </div>
+  <div class="large-3 columns"></div>
+</div>
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,199 @@
+context:
+  ############################################################
+  # GENERAL STACK SETTINGS
+  ############################################################
+
+  # IP Ranges that have access to the Bastion on port 22, and the EB ELB and S3 buckets on port 443
+  allowed_cidr:
+    - :update:
+  #  - 128.0.0.0/8
+  env: dev
+  loglevel: DEBUG
+  stack_name: :update:
+  vince_stack_suffix: vince
+  vincecomm_stack_suffix: vincecomm
+  kb_stack_suffix: kb
+  aws_region: :update:
+  aws_account_id: :update:
+
+  vince_kb_namespace: vincepub
+  vince_track_namespace: vince
+  vince_comm_namespace: vinny
+
+  # vince dev banner: Set to 1 to display dev system banner
+  vince_dev_banner: 1
+
+  # SNS topics (used across multiple EB instances)
+  vince_pub_sns_arn: :update:
+  vince_pub_errors_sns_arn: :update:
+  vince_email_sns_arn: :update:
+  vince_email_bounce_sns_arn: :update:
+
+  vince_error_email_sender: VINCE Internal Notifications <:update:>
+  vince_error_email_recipients:
+    - :update:
+  #  - user@myorg.com
+
+  vince_no_reply_email_sender: :update:
+  vince_reply_email_sender: :update:
+
+  # Username to use when creating superuser secrets. This can be any string valid for an
+  # AWS Secrets username, including an email address.
+  superuser_username: :update:
+
+  ############################################################
+  # TAGS
+  ############################################################
+
+  # These tags will be applied to all resources in all stacks
+  tags:
+    owner: :update:
+    project: vince
+
+  ############################################################
+  # BASTION
+  ############################################################
+
+  # Creates a bastion host that can access EB EC2 instances and RDS instances
+  use_bastion: true
+  user_data: user_data/bastion.sh
+  ssh_key_name: :update:
+
+  ############################################################
+  # CERTIFICATES
+  ############################################################
+
+  # Domain names for the EB ELB. Certificates will be created for these domains.
+  # These are only used internally for the link from Cloudfront to EB. These
+  # assume AWS Route53 control of the domain specified.
+  kb_elb_domain_name: :update:
+  vince_elb_domain_name: :update:
+  vincecomm_elb_domain_name: :update:
+
+  # This switch is used to determine if we should use the (now deprecated)
+  # binxio certificate # management lambda stack, or if we should use the
+  # AWS stack. The original VINCE used binxio because AWS didn't provide
+  # the magic to validate certificates automatically. As of mid-2020, this
+  # is now possible.
+  #
+  # Default behavior as of 1/2021 is to use the AWS stack. Set this switch
+  # to "true" to DISABLE the AWS stack and use binxio. Omitting it
+  # altogether will result in default behavior.
+  #
+  #certs_use_binxio: true
+
+  ############################################################
+  # RDS
+  ############################################################
+
+  # Vince RDS Settings
+  vince_rds_initialize_db: true
+  vince_rds_from_snapshot: false
+  vince_rds_multi_az: true
+# TO-DONE: JDW SET SNAPSHOT IDENTIFIER
+# JDW NOTES: This doesn't actually work as-is. RDS requires password regeneration,
+#            which it then stores in a new secret attached to the RDS instance.
+#            It seems like it is not possible to get a reference to that new secret
+#            from within CDK (at least I haven't figured out how yet), so it can't
+#            be shared across the app stacks. We have a need to do that, so fail.
+  #vince_rds_snapshot_identifier: arn:aws:rds:redacted:redacted:snapshot:rds:redacted-2020-04-28-04-44
+
+  ############################################################
+  # Elastic Beanstalk
+  ############################################################
+
+  # General EB Settings
+  solution_stack: 64bit Amazon Linux 2 v3.3.9 running Python 3.8
+
+  # Hosted Zone for the ELB.
+  # Find the hosted zone id list here: https://docs.aws.amazon.com/general/latest/gr/elb.html
+  elb_hosted_zone_id: :update:
+
+  #generate using: "python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
+  #MAKE SURE THIS DOESN't have a $ in here or it breaks API key generation
+  django_secret_key: :update:
+
+  ############################################################
+  # KB Elastic Beanstalk Settings
+  ############################################################
+
+  kb_eb_asg_min_size: 1
+  kb_eb_asg_max_size: 5
+  kb_eb_app_instance_type: t2.micro
+  # This is the bucket *name* (not arn) for a S3 bucket in the same region as the EB
+  # application stacks. This bucket must be created prior to deployment. It is only
+  # used for an initial stack deployment.
+  kb_deployment_bucket: :update:
+  kb_deployment_key: bigvince.zip
+
+  # should we add dns rr?
+  kb_add_dns_rr: true
+
+  # Recaptcha secret key and site key for form validation
+  google_recaptcha_secret_key: :update:
+  google_site_key: :update:
+
+  ############################################################
+  # Vince Elastic Beanstalk Settings
+  ############################################################
+
+  vince_eb_asg_min_size: 1
+  vince_eb_asg_max_size: 5
+  vince_eb_app_instance_type: t2.small
+  # The vince deployment bucket name. This can be the same as the KB deployment bucket.
+  # The deployment key (filename) can also be the same.
+  vince_deployment_bucket: :update:
+  vince_deployment_key: bigvince.zip
+
+  # CVE Services API environment type
+  # Valid values are "prod" for production environments, and "test" otherwise.
+  cve_services_api: :update:
+
+  # The email storage bucket must be created outside of CDK.
+  email_bucket_arn: :update:
+
+  # should we add dns rr?
+  vince_add_dns_rr: true
+
+  # Cognito settings for Vince
+  # Users in this group are admins in VINCE
+  cognito_admin_group: :update:
+  cognito_app_id: :update:
+  cognito_user_pool_arn: :update:
+  cognito_user_pool_id: :update:
+  congito_region: :update:
+
+  ############################################################
+  # Vincecomm Elastic Beanstalk Settings
+  ############################################################
+  # NOTE: Most settings for vincecomm are taken from vince above.
+  #       Currently, there is one difference: Instance type.
+  vincecomm_eb_app_instance_type: t2.micro
+
+  ############################################################
+  # Cloudfront Settings
+  ############################################################
+
+  # Cloudfront Origin Access
+  # Cloudfront origin access id is static.
+  cloudfront_origin_access: ENN5A7WMN9XZ6
+  cloudfront_canonical_user_id: :update:
+
+
+  # Kb Cloudfront Distribution Settings
+  # Create a CloudFront distribution for kb
+  kb_cloudfront_create_dist: true
+  # This is the internet endpoint for vincepub and vincecomm
+  kb_cloudfront_domain_name: :update:
+  kb_cloudfront_alt_domains: [:update:]
+
+  # Vince Cloudfront Distribution Settings
+  # Create a CloudFront distribution for vince
+  vince_cloudfront_create_dist: true
+  # This is the internet endpoint for vincetrack
+  vince_cloudfront_domain_name: :update:
+  vince_cloudfront_alt_domains: [:update:]
+
+  # For WAF V2, we need the full arn here instead of just the ID
+  # This web acl is used to control access to the vince cloudfront endpoint
+  vince_web_acl_id: :update:

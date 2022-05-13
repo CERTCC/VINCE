@@ -1,0 +1,27 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form id="addvendorform" case="{{ case.id }}" action="{% url 'vince:addvendor' %}" reload="list">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add new vendor(s)</h5>
+      </div>
+      <div class="modal-body">
+        <div id="project-label">Search for a vendor:</div>
+        <small class="form-text text-muted">  (Type "Group:" to search groups)</small>
+        <input id="vendor" class="form-control" type="text" name="vendor" />
+        <p>Adding vendors (click submit to continue):</p>
+        <table class="hover unstriped" id="project-description">
+	</table>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input type="submit" class="primary button" value="Submit">
+      </div>
+    </div>
+  </form>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

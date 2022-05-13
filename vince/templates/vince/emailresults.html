@@ -1,0 +1,80 @@
+{% load i18n humanize %}
+<div class="blog-post">
+  
+  <div class="row">
+    <div class="large-12 columns">
+      {% if total %}
+      <div class="resultCount"> Showing results {{ object_list.start_index }} - {{ object_list.end_index }} of {{ total }} Results </div>
+      {% elif paginator.count %}
+      <div class="resultCount"> {{ paginator.count }} Results </div>
+      {% endif %}
+    </div>
+  </div>
+
+{% if object_list %}
+  {% for email in object_list %}
+  <div class="email-list-item">
+    <a href="{{ email.ticket.get_absolute_url }}">
+      <div class="row">
+	<div class="large-3 columns">
+	  {% if email.email_type == 2 %}
+	  <i class="fas fa-key" title="PGP"></i>
+	  {% elif email.email_type == 3 %}
+	  <i class="fas fa-certificate" title="SMIME"></i>
+	  {% endif %}
+	  {% if email.to|length > 25 %}
+	  {{ email.to|slice:":25" }}...
+	  {% else %}
+	  {{ email.to }}
+	  {% endif %}
+	</div>
+	<div class="large-7 columns">
+	  [{{ email.ticket.ticket_for_url }}]
+	  {{ email.notification.subject|slice:":100" }}
+	  <span class="text-muted">{{ email.notification.email_body|truncatewords:25 }}</span>
+	</div>
+	<div class="large-2 columns">
+	  {{ email.created|date:"Y-m-d"}}
+	</div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+  <div class="row column text-center">
+    <ul class="pagination" role="navigation" aria-label="Pagination">
+      {% if object_list.has_previous %}
+      <li class="pagination-previous"><a href="#" next="{{ object_list.previous_page_number }}" class="search_notes">Previous</a></li>
+      {% else %}
+      <li class="pagination-previous disabled">Previous</li>
+      {% endif %}
+      {% for i in object_list.paginator.page_range %}
+      {% if object_list.number == i %}
+      <li class="current"><span class="show-for-sr">You're on page</span> {{ object_list.number }}</li>
+      {% elif i > object_list.number|add:'-3' and i < object_list.number|add:'3' %}
+						      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+						      {% else %}
+						      {% if i == 1 %}
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      <li class="ellipsis"></li>
+      {% elif forloop.last %}
+      <li class="ellipsis"></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      {% if object_list.has_next %}
+      <li class="pagination-next"><a href="#" next="{{ object_list.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
+      {% else %}
+      <li class="pagination-next disabled">Next</li>
+      {% endif %}
+    </ul>
+  </div>
+  {% else %}
+  <br/>
+  <h3> No Results Found </h3>
+  <br/>
+  <br/>
+  {% endif %}
+</div>
+
+

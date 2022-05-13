@@ -1,0 +1,12 @@
+option_settings:
+  "aws:elasticbeanstalk:container:python":
+    NumProcesses: '1'
+    NumThreads: '15'
+    StaticFiles: /static/=static/
+    WSGIPath: bigvince/wsgi.py
+  "aws:elasticbeanstalk:container:python:staticfiles":
+    /static/: vince/static/
+  "aws:elasticbeanstalk:application":
+    "Name": default
+    "Application Healthcheck URL": /vince
+

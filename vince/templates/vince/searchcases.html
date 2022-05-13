@@ -1,0 +1,122 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Case Search" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/case_search.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Cases</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      <a href="{% url 'vince:newcr' %}?case=1"><button class="cmu button"><i class="fas fa-plus"></i> New Case</button></a>
+    </div>
+  </div>
+</div>
+
+<form action="" method="post" enctype="multipart/form-data" name="searchform" id="searchform">
+  <div class="row">
+    <div class="large-4 medium-5 small-6 columns">
+      {% with WIDGET_ERROR_CLASS='searchform_error' %}
+      {% csrf_token %}
+      {% render_field form.wordSearch errormsg=form.wordSearch.errors|first %}
+      {% render_field form.tag %}
+    </div>
+    <div class="large-2 columns medium-1 small-6">
+      <div class="dropdown-pane" id="status-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="row column">
+          <div class="form-check border-bottom mb-2 pb-2">
+            <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
+            <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
+          </div>
+          {% render_field form.status %}
+          <div class="filter-by-dropdown__dropdown-footer">
+          </div>
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="status-dropdown">
+          Status
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+    <div class="large-2 columns medium-2 small-6">
+      <div class="dropdown-pane" id="owner-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="row column">
+          <div class="form-check border-bottom mb-2 pb-2">
+            <input id="filter_by_dropdown_select_all_1" type="checkbox" class="form-check-input">
+            <label for="filter-by_dropdown_select_all_1" class="form-check-label"> Select all </label>
+          </div>
+          {% render_field form.owner %}
+          <div class="filter-by-dropdown__dropdown-footer">
+          </div>
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="owner-dropdown">
+          Owner
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+    <div class="large-2 columns medium-2 small-6">
+      <div class="dropdown-pane" id="team-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+	<div class="row column">
+          <div class="form-check border-bottom mb-2 pb-2">
+            <input id="filter_by_dropdown_select_all_3" type="checkbox" class="form-check-input">
+            <label for="filter-by_dropdown_select_all_3" class="form-check-label"> Select all </label>
+          </div>
+          {% render_field form.team %}
+	  <div class="filter-by-dropdown__dropdown-footer">
+          </div>
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="team-dropdown">
+          Team
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+    <div class="large-2 columns medium-4 hide-for-small-only">
+      <div class="dropdown-pane" id="date-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+        <div class="input-group">
+          <span class="input-group-label">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+          {% render_field form.datestart class="input-group-field" placeholder="Start Date" %}
+        </div>
+        <div class="input-group">
+          <span class="input-group-label">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+          {% render_field form.dateend class="input-group-field" placeholder="End date" %}
+        </div>
+        <div class="filter-by-dropdown__dropdown-footer">
+        </div>
+      </div>
+      <div class="filter-by-dropdown">
+        <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="date-dropdown">
+          Date
+          <i aria-hidden="true" class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div><input type="hidden" name="page" id="id_page" value="1"></div>
+  {% endwith %}
+</form>
+<div id="searchresults">
+  <p class="loading text-center"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></p>
+</div>
+{% endblock %}
+
+

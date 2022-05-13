@@ -1,0 +1,168 @@
+/* 
+    CodeMirror, copyright (c) by Marijn Haverbeke and others
+    Distributed under an MIT license: https://codemirror.net/LICENSE
+*/
+
+.CodeMirror-hints {
+  position: absolute;
+  z-index: 10;
+  overflow: hidden;
+  list-style: none;
+
+  margin: 0;
+  padding: 2px;
+
+  -webkit-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+  -moz-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+  box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+  border-radius: 3px;
+  border: 1px solid silver;
+
+  background: white;
+  font-size: 90%;
+  /*font-family: monospace;*/
+
+  max-height: 20em;
+  overflow-y: auto;
+}
+
+.CodeMirror-hint {
+  margin: 0;
+  padding: 0 4px;
+  border-radius: 2px;
+  white-space: pre;
+  color: black;
+  cursor: pointer;
+}
+
+li.CodeMirror-hint-active {
+  background: #08f;
+  color: white;
+}
+
+.user-card {
+  width: 280px;
+}
+
+.user-card .card-left {
+  float: left;
+  width: 70px;
+}
+
+.user-card .card-right {
+  float: right;
+  width: 210px;
+  padding-left: 4px;
+  box-sizing: border-box;
+}
+
+.user-card .card-left img{
+  width: 64px;
+  height: 64px;
+}
+
+.user-card .card-right .name{
+  font-size: 14px;
+  font-weight: bold;
+  padding-bottom: 8px;
+}
+
+.user-card .card-right .subitem{
+  font-size: 12px;
+}
+
+.user-card .card-right .subitem a{
+  color: #00b3ff;
+}
+
+.card-user-container {
+    margin-bottom: 1rem;
+    margin-top: 0.5em;
+    background-color: #fefefe;
+    color: #0a0a0a;
+    overflow: hidden;
+    padding: 0;
+    border-radius: 0;
+}
+
+.card-user-container .card-user-avatar {
+    padding: 0.5em;
+}
+
+
+.card-user-container .card-user-avatar img.user-image {
+  display: block;
+  margin: auto;
+  border-radius: 50%;
+  width: 8.875rem;
+  height: 8.875rem;
+  padding: 0.7375rem;
+}
+
+.card-user-container .card-user-avatar div.user-image {
+  display: block;
+  /*margin: 10px 10px 0px 10px;*/
+  margin: auto;
+  border-radius: 20%;
+  width: 6.875rem;
+  height: 6.875rem;
+  padding: 0.7375rem;
+}
+
+
+.card-user-container .card-user-avatar .user-image .logo-initial{
+    font-size:62px;
+    line-height: 6.0rem;
+}
+    
+
+.card-user-container .card-user-avatar .user-image:hover {
+  -webkit-transform: scale(1.1);
+      -ms-transform: scale(1.1);
+          transform: scale(1.1);
+}
+
+.card-user-container .card-user-bio {
+  padding: 1rem;
+  text-align: center;
+}
+
+.card-user-container .card-user-bio .location {
+  display: inline-block;
+  margin: 0 0.9375rem;
+  color: #767676;
+  font-size: 0.875rem;
+}
+
+.card-user-container .card-user-bio .location-icon,
+.card-user-container .card-user-bio .location-text {
+  display: inline-block;
+  padding: 0 0.3125rem;
+}
+
+.card-user-container .card-user-social {
+  background: #e6e6e6;
+  padding: 1rem;
+  text-align: center;
+}
+
+.card-user-container .card-user-social ul {
+  display: inline-block;
+}
+
+.card-user-container .card-user-social ul li {
+  margin: 0 10px;
+  font-size: 1.2em;
+  cursor: pointer;
+}
+
+.card-user-container .card-user-social ul li:hover {
+  -webkit-transform: scale(1.1);
+      -ms-transform: scale(1.1);
+          transform: scale(1.1);
+}
+
+.card-user-container .card-user-button {
+  text-align: center;
+  padding: 1rem;
+}

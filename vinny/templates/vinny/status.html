@@ -1,0 +1,165 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n post_tags markdown_extras %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Case" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vinny/js/vendors.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Case <a href="{% url 'vinny:case' case.id %}">{{ case.get_title }}</a></h2>
+    </div>
+  </div>
+</div>
+
+<div class="row cert_message">
+  <div class="large-12 columns">
+    <div class="row column">
+      {% with checkvuls=vuls %}
+      {% if checkvuls|length > 1 %}
+      <h3>Is your organization (<i>{{org_name}}</i>) affected by the following vulnerabilities?</h3>
+      {% else %}
+      <h3>Is your organization (<i>{{org_name}}</i>) affected by this vulnerability?</h3>
+      {% endif %}
+      <p>The list of vendors that are involved in this coordination effort will be included in any published report.  Please provide your status so we can accurately reflect your status in our published vulnerability note. All statements and references provided below will also be included in the vulnerability note on <a href="{% url 'vincepub:index' %}" target="_blank">our website</a>.</p>
+      <hr>
+      {% for message in messages %}
+      
+      <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
+      {% endfor %}
+      
+      {% if vuls|length > 1 %}
+      <div class="row">
+	<div class="large-8 columns medium-12">
+	  <div id="select-all-menu">
+	    <ul class="dropdown menu" data-dropdown-menu>
+	      <li class="is-dropdown-submenu-parent">
+		<button class="dropdown button small" data-toggle="dropbutton">Select All</button>
+		<ul class="menu">
+		  <li><a href="#" id="select_all_affected">Select all Affected</a></li>
+		  <li><a href="#" id="select_all_notaffected">Select all Not Affected</a></li>
+		  <li><a href="#" id="select_all_unknown">Select all Unknown</a></li>
+		</ul>
+	      </li>
+	    </ul>
+	  </div>
+	</div>
+	<div class="large-4 columns medium-12  text-center">
+	  <h3>Recent Activity</h3>
+	</div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="row">
+      <div class="large-8 columns">
+	<form method="post" id="updatestatus" action="{{ action }}"> 
+	  {% csrf_token %}
+	  
+	  <ul class="allstatus">
+	    {% for vul in vuls %}
+	    <li>
+	      <div class="row">
+		<div class="large-4 medium-4 columns">
+		  <b><a href="{% url 'vinny:vuldetail' vul.id %}">{{ vul.vul }}</a></b> 
+		</div>
+		<div class="large-3 medium-3 columns">
+		  <select name="status_{{vul.id}}" autocomplete="off">
+		    {% with s1=status|vulstatus:vul %}
+                    <option value="unknown" {% if s1 == 3 %} selected {% endif %}>Unknown</option>
+                    <option value="affected" {% if s1 == 1 %} selected {% endif %}>Affected</option>
+                    <option value="unaffected" {% if s1 == 2 %} selected {% endif %}>Not Affected</option>
+		    {% endwith %}
+		  </select>
+		</div>
+	      <div class="large-3 medium-3 columns text-center">
+		
+		{% if checkvuls|length > 1 %}
+		{% if vendor_id %}
+		<a href="{% url 'vinny:providestmt' vul.id vendor_id %}" class="providestatement" title="Provide a statement for this specific vulnerability">
+		  {% else %}
+		  <a href="{% url 'vinny:providestmt' vul.id %}" class="providestatement" title="Provide a statement for this specific vulnerability">
+		    {% endif %}
+		  <button class="primary button" id="stmtbutton{{vul.id}}">{% if status|has_statement:vul %}Edit Statement{% else %}Provide Statement{% endif %}</button></a>
+		{% else %}
+		{% if status|vulapproved:vul %}<span class="label success">Approved</span>
+                {% else %}<span class="label warning">Pending Approval</span>
+                {% endif %}
+		{% endif %}
+	      </div>
+	      <div class="large-2 medium-2 columns text-left">
+		{% if checkvuls|length > 1 %}
+		{% if status|vulapproved:vul %}<span class="label success">Approved</span>
+		{% else %}<span class="label warning">Pending</span>
+		{% endif %}
+		{% endif %}
+	      </div>
+	    </div>
+	    <div class="row">
+	      <div class="large-12 columns">
+		{{ vul.description }}
+	      </div>
+	    </div>
+	  </li>
+	  {% endfor %}
+	</ul>
+      <div class="reveal small" id="providestatement" data-reveal></div>
+      <div class="statement">
+	{% for field in form %}
+        <div class="form-group">
+          <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %}
+	    <span class='required'>*</span>{% endif %}</label>
+	  {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+          {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+	  
+	  {% if field.name == "share" %}
+	  <div class="switch small">
+            {% render_field form.share class="switch-input" %}
+            <label class="switch-paddle" for="{{ form.share.auto_id }}">
+              <span class="show-for-sr">Share?</span>
+              <span class="switch-active" aria-hidden="true">Yes</span>
+              <span class="switch-inactive" aria-hidden="true">No</span>
+            </label>
+	  </div>
+	  {% else %}
+          {{ field }}
+	  {% endif %}
+	</div>
+	{% endfor %}
+      </div>
+
+
+      <div class="row column">
+	<input type="submit" class="primary button" value="Save">
+	<a href="{% url 'vinny:case' case.id %}" class="default button">Cancel</a>
+					     
+      </div>
+      {% endwith %}
+	</form>
+      </div>
+      <div class="large-4 columns">
+	{% for item in activity %}
+	<article class="article-row">
+	  <div class="article-row-img">
+	    {% autoescape off %}{% if item.action.user %}{{ item.action.user|userlogo:"profile-pic" }}{% endif %}{% endautoescape %}
+	  </div>
+	  <div class="article-row-content">
+	    <p class="article-row-content-description">{{ item.action.title }}
+	      {% if item.field == "status" %} from {{ item.old_value|statusvalue }} to {{ item.new_value|statusvalue }}{% endif %}
+	      
+	  </p>
+	    <time class="article-row-content-time"><i class="far fa-clock"></i> {{ item.action.created|date:"Y-m-d" }} ({{ item.action.created|timesince }} ago)</time>
+	  </div>
+	</article>
+	    
+	{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% autoescape off %}
+NEW VULNERABILITY REPORT
+========================
+
+* {{ vrf_id }}
+* Title: {{ product_name }}
+* Date Submitted: {{ vrf_date_submitted }}
+
+
+Coordination Status:
+====================
+
+{% if comm_attempt == "True" %}
+* Reporter contacted vendor: {{ comm_attempt }}
+
+* Date Contacted: {{ first_contact }}
+
+* Please describe any previous or ongoing communications with the vendor:
+{{ vendor_communication }}
+
+{% else %}
+* Reporter DID NOT attempt to contact vendor
+
+{% if why_no_attempt %}
+* Why not? {{ coord_choice }}
+{% endif %}
+
+{% if please_explain %}
+* Explanation {{ please_explain }}
+{% endif %}
+
+{% endif %}
+
+Vendor:
+=======
+
+* Organization: {{ vendor_name }}
+
+* Are multiple vendors affected? {{ multiplevendors }}
+{% if multiplevendors == "True" %}
+* Other affected vendors:
+{{ other_vendors }}{% endif %}
+
+
+Vulnerability:
+==============
+
+* Software/Product(s) name containing the vulnerability:
+{{ product_name }}
+
+* Software/Product(s) version number(s) containing the vulnerability:
+{{ product_version }}
+
+* Significant ICS/OT Impact? {{ ics_impact }}
+
+* Please describe the vulnerability:
+{{ vul_description }}
+
+* How may an attacker exploit this vulnerability?
+{{ vul_exploit }}
+
+* What is the impact of exploiting this vulnerability?
+{{ vul_impact }}
+
+* How did you find the vulnerability?
+{{ vul_discovery }}
+
+* Is this vulnerability being publicly discussed?  {{ vul_public }}
+{% if vul_public == "True" %}* Please explain and provide references:
+{{ public_references }}{% endif %}
+
+* Is there evidence that this vulnerability is being actively exploited? {{ vul_exploited }}
+{% if vul_exploited == "True" %}* Please explain and provide references:
+{{ exploit_references }}{% endif %}
+
+* Do you have plans to publicly disclose this vulnerability? {{ vul_disclose }}
+{% if vul_disclose == "True" %}* Please explain and indicate a target date, if chosen:
+{{ disclosure_plans }}{% endif %}
+
+
+Attached File:
+==============
+
+* Attached Filename : {{ user_file }}
+* S3 Filename: {{ s3_file_name }}
+* Attached Link: {{ attach_link }}
+{% if errors_with_attachments %}
+* Errors with attaching/tagging file: {{ errors_with_attachments }}
+{% endif %}
+
+Additional Information:
+=======================
+
+* CERT Tracking ID: {{ tracking }}
+
+* Additional Comments:
+{{ comments }}
+
+
+Reporter:
+=========
+* Name: {{ contact_name }}
+* Organization: {{ contact_org }}
+* Email: {{ contact_email }}
+* Telephone: {{ contact_phone }}
+
+* May we provide your contact information to the vendor? {{ share_release }}
+
+* Do you want to be publicly acknowledged? {{ credit_release }}
+
+* PGP Key: {% if reporter_pgp %}Attached{% else %}Not provided{% endif %}
+{{ reporter_pgp }}
+
+Meta:
+=====
+
+* Remote IP: {{ remote_addr }}
+* Remote Host: {{ remote_host }}
+* HTTP Referer: {{ http_referer }}
+* HTTP User Agent: {{ http_user_agent }}
+
+{% endautoescape %}

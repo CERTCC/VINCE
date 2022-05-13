@@ -1,0 +1,59 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize widget_tweaks%}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/fullcalendar/main.js' %}"></script>
+<link href="{% static 'vince/js/fullcalendar/main.css' %}" rel="stylesheet" />
+<script type="text/javascript" src="{% static 'vince/js/triageperson.js' %}"></script>
+
+
+{% endblock %}
+{% block content %}
+</script>  
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Triage Schedule for {{ user_groups|join:", "}}</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      Triage:</a>{% if triage_user %} {% for triage in triage_user %}{{ triage.usersettings.vince_username }} {% endfor %}{% else %}  <b>Unassigned</b>{% endif %}
+    </div>
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div id="modal" class="reveal" data-reveal href="{% url 'vince:triage_add' %}"></div>
+<div id="rmmodal" class="reveal" data-reveal href="{% url 'vince:triage_remove' %}"></div>
+
+<div class="row">
+  <div class="large-10 columns">
+    <div id="calendar-wrap">
+      <div id="calendar"></div>
+    </div>
+  </div>
+  <div class="large-2 columns">
+    <div id="external-events">
+      <h4>Events <span class="helptooltip" id="showcharttip" title="Drag and drop events on calendar"><i class="fas fa-question-circle"></i></span></h4>
+      <div id='external-events-list'>
+	<div class='fc-event fc-h-event fc-daygrid-event fc-daygrid-block-event oof_event'>
+          <div class='fc-event-main oof'>Out of Office</div>
+	</div>
+	<div class='fc-event fc-h-event fc-daygrid-event fc-daygrid-block-event triage_event'>
+          <div class='fc-event-main triage'>Triage</div>
+	</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

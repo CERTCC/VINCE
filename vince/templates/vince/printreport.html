@@ -1,0 +1,280 @@
+{% load report_tags ticket_to_link %}
+<html>
+  <head>
+    <style>
+      table, th, td {
+      border: 1px solid black;
+      }
+      
+      th, td {
+      padding: 10px;
+      }
+    </style>
+  <title>Report for {{ monthstr }} {{ year }}</title>
+  </head>
+  <body>
+    <h2>Report for {{ monthstr }} {{ year }}</h2>
+
+    <h3>Vulnerability Notes</h3>
+    <table>
+      <tr>
+	<td>
+	  New Notes
+	</td>
+	<td>
+	{{ newnotes | length }}
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  Updated Notes
+	</td>
+	<td>
+	  {{ updated | length }}
+	</td>
+      </tr>
+    </table>
+    {% if newnotes %}
+    <h3>New Vulnerability Notes</h3>
+    <table>
+      <tr>
+	<th>Title</th>
+	<th>Date Published</th>
+      </tr>
+      {% for note in newnotes %}
+      <tr>
+	<td>
+	  {{ note.vutitle }}
+	</td>
+	<td>
+	  {{ note.vulnote.date_published|date:"Y-m-d"}}
+	</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    {% if updated %}
+    <h3>Updated Vulnerability Notes</h3>
+    <table>
+      <tr>
+	<th>Title</th>
+	<th>Date Last Published</th>
+      </tr>
+      {% for note in updated %}
+      <tr>
+        <td>
+          {{ note.vu_vuid }}
+        </td>
+	<td>
+          {{ note.vulnote.date_last_published|date:"Y-m-d"}}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
+    <h3> Emails </h3>
+    <table>
+      <tr>
+	<td>
+	  Total Emails
+	</td>
+	<td>
+	  {{ total_emails }}
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  Ticket Emails
+	</td>
+	<td>
+	  {{ ticket_emails | length }}
+	</td>
+      </tr>
+            <tr>
+        <td>
+          Case Emails
+        </td>
+        <td>
+          {{ case_emails | length }}
+        </td>
+	    </tr>
+	                <tr>
+        <td>
+          Distinct Cases
+        </td>
+        <td>
+          {{ case_emails_distinct }}
+        </td>
+            </tr>
+    </table>
+
+    <h3>Cases</h3>
+    <table>
+      <tr>
+        <td>
+          New Cases
+        </td>
+        <td>
+          {{ case_stats.new_cases | length }}
+
+        </td>
+      </tr>
+      <tr>
+        <td>
+	  Active Cases
+        </td>
+        <td>
+          {{ case_stats.active_cases | length }}
+        </td>
+      </tr>
+      <tr>
+	<td>
+          Deactivated Cases
+	</td>
+	<td>
+          {{ case_stats.deactive_cases | length }}
+	</td>
+      </tr>
+      <tr>
+	<td>
+          Reactivated Cases
+	</td>
+	<td>
+          {{ case_stats.to_active_cases | length }}
+	</td>
+      </tr>
+    </table>
+
+    {% if case_stats.new_cases %}
+    <h3>New Cases</h3>    
+    <table>
+      <tr>
+	<th>Case Name</th>
+	<th>Date Created</th>
+	</tr>
+      {% for note in case_stats.new_cases %}
+      <tr>
+	<td>
+	  {% if note|case_access:user %}{{ note.vutitle }}{% else %}{{ note.vu_vuid }}{% endif %}
+	</td>
+	<td>
+	  {{ note.created|date:"Y-m-d" }}
+	</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    {% if case_stats.deactive_cases %}
+    <h3>Deactivated Cases</h3>
+    <table>
+      <tr>
+        <th>Case Name</th>
+        <th>Date Deactivated</th>
+        </tr>
+      {% for note in case_stats.deactive_cases %}
+      <tr>
+        <td>
+          {% if note.case|case_access:user %}{{ note.case.vutitle }}{% else %}{{ note.case.vu_vuid }}{% endif %}
+        </td>
+        <td>
+          {{ note.date|date:"Y-m-d" }}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
+    {% if case_stats.to_active_cases %}
+    <h3>Reactivated Cases</h3>
+    <table>
+      <tr>
+        <th>Case Name</th>
+        <th>Date Reactivated</th>
+        </tr>
+      {% for note in case_stats.to_active_cases %}
+      <tr>
+        <td>
+          {% if note.case|case_access:user %}{{ note.case.vutitle }}{% else %}{{ note.case.vu_vuid }}{% endif %}
+        </td>
+        <td>
+          {{ note.date|date:"Y-m-d" }}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
+    {% if fwd_reports %}
+    <h3>Forwarded Reports</h3>
+    <table>
+      <tr>
+	<th>Title</th>
+	<th>Date</th>
+      </tr>
+      {% for r in fwd_reports %}
+      <tr>
+	<td> [{{ r.ticket.queue }}-{{ r.ticket.id }}] {{ r.ticket.title }}</td>
+	<td> {{ r.date|date:"Y-m-d" }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    
+    
+    {% if total_tickets %}
+    <h3>Tickets Opened</h3>
+    <table>
+      <tr>
+        <th>Queue</th>
+        <th>Count</th>
+      </tr>
+      {% for tkt in ticket_stats %}
+      <tr>
+        <td>{{ tkt.queue__title }}</td><td>{{ tkt.count }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    {% if total_closed %}
+    <h3>Tickets Closed</h3>
+    <table>
+      <tr>
+        <th>Close Reason</th>
+        <th>Count</th>
+      </tr>
+      {% for tkt in closed_ticket_stats %}
+      <tr>
+        <td>{{ tkt.close_reason|close_reason_display }}</td><td>{{ tkt.count }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    <h3>Users</h3>
+    <table>
+      <tr>
+        <th>Users Registered {{ monthstr }} {{ year }}</th>
+        <th>{{ new_users }}</th>
+      </tr>
+      <tr>
+        <th>Total Users</th>
+        <th>{{ total_users }}</th>
+      </tr>
+      <tr>
+        <th>Vendors</th>
+        <th>{{ vendors }}</th>
+      </tr>
+      <tr>
+        <th>Vendor Users</th>
+        <th>{{ vendor_users }}</th>
+      </tr>
+    </table>
+
+	 
+	  
+		  
+
+
+
+  </body>
+  </html>

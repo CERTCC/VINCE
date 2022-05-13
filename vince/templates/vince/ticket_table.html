@@ -1,0 +1,186 @@
+{% load i18n humanize ticket_to_link %}
+{{ old_tags|json_script:"old_tags" }}
+{{ other_tags|json_script:"other_tags" }}
+{{ assignable|json_script:"assignable" }}
+
+<div class="row align">
+  <div class="large-9 medium-8 small-12 columns">
+    <h3>{{ ticket.title|email_to_user }}</h3>
+    <p>Submitted by
+      {% if message %}
+      <a href="{% url 'vince:vinny_redirect' %}?next={% url 'vinny:thread_detail' message.thread %}"> {{ ticket.submitter_email }}</a>
+      {% elif vincecomm_user %}
+      <a href="{% url 'vince:vcuser' vincecomm_user.id %}">VINCE User: {{ vincecomm_user.vinceprofile.vince_username }} [{{ vincecomm_user.email }}]</a>
+      {% else %}{{ ticket.reporter_name }} [{{ ticket.submitter_email }}]{% endif %} on {{ ticket.created|date:"Y-m-d, H:i" }} </p>
+  </div>
+  <div class="large-3 medium-4 small-12 columns">
+    <button class="button default dropdown menu float-right" data-dropdown-menu type="button" data-toggle="wanttomenu" aria-haspopup="true" aria-expanded="false" id="iwanttobutton">
+      I want to</button>
+    <div class="dropdown-pane hoverable bottom" id="wanttomenu" data-dropdown data-hover="true" data-hover-pane="true">
+      <ul class="menu vertical">
+	<li><a class="dropdown-item" id="quickclose" href="#comment">{% trans "Quick close ticket" %}</a></li>
+	<li><a class="dropdown-item" id="assignteam" href="{% url 'vince:assignteam' ticket.id %}">{% trans "Assign new team" %}</a></li>
+        <li><a class="dropdown-item" href="#comment">{% trans "Comment" %}</a></li>
+        <li><a class="dropdown-item" href="#comment">{% trans "Change Status" %}</a></li>
+        {% if ticket %}
+        <li><a class="dropdown-item" href="{% url 'vince:edit' ticket.id %}">{% trans "Edit Ticket" %}</a></li>
+        <li><a class="dropdown-item" href="#">Watch this ticket</a></li>
+        {% if ticket.on_hold %}
+        <li><a class="dropdown-item" href="{% url 'vince:unhold' ticket.id %}">{% trans "Unhold Ticket" %}</a></li>
+        {% else %}
+        <li><a class="dropdown-item" href="{% url 'vince:hold' ticket.id %}">{% trans "Hold Ticket" %}</a></li>
+        {% endif %}
+	<li><a class="dropdown-item" href="{% url 'vince:editcr' ticket.id %}">{% trans "Edit Submission" %}</a></li>
+        <li><a class="dropdown-item adddependency" action="{% url 'vince:adddep' ticket.id %}">{% trans "Add Dependency" %}</a></li>
+        {% if case %}{% else %}
+	{% if user.is_superuser %}
+        <li><a class="dropdown-item" data-open="deleteticket">{% trans "Delete this Ticket" %}</a></li>
+	{% endif %}
+	{% endif %}
+	<li><a class="dropdown-item" href="{% url 'vince:newemailtkt' ticket.id %}">{% trans "Encrypt and Send" %}</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% if ticket.resolution %}
+<div class="row">
+  <div class="large-12 columns">
+    <label for="resolution">{% trans "Ticket Resolution" %}
+    {% ifequal ticket.get_status_display "Resolved" %}
+    <a href='?close'>
+      <button type="button"
+              class="button assignme alert tiny">{% trans "Accept and Close" %}</button>
+    </a>{% else %} <a href="{% url 'vince:editres' ticket.id %}" id="editres" title="edit resolution"><i class="fas fa-edit"></i></a>{% endifequal %}</label>
+    {{ ticket.resolution|force_escape|smarter_urlize:75|linebreaksbr }}
+  </div>
+</div>
+{% elif ticket.get_status_display in "Resolved,Closed" %}
+<div class="row">
+  <div class="large-12 columns">
+    <label for="resolution">{% trans "Ticket Resolution" %}
+    <a href="{% url 'vince:editres' ticket.id %}" id="editres" title="edit resolution">
+      <button type="button" class="button assignme tiny">{% trans "Add resolution" %}</button>
+    </a>
+    </label>
+  </div>
+</div>
+{% endif %}
+
+<div class="hidden" id="reassignblock">
+<span class="assigned_to_name">{{ user.usersettings.preferred_username }}</span> <strong><button type="button" id="reassign" class="button default tiny assignme"><i class="far fa-hand-paper"></i>&nbsp;{% trans "Reassign" %}</button></strong>
+</div>
+
+<div class="row">
+  <div class="large-4 columns align-middle">
+    <label for="Assigned to">Assigned to</label>
+    <span id="assign_block">
+      <div id="user_assign">
+        <select name="user_assign" id="uassign">
+	  {% if auto_assign %}
+	  <option value="-2">Auto Assign</option>
+	  {% endif %}
+	  {% if ticket.assigned_to.id %}
+          <option value="{{ ticket.assigned_to.id }}">{{ ticket.get_assigned_to }}</option>
+	  {% endif %}
+          {% for user in assignable_users %}
+          <option value="{{user.id}}">{{ user.usersettings.preferred_username }}</option>
+          {% endfor %}
+	  <option value="0">Unassign</option>
+        </select><button type="button" id="assign_submit"><i class="fas fa-check"></i></button><button type="button" id="assign_cancel"><i class="fas fa-times"></i></button></div></span><span class="assigned_to"> <span class="assigned_to_name"> {{ ticket.get_assigned_to }} </span> <strong><button type="button" id="reassign" class="button default tiny assignme"><i class="far fa-hand-paper"></i>&nbsp;{% trans "Reassign" %}</button></strong>
+    </span>
+  </div>
+  <div class="large-3 columns">
+    <label for="due_date">Due Date</label>
+    {{ ticket.due_date|date:"r" }} ({{ ticket.due_date|naturaltime }})
+  </div>
+  <div class="large-3 columns">
+    <label for="contact">Contact</label>
+    <ul class="no_bullet">
+    {% for contact in ticket.ticketcontact_set.all %}
+    <li><a href="{% url 'vince:contact' contact.contact.id %}">{{ contact.contact.vendor_name }}</a></li>
+    {% empty %}
+    None
+    {% endfor %}
+    </ul>
+  </div>
+	  
+
+
+  <div class="large-2 columns">
+    <label for="priority">{% trans "Priority" %}</label>
+    <span class="label {{ ticket.get_priority_css }}">{{ ticket.get_priority_display }}</span>
+  </div>
+  
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+      <label for="description">Description</label>
+      <div class="long_text_container">
+	<div class="text_container textheightlong">
+	  <div class="text_content">
+	    
+	    {{ ticket.description|force_escape|smarter_urlize:75|linebreaksbr }}
+	  </div>
+	</div>
+        <div class="showfull moretext"><i class="fas fa-arrow-down"></i>  Show More</div>
+        <div class="showfull lesstext"><i class="fas fa-arrow-up"></i> Show Less</div>
+	<a href="#" class="scrollnext"><i class="fas fa-arrow-down"></i></a>
+      </div>
+
+      {% if contact_link %}
+      <br/>View Changes <a href="{% url 'vince:contact' contact_link %}">here</a>
+      {% endif %}
+  </div>
+</div>
+
+
+{% if show_taggle %}
+<div class="row">
+  <div class="large-12 columns">
+    <label for="copies_to">{% trans "Tag Ticket" %} <span class="helptooltip" title="Classify this ticket with a tag. Ticket tags must be pre-defined in Tag Manager."><i class="fas fa-question-circle"></i></span></label>
+    <div class="input textarea taggle_input" id="ticketcc_taggle" action="{% url 'vince:update' ticket.id %}">
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 columns">
+    <label>{% trans "Dependencies" %}</label>
+    {% for dep in ticket.ticketdependency.all %}
+    {% if forloop.first %}<p>{% trans "This ticket cannot be resolved until the following ticket(s) are resolved" %}</p><ul>{% endif %}
+      <li><a href='{{ dep.depends_on.get_absolute_url }}'>{{ dep.depends_on.ticket }} {{ dep.depends_on.title }}</a> ({{ dep.depends_on.get_status_display }}) <a class="button tiny warning adddependency" action='{% url 'vince:rmdep' ticket.id dep.id %}'><i class="fas fa-trash"></i>&nbsp;{% trans "Remove Dependency" %}</a></li>
+      {% if forloop.last %}</ul>{% endif %}
+    {% empty %}
+    <p>{% trans "This ticket has no dependencies." %}</p>
+    {% endfor %}
+  </div>
+</div>
+<div class="reveal" id="adddependency" data-reveal data-close-on-click="false"></div>
+<div class="reveal" id="deleteticket" data-reveal>
+  <div class="fullmodal">
+    <form method='post' action="{% url 'vince:delete' ticket.id %}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{% trans "Delete Ticket" %}</h5>
+        </div>
+        <div class="modal-body">
+          {% csrf_token %}
+          <p>{% blocktrans with ticket.title as ticket_title %}Are you sure you want to delete this ticket (<em>{{ ticket_title }}</em>)? All traces of the ticket, including followups, attachments, and updates will be irreversibly removed.{% endblocktrans %}</p>
+        </div>
+        <div class="modal-footer text-right">
+          <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+          <input class="button alert" type='submit' value='{% trans "Yes, Delete" %}' />
+        </div>
+      </div>
+      <button class="close-button" data-close aria-label="Close modal" type="button">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </form>
+  </div>
+</div>
+<div class="reveal" id="rmdependency" data-reveal></div>
+

@@ -1,0 +1,39 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <div class="modal-content">
+    <form id="msgadminform" action="#" method="post">
+      <div class="modal-header">
+        <h5 class="modal-title">Lookup vendor</h5>
+      </div>
+      {% csrf_token %}
+      <div class="modal-body">
+	{% if ca %}
+	{% if ca.complete %}
+	{% if ca.restart %}{% else %}
+	<div class="callout alert">The contact association process has already been completed for this user, please see <a href="{% url 'vince:complete_contact_list' %}">the completed contact verification list.</a></div>
+	{% endif %}
+	{% else %}
+	<div class="callout alert">The contact association process has already been initiated for this user, please see <a href="{% url 'vince:contactlist' %}">the pending contact verification list.</a></div>
+	{% endif %}
+	{% endif %}
+        <div id="project-label">Search for a vendor:</div>
+        <input id="vendor" class="form-control" type="text" name="vendor" />
+	<div id="vendor-results">
+	</div>
+	<div id="msgvendor" class="hidden">
+	  <label for='id_msg'>Message to Admins:</label>
+	  <textarea name="msg" cols="40" rows="8" id="id_msg"></textarea>
+	</div>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <input type="submit" id="msgabutton" class="primary button" value="Message Admins" disabled>
+      </div>
+  </div>
+  </form>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

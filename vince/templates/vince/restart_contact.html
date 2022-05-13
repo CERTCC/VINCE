@@ -1,0 +1,26 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% block content %}
+<div class="fullmodal">
+  <form method="POST" action="{% url 'vince:restart_contact' contact_request.id %}">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Restart Contact Association</h3>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to restart the contact associaton process?  By clicking YES, you will be able to send a new email to confirm user's assocation with the vendor.
+      {% csrf_token %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button primary" type='submit' value='{% trans "Yes" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  </form>
+</div>
+
+{% endblock %}
+
+    

@@ -1,0 +1,17 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+{% block content_title %}<h3>This is a service account.</h3>{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<p>The account <b>{{ user.email }}</b> is a service account and only has API access. Please <a href="{% url 'cogauth:logout' %}">login with a different account</a> to access the VINCE UI.</p>
+</p>
+
+
+{% endblock %}
+
+
+

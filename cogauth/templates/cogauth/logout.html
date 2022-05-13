@@ -1,0 +1,27 @@
+{% extends "vince/login.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+<script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+{% if token_login %}
+<script type="text/javascript" src="{% static 'vince/js/token_logout.js' %}"></script>
+{% endif %}
+{% endblock %}
+
+{% block content_title %}<div class="row column"><h2>Logged out</h2></div>{% endblock %}
+
+{% block content %}
+
+<div class="row column">
+<p>
+  {% trans "See you again soon." %}
+</p>
+</div>
+<br/>
+<div class="row columns">
+  <a class="primary button expanded search-button" href="{% url 'vinny:login' %}">{% trans 'Log in' %}</a>
+</div>
+<br/>
+{% endblock %}
+
+

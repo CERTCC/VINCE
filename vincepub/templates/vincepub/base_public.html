@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <meta property="og:url"           content="https://{{VINCEPUB_URL}}"/>
+    <meta property="og:type"          content="website" />
+    <meta property="og:image:alt"      content="{{ ORG_NAME }}" />
+    
+    {% block extra_head_tags %}
+    <meta property="og:title"         content="{{ ORG_NAME }}" />
+    <meta property="og:description"   content="The Vulnerability Notes Database provides information about software vulnerabilities." />
+    <title class="swiftype" data-type="string">{{ WEB_TITLE }}</title>
+    <META class="swiftype" name="published_at" data-type="date" content="2021-01-05" />
+    <META property="st:type" content="asset" />
+    <META name="st:robots" content="follow, index">
+    <META name="siteDomain" content="{{VINCEPUB_URL}}" class="swiftype" data-type="string">
+    {% endblock %}
+    
+    {% load staticfiles %}
+    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/foundation.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'vincepub/css/style.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery-ui.min.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery.qtip.min.css' %}" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+    <link rel="shortcut icon" href="{% static FAVICON %}" type="image/x-icon" />
+    
+    {% block js %}
+    <script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vince/js/jquery-ui.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vince/js/jquery.qtip.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vincepub/js/analytics.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vince/js/mathjax_config.js' %}"></script>
+    <script type="text/javascript" id="MathJax-script" src="{% static 'vince/js/mathjax/tex-chtml.js' %}"></script>
+
+    {% endblock %}
+
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+  </head>
+  <body>
+    <div class="off-canvas-wrapper">
+      <div class="off-canvas position-right" id="offCanvas" data-off-canvas data-transition="overlap" data-auto-focus="false">
+	<!-- Close button -->
+	<ul class="vertical menu">
+	  <li class="menu-close"><a href="#" data-close title="Close menu">&times;</a></li>
+	  <li><a href="{% url 'vincepub:index' %}">Home</a></li>
+	  <li><a href="{% url 'vincepub:viewbypublish' 'desc' %}">Notes</a></li>
+	  <li><a href="{% url 'vincepub:initreport' %}">Report a Vulnerability</a></li>
+	  <li><a href="{% url 'vince:index' %}">VINCE</a></li>
+	</ul>
+      </div>
+      <div id="wrapper" class="off-canvas-content" data-off-canvas-content>
+
+
+    {% block notice %}{% endblock %}
+    <!-- Start Top Bar -->
+    <!-- redbar -->
+    <div class="topbar-redbar">
+      <div class="row topbar-redbar-content">
+	<!-- logo -->
+	<div class="small-10 medium-6 large-6 columns">
+	  <div class="site_org_name">
+	    {% load static %}
+	    <h2><span class="sr-only">{{ ORG_NAME }}</span> {{ ORG_NAME }}</h2>
+          </div>
+	</div>
+	<div class="small-2 columns show-for-small-only">
+          <button type="button" class="vulcoord-menu-btn" data-toggle="offCanvas"><i class="fas fa-bars"></i></button>
+	</div>
+	<!-- search -->
+	{% if user.is_authenticated %}
+	<div class="small-12 medium-4 large-4 columns">
+          {% else %}
+	  <div class="small-12 medium-6 large-6 columns">
+	    {% endif %}
+            <div class="quicksearch">
+              <form action="{% url 'vincepub:quickSearch' %}" method="GET" id="myform" name="queryForm">
+		<div class="input-group">
+		  <input class="input-group-field" name="searchbar" id="searchbar" type="search" placeholder="Search vulnerability notes" required>
+		  <button type="submit" class="button"><i class="fas fa-search"></i></button>
+		</div>
+              </form>
+            </div>
+	  </div>
+	  {% if user.is_authenticated %}
+	  <div class="menu hide-for-small-only large-2 medium-2 columns">
+            <ul class="dropdown menu" data-dropdown-menu>
+              <li class="is-dropdown-submenu-parent"><a href="#"><b>Hello, {{ user.vinceprofile.vince_username}}</b></a>
+		<ul class="menu">
+		  <li><a href="{% url 'cogauth:profile' %}">Profile</a></li>
+		  <li><a href="{% url 'vinny:preferences' %}">Email Preferences</a></li>
+		  <li><a href="{% url 'cogauth:password_change' %}">Change Password</a></li>
+		  
+		  {% if user.is_superuser %}
+		  <li><a href="{% url 'vince:dashboard' %}">VinceTrack Dashboard</a></li>
+		  <li><a href="{% url 'vinnyadmin:index' %}">Admin</a></li>
+		  {% endif %}
+		  <li><a href="{% url 'cogauth:logout' %}">Log out</a></li>
+		</ul>
+              </li>
+            </ul>
+	  </div>
+	  {% endif %}
+	</div>
+      </div>
+      
+      <!-- site-title  -->
+      <div class="row site-title">
+	<div class="columns small-12 medium-12 large-12">
+	  <div class="sitename">
+	    <h1></span><a href="{% url 'vincepub:index' %}">{{ WEB_TITLE }}</a></h1>
+	  </div>
+	  
+	</div>
+      </div>
+      <div class="row site-subtitle ">
+	<div class="small-12 medium-12 large-12 columns">
+	  <h2></h2>
+	</div>
+      </div>
+      <div class="mainbody section">
+	
+	{% block content %}
+	{% endblock %}
+	
+      </div><!--endmainbody-->
+      {% block footer %}
+
+</div><!--wrapper-->
+</div><!--offcanvas-wrapper-->
+      
+    <div id="sponsorbar">
+      <div class="row">
+	<div class="large-12 medium-12 columns">
+	  <p><p>
+	</div>
+      </div>
+    </div>
+    <div id="bottombar">
+      <div class="row">
+	<div class="large-4 medium-4 columns">
+	  <div class="wanttolist">
+	    <a href="#"><i class="fas fa-key" aria-hidden="true"></i>  Download PGP Key </a>
+	  </div>
+	</div>
+	<div class="large-4 medium-4 columns">
+	  <div class="wanttolist">
+            <p><a href="#" target="_blank" rel="noopener">Read our Blog</a></p>
+            
+	  </div>
+	</div>
+	<div class="large-4 medium-4 columns">
+	  <div class="wanttolist">
+	    <p><a href="#" target="_blank" rel="noopener">Learn more</a></p>
+	  </div>
+	</div>
+      </div>
+    </div>
+    
+    <div id="footer">
+      <div class="row footer-content">
+	<div class="large-8 medium-8 columns">
+	  <div class="row">
+	    <div class="large-6 medium-6 columns">
+	      <p>
+	      </p>
+	    </div>
+	    <div class="large-6 medium-6 columns">
+	      <ul class="social">
+		<li><a href="https://www.facebook.com/SEICMU/" class="facebook" target="_blank"></a></li>
+		<li><a href="https://twitter.com/sei_cmu" class="twitter" target="_blank"></a></li>
+		<li><a href="https://www.linkedin.com/company/software-engineering-institute" class="linkedin" target="_blank"></a></li>
+		<li><a href="https://www.youtube.com/user/TheSEICMU" class="youtube" target="_blank"></a></li>
+		<li><a href="https://itunes.apple.com/us/podcast/software-engineering-institute-sei-podcast-series/id566573552?mt=2" class="itunes" target="_blank"></a></li>
+	      </ul>
+	    </div>
+	  </div>
+	  <div class="row">
+	    <div class="large-12 columns">
+	      <div class="contactlinks">
+		
+	      </div>
+	    </div>
+	  </div>
+	  <div class="row">
+	    <div class="large-12 columns">
+              <small>©2021 {{ ORG_NAME }}</small>
+	    </div>
+	  </div>
+	</div>
+	<div class="large-4 medium-4 columns">
+	  <div class="contactlist">
+	    <h4>Contact {{ORG_NAME}}</h4>
+	    {% if CONTACT_PHONE %}
+            <p><i class="fas fa-phone" aria-hidden="true"></i><a href="tel:+14122685800">  412-268-5800</a><br/>
+	      {% endif %}
+	      
+              <i class="fas fa-envelope" aria-hidden="true"></i> <a href="mailto:{{CONTACT_EMAIL}}" ref="nofollow"> {{CONTACT_EMAIL}}</a>
+	    </p>
+	    
+	  </div>
+	</div>
+      </div>
+    </div>
+    <script type="text/javascript" src="{% static 'vince/js/foundation.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vincepub/js/formactions.js' %}"></script>
+    
+    {% endblock %}
+    
+    
+  </body>
+</html>

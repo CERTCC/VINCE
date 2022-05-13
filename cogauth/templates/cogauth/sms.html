@@ -1,0 +1,68 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}
+{% load i18n static %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vinny/js/profile.js' %}"></script>
+{% endblock %}
+{% block title %}VINCE Profile{% endblock %}
+
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 medium-6 small-12 columns">
+      <h2>Enable SMS MFA</h2>
+    </div>
+    <div class="large-6 medium-6 columns small-12 text-right">
+      
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-9 columns">
+    <div class="callout warning">
+      <p>We recommend time-based, one-time password (TOTP) as a more reliable option than SMS for MFA. <a href="{% url 'cogauth:totp' %}">Use TOTP.</a></p>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if form.errors %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert" role="alert">
+      <strong>Error submitting form!</strong> Please check below for errors and submit again.
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-9 columns">
+    <p>Please enter the phone number of the device where we should send the authorization code.</p>
+      <form method="POST">
+	{% csrf_token %}
+	{% for field in form %}
+	<div class="form-row">
+          <label for="id_{{ field.name }}">{% trans field.label %}{% if field.field.required %} <span class="required">*</span>{% endif %}</label>
+          {% if field.help_text %}
+          <small class='form-text text-muted'>{% autoescape off %}{{ field.help_text }}{% endautoescape %}</small>{% endif %}
+          {{ field }}
+          {% for error in field.errors %}
+          <p style="color: red">{% autoescape off %}{{ error }} {% endautoescape %}</p>
+          {% endfor %}
+	</div>
+	{% endfor %}
+	<input type="submit" class="primary button" value="Submit">
+      </form>
+  </div>
+</div>
+{% endblock %}

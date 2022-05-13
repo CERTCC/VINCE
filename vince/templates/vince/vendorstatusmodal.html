@@ -1,0 +1,82 @@
+{% load markdown_extras %}
+{% block content %}
+<div class="fullmodal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Statement from {{ vendor.vendor }}</h3>
+    </div>
+    <div class="modal-body">
+      <table class="unstriped">
+	<thead>
+          <tr>
+            <td>Vulnerability</td>
+            <td>Status</td>
+          </tr>
+	</thead>
+	{% for vul in vuls %}
+	{% with s1=status|vendorstatus:vul %}
+	<tr>
+          <td>{{ vul.vul }}</td>
+          <td>{{ s1.get_status_display }}</td>
+	</tr>
+	{% if s1.statement %}
+	<tr>
+          <td colspan='2'><b>Statement:</b>&nbsp;{{ s1.statement }}</td>
+	</tr>
+	{% endif %}
+	{% if s1.references %}
+	<tr>
+          <td colspan='2'><b>References:</b>&nbsp;{{ s1.references }}</td>
+	</tr>
+	{% endif %}
+	{% endwith %}
+	{% endfor %}
+      </table>
+      <hr/>
+      <div class="row">
+	<div class="large-2 columns text-right">
+          <b><i>Statement</i></b>
+	</div>
+	<div class="large-10 columns">
+          <p>{{ vendor.statement | markdown | safe }}</p>
+	</div>
+      </div>
+      {% if vendor.references %}
+      <div class="row">
+	<div class="large-2 columns text-right">
+          <b><i>References</i></b>
+	</div>
+	<div class="large-10 columns">
+	  {% with refs=vendor.references|splitlines %}
+          <ul class="ul_nobullet">
+            {% for ref in refs %}
+            <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }} </a>
+            </li>
+            {% endfor %}
+          </ul>
+          {% endwith %}
+	</div>
+      </div>
+      {% endif %}
+      {% if vendor.addendum %}
+      <div class="row">
+        <div class="large-2 columns text-right">
+          <b><i>CERT Addendum</i></b>
+        </div>
+        <div class="large-10 columns">
+          <p>{{ vendor.addendum | markdown | safe }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="{% url 'vince:editvendorstatus' vendor.id %}" class="secondary button">Edit</a>
+      <button class="approveall primary button" vendorid="{{ object.id }}">Approve </button>
+	    
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

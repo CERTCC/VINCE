@@ -1,0 +1,26 @@
+{% load i18n %}
+<div class="fullmodal">
+  {% if form %}<form method='post' action="{% url 'vince:reject_transfer' case.id %}" id="assignteamform">{% endif %}
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Reject Team Transfer" %}</h5>
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+	{% if form %}
+	{{ form }}
+	{% else %}
+	<p>You must a member of the {{ cr.user_name }} Team to reject this request.</p>
+	{% endif %}
+								 
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button cancel_confirm" data-close type="cancel">Cancel</a>
+        {% if form %}<input class="button alert" type='submit' value='{% trans "Submit" %}' />{% endif %}
+      </div>
+    </div>
+    <button class="close-button cancel_confirm" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  {% if form %}</form>{% endif %}
+</div>

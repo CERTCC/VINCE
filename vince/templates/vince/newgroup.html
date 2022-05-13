@@ -1,0 +1,136 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/jquery.multi-select.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/jquery.quicksearch.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vincegroup.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/multi-select.css' %}" />
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-8 columns">
+      <h2>New Group</h2>
+    </div>
+    <div class="large-4 columns text-right"></div>
+  </div>
+</div>
+
+
+{% if errors %}
+<div class="row columns">
+  <div class="callout alert" role="alert">
+  <strong>ERROR:</strong> {{ errors }} 
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 medium-12 columns">
+<form name="mainForm" enctype="multipart/form-data" method="POST" action="{% url 'vince:newgroup' %}">
+  {% csrf_token %}
+    <div class="row">      
+      <div class="form-group">
+        <div class="large-2 medium-2 columns">
+          {{ form.status.label_tag }}{% render_field form.status class="form-control" %}
+        </div>
+        <div class="large-10 medium-10 columns">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-6 medium-6 columns">
+	<div class="form-group">
+          <div class="required">{{ form.name.label_tag }}</div>
+	  {% if name_error %}
+          {% render_field form.name class="form-control errorfield" %}
+	  {% else %}
+	  {% render_field form.name class="form-control" %}
+	  {% endif %}
+        </div>
+      </div>
+      
+      <div class="large-6 medium-6 columns"></div>
+    </div>
+    <div class="row">
+      <div class="large-6 medium-6 columns">
+        <div class="form-group">
+          <div class="required"><label for="srmail_peer_name">SRMail Peer Name: </label></div>
+	  {% if srmail_error %}
+	  {% render_field form.srmail_peer_name class="form-control errorfield"%}
+	  {% else %}
+          {% render_field form.srmail_peer_name class="form-control"%}
+	  {% endif %}
+        </div>
+      </div>
+      <div class="large-6 medium-6 columns"></div>
+    </div>
+
+    <div class="row">
+      <div class="large-6 medium-6 columns">
+        <div class="form-group">
+          <div class="required">{{ form.group_type.label_tag }}</div>
+	  {% render_field form.group_type class="form-control"%}
+        </div>
+      </div>
+      <div class="large-6 medium-6 columns"></div>
+    </div>
+    <div class="row">
+      <div class="large-6 medium-6 columns">
+	<div class="form-group">
+	  <div class="required">{{ form.description.label_tag }}</div>
+	  {% render_field form.description class="form-control"%}
+        </div>
+      </div>
+      <div class="large-6 medium-6 columns"></div>
+    </div>
+    <div class="row">
+      <div class="large-12 medium-12 columns">
+	<label> Select Group Members:</label>
+    <select multiple="multiple" id="id_group_select" name="group_select[]">
+     <optgroup label='Contacts'>
+       {% for member in contacts %}
+       {% if vendors %}
+       {% if member.vendor_name in vendors %}
+       <option value="{{ member.vendor_name }}" selected>{{ member.vendor_name }}</option>
+       {% else %}
+       <option value="{{ member.vendor_name }}">{{ member.vendor_name }}</option>
+       {% endif %}
+       {% else %}
+       <option value="{{ member.vendor_name }}">{{ member.vendor_name }}</option>
+       {% endif %}
+      {% endfor %}
+      <optgroup label='Groups'>
+      {% for g in groups %}
+      <option value="{{ g.name }}">{{ g.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+<p style="font-size:10px;">Double-click a contact to add or remove from Group.</p>
+<br/>
+<div class="row">
+  <div class="form-group">
+    <div class="large-12 medium-12 columns">
+      {{ form.comment.label_tag }}
+      {% render_field form.comment class="form-control"%}
+    </div>
+  </div>
+</div>
+<br/>
+<div class="row">
+  <div class="large-12 columns">
+    <input type="submit" value="Create Group" class="primary button">
+    <br/>
+    <br/>
+  </div>
+</div>
+
+</form>
+  </div>
+</div>
+
+  {% endblock %}
+

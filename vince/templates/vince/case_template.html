@@ -1,0 +1,77 @@
+<div class="row">
+  <div class="large-6 columns">
+    <h5>Case General Information</h5>
+    <div class="row task-info">
+      <div class="large-3 columns text-right">
+        <b>Title:</b>
+      </div>
+      <div class="large-9 columns">
+        {{ template.title }}
+      </div>
+    </div>
+    <div class="row task-info">
+      <div class="large-3 columns text-right">
+	<b>Queue:</b>
+      </div>
+      <div class="large-9 columns">
+        {{ template.queue }}
+      </div>
+    </div>
+    <div class="row task-info">
+      <div class="large-3 columns text-right">
+        <b>Description:</b>
+      </div>
+      <div class="large-9 columns">
+        {{ template.description }}
+      </div>
+    </div>
+    <div class="row task-info">
+      <div class="large-3 columns text-right">
+        <b>Priority:</b>
+      </div>
+      <div class="large-9 columns">
+        {{ template.get_priority_display }}
+      </div>
+    </div>
+  </div>
+  <div class="large-6 columns">
+    <h5> Tasks </h5>
+    <div class="row column">
+      <div class="task_window">
+	{% for task in tasks %}
+        <div class="task">
+	  <a href="#" class="task-dropdown"><i class="fas fa-caret-down"></i></a>&nbsp;&nbsp;{{ task.task_title }}
+	  <div class="task-description"><i>{% if task.task_description %}<b>Description: </b>{{ task.task_description }}{% else %} No description specified {% endif %}</i><br/>
+	    <b>Assigned to: </b><i>{{ task.assigned_to }}</i><br/>
+	    <b>Priority: </b><i>{{ task.get_task_priority_display }}</i><br>
+	    <b>Time to Complete:</b><i> {{ task.time_to_complete }}</i>
+	  </div>
+	</div>
+	{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <div class="row">
+      <div class="large-3 columns text-right">
+	<b>Vendor Notification Email:</b>
+      </div>
+      <div class="large-9 columns">
+	<textarea rows="5" disabled>{{ template.vendor_email }}</textarea>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-3 columns text-right">
+        <b>Participant Notification Email:</b>
+      </div>
+      <div class="large-9 columns">
+        <textarea rows="5" disabled>{{ template.participant_email }}</textarea>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row column text-right">
+  <a id="#" onclick="loadEditForm({{ template.id }}, '#panel{{ tabpanel }}v')"><button type="submit" name="vrfSubmit" class="vulsubmit"><i class="fas fa-pen"></i> Edit Template</button></a>
+</div>

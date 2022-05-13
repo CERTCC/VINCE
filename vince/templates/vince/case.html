@@ -1,0 +1,107 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize%}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/tickets.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.css' %}">
+
+<script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vulmodal.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/artifacts.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/case.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/diffview.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/diff.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vince_contact.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vendorstatus.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/taggle.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/artifactmodal.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/reminder.js' %}"></script>
+
+{% endblock %}
+									 
+{% block vince_title %}{% trans "Case" %}{% endblock %}
+<!-- site-title  -->
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-10 medium-8 small-12 columns">
+      <h2>{% if case.team_owner %}{{ case.team_owner.name }} {% endif %}Case {{ case.vu_vuid }} - {{ case.title }} {% autoescape off %}{{ case.get_status_html }}{% endautoescape %}</h2>
+    </div>
+    <div class="large-2 medium-4 small-12 columns text-right">{% if case.lotus_notes %}{% else %}<a class="button cmu small-only-expanded" href="{% url 'vinny:vincase' case.id %}">View in VinceComm</a>{% endif %}</div>
+  </div>
+</div>
+
+{{ assigned_users|json_script:"assigned_users" }}
+{{ assignable|json_script:"assignable" }}
+{{ artifactsjs|json_script:"artifacts" }}
+
+<div id="assigned_users" href="{% url 'vince:taguser' case.id %}">{{ case_assigned_to }}</div>
+
+{% if transfer %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning"><p>This case is in a <b>TRANSFER</b> state.  Please see <a href="{% url 'vince:ticket' transfer.id %}">this ticket</a> for details.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if case.published and case.changes_to_publish %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout warning">This case has unpublished changes. {% if vulnote.ticket_to_approve.status != 4 %}Approve vulnote and republish.{% else %}{% if not case.can_be_resolved %}Close dependencies and republish.{% else %} <a class="publishvulnote" action="{% url 'vince:publish' vulnote.id %}">Publish now.</a>{% endif %}{% endif %}</div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% include 'vince/case_summary.html' %}
+  </div>
+</div>
+
+<hr>
+
+<div class="row">
+  <div class="small-6 large-6 columns">
+    <h3 class="section-title">Artifacts</h3>
+  </div>
+  <div class="small-6 large-6 columns text-right">
+    <button class="button default" id="addartifact" action="{% url 'vince:case_artifact' case.id %}"><i class="fas fa-plus"></i> Add Artifact</button>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    {% include 'vince/include/artifacts.html' with show_ticket_info=True form=artifact_form %}
+  </div>
+</div>
+
+<hr>
+
+<div class="row">
+  <div class="large-12 columns">
+    <div id="case_activity" href="{% url 'vince:case_activity' case.id %}">
+
+      {% include 'vince/include/case_activity.html' %}
+    </div>
+  </div>
+</div>
+
+<hr>
+
+{% url 'vince:updatecase' case.id as the_url %}
+{% include 'vince/include/ticket_comment.html' with ticket=case comm_action=the_url close_confirm=0 case=1 %}
+
+{% endblock %}
+
+  

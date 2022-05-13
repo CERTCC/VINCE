@@ -1,0 +1,321 @@
+{% extends VINCEPUB_BASE_TEMPLATE %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vincepub/js/vulcommon.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+</script>
+
+<div class="row columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vincepub:index' %}">Home</a></li>
+      <li><a href="{% url 'vincepub:initreport' %}">Report</a></li>
+      <li><span class="show-for-sr">Current: </span> Vulnerability Reporting Form</li>
+    </ul>
+  </nav>
+</div>
+<div class="row columns">
+  <h2 class="subtitle">Vulnerability Reporting Form</h2>
+</div>
+
+ <div class="row" id="content">
+      <div class="large-8 medium-8 columns">
+	<div class="blog-post">
+	  <form action="" method="post" id="vulform" enctype="multipart/form-data">
+	    {% csrf_token %}
+	    
+	    {% if form.errors %}
+            <div class="callout alert" role="alert">
+              <strong>Error submitting form!</strong> Please check below for errors and submit again.
+            </div>
+            {% endif %}
+            {% if form.non_field_errors %}
+            <div class="callout alert" role="alert">
+              <strong>reCAPTCHA Error!</strong> Invalid reCAPTCHA. Please try to submit again.
+            </div>
+            {% endif %}
+
+	    {% if user.is_authenticated %}
+	    <div class="callout success">
+	      You are logged in as {{ user.vinceprofile.vince_username }}.
+	      </div>
+	    
+	    {% else %}
+	    
+	    <div class="callout alert">
+	      You are not logged in. If you have a VINCE account, please <a href="{% url 'vinny:report' %}">login</a> before submitting this report. <br/>
+	      If you do not have an account, <a href="{% url 'vinny:signup' %}">create an account</a> before submitting your report in order to view the status of your report and potentially assist in the coordination process.
+	    </div>
+	    {% endif %}
+	    
+	    <h3 class="subtitle">Vulnerability Information</h3>
+	    <div class="form-group">
+	      <label> Have you attempted to contact the vendor? <span class="required">*</span></label>
+	      {% render_field form.comm_attempt class="form-control" %}
+	      {% if form.comm_attempt.errors %}<dd class='error'>{{ form.comm_attempt.errors }}</dd>{% endif %}
+            </div>
+
+	    <div id="whynot" style="display:none">
+	      <div class="form-group">
+		{{ form.why_no_attempt.label_tag }}
+		{% render_field form.why_no_attempt class="form-control" %}
+	      </div>
+	      <div id="not_attempted_vendor_contact_warn" class="callout warning" role="alert" style="display:none">
+                <strong>We strongly recommend attempting to contact vendors before filling out this form.</strong>
+                Submitting this form without further vendor status documentation may result in your report being treated with low priority or declined.
+              </div>
+	      <div id="pleasexplain" style="display:none">
+		<div class="form-group">
+		  <label>Please explain why you have not been able to contact the vendor.</label>
+                  {% render_field form.please_explain class="form-control" %}
+		  {% if form.please_explain.errors %}<dd class='error'>{{ form.please_explain.errors }}</dd>{% endif %}
+		</div>
+	      </div>
+	    </div>
+
+	    {% if form.first_contact.errors %}
+	    <div id="contactinfo">
+	      {% else %}
+	      <div id="contactinfo" style="display:none">
+		{% endif %}
+              <div class="form-group">
+		{{ form.first_contact.label_tag }}
+		{% if form.first_contact.errors %}
+		<div class="callout alert" role="alert">
+		  <strong>Check date format and don't choose a future date!</strong>
+		  Please enter your date in the format YYYY-MM-DD.
+		  The date must not be a future date (we need to know what you have already done in the past).
+		</div>
+		{% endif %}
+		{% render_field form.first_contact class="form-control" %}
+		{% if form.first_contact.errors %}<dd class='error'>{{ form.first_contact.errors }}</dd>{% endif %}
+              </div>
+
+              <div class="form-group">
+		{{ form.vendor_communication.label_tag }}
+		<small class="form-text text-muted">{{ form.vendor_communication.help_text }}</small>
+		{% render_field form.vendor_communication class="form-control" %}
+		{% if form.vendor_communication.errors %}<dd class='error'>{{ form.vendor_communication.errors }}</dd>{% endif %}
+		<div id="charnum_vendor"></div>
+              </div>
+	    </div>
+
+
+	    <div class="form-group">
+            {{ form.vendor_name.label_tag }}
+            {% render_field form.vendor_name class="form-control" %}
+	    {% if form.vendor_name.errors %}<dd class='error'>{{ form.vendor_name.errors }}</dd>{% endif %}
+            </div>
+
+            <div class="form-group">
+	      <label for="id_multiplevendors">Do you believe multiple vendors are affected? <span class="required">*</span></label>
+            {% render_field form.multiplevendors class="form-control" %}
+            </div>
+	    <div class="form-group" style="display:none" id="othervendors">
+              {{ form.other_vendors.label_tag }}
+              {% render_field form.other_vendors class="form-control" %}
+	      {% if form.other_vendors.errors %}<dd class='error'>{{ form.other_vendors.errors }}</dd>{% endif %}
+            </div>
+
+
+	    <div class="form-group">
+              <label for="id_product_name">What is the name of the affected product or software? <span class="required">*</span></label>
+              <small class="form-text text-muted">{{ form.product_name.help_text }}</small>
+              {% render_field form.product_name class="form-control" %}
+	      {% if field.product_name.errors %}<dd class='error'>{{ field.product_name.errors }}</dd>{% endif %}
+            </div>
+
+            <div class="form-group">
+	      <label for="id_product_version">What version number of the product or software is affected? <span class="required">*</span></label>
+              <small class="form-text text-muted">{{ form.product_version.help_text }}</small>
+              {% render_field form.product_version class="form-control" %}
+	      {% if form.product_version.errors %}<dd class='error'>{{ form.product_version.errors }}</dd>{% endif %}
+            </div>
+
+	    <div class="form-group checkbox-sameline">
+              <label for="id_ics_impact">{{ form.ics_impact.label }} <a class="questiontip notlink" href="#" title="Does this vulnerability report significantly affect industrial control systems (ICS) or operation technology (OT)?"><i class="fas fa-question-circle"></i></a></label>
+              {% render_field form.ics_impact class="check-sameline" %}
+            </div>
+	    
+            <div class="form-group">
+	      <label for="id_vul_description">What is the vulnerability? <span class="required">*</span></label>
+              <small class="form-text text-muted">{{ form.vul_description.help_text }}</small>
+              {% render_field form.vul_description class="form-control" %}
+	      {% if form.vul_description.errors %}<dd class='error'>{{ form.vul_description.errors }}</dd>{% endif %}
+	      <div id="charnum"></div>
+            </div>
+
+            <div class="form-group">
+	      <label for="id_vul_exploit">How does an attacker exploit this vulnerability? <span class="required">*</span></label>
+              <small class="form-text text-muted">{{ form.vul_exploit.help_text }}</small>
+              {% render_field form.vul_exploit class="form-control" %}
+	      {% if form.vul_exploit.errors %}<dd class='error'>{{ form.vul_exploit.errors }}</dd>{% endif %}
+	      <div id="charnum_exploit"></div>
+            </div>
+
+            <div class="form-group">
+	      <label for="id_vul_impact">What does an attacker gain by exploiting this vulnerability? (i.e. what is the impact?) <span class="required">*</span></label>
+              <small class="form-text text-muted">{{ form.vul_impact.help_text }}</small>
+              {% render_field form.vul_impact class="form-control" %}
+	      {% if form.vul_impact.errors %}<dd class='error'>{{ form.vul_impact.errors }}</dd>{% endif %}
+	      <div id="charnum_impact"></div>
+            </div>
+
+            <div class="form-group">
+	      <label for="id_vul_discovery">How was the vulnerability discovered? <span class="required">*</span></label>
+              <small class="form-text text-muted">{{ form.vul_discovery.help_text }}</small>
+              {% render_field form.vul_discovery class="form-control" %}
+	      {% if form.vul_discovery.errors %}<dd class='error'>{{ form.vul_discovery.errors }}</dd>{% endif %}
+	      <div id="charnum_discovery"></div>
+            </div>
+
+	    <div class="form-group">
+	      <label for="id_vul_public">Is this vulnerability publicly known? <span class="required">*</span></label>
+              {% render_field form.vul_public class="form-control" %}
+            </div>
+	    <div class="form-group" id="pub_ref" style="display:none">
+              {{ form.public_references.label_tag }}
+              {% render_field form.public_references class="form-control" %}
+	      {% if form.public_references.errors %}<dd class='error'>{{ form.public_references.errors }}</dd>{% endif %}
+
+	      <div id="charnum_ref"></div>
+	    </div>
+
+	    <div class="form-group">
+	      <label for="id_vul_exploited">Is there evidence that this vulnerability is being actively exploited? <span class="required">*</span></label>
+              {% render_field form.vul_exploited class="form-control" %}
+            </div>
+            <div class="form-group" id="exploit_ref" style="display:none">
+              {{ form.exploit_references.label_tag }}
+              {% render_field form.exploit_references class="form-control" %}
+	      {% if form.exploit_references.errors %}<dd class='error'>{{ form.exploit_references.errors }}</dd>{% endif %}
+	      <div id="charnum_exploitref"></div>
+            </div>
+	    <div class="form-group">
+	      <label for="id_vul_disclose">Do you plan to publicly disclose this vulnerability yourself? <span class="required">*</span></label>
+              {% render_field form.vul_disclose class="form-control" %}
+            </div>
+            <div class="form-group" id="dis_plan" style="display:none">
+            {{ form.disclosure_plans.label_tag }}
+            {% render_field form.disclosure_plans class="form-control" %}
+	    {% if form.disclosure_plans.errors %}<dd class='error'>{{ form.disclosure_plans.errors }}</dd>{% endif %}
+	    <div id="charnum_disclose"></div>
+
+            </div>
+
+
+
+	    <div class="form-group">
+
+	    <label>Upload a File</label>
+	    <small class="form-text text-muted">
+              You can upload one file limited to 10 MB. Please leave a note in
+              the Private Comments below if you would like to
+              make alternative arrangements to send files.
+	    </small>
+            {% if form.user_file.errors %}
+            <div class="callout alert" role="alert">
+              <p><strong>Error uploading file!</strong> Please try again. 10 MB limit.</p>
+	      {{ form.user_file.errors %}
+            </div>
+            {% endif %}
+	      <div class="row">
+		<div class="large-3 medium-3 columns">
+		  <label for="id_user_file" class="vulupload">Choose a File</label>
+		  {% render_field form.user_file class="form-control show-for-sr" %}
+		</div>
+		<div class="large-9 medium-9 columns">
+		  <div id="file-title-wrap">
+		    <div class="file-title-remove"><i class="fas fa-times"></i></div>
+		  </div>
+		</div>
+	      </div>
+	    </div>
+	    <br/>
+
+	    <h3 class="subtitle">Your Contact Information</h3>
+	    <div class="form-group">
+	    {{ form.contact_name.label_tag }}
+	    <small class="form-text text-muted">{{ form.contact_name.help_text }}</small>
+	    {% render_field form.contact_name class="form-control" %}
+	    {% if form.contact_name.errors %}<dd class='error'>{{ form.contact_name.errors }}</dd>{% endif %}
+	    </div>
+	    <div class="form-group">
+	      {{ form.contact_org.label_tag }}
+	      <small class="form-text text-muted">{{ form.contact_org.help_text }}</small>
+	      {% render_field form.contact_org class="form-control" %}
+	      {% if form.contact_org.errors %}<dd class='error'>{{ form.contact_org.errors }}</dd>{% endif %}
+
+	    </div>
+	    <div class="form-group">
+              {% if form.contact_email.errors %}
+              <div class="callout alert" role="alert">
+		<strong>Incorrect email format!</strong> Please enter an email address in the format: email@example.com.
+              </div>
+              {% endif %}
+	      {{ form.contact_email.label_tag }}
+	      <small class="form-text text-muted">{{ form.contact_email.help_text }}</small>
+              {% render_field form.contact_email class="form-control" %}
+	      {% if form.contact_email.errors %}<dd class='error'>{{ form.contact_email.errors }}</dd>{% endif %}
+	    </div>
+
+	    <div class="form-group">
+	      <label for="id_share_release">Do you want us to share your contact information with vendors? <span class="required">*</span></label>
+	      <small class="form-text text-muted">{{ form.share_release.help_text }}</small>
+	      {% render_field form.share_release class="form-control" %}
+	    </div>
+	    <div class="form-group">
+	      <label for="id_credit_release">Do you want to be acknowledged by name in any published document about this vulnerability? <span class="required">*</span></label>
+              <small class="form-text text-muted">{{ form.credit_release.help_text }}</small>
+            {% render_field form.credit_release class="form-control" %}
+	    </div>
+            <div class="form-group">
+              <div>{{ form.reporter_pgp.label_tag }}</div>
+              {% if form.reporter_pgp.errors %}
+              <div class="alert alert-danger" role="alert">
+                {{ form.reporter_pgp.errors }}
+              </div>
+              {% endif %}
+              <small class="form-text text-muted">{{ form.reporter_pgp.help_text }}</small>
+              {{ form.reporter_pgp }}
+	    </div>
+            <div class="form-group">
+	      <label for="id_tracking">Tracking IDs</label>
+              <small class="form-text text-muted">{{ form.tracking.help_text }}</small>
+              {% render_field form.tracking class="form-control" %}
+            </div>
+            <div class="form-group">
+	      <label for="id_comments">Private Comments</label>
+              {% if form.comments.errors %}
+              <div class="callout alert" role="alert">
+                <strong>Form Error</strong><br/>
+                {{ form.comments.errors }}
+              </div>
+              {% endif %}
+              <small class="form-text text-muted">{{ form.comments.help_text }}</small>
+              {% render_field form.comments class="form-control" %}
+            </div>
+	    <div id="charnum_comment"></div>
+
+	    <div class="g-recaptcha" data-sitekey="{{ GOOGLE_SITE_KEY }}" data-size="invisible" data-callback="formSubmit"></div>
+
+	    <button type="submit" name="vrfSubmit" id="vrfSubmit" class="vulsubmit"/>Submit</button>
+	  </form>
+
+	</div>
+      </div>
+      <div class="large-4 medium-4 columns">
+	{% if user.is_authenticated %}
+	{#include "vincepub/vince_sidebar.html" #}
+	{% else %}
+	<a href="{% url 'cogauth:register' %}" class="vulcontact button expanded">Create an Account</a>
+	<a href="{% url 'vinny:report' %}" class="vulcontact button expanded">Sign In</a>
+	{% endif %}
+      </div>
+
+ </div>
+
+{% endblock %}

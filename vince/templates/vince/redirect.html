@@ -1,0 +1,19 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Ticket Search" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/tokens.js' %}"></script>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="large-12 columns">
+    <p>Redirecting to VinceComm...</p>
+  </div>
+</div>
+
+<div class="collapse" id="next_action">
+{% if action %} {{ action }}{% endif %}
+</div>
+{% endblock %}

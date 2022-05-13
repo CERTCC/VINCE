@@ -1,0 +1,113 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags post_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Dashboard" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/dashboard.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+{% load widget_tweaks %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 medium-8 small-8 columns">
+      <h2>Dashboard <a href="{% url 'vince:teamdash' %}" title="team view"><i class="fas fa-users"></i></a></h2>
+    </div>
+    <div class="large-6 medium-4 small-4 columns text-right">
+      <a href="{% url 'vince:roles' %}">Triage:</a>{% if triage_user %}{% for triage in triage_user %} {{ triage.usersettings.vince_username }} {% endfor %} {% else %}  <b>Unassigned</b>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+
+  <div class="large-9 columns">
+    <div id="dashdiv" class="dashdiv" action="{% url 'vince:dstat' %}">
+      {% include 'vince/include/dashboard_stats.html' %}
+    </div>
+
+    <div class="reminders">
+      {% if reminders %}
+      <h3>Reminders</h3>
+      <div id="dismiss_alert" action="{% url 'vince:rmreminder' %}"></div>
+      {% endif %}
+      {% for r in reminders %}
+      <div data-closable class="callout alert-callout-subtle alert radius">
+	<div class="alert-text">
+	{% if r.ticket %}<a href="{{ r.ticket.get_absolute_url }}">{{ r.title }}</a>
+        {% elif r.case %}<a href="{{ r.case.get_absolute_url }}">{{ r.title }}</a>
+        {% else %}{{ r.title }}
+        {% endif %}
+	</div>
+	{% if r.created_by and r.user != user %}
+	<div class="alert-detail">
+	  <small><i class="fas fa-stopwatch"></i> Alert created by {{ r.created_by.usersettings.preferred_username }} on {{ r.created|date:"Y-m-d" }}</small>
+	</div>
+	{% endif %}
+	<button type="button" class="later-button" id="{{ r.id }}" aria-label="Remind me later" data-close><span class="helptooltip" title="Finished with this task? Check it off your list."><span aria-hidden="true"><i class="far fa-check-circle"></i></span></span></button>
+	<button class="close-button" id="{{ r.id }}" aria-label="Dismiss alert" type="button" data-close>
+	  <span aria-hidden="true" class="helptooltip" title="Remind me tomorrow">⊗</span>
+	</button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="dashdiv dashtkt">
+
+      <h3 id="ticket-title">Your Open Tickets</h3>
+      <div id="tkt-table" class="tabulator bootstrap" action="{% url 'vince:dashboardtickets' 'Open' %}"></div>
+    </div>
+    <div class="dashdiv dashtkt">
+      <h3 id="activity-table">Your Recent Activity</h3>
+      <div id="activity">
+	{% include 'vince/include/case_timeline.html' %}
+      </div>
+    </div>
+    <div class="dashpostdiv hidden">
+      <h3>New Posts</h3>
+      <div id="post-table" class="tabulator bootstrap" action="{% url 'vince:dpost' %}"></div>
+    </div>
+    <div class="dashpostdiv hidden">
+      <h3>Post Activity</h3>
+      <div id="post-activity" action="{% url 'vince:dpostactivity' %}">
+	{% include 'vince/include/case_timeline.html' with activity=post_activity %}
+      </div>
+    </div>
+  </div>
+
+  <div class="large-3 columns">
+    <div id="chart" action="{% url 'vince:dashcase' %}" class="charts">
+      {% include 'vince/include/case_chart.html' %}
+    </div>
+  </div>
+</div>
+{% comment %}
+<div class="row">
+  <div class="large-12 columns">
+    <h3>New Case Requests</h3>
+    {% include 'vince/include/unassigned.html' %}
+  </div>
+</div>
+<div class="row column">
+  
+  {% trans "Cases you are working on" as case_caption %}
+  {% trans "You are not working on any cases." as no_assigned_cases %}
+  {% include 'vince/include/cases.html' with case_list=cases case_list_empty_message=no_assigned_cases %}
+</div>
+<div class="row column">
+  {% include 'vince/include/activity.html' %}
+</div>
+{% endcomment %}
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "vince/modal.html" %}{% load i18n %}
+{% load widget_tweaks %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+{% endblock %}
+{% block content %}
+<div class="fullmodal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Post edits history</h5>
+    </div>
+    <div class="modal-body">
+      <p> <small>{% if object.previous_revision.id %}<a diff_url="{% url 'vinny:diff' object.previous_revision.id %}" class="show-diff"><i class="fas fa-arrow-left"></i> Last Revision</a>{% endif %}</small></p>
+      <p> {% if object.revision_number %}Revision {{ object.revision_number }}{% else %}Original Post{% endif %}. Last modified {{ object.modified|timesince }} ago</p>
+      <table>
+	{% for x in diff %}
+	{% if x|first == " " %}
+	<tr class="equal">
+	  <td>{{ x }}</td>
+	</tr>
+	{% elif x|first == "-" %}
+	<tr class="delete">
+	  <td>{{ x }}</td>
+	</tr>
+	{% elif x|first == "+" %}
+	<tr class="insert">
+	  <td>{{ x }}</td>
+	</tr>
+	{% elif x|first == "?" %}
+	
+	{% else %}
+	{{ x|first }}
+	{% endif %}
+	{% endfor %}
+      </table>
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endblock %}

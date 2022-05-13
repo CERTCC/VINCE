@@ -1,0 +1,23 @@
+{
+    "debug_get_cases": {
+        "headers": {
+            "Allow": "GET, HEAD, OPTIONS",
+            "Content-Type": "application/json",
+            "Date": "Wed, 16 Sep 2020 18:00:39 GMT",
+            "Expect-CT": "max-age=0"
+	},
+        "status_code": "200"
+    },
+    "get_cases": [
+        {
+            "created": "2020-05-26T22:16:22.118758Z",
+            "due_date": "2020-05-18T17:59:42Z",
+            "status": "Active",
+            "summary": "Bluetooth Basic Rate / Enhanced Data Rate (BR/EDR) Core Configurations are used for low-power short-range communications. To establish an encrypted connection, two Bluetooth devices must pair with each other using a link key. It is possible for an unauthenticated, adjacent attacker to impersonate a previously paired/bonded device and successfully authenticate without knowing the link key. This could allow an attacker to gain full access to the paired device by performing a Bluetooth Impersonation Attack (BIAS).",
+            "title": "Bluetooth devices supporting BR/EDR are vulnerable to impersonation attacks",
+            "vuid": "647177"
+        }
+    ],
+    "query_info": "Getting all cases "
+}
+

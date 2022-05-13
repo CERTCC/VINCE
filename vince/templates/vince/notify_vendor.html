@@ -1,0 +1,86 @@
+{% extends "vince/modal.html" %}
+{% load i18n %}
+{% load widget_tweaks %}
+{% load staticfiles %}
+{% block content %}
+<div class="fullmodal">
+  {% if vendors %}
+  <form method="post" id="vendornotifyform" action="{% url 'vince:editvendorlist' case.id %}">
+    {% csrf_token %}
+    <div class="modal-content">
+      <div class="modal-header">
+	<h3 class="modal-title">Notify Vendors</h3>
+      </div>
+      <div class="modal-body">
+	{% if case|notifystatus:"test" %}
+	{% else %}
+	<div class="callout warning"> This case has not defined any vulnerabilities and/or created a post.
+          Are you sure you want to invite vendors to this case?
+	</div>
+	{% endif %}
+	{% if vendors_seen %}
+	<div class="callout alert">
+	  {% if vendors_seen|length == 1 %}
+	  <p>
+	  {% for x in vendors_seen %}
+          {{ x.contact.vendor_name }} has already been notified and viewed the case.
+          {% endfor %}
+	  </p>
+	  {% else %}
+	  The following vendors have already been notified and viewed the case:
+	  <ul>
+	    {% for x in vendors_seen %}
+	    <li>
+	      {{ x.contact.vendor_name }} 
+	    </li>
+	    {% endfor %}
+	  </ul>
+	  {% endif %}
+	</div>
+	{% endif %}
+	<div class="lead" id="vendors_list">
+          To:
+	  {% for v in vendors %}
+	  {{ v.contact.vendor_name}}{% if forloop.last %}{% else %}, {% endif %}
+	  {% endfor %}
+	</div>
+	<div class="form-group">
+          <label for='id_{{ vn_form.subject.name }}'>{% trans vn_form.subject.label %}<span class='required'>*</span></label>
+          {% if vn_form.subject.help_text %}<small class='form-text text-muted'>{% trans vn_form.subject.help_text %}</small>{% endif %}
+          {% render_field vn_form.subject class="form-control" %}
+	</div>
+	<label for='id_{{ vn_form.email_template.name }}'>{{ vn_form.email_template.label }}</label>
+	{% render_field vn_form.email_template vuid=case.vu_vuid %}
+	{% if vn_form.email_template.help_text %}<small>{{ vn_form.email_template.help_text }}</small>
+	{% endif %}
+	<div class="form-group">
+          <label for='id_{{ vn_form.email_body.name }}'>{% trans vn_form.email_body.label %}<span class='required'>*</span></label>
+          {% if vn_form.email_body.help_text %}<small class='form-text text-muted'>{% trans vn_form.email_body.help_text %}</small>{% endif %}
+          {% render_field vn_form.email_body class="form-control" %}
+	  
+	</div>
+	
+      </div>
+      <div class="modal-footer text-right">
+	<a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+	<input type="submit" value="Send" class="button primary" id="submit_vendors">
+      </div>
+    </div>
+  </form>
+  {% else %}
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Choose a Vendor</h3>
+      </div>
+    <div class="modal-body">
+      Select rows in the table to choose vendors to notify.
+    </div>
+  </div>
+  {% endif %}
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  
+</div>
+
+{% endblock %}

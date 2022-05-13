@@ -1,0 +1,50 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n post_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Case Vuls" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.css' %}">
+<script type="text/javascript" src="{% static 'vinny/js/vuls.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-9 columns">
+      <h2>Case <a href="{{case_link}}">{{ case.get_title }}</a> Vulnerabilities</h2>
+    </div>
+    <div class="large-3 columns small-12 text-right">
+      {% if showstatus %}
+      <a id='showstatusbutton' href="{% url 'vinny:status' case.id %}"><button class="default button small-only-expanded">Submit Status</button></a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% if showstatus %}
+<div class="row">
+  <div class="large-12 columns">
+    {% if showupdatestatus %}
+    <div class="callout success">
+      <p>We have your status/statement! <a href="{% url 'vinny:status' case.id %}">Update it here.</a></p>
+      {% else %}
+    <div class="callout alert">
+      <p>Once you have reviewed the following vulnerabilities, please <a href="{% url 'vinny:status' case.id %}">submit your status</a>.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="vendorlist">
+      {{ vulsjs|json_script:"vuls_data" }}
+      <div id="vuls-table" class="tabulator bootstrap"></div>
+      {#{% include 'vince/include/vuls.html' with edit=1 %}#}
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}

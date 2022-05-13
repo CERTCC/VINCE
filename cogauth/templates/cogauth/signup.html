@@ -1,0 +1,55 @@
+{% extends "vince/login.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+<script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/signup.js' %}"></script>
+<script src="https://www.google.com/recaptcha/api.js"></script>
+{% endblock %}
+
+{% block title %}VINCE{% endblock %}
+
+{% block content_title %}<h3>Create a <a href="{% url 'vincepub:index' %}#vince">VINCE</a> account</h3>{% endblock %}
+
+{% block content %}<div id="content-main">
+
+<form method="post" id="signupform" onsubmit="return noDoubleClicks(this);">{% csrf_token %}
+  <div class="login-form">
+    {% if form.errors %}
+    <div class="callout alert">
+      {% if form.errors.items|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+      {% if form.non_field_errors %}
+      <br/><strong>reCAPTCHA Error!</strong> Invalid reCAPTCHA. Please try to submit again.
+      {% endif %}
+    </div>
+    {% endif %}
+    {% for field in form %}
+    {% if field.name == "agree_to_terms" %}
+    <div class="form-row last_form_field">
+      {{ field }} <label for="id_{{ field.name }}">I agree to the <a href="#" target="_blank" rel="noopener">terms of service.</a> {% if field.field.required %}<span class="required">*</span>{% endif %}</label>
+    </div>
+    {% else %}
+    <div class="form-row">
+	<label for="id_{{ field.name }}">{% trans field.label %}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
+	{% if field.help_text %}
+	<small class='form-text text-muted'>{% autoescape off %}{{ field.help_text }}{% endautoescape %}</small>{% endif %}
+	{{ field }}
+	{% for error in field.errors %}
+	<p style="color: red">{% autoescape off %}{{ error }} {% endautoescape %}</p>
+	{% endfor %}
+    </div>
+    {% endif %}
+      {% endfor %}
+    
+    <div>
+      <div class="g-recaptcha" data-sitekey="{{ GOOGLE_SITE_KEY }}" data-size="invisible" data-callback="formSubmit"></div>
+      <button type="submit" class="primary button expanded search-button" id="vrfSubmit">{% trans 'Sign up' %}</button>
+    </div>
+    
+  </div>
+</form>
+</div>
+
+{% endblock %}
+
+

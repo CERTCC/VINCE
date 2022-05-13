@@ -1,0 +1,41 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}
+{% load i18n humanize widget_tweaks%}
+{% load staticfiles %}
+{% block content %}
+</script>  
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Process Email</h2>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    <p>This is used to re-process email from S3.  You need the object key to initiate the processing.  This may take a few seconds.  Only click the submit button once.  If successful, you'll be redirected back to this form.</p>
+  </div>
+</div>
+<form method="post" action=".">
+  {% csrf_token %}
+  <div class="row">
+    <div class="large-6 columns">
+      {{ form.as_p }}
+      <input type="submit" value="Submit" class="button primary">
+    </div>
+  </div>
+</form>
+
+
+{% endblock %}

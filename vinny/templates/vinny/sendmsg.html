@@ -1,0 +1,127 @@
+{% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Send a Message" %}{% endblock %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vince/js/dropzone.js' %}"></script>
+<link rel="stylesheet" href="{% static 'vince/css/dropzone.css' %}">
+<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
+<script type="text/javascript" src="{% static 'vince/js/easymde.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vinny/js/sendmsg.js' %}"></script>
+
+
+{% endblock %}
+
+{% block content %}
+{% load widget_tweaks %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Inbox</h2>
+    </div>
+    <div class="large-6 columns text-right">
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-12 columns">
+    {% for message in messages %}
+    <div class="callout {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-9 columns">
+    <div class="new-message">
+      <h3>New Message </h3>
+      <form class="comment-form" id="sendmsgform" method="post" enctype="multipart/form-data" action="{% url 'vinny:sendmsg' %}" success="{% url 'vinny:inbox' %}">
+        {% csrf_token %}
+	<div id="ga_selection" {% if msgtype != '4' %}class="collapse"{% endif %}>
+	  {% if group_admin %}
+	  <div class="callout warning">
+	    <p>
+	      {% if group_admin|length > 1 %}
+	      Your current group administrators are:
+	      {% else %}
+	      Your current group administrator is:
+	      {% endif %}
+	      <br/>
+	      {% for admin in group_admin %}{% if admin == user %}<b>YOU</b>{% else %}<b>{{ admin }}</b>{% endif %}
+	      <br/>
+	      {% endfor %}
+	      If possible, please ask your group administrator to grant your admin privileges. </p>
+	  </div>
+	  {% endif %}
+	</div>
+
+	{% for field in form %}
+        {% if field.name == "attachment" %}
+	<div class="fallback">
+	  {% render_field form.attachment class="form-control show-for-sr" %}
+	</div>
+	<div id="dropzonepreview" class="dropzone">
+	  <div class="dz-default dz-message">
+              <span> <i class="fas fa-cloud-upload-alt"></i> Drop files to attach to message </span>
+          </div>
+	</div>
+	{% else %}
+	{% if field.name == "case" %}
+        <div id="case_selection" {% if msgtype != '2' %}class="collapse"{% endif %}>
+	  {% if coord %}
+	  <div class="callout warning"><p>This message will be sent to the following VINCE coordinators on the case: <span id="coords_list">{{ coord }}</span></p></div>
+	  {% endif %}
+	  {% elif field.name == "report" %}
+	<div id="report_selection" class="collapse">
+	  {% elif field.name == "vendor" %}
+	  <div id="vendor_selection" {% if msgtype != '10' %}class="collapse"{% endif %}>
+	      <div class="callout warning">
+		Please provide the name of the organization you are requesting access to.  If you are the first person to join this VINCE group, we perform a two-person validation process to verify your status at the organization. If the organization is already an active group in VINCE, we will ask the group administrator to add you to the group. If you know the group administrator for your organization, it may be quicker to ask them directly to add you to the group.
+	      </div>
+	    {% endif %}
+	    <div class="form-group">
+            <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %}</label>
+            {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+            {{ field }}
+            {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+	    {% if field.name in 'case,new_group_admin,report,vendor' %}
+	  </div>
+	  {% endif %}
+	  
+          </div>
+          {% endif %}
+	  {% endfor %}
+	  
+        <div>
+          <button id="sendbutton" class="primary button"><i class="fas fa-paper-plane"></i> Send</button>
+        </div>
+      </form>
+    </div>
+    </div>
+    <div class="large-3 columns">
+    </div>
+</div>
+
+<div class="reveal" id="error_modal" data-reveal>
+  <div class="fullmodal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Error" %}</h5>
+      </div>
+      <div class="modal-body">
+        <p>You must add content or an attachment to send a message.
+        </p>
+      </div>
+      <div class="modal-footer text-right">
+        <a href="#" class="hollow button" data-close type="cancel">Ok</a>
+      </div>
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</div>
+    
+{% endblock %}

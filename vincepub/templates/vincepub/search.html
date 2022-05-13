@@ -1,0 +1,89 @@
+{% extends VINCEPUB_BASE_TEMPLATE %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'vincepub/js/vulsearch.js' %}"></script>
+{% endblock %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="row columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vincepub:index' %}">Home</a></li>
+      <li><span class="show-for-sr">Current: </span> Search</li>
+    </ul>
+  </nav>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <h2 class="subtitle"> Search </h2>
+  </div>
+</div>
+
+<div class="row" id="content">
+  <div class="large-4 medium-4 columns">
+    <form action="" method="post" enctype="multipart/form-data" name="searchform" id="searchform">
+      {% with WIDGET_ERROR_CLASS='searchform_error' %}
+      {% csrf_token %}
+      <div class="row columns">
+	<div class="searchbar">
+	  <h4>Keyword</h4>
+          {% render_field form.wordSearch errormsg=form.wordSearch.errors|first %}
+	</div>
+      </div>
+      <div class="row columns">
+	<div class="searchbar">
+	  
+	  <h4>Vendor</h4>
+	  {% render_field form.vendor errormsg=form.vendor.errors|first %}
+	</div>
+      </div>
+      <!--<div class="row columns">
+	<div class="searchbar">
+	  <h4>Timeframe</h4>
+	  <label>From:</label>
+	  {{form.datestart}}
+	  <br/>
+	  <label>To:</label>
+	  {{form.dateend}}
+	</div>
+      </div>-->
+      <div class="row columns">
+	<div class="searchbar">
+	  <h4>Year</h4>
+	  {% for choice in form.years.field.widget.choices %}
+	  {% if forloop.counter0 == 5 %}
+	  <div id="hideyears">
+	    {% endif %}
+	  <div class="yearchoice">
+	    <!--<div class="row">
+	    <div class="large-2 medium-2 columns">-->
+	      <input id="id_years_{{ forloop.counter0 }}" name="years" type="checkbox" value="{{choice}}">{{ choice }}
+	    <!--</div>
+	    <div class="large-10 medium-10 columns"><label>{{ choice }}</label></div>
+	  </div>-->
+	  </div>
+	  {% endfor %}
+	  </div>
+	    <div class="row columns">
+	      <div id="moreYears">
+		<a href="#" id="moreYear">more</a>
+	      </div>
+	      <div id="lessYears">
+		<a href="#" id="lessYear">less</a>
+	      </div>
+	    </div>
+
+	</div>
+      </div>
+      <div><input type="hidden" name="page" id="id_page" value="1"></div>
+      <!--<input type="submit" value="Submit" class="vulsubmit"/>-->
+      {% endwith %}
+    </form>
+  </div>
+  <div class="large-8 medium-8 columns">
+    <div id="searchresults"></div>
+  </div>
+</div>
+
+{% endblock %}

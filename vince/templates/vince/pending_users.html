@@ -1,0 +1,43 @@
+{% load i18n humanize post_tags %}
+{% for u in pending_users %}
+<div class="row list-row">
+  <div class="large-1 columns">
+      {% autoescape off %}{{ u|userlogo:"profile-pic" }}{% endautoescape %}
+  </div>
+  <div class="large-7 columns">
+    <div class="article-row-content">
+      <p class="article-row-content-description">
+        <a href="{% url 'vince:vcuser' u.id %}">
+          {{ u.vinceprofile.preferred_username }}
+        </a> {% if u.get_full_name %}- {{ u.get_full_name }}{% endif %}
+        <span class="email">({{ u.email }})</span>
+      </p>
+      <time class="article-row-content-time"><i class="far fa-clock"></i> Joined {{ u.date_joined|naturaltime }}
+      </time>
+    </div>
+  </div>
+  {% if u.vinceprofile.pending %}
+  <div class="large-2 columns text-right">
+
+    <a href="{% url 'vince:approveuser' u.id %}" class="approve button default" action="{% url 'vince:addusercontact' u.id %}">Approve</a>
+  </div>
+  <div class="large-2 columns text-right">
+    <a href="{% url 'vince:rmuser' u.id %}" class="remove button secondary">Ignore</a>
+  </div>
+  {% else %}
+  <div class="large-4 columns text-right">
+    {% with contacts=u|get_contact %}
+    {% if contacts %}
+    <b>Member of:</b><br/>
+    {% for contact in contacts %}
+    <a href="{% url 'vince:contact' contact.contact.vendor_id %}">{{ contact.contact.vendor_name }}</a>{% if forloop.last %}{% else %},{% endif %}
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+  </div>
+  {% endif %}
+
+</div>
+{% empty %}
+<h3 class="subtitle">No pending users</h3>
+{% endfor %}

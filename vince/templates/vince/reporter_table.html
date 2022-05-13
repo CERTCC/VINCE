@@ -1,0 +1,90 @@
+{% load i18n humanize ticket_to_link %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="followup-container">
+      <div class="followup-header">
+	<h4> {{ ticket_title }}</h4>
+      </div>
+    <table class="hover tickets">
+      <thead>
+	<tr class='row_tablehead'><td colspan='2'><h3>[{{ ticket.submission_type }} submission]: {{ ticket.vrf_id }}</h3></td></tr>
+	<tr> <th colspan='2'>Affected Vendor(s): {{ ticket.vendor_name }} {% if ticket.multiplevendors %} {{ ticket.other_vendors }}{% endif %}
+        </th></tr>
+	<tr><th colspan='2'>Product Name: {{ ticket.product_name }} <br/>Product Version: {{ ticket.product_version }}</th></tr>
+	{% if ticket.tracking %}
+	<tr><th colspan='2'>Related Tracking: {{ ticket.tracking }}</th></tr>
+	{% endif %}
+      </thead>
+      <tbody>
+	<tr><th>Submitted Date</th><td> {{ ticket.date_submitted }} </td></tr>
+	<tr>
+          <th colspan='2'>{% trans "Description" %}</th>
+        </tr>
+        <tr>
+          <td id="ticket-description" colspan='2'>{{ ticket.vul_description|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}</td>
+        </tr>
+	
+        <tr>
+          <th colspan='2'>{% trans "Exploit" %}</th>
+        </tr>
+        <tr>
+          <td colspan='2'>{{ ticket.vul_exploit|force_escape|urlizetrunc:50|linebreaksbr }}</td>
+        </tr>
+        <tr>
+          <th colspan='2'>{% trans "Impact" %}</th>
+        </tr>
+        <tr>
+          <td colspan='2'>{{ ticket.vul_impact|force_escape|urlizetrunc:50|linebreaksbr }}</td>
+        </tr>
+	<tr>
+          <th colspan='2'>{% trans "Discovery" %}</th>
+        </tr>
+        <tr>
+          <td colspan='2'>{{ ticket.vul_discovery|force_escape|urlizetrunc:50|linebreaksbr }}</td>
+        </tr>
+	
+	<tr>
+          <th>{% trans "Has been exploited?" %}</th>
+          <td>{{ ticket.vul_exploited|yesno }}</td>
+        </tr>
+	{% if ticket.vul_exploited %}
+	<tr>
+	  <th>{% trans "Exploit References" %}</th>
+	  <td>{{ ticket.exploit_references}}</td>
+	</tr>
+	{% endif %}
+        <tr>
+          <th>{% trans "Is public?" %}</th>
+          <td>{{ ticket.vul_public|yesno }}</td>
+        </tr>
+	{% if ticket.vul_public %}
+        <tr>
+          <th>{% trans "Public References" %}</th>
+          <td>{{ ticket.public_references}}</td>
+        </tr>
+        {% endif %}
+	<tr>
+          <th>{% trans "Disclosure Plans?" %}</th>
+          <td>{{ ticket.vul_disclose|yesno }}</td>
+        </tr>
+	{% if ticket.vul_disclose %}
+	<tr>
+          <th>{% trans "Disclosure Plans" %}</th>
+          <td>{{ ticket.disclosure_plans }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+          <th>{% trans "Comments" %}</th>
+          <td>{{ ticket.comments }}</td>
+        </tr>
+	
+        <tr>
+          <th>{% trans "Attachment" %}</th>
+          <td>{{ ticket.user_file }}</td>
+        </tr>
+	
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
