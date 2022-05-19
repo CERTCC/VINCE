@@ -45,7 +45,6 @@ import os
 import boto3
 import environ
 import urllib
-from celery.schedules import crontab
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -132,7 +131,6 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'django.contrib.humanize',
     'django_countries',
-    'django_celery_results',
     'storages',
 ]
 
