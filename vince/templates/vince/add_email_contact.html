@@ -1,0 +1,49 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <form method="post" action="{% url 'vince:addemail' contact.id %}" id="addemailform" lookup="{% url 'vince:userlookup' %}">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Add Email To Contact</h3>
+    </div>
+
+    <div class="modal-body">
+      {% csrf_token %}
+      <p>
+      <div class="form-group">
+        <label for='id_{{ form.email.name }}'>{% trans form.email.label %}<span class='required'>*</span></label>
+        {% if form.email.help_text %}<small class='form-text text-muted'>{% trans form.email.help_text %}</small>{% endif %}
+        {{ form.email }}
+        {% if form.email.errors %}<dd class='error'>{{ form.email.errors }}</dd>{% endif %}
+      </div>
+      {% if contact.vendor_type == "Contact" %}
+      <div class="form-group">
+	<label for='id_{{ form.name.name }}'>{% trans form.name.label %}<span class='required'>*</span></label>
+        {% if form.name.help_text %}<small class='form-text text-muted'>{% trans form.name.help_text %}</small>{% endif %}
+        {{ form.name }}
+        {% if form.name.errors %}<dd class='error'>{{ form.name.errors }}</dd>{% endif %}
+      </div>
+      {% else %}
+      <div class="form-group">
+        <label for='id_{{ form.email_type.name }}'>{% trans form.email_type.label %}<span class='required'>*</span></label>
+        {% if form.email_type.help_text %}<small class='form-text text-muted'>{% trans form.email_type.help_text %}</small>{% endif %}
+        {{ form.email_type }}
+        {% if form.email_type.errors %}<dd class='error'>{{ form.email_type.errors }}</dd>{% endif %}
+      </div>
+      {% endif %}
+      <div id="vendor-results">
+      </div>
+      <div id="msgvendor" class="hidden">
+        <label for='id_msg'>Message to Admins:</label>
+        <textarea name="msg" cols="40" rows="8" id="id_msg"></textarea>
+      </div>
+      </p>
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button alert" type='submit' value='{% trans "Add" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

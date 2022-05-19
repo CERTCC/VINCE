@@ -1,5 +1,5 @@
 {% extends VINCETRACK_BASE_TEMPLATE %}
-{% load i18n humanize ticket_to_link %}
+{% load i18n humanize ticket_to_link contact_tags %}
 {% load staticfiles %}
 {% block js %}
 {{ block.super }}
@@ -9,23 +9,18 @@
 <div class="app-top-panel">
   <div class="row">
     <div class="large-7 medium-7 columns">
-      <h2>Contact: {{ contact.vendor_name }}</h2>
+      <h2>{{ contact.vendor_type }}: {{ contact.vendor_name }}</h2>
     </div>
     <div class="large-5 medium-5 columns text-right">
       {% if changes %}
       <a href="{% url 'vince:contact_changes' object.id %}"><button class="button default small small-only-expanded">Approve Changes</button></a>
       {% endif %}
       <a href="{% url 'vince:editcontact' object.id %}" class="ticket-edit"><button class="button primary small small-only-expanded"><i class="fas fa-pencil-alt"></i> {% trans "Edit Contact" %}</button></a>
-      {% if groupadmins %}
-      <a href="{% url 'vince:msgadminadduser' contact.id %}" id="adduser"><button class="button default small small-only-expanded"><i class="fas fa-plus"></i> {% trans "Add User" %}</button></a>
-      {% else %}
-      <a href="{% url 'vince:initcontactverify' object.id %}"><button class="button default small small-only-expanded"><i class="fas fa-plus"></i> {% trans "Add User" %}</button></a>
-      {% endif %}
     </div>
   </div>
 </div>
 
-<div data-reveal class="reveal" id="modal" "data-close-on-click"=false></div>
+<div data-reveal class="reveal" id="modal" data-close-on-click="false"></div>
 
 {% if changes %}
 <div class="row">
@@ -42,8 +37,8 @@
 </div>
 {% endif %}
 
-{{ groupadmins|json_script:"groupadmins" }}
-{{ assignable|json_script:"assignable_users" }}
+{{ groups|json_script:"groups" }}
+{{ all_groups|json_script:"all_groups" }}
 {{ contacttags|json_script:"contact_tags" }}
 {{ othertags|json_script:"other_tags" }}
 
@@ -54,6 +49,15 @@
     {% endfor %}
   </div>
 </div>
+
+{% if contact.active %}{% else %}{% if vince_users %}
+<div class="row">
+  <div class="large-12 columns">
+    <div class="callout alert"><b>Uh oh! This contact is inactive but has active VINCE users.  Please remove VINCE users or activate contact!</b></div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
 
 <div class="hidden" id="task_assign">
   <div class="reassign">
@@ -69,7 +73,7 @@
 
 
 <div class="row">
-  <div class="large-9 medium-9 small-12 columns">
+  <div class="large-12 medium-12 small-12 columns">
 
     <div class="case-container">
       <ul class="tabs" data-tabs id="case-tabs" data-deep-link="true" data-update-history="true">
@@ -80,49 +84,162 @@
       </ul>
       <div class="tabs-content" data-tabs-content="case-tabs">
 	<div class="tabs-panel is-active" id="details">
-
-	  {% if object.active %}
-	  <h4>{{ object.vendor_name }} (Active)</h4>
-	  {% else %}
-	  <h4>{{ object.vendor_name }} (Inactive)</h4>
-	  {% endif %}
-	  <table class="hover unstriped tickets">
-	    <thead>
-	      <tr class="row_tablehead"><td colspan="2">
-		  <span class="ticket_toolbar">
-		    <a href="{% url 'vince:rmcontact' object.id %}" class="ticket-delete"><button class="button tiny alert"><i class="far fa-trash-alt"></i> {% trans "Delete" %}</button></a> {% if vc_contact %}<a href="{% url 'vinny:admin' vc_contact.id %}"><button class="button tiny primary"><i class="fas fa-users-cog"></i>  {% trans "View Case Permissions" %}</button></a>{% endif %}
-		  </span>
-		</td>
-	      </tr>
-	      <tr><th colspan='2'>SRMail: <i>{{ object.srmail_peer }}</i> &nbsp;&nbsp; Salutation: <i>{{ object.srmail_salutation }}</i></th></tr>
-	    </thead>
-	    <tbody>
-	      {% if object.comment %}
-	      <tr>
-		<th colspan='2'>{% trans "Comment" %}: {{ object.comment }}</th>
-	      </tr>
+	  <div class="row">
+	    <div class="large-8 medium-8 small-6 columns">
+	      {% if object.active %}
+	      <h4>{{ object.vendor_name }} (Active)</h4>
+	      {% else %}
+	      <h4>{{ object.vendor_name }} (Inactive)</h4>
 	      {% endif %}
-	      <tr>
-		<th width="200">{% trans "Type" %}</th>
-		{% if object.vendor_type == "Vendor" %}
-		<td>{{ object.vendor_type }} [#{{ object.lotus_id }}]</td>
+	    </div>
+	    <div class="large-4 medium-4 small-6 columns">
+	      <button class="button default dropdown menu float-right" data-dropdown-menu type="button" data-toggle="wanttomenu" aria-haspopup="true" aria-expanded="false" id="iwanttobutton">
+		I want to</button>
+	      <div class="dropdown-pane hoverable bottom" id="wanttomenu" data-dropdown data-hover="true" data-hover-pane="true">
+		<ul class="menu vertical">
+		  {% if contact.active %}
+		  <li><a class="dropdown-item" href="{% url 'vince:editcontact' object.id %}?deactivate=1">{% trans "Deactivate Contact" %}</a></li>
+		  {% else %}
+		  <li><a class="dropdown-item" href="{% url 'vince:editcontact' object.id %}?activate=1">{% trans "Activate Contact" %}</a></li>
+		  {% endif %}
+		  {% if user.is_superuser %}
+		  <li><a class="dropdown-item" href="{% url 'vince:rmcontact' object.id %}">{% trans "Delete Contact" %}</a></li>
+		  {% endif %}
+		  {% if vc_contact %}
+		  <li><a class="dropdown-item" href="{% url 'vinny:admin' vc_contact.id %}">{% trans "View Case Permissions" %}</a></li>
+		  {% endif %}
+		  <li><a class="dropdown-item" href="{% url 'vinny:sendmsggroup' object.id %}">{% trans "Message All Users" %}</a></li>
+		  <li><a class="dropdown-item" href="{% url 'vince:newemail' contact.id %}">{% trans "Email All Users" %}</a></li>
+		  {% if groupadmins %}
+		  <li><a class="dropdown-item" href="{% url 'vinny:sendmsgadmins' object.id %}">{% trans "Message Admins" %}</a></li>
+		  <li><a class="dropdown-item" href="{% url 'vince:newemailadmins' 'admins' contact.id %}">{% trans "Email Group Admins" %}</a></li>
+		  {% endif %}
+		</ul>
+	      </div>
+	    </div>
+	  </div>
+	  <div class="row">
+	    <div class="large-12 columns">
+	      <b>{% trans "Type" %}: </b>
+	      {% if object.vendor_type == "Contact" %}
+	      User
+	      {% else %}
+	      {{ object.vendor_type }}
+	      {% endif %}
+		<span class="hidden" id="vendor_type_help">
+		  {% if object.vendor_type == "Vendor" %}
+		  <p>A vendor type contact is typically a company or organization that creates or sells products. This type of contact usually consists of 1 or more people and has the ability to manage users in their group in VINCEComm. A vendor should name at least 1 group admin.</p>
+		  {% elif object.vendor_type == "Coordinator" %}
+		  <p>A coordinator type contact is able to invite/add users to their group.  A coordinator group should have at least 1 group admin. Coordinator contacts should not be listed as vendors in cases.</p>
+		  {% else %}
+		  <p>A "Contact" or "User" type contact is typically a single person's contact information. They will not be able to add users to their group.</p>
+		  {% endif %}
+		</span>
+		<span class="helptooltip" id="showcharttip" title="Contact Type Help"><i class="fas fa-question-circle"></i></span>
+		<small>&nbsp;({% if vince_users|length == 1 %}1 User{% else %}{{vince_users|length}} Users{% endif %}{% if object.vendor_type == "Contact" %}{% else %}{% if groupadmins|length == 1 %}, &nbsp;1 Admin{% else %},&nbsp;{{ groupadmins|length }} Admins{% endif %}{% endif %})</small>
+	    </div>
+	  </div>
+	  <div class="row">
+	    <div class="large-12 columns">
+	      <b>Location:</b> {{ object.location }} [{{ object.countrycode }}]
+	    </div>
+	  </div>
+	  <div class="row">
+	    <div class="large-12 columns">
+	      {% if object.comment %}
+	      <p><b>{% trans "Comment" %}:</b> {{ object.comment }}<p>
+	      {% endif %}
+	    </div>
+	  </div>
+	  <hr/>
+	  <div class="row">
+	    <div class="large-6 columns">
+	      <h4>Emails/Users</h4>
+	    </div>
+	    <div class="large-6 columns text-right">
+	      <a href="{% url 'vince:addemail' object.id %}" class="small button default" id="addemail"><i class="fas fa-plus"></i> Add Email</a>
+	      {% comment %}
+	      {% if groupadmins %}
+	      <a href="{% url 'vince:msgadminadduser' contact.id %}" id="adduser"><button class="button default small small-only-expanded"><i class="fas fa-plus"></i> {% trans "Add User" %}</button></a>
+	      {% else %}
+	      <a href="{% url 'vince:initcontactverify' object.id %}"><button class="button default small small-only-expanded"><i class="fas fa-plus"></i> {% trans "Add User" %}</button></a>
+	      {% endif %}
+	      {% endcomment %}
+	    </div>
+	  </div>
+	  <span class="hidden" id="email_type_help">
+	    <p>A Notification-Only email address is typically a team email or email list address. VINCE users with Notification-Only addresses will NOT be able to access cases associated with this contact.</p>
+	    <p>To change email type, remove email and re-add email with desired type.</p>
+	  </span>
+	    
+	  <div class="row">
+	    <div class="large-12 columns">
+	      <table class="hover usermgmt">
+		<thead>
+		  <tr>
+		    
+		<th>Type <span class="helptooltip" id="showtypehelp" title="Help"><i class="fas fa-question-circle"></i></span></th>
+		<th>Email</th>
+		<th>User (Name)</th>
+		<th>Notifications</th>
+		<th width="80">Actions</th>
+	      </tr>
+	    </thead>
+	    {% for email in object.emailcontact_set.all %}
+	    {% with t=email.email|vince_user_link %}
+		<tr>
+		  <td>
+		  {% if email.email_list %}
+		  Notification-Only
+		  {% elif t %}
+		  User
+		  {% if email.email in groupadmins %}<i class="fas fa-crown" title="Group Admin"></i>                  {% endif %}
+		  {% elif object.id|inviteduser:email.email %}
+		  Invited User
+		  {% else %}
+		  Email
+		  {% endif %}
+		  </td>
+		  
+		  <td>{{ email.email }}{% if email.status %}{% else %}<span class="errornote"><b>(INACTIVE)</b></span>{% endif %}</td>
+
+		{% if email.email in vince_users and t %}
+		<td>  <i class="fas fa-user"></i> <a href="{% url 'vince:vcuser' t.id %}">{{ t.vinceprofile.preferred_username }}</a> ({% if t.get_full_name %}{{ t.get_full_name }}{% else %}{{ email.name }}{% endif %}) </td>
 		{% else %}
-		<td>{{ object.vendor_type }}</td>
+		<td><i class="fas fa-user-alt-slash"></i> {% if email.name %}({{ email.name }}){% endif %}</td>
 		{% endif %}
-	      </tr>
-	      <tr>
-		<th>{% trans "Location" %}</th>
-		<td> {{ object.location }} [{{ object.countrycode }}]</td>
-	      </tr>
-	      {% for email in object.emailcontact_set.all %}
-	      <tr>
-		<th>Email {% if email.email_list %}[EMAIL LIST]{% else %} [{{ email.email_type}}]{% endif %}</th>
-		<td> {{ email.email_function }}: {{ email.email }}, {{ email.name }} {% if email.status %}{% else %}<span class="errornote"><b>(INACTIVE)</b></span>{% endif %}</td>
-	      </tr>
-	      {% endfor %}
+		<td>{% if email.email_function in "TO,CC" %}Enabled  <a href="{% url 'vince:changeemail' email.id %}" class="modemail"><i class="fas fa-edit" title="Disable"></i></a>{% else %}Disabled <a href="{% url 'vince:changeemail' email.id %}" class="modemail"><i class="fas fa-edit" title="Enable"></i></a>{% endif %}</td>
+		  <td>{% if user.usersettings.contacts_write %}<a href="{% url 'vince:rmemail' object.id email.id %}" class="rmemail"><i class="fas fa-trash-alt" aria-hidden="true" title="Remove email/user"></i></a>
+		    {% if email.email_list %}{% else %}
+		  {% if email.email in groupadmins %}
+		  <a href="{% url 'vince:contact' object.id %}" class="rmadminuser" val="{{ email.email }}"><i class="fas fa-ban" title="Remove Admin Access"></i></a>
+		  {% elif t %}
+		  {% if object.vendor_type == "Contact" %}{% else %}
+		  <a href="{% url 'vince:contact' object.id %}" class="adminuser" val="{{ email.email }}"><i class="fas fa-crown" aria-hidden="true" title="Make user group administrator"></i></a>{% endif %}
+		  {% endif %}
+		  {% endif %}
+		  {% endif %}
+		  {% if email.email in vince_users and t %}<a href="{% url 'vinny:sendmsgus' t.id %}"><i class="fas fa-comment" alt="message user" title="message user"></i></a>{% endif %}
+		</td>
+	    </tr>
+	    {% endwith %}
+	    {% endfor %}
+		{% for email in associations %}
+		<tr>
+		  <td><a href="{{ email.ticket.get_absolute_url }}">Verification Initiated</a></td>
+		  <td><i>{{ email.user }}</i></td>
+		  <td></td>
+		  <td></td>
+		</tr>
+		{% endfor %}
+	      </table>
+	    </div>
+	  </div>
+	  <hr/>
+	  <table class="hover unstriped tickets">
 	      {% for phone in object.phonecontact_set.all %}
 	      <tr>
-		<th>Phone [{{ phone.phone_type }}]</th>
+		<th width="200">Phone [{{ phone.phone_type }}]</th>
 		<td>{{ phone.country_code }} {{ phone.phone }} {% if phone.comment %}(Comment: {{ phone.comment }}){% endif %}</td>
 	      </tr>
 	      {% endfor %}
@@ -150,32 +267,16 @@
 		<td><a href="{{ web.url }}">{{ web.url }}</a> {% if web.description %}{{ web.description }}{% endif %}</td>
 	      </tr>
 	      {% endfor %}
-	      <tr>
-		<th>Groups</th>
-		<td>
-		  {% for group in groups %}
-		  <a href="{% url 'vince:group' group.group.id %}">{{ group.group.name }}</a>,
-		  {% empty %}
-		  This vendor is not a member of any groups
-		  {% endfor %}
-		</td>
-	      </tr>
-	      <tr>
-		<th class="text-center">VINCEComm<br/> Users {% if vince_users %}<a title="Message All Users" href="{% url 'vinny:sendmsggroup' object.id %}"><i class="fas fa-comment"></i></a>{% endif %} <a href="{% url 'vince:newemail' contact.id %}" title="Email All Users"><i class="fas fa-paper-plane"></i> </a></th>
-		<td>{% for u in vince_users %}
-		  <a href="{% url 'vince:vcuser' u.id %}">{{ u.username }} ({{ u.vinceprofile__preferred_username}})</a> <a href="{% url 'vinny:sendmsgus' u.id %}"><i class="fas fa-comment" alt="message user" title="message user"></i></a> {% endfor %}</td>
-	      </tr>
 	      
 	      <tr>
-		<th>Vendor<br/> Admins {% if groupadmins %}<a title="Message Admins" href="{% url 'vinny:sendmsgadmins' object.id %}"><i class="fas fa-comment"></i></a>
-		<a href="{% url 'vince:newemailadmins' 'admins' contact.id %}" title="Email Admins"><i class="fas fa-paper-plane"></i> </a>{% endif %}</th>
+		<th width="100">Groups</th>
 		<td>
-		  <div class="taggle_input custom martie" id="admin_taggle"></div>
+		  <div class="taggle_input custom martie" id="group_taggle" action="{% url 'vince:addtogroup' object.id %}"></div>
 		</td>
 	      </tr>
 
 	      <tr>
-		<th>Tags</th>
+		<th width="100">Tags</th>
 		<td>
 		  <div class="taggle_input custom martie" id="contact_taggle" ></div>
                 </td>
@@ -278,8 +379,10 @@
       </div>
     </div>
   </div>
-  <div class="large-3 medium-3 small-12 columns activity-div" id="activitypanel" action="{% url 'vince:contact_activity' object.id %}">
-    {% include 'vince/include/contactactivity.html' with object_list=activity_list %}
+</div>
+<div class="row">
+  <div class="large-12 medium-12 small-12 columns" id="activitypanel" action="{% url 'vince:contact_activity' object.id %}">
+    {% include 'vince/include/alt_contact_activity.html' with object_list=activity_list %}
     </div>
 </div>
     

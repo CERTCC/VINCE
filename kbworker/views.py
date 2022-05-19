@@ -28,10 +28,11 @@
 ########################################################################
 from django.shortcuts import render
 from django.core.management import call_command
+from django.utils import timezone
 import json
 import boto3
 import logging
-from vincepub.models import VUReport, VendorRecord
+from vincepub.models import VUReport, VendorRecord, VulnerabilityNote, NoteVulnerability, Vendor, VendorVulStatus
 from vincepub import serializers
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
@@ -148,15 +149,151 @@ def check_for_updates(request):
                         send_sns(ldata.get('cert_id'), "Problem building static vulnerability note", traceback.format_exc())
                         return JsonResponse({ 'problem': ldata['idnumber']}, status=500)
 
-                if ldata["DateFirstPublished"] == "":
-                    ldata.pop("DateFirstPublished")
-                if ldata["PublicDate"] == "":
-                    ldata.pop("PublicDate")
-                if 'US-CERTTechnicalAlert' in ldata:
-                    ldata['uscerttechalert'] = ldata['US-CERTTechnicalAlert']
-                    ldata.pop("US-CERTTechnicalAlert")
-                ldatalower = {k.lower(): v for k, v in ldata.items()}
-                for key,val in ldatalower.items():
+                elif ldata.get("kbpublisher"):
+                    logger.debug(f"THIS IS A PUBLISHER GENERATED FILE {ldata['vuid']}")
+                    try:
+                        report = VUReport.objects.filter(idnumber = ldata['vuid']).exclude(vulnote__isnull=True).first()
+                        if report:
+                            if ldata.get('delete') == 1:
+                                #THIS IS A DELETE REQUEST
+                                report.delete()
+                                #send_sns(ldata['vuid'], "PUBLISHED", "Success, the vulnerability note was removed.")
+                                #now remove s3 static file
+                                logger.debug(f"removing vuls/id/{ldata['vuid']}/index.html from bucket {settings.AWS_STORAGE_BUCKET_NAME}") 
+                                s3.Object(settings.AWS_STORAGE_BUCKET_NAME, f"vuls/id/{ldata['vuid']}/index.html").delete()
+                                s3.Object(settings.AWS_STORAGE_BUCKET_NAME, f"vuls/id/{ldata['vuid']}/").delete() 
+                                return JsonResponse({'response':'success'}, status=200)
+                                
+                            logger.debug(f"Re-Publishing {settings.CASE_IDENTIFIER}{report.idnumber}:{report.name}")
+                            report.vulnote.content = ldata['content']
+                            report.vulnote.title = ldata['title']
+                            if ldata['references']:
+                                report.vulnote.references = ldata['references']
+                            report.vulnote.revision_number = report.revision + 1
+                            report.vulnote.dateupdated = timezone.now()
+                            if ldata['publicdate']:
+                                report.vulnote.publicdate = ldata['publicdate']
+                            else:
+                                report.vulnote.publicdate = timezone.now()
+                            report.vulnote.save()
+                            report.overview = ldata['content']
+                            report.name = ldata['title']
+                            report.dateupdated = timezone.now()
+                            if ldata['references']:
+                                report.public = ldata['references'].splitlines()
+                            report.cveids = ldata['cveids']
+                            report.revision = report.vulnote.revision_number
+                            if ldata['publicdate']:
+                                report.publicdate = ldata['publicdate']
+                            else:
+                                report.publicdate = timezone.now()
+                            report.save()
+                            vpnote = report.vulnote
+                            
+                        else:
+                            logger.debug(f"Publishing for the first time {settings.CASE_IDENTIFIER}{ldata['vuid']}: {ldata['title']}")
+                            vpnote = VulnerabilityNote(content = ldata['content'],
+                                                       title = ldata['title'],
+                                                       references = ldata['references'],
+                                                       vuid=ldata['vuid'])
+
+                            if ldata['publicdate']:
+                                vpnote.publicdate = ldata['publicdate']
+                            vpnote.save()
+                            report, created = VUReport.objects.update_or_create(idnumber = ldata['vuid'],
+                                                                                vuid = f"{settings.CASE_IDENTIFIER}{ldata['vuid']}",
+                                                                                defaults={'name':ldata['title'],
+                                                                                          'overview':ldata['content'],
+                                                                                          'dateupdated':timezone.now(),
+                                                                                          'vulnote':vpnote,
+                                                                                          'cveids': ldata['cveids'],
+                                                                                          'publicdate': ldata['publicdate']})
+                            if ldata['references']:
+                                report.public = ldata['references'].splitlines()
+
+                            if created:
+                                report.datefirstpublished = timezone.now()
+                                report.save()
+                            else:
+                                vpnote.revision_number = report.revision + 1
+                                vpnote.save()
+
+
+                        # now update vuls/vendors/status
+                        for vul in ldata['vuls']:
+                            vp_vul = NoteVulnerability.objects.update_or_create(case_increment = vul['case_increment'],
+                                                                                note=vpnote,
+                                                                                defaults = {'cve': vul['cve'],
+                                                                                            'description': vul['description'],
+                                                                                            'uid':vul['uid']})
+                        for vul in ldata['deleted_vuls']:
+                                vp_vul = NoteVulnerability.objects.filter(case_increment = vul, note=vpnote).first()
+                                if vp_vul:
+                                    vp_vul.delete()
+
+                        for vendor in ldata['vendors']:
+                            vp_vendor, created = Vendor.objects.update_or_create(note=vpnote,
+                                                                                 uuid=vendor['uid'],
+                                                                                 defaults = {'contact_date': vendor['contact_date'],
+                                                                                             'references': vendor.get('references'),
+                                                                                             'statement': vendor.get('statement'),
+                                                                                             'statement_date': vendor.get('statement_date'),
+                                                                                             'addendum': vendor.get('addendum'),
+                                                                                             'vendor': vendor['vendor']})
+                            for status in vendor['status']:
+                                vp_vul = NoteVulnerability.objects.filter(case_increment=status['vul_increment'],
+                                                                          note=vpnote).first()
+                                if vp_vul:
+                                    intstatus = 3
+                                    if status['status'] == "Affected":
+                                        intstatus = 1
+                                    elif status['status'] in ["Unaffected", "Not Affected"]:
+                                        intstatus = 2
+                                        
+                                    vp_vulstatus = VendorVulStatus.objects.update_or_create(vendor=vp_vendor,
+                                                                                            vul = vp_vul,
+                                                                                            defaults={'status':intstatus,
+                                                                                                      'references':status.get('references'),
+                                                                                                      'statement':status.get('statement')})
+                                    
+                        vpnote.published=True
+                        vpnote.save()
+
+                        
+                        for vendor in ldata['deleted_vendors']:
+                            vp_vendor = Vendor.objects.filter(note=vpnote, uuid=vendor).first()
+                            if vp_vendor:
+                                vp_vendor.delete()
+
+                        
+                        if report:
+                            call_command('rebuildnotes', ldata['idnumber'])
+                            logger.debug("done building static file")
+                            report.publish = True
+                            report.save()
+                            send_sns(ldata['cert_id'], "PUBLISHED", "Congratulations, the vulnote was published.")
+                            return JsonResponse({'response':'success'}, status=200)
+                    
+                    except:
+                        logger.debug(traceback.format_exc())
+                        send_sns(ldata.get('cert_id'), "Problem building static vulnerability note", traceback.format_exc())
+                        return JsonResponse({ 'problem': ldata['idnumber']}, status=500)
+
+
+    data = {}
+    return render(request, 'vincepub/404.html', data, status=404)
+                        
+"""
+### this is PRE-VINCE old-school publishing
+if ldata["DateFirstPublished"] == "":
+ldata.pop("DateFirstPublished")
+if ldata["PublicDate"] == "":
+ldata.pop("PublicDate")
+            if 'US-CERTTechnicalAlert' in ldata:
+                ldata['uscerttechalert'] = ldata['US-CERTTechnicalAlert']
+                ldata.pop("US-CERTTechnicalAlert")
+            ldatalower = {k.lower(): v for k, v in ldata.items()}
+            for key,val in ldatalower.items():
                     if key.startswith("txt_"):
                         k = key[4:]
                         ldatalower[k] = val
@@ -228,9 +365,7 @@ def check_for_updates(request):
         send_sns(ldatalower['idnumber'], "PUBLISHED", "Congratulations, the vulnote was published.")
         return JsonResponse({'response':'success'}, status=200)
     else:
-        data = {}
-        return render(request, 'vincepub/404.html', data, status=404)
-
+"""
 
 @csrf_exempt
 def vc_daily_digest(request):

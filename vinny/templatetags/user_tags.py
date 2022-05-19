@@ -53,3 +53,21 @@ def groupadmin(user, contact):
 def case_access(cases, user):
     cases = cases.filter(user=user).values_list('casemember__case__vuid', flat=True)
     return list(cases)
+
+
+@register.filter
+def notify_emails(user, contact):
+    try:
+        from vinny.models import VinceCommEmail
+    except ImportError:
+        if settings.DEBUG:
+            raise template.TemplateSyntaxError("Error in template tags: Can't load VinceCommEmail.")
+    email = VinceCommEmail.objects.filter(email=user.email, contact=contact).first()
+    if email:
+        if email.email_function in ["TO", "CC"]:
+            return True
+        else:
+            return False
+    return False
+    
+    

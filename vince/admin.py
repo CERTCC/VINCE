@@ -412,8 +412,8 @@ class EmailContactInLine(admin.TabularInline):
 
     
 class ContactAdmin(admin.ModelAdmin):
-    search_fields=['vendor_id', 'vendor_name']
-    list_display=['vendor_id', 'vendor_name', 'active', "_emails"]
+    search_fields=['vendor_name']
+    list_display=['vendor_name', 'vendor_type', 'active', "_emails"]
 
     inlines = [
         EmailContactInLine

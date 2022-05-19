@@ -46,3 +46,14 @@ $(document).on("submit", "#signupform", function(event) {
     event.preventDefault();
     return noDoubleClicks($(this));
 });
+
+$(document).ready(function() {
+
+
+    $('#showhelptip').qtip({
+        content: $("#loginhelp"),
+	style: {classes: 'qtip-youtube'}
+    });
+
+
+});

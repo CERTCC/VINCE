@@ -47,7 +47,7 @@ from vince.models import VulnerabilityCase
 # from vince.models import Attachment, EmailTemplate, ArtifactAttachment, TicketArtifact
 from vince.models import *
 from vinny.models import Message, Case, Post, PostRevision, VinceCommContact, GroupContact, CaseMember, CaseMemberStatus, CaseStatement, CaseVulnerability, VTCaseRequest, VinceCommCaseAttachment, ReportAttachment, VinceCommInvitedUsers, CRFollowUp, VCVUReport, VendorAction, VendorStatusChange, CaseCoordinator, ContactInfoChange, CaseViewed, CaseVulExploit, CaseVulCVSS, CoordinatorSettings, VINCEEmailNotification
-from vince.mailer import send_newticket_mail, send_daily_digest_mail
+from vince.mailer import send_newticket_mail, send_daily_digest_mail, send_reset_mfa_email, get_mail_content
 import email
 import email.header
 import traceback
@@ -1064,6 +1064,28 @@ def create_action(attributes, body):
             change.approved = True
             change.save()
 
+    else:
+        # is this a completion of the contact verification process?
+        # find contact change
+        contact = Contact.objects.filter(vendor_name=group).first()
+        if contact:
+            vccontact = VinceCommContact.objects.filter(vendor_id=contact.id).first()
+            #get new emails added
+            cic = ContactInfoChange.objects.filter(contact=vccontact,model="Email",field="email address").exclude(new_value__isnull=True)
+            for email in cic:
+                #check to see if we have a contact verification open for this user/contact
+                ca = ContactAssociation.objects.filter(contact=contact, email=email.new_value, complete=False).first()
+                if ca:
+                    fup = FollowUp(ticket=ca.ticket,
+                                   title=f"Admin {user} completed contact association process - added email {email.new_value}",
+                                   comment="Contact Association Process Complete")
+                    fup.save()
+                    ca.complete=True
+                    ca.save()
+                    ca.ticket.status=Ticket.CLOSED_STATUS
+                    ca.ticket.resolution = "Group admin completed contact association process"
+                    ca.ticket.save()
+            
     action = Action(title="Contact information change",
                     comment=body)
 
@@ -2920,7 +2942,62 @@ def send_worker_email_all(to, subject, content, tkt, from_user):
         logger.debug(traceback.format_exc())
             
             
-                
+def reset_user_mfa(attributes, body):
+    logger.debug(attributes)
+    logger.debug(body)
+
+    email = attributes['User']
+
+    user = User.objects.using('vincecomm').filter(username=email).first()
+    if not user:
+        send_error_sns("MFA Reset", "MFA Reset Initiation Error", f"User with email {email} requested MFA reset, but user does not exist")
+        return
+
+    queue = TicketQueue.objects.filter(title='Inbox').first()
+
+    if not queue:
+        send_error_sns("MFA Reset", "Configuration Error for MFA Reset", f"User with email {email} requested MFA reset, but Inbox queue does not exist")
+        return
+    
+    ticket = Ticket(title = f"Confirm MFA reset for {user.email}",
+                    status = Ticket.CLOSED_STATUS,
+                    submitter_email = email,
+                    queue = queue,
+                    description=f"User initiated MFA reset\r\nReason:\r\n{body}")
+    ticket.save()
+
+    # don't create more of these, if one exists already                                                                                    
+
+    mfatkt = MFAResetTicket.objects.update_or_create(user_id=int(user.id),
+                                                     ticket=ticket)
+    
+    email_template = EmailTemplate.objects.get(template_name="mfa_reset_request")
+    
+    
+    notification = VendorNotificationEmail(subject=email_template.subject,
+                                           email_body = email_template.plain_text)
+    notification.save()
+    
+    email = VinceEmail(ticket=ticket,
+                       notification=notification,
+                       email_type=1,
+                       to=user.email)
+    email.save()
+
+    send_reset_mfa_email(user, ticket, "mfa_reset_request")
+
+    email_content = get_mail_content(ticket, "mfa_reset_request")
+    
+    fup = FollowUp(title=f"Email sent to {user.email} confirming MFA reset request.",
+                   comment=email_content,
+                   ticket=ticket)
+    
+    fup.save()
+
+
+
+
+
         
     
 

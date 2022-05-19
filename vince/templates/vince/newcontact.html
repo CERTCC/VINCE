@@ -1,413 +1,71 @@
-{% extends VINCETRACK_BASE_TEMPLATE %}
+{% extends "vince/modal.html" %}
+{% load i18n widget_tweaks %}
 {% load staticfiles %}
-{% block js %}
-{{ block.super }}
-<script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
-<script type="text/javascript" src="{% static 'vince/js/edit_contact.js' %}"></script>
-{% endblock %}
 {% block content %}
-{% load widget_tweaks %}
-<!-- You can now combine a row and column if you just need a 12 column row -->
-<div class="app-top-panel">
-  <div class="row">
-    <div class="large-8 columns">
-      <h2>New Contact</h2>
-    </div>
-    <div class="large-4 columns text-right"></div>
-  </div>
-</div>
-
-{% if error %}
-<div class="row">
-  <div class="large-12 columns">
-    <div class="callout alert" role="alert">
-      <strong>ERROR:</strong> {{ error }} <a href="{% url 'vince:contact' oldid %}">{{ old_vendor }}</a>
-    </div>
-  </div>
-</div>
-{% endif %}
-{% if email_error %}
-<div class="row">
-  <div class="large-12 columns">
-    <div class="callout alert" role="alert">
-      <strong>ERROR:</strong> Check required email fields.
-    </div>
-  </div>
-</div>
-{% endif %}
-<div class="row">
-  <div class="large-12 columns">
-    {% for field in form %}
-    {% if field.errors %}
-    <div class="callout alert" role="alert">
-      <p>Please fix the following error:</p>
-      {{ field.label }} {{ field.errors }}
-    </div>
-    {% endif %}
-    {% endfor %}
-  </div>
-</div>
-<form name="cmgr" enctype="multipart/form-data" method="POST" action="{% url 'vince:newcontact' %}" id="cmgrform">
-  {% csrf_token %}
-<div class="row">
-  <div class="large-12 medium-12 columns">
-    <div id="contactinfo">
-      <ul class="accordion" data-accordion data-multi-expand="true" id="contact-tabs">
-	<li class="accordion-item is-active" data-accordion-item>
-	  <a href="#" class="accordion-title">General Info</a>
-	  <div class="accordion-content" data-tab-content>
-	    <div class="row">
-		<div class="form-group"
->                  <div class="large-1 medium-1 columns">
-                    {{ form.active.label_tag }}
-                  </div>
-                  <div class="large-1 medium-1 columns">
-                    {% render_field form.active class="form-control" %}
-                  </div>
-                  <div class="large-1 medium-1 columns">
-		    <label for="vendor_type">Type:</label>
-		  </div>
-                  <div class="large-3 medium-3 columns">
-                    {% render_field form.vendor_type class="form-control" %}
-                  </div>
-                  <div class="large-6 medium-6 columns"></div>
-		</div>
-	      </div>
-	      <div class="row">
-		<div class="form-group">
-                  <div class="large-6 medium-6 columns">
-		    {% if form.vendor_name.errors %}<dd class='error'>{{ form.vendor_name.errors }}</dd>{% endif %}
-		    <div class="required"><label for="id_vendor_name">Name:</label></div>
-		    {% render_field form.vendor_name class="form-control" %}
-                  </div>
-		</div>
-	      </div>
-	      <div class="row" id="lotus">
-		<div class="large-6 medium-6 columns">
-                  <div class="required"><label for="lotus_id">VEND#:
-		      <a href="{% url 'vince:generate' %}" id="generateVendor" title="Generate a new vendor ID"><i class="fas fa-cog"></i></a>
-		  </label></div>
-		  {% render_field form.lotus_id|add_class:"form-control"|append_attr:"readonly:readonly" %}
-		</div>
-		<div class="large-6 medium-6 columns"></div>
-	      </div>
-	      <div class="row">
-                <div class="form-group">
-                  <div class="large-6 medium-6 columns">
-		    {% if form.srmail_peer.errors %}<dd class='error'>{{ form.srmail_peer.errors }}</dd>{% endif %}
-		    <div class="required"><label for="id_srmail_peer">SRMail Peer Name:</label></div>
-                    {% render_field form.srmail_peer class="form-control" %}
-                  </div>
-		  <div class="large-6 medium-6 columns"></div>
-                </div>
-	      </div>
-	      <div class="row">
-		<div class="form-group">
-		  <div class="large-6 medium-6 columns">
-		    <label for="id_srmail_salutation">SRMail Salutation:</label>
-		    {% render_field form.srmail_salutation class="form-control" %}
-                  </div>
-		  <div class="large-6 medium-6 columns"></div>
-                </div>
-              </div>
-	      <div class="row">
-		<div class="form-group">
-		  <div class="large-4 medium-4 columns">
-                    <label for="id_location">Location:</label>
-                    {% render_field form.location class="form-control" %}
-                  </div>
-                  <div class="large-4 medium-4 columns">
-		    <label for="id_countrycode">Country:</label>
-		    {% render_field form.countrycode class="form-control" %}
-		  <!--flag js adds extra div -->
-		  <div class="large-3 medium-3 columns"></div>
-		  </div>
-              </div>
-	      <div class="row">
-		<div class="form-group">
-                  <div class="large-12 medium-12 columns">
-		    <label for="id_comment">Comment:</label>
-		    {% render_field form.comment class="form-control" %}
-                  </div>
-	 	</div>
-	      </div>
-	    </div>
-	</li>
-	<li class="accordion-item is-active" data-accordion-item>
-          <a href="#" class="accordion-title">Emails</a>
-          <div class="accordion-content" data-tab-content>
-	    {{ email_formset.management_form }}
-	    <div class="hidden" id="email_formset_prefix" value="{{ email_formset.prefix }}"></div>
-	    <table class="unstriped" style="border:none; margin:-10px">
-	      {% for subform in email_formset %}
-	      <tr class="email-formset">
-		<td><label for="email_status">Active:</label>
-		  {% render_field subform.status class="form-control"%}
-		</td>
-		<td><div class="required"><label for="id_email">Email:</label></div>
-		  {% render_field subform.email class="form-control" %}
-		</td>
-		<td><label for="email_type">Type:</label>
-		  {% render_field subform.email_type class="form-control" %}
-		</td>
-		<td><div class="required"><label for="name">Name:</label></div>
-		  {% render_field subform.name class="form-control" %} </td>
-		<td><label for="email_function">Function:</label>
-		  {% render_field subform.email_function class="form-control"%}</td>
-		<td><label for="email_list">List:</label>
-		  {% render_field subform.email_list class="form-control"%}</td>
-		</td>
-		<td></td>
-	      </tr>
-	      {% endfor %}
-	    </table>
-	  </div>
-	</li>
-        <li class="accordion-item is-active" data-accordion-item>
-          <a href="#" class="accordion-title">Crypto</a>
-	  <div class="accordion-content" data-tab-content>
-	    <div id="crypto">
-	      <div class="gentable">
-		{{ pgp_formset.management_form }}
-		<div class="hidden" id="pgp_formset_prefix" value="{{ pgp_formset.prefix }}"></div>
-		{% for subform in pgp_formset %}
-		<div class="pgp-formset">
-		  <div class="row">
-		    <div class="large-11 columns">
-		      <div class="row">
-			<div class="large-4 medium-4 columns">
-			  <div class="form-group">
-			    <label for="pgp_key_id">PGP Key ID:</label>
-			    {% render_field subform.pgp_key_id class="form-control" %}
-			  </div>
-			</div>
-			<div class="large-4 medium-4 columns">
-			  <div class="form-group">
-			    <label for="pgp_protocol">PGP Protocol:</label>
-			    {% render_field subform.pgp_protocol class="form-control"%}
-			  </div>
-			</div>
-			<div class="large-1 medium-1 columns">
-			  <div class="form-group">
-			    {{ subform.revoked.label_tag }}
-			  </div>
-			</div>
-			<div class="large-3 medium-3 columns">
-			  <div class="form-group">
-			    {% render_field subform.revoked class="form-control"%}
-			  </div>
-			</div>
-		      </div>
-		      <div class="row">
-			<div class="large-4 medium-4 columns">
-			  <div class="form-group">
-			    <label for="startdate">Start Date (YYYYMMDD):</label>
-			    {% render_field subform.startdate class="form-control"%}
-			  </div>
-			</div>
-			<div class="large-4 medium-4 columns">
-			  <div class="form-group">
-			    <label for="enddate">End Date (YYYYMMDD):</label>
-			    {% render_field subform.enddate class="form-control"%}
-			  </div>
-			</div>
-			<div class="large-4 medium-4 columns">
-			</div>
-		      </div>
-		      <div class="row">
-                        <div class="large-12 columns">
-                          <div class="form-group">
-                            <label for="pgp_email">Email for PGP Key:</label>
-                            {% render_field subform.pgp_email class="form-control" %}
-                          </div>
-                        </div>
-                      </div>
-		      <div class="row">
-                        <div class="large-12 columns">
-			  <div class="form-group">
-                            <label for="pgp_key_data">PGP Key:</label>
-                            {% render_field subform.pgp_key_data class="form-control" %}
-			  </div>
-                        </div>
-                      </div>
-		      <div class="row">
-                        <div class="large-12 columns">
-			  <div class="form-group">
-                            <label for="pgp_fingerprint">Comment:</label>
-                            {% render_field subform.pgp_fingerprint class="form-control" %}
-			  </div>
-                        </div>
-                      </div>
-		      <hr/>
-		    </div>
-		  </div>
-		</div>
-		{% endfor %}
-	      </div>
+<div class="fullmodal">
+  <form name="cmgr" enctype="multipart/form-data" method="POST" action="{% url 'vince:newcontact' %}" id="cmgrform">
+    {% csrf_token %}
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create new VINCE contact</h5>
+      </div>
+      <div class="modal-body">
+	<div class="callout alert hidden" id="error">
+	  
+	</div>
+        <div class="callout warning">
+          <p>Add the basic contact information.  You will be able to add emails and other contact information once the contact is created.</p>
+	</div>
+	<div class="row">
+	  <div class="form-group">
+            <div class="large-12 medium-12 columns">
+	      <div class="required"><label for="vendor_type">Type:</label></div>
+	      {% render_field form.vtype class="form-control" %}
 	    </div>
 	  </div>
-	</li>
-        <li class="accordion-item" data-accordion-item>
-          <a href="#" class="accordion-title">Postal</a>
-	  <div class="accordion-content" data-tab-content>
-	    <div id="postal">
-	      <div class="gentable">
-		{{ postal_formset.management_form }}
-		<div class="hidden" id="postal_formset_prefix" value="{{ postal_formset.prefix }}"></div>
-		{% for subform in postal_formset %}
-		<div class="postal-formset">
-		  <div class="row">
-		    <div class="large-11 columns">
-		      <div class="row">
-			<div class="large-6 columns">
-			  <div class="form-group">
-			    <div class="required">
-			      <label for="country">Country:</label>
-			    </div>
-			    {% render_field subform.country class="form-control" %}
-			  </div>
-			</div>
-			<div class="large-6 columns">
-			</div>
-		      </div>
-		      <div class="row">
-			<div class="large-2 medium-2 columns">
-			  <div class="form-group">
-			    <label for="address_type">Type:</label>
-			    {% render_field subform.address_type class="form-control" %}
-			  </div>
-			</div>
-			<div class="large-4 medium-4 columns">
-			  <div class="form-group">
-			    <div class="required">
-			      {{ subform.street.label_tag }}
-			    </div>
-			    {% render_field subform.street class="form-control" %}
-			  </div>
-			</div>
-			<div class="large-4 medium-4 columns">
-			  <div class="form-group">
-			    {{ subform.street2.label_tag }}
-			    {% render_field subform.street2 class="form-control" %}
-			  </div>
-			</div>
-			<div class="large-2 medium-2 columns">
-			</div>
-		      </div>
-		      <div class="row">
-			<div class="large-4 medium-4 columns">
-			  <div class="form-group">
-			    <div class="required">
-			      {{ subform.city.label_tag }}
-			    </div>
-			    {% render_field subform.city class="form-control" %}
-			  </div>
-			</div>
-			<div class="large-2 medium-2 columns">
-			  <div class="form-group">
-			    <div class="required">
-			      {{ subform.state.label_tag }}
-			    </div>
-			    {% render_field subform.state class="form-control" %}
-			  </div>
-			</div>
-			<div class="large-4 medium-4 columns">
-			  <div class="form-group">
-			    <div class="required">
-			      {{ subform.zip_code.label_tag }}
-			    </div>
-			    {% render_field subform.zip_code class="form-control" %}
-			  </div>
-			</div>
-			<div class="large-2 medium-2 columns">
-			</div>
-		      </div>
-		      <div class="row">
-			<div class="large-8 medium-8 columns">
-			  <div class="form-group">
-			    {{ subform.comment.label_tag }}
-			    {% render_field subform.comment class="form-control" placeholder="Optional Comment"%}
-			  </div>
-			</div>
-			<div class="large-4 medium-4 columns"></div>
-		      </div>
-		    </div>
-		  </div>
-		</div>
-		{% endfor %}
-	      </div>
-	    </div>
-	  </div>
-	</li>
-	<li class="accordion-item" data-accordion-item>
-	  <a href="#" class="accordion-title">Phone</a>
-	  <div class="accordion-content" data-tab-content>
-	    <div id="phone">
-              <div class="gentable">
-		{{ phone_formset.management_form }}
-		<div class="hidden" id="phone_formset_prefix" value="{{ phone_formset.prefix }}"></div>
-
-		<table class="unstriped" style="margin:-10px;">
-		  {% for subform in phone_formset %}
-		  <tr class="phone-formset">
-		    <td>
-                      <label for="phone_type">Type:</label>
-                      {% render_field subform.phone_type class="form-control" %}
-		    </td>
-		    <td><label for="country_code">Country Code:</label>
-                      {% render_field subform.country_code class="form-control" %}
-		    </td>
-		    <td><div class="required">
-			{{ subform.phone.label_tag }}</div>
-                      {% render_field subform.phone class="form-control" %}
-		    </td>
-		    <td>
-                      {{ subform.comment.label_tag }}
-                      {% render_field subform.comment class="form-control" placeholder="Optional Comment"%}
-		    </td>
-		    <td></td>
-		  </tr>
-		  {% endfor %}
-		</table>
-              </div>
-	    </div>
-	  </div>
-	</li>
-	<li class="accordion-item" data-accordion-item>
-	  <a href="#" class="accordion-title">Websites</a>
-	  <div class="accordion-content" data-tab-content>
-            <div id="websites">
-              <div class="gentable">
-		<table class="unstriped" style="margin:-10px">
-		  {{ web_formset.management_form }}
-		   <div class="hidden" id="web_formset_prefix" value="{{ web_formset.prefix }}"></div>
-		  {% for subform in web_formset %}
-		  <tr class="web-formset">
-		    <td><div class="required">{{ subform.url.label_tag }}</div>
-                      {% render_field subform.url class="form-control" placeholder="URL starting with http://"%}
-                    </td>
-		    <td>
-                      {{ subform.description.label_tag }}
-                      {% render_field subform.description class="form-control" placeholder="Optional description"%}
-		    </td>
-		    <td></td>
-		  </tr>
-		  {% endfor %}
-		</table>
-		<br/>
-              </div>
+	</div>
+	<div class="row">
+	  <div class="form-group">
+	    <div class="large-12 medium-12 columns">
+	      {% if form.vendor_name.errors %}<dd class='error'>{{ form.vendor_name.errors }}</dd>{% endif %}
+	      <div class="required"><label for="id_vendor_name">Name:</label></div>
+	      {% render_field form.vendor_name class="form-control" %}
             </div>
 	  </div>
-	</li>
-      </ul>
+	</div>
+	<div class="row">
+	  <div class="form-group">
+	    <div class="large-6 medium-6 columns">
+              <label for="id_location">Location:</label>
+              {% render_field form.location class="form-control" %}
+            </div>
+            <div class="large-5 medium-5 columns">
+	      <label for="id_countrycode">Country:</label>
+	      {% render_field form.countrycode class="form-control" %}
+	      <!--flag js adds extra div -->
+	    </div>
+	  </div>
+	  <div class="row">
+	    <div class="form-group">
+              <div class="large-12 medium-12 columns">
+		<label for="id_comment">Comment:</label>
+		{% render_field form.comment class="form-control" %}
+              </div>
+	    </div>
+	  </div>
+	</div>
+	<div class="modal-footer">
+          <div class="row column text-right">
+	    <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+            <button type="submit" name="vrfSubmit" class="button primary"><i class="fas fa-plus"></i> Add Contact </button>
+          </div>
+	</div>
+      </div>
+      <button class="close-button" data-close aria-label="Close modal" type="button">
+	<span aria-hidden="true">&times;</span>
+      </button>
     </div>
-  </div>
+  </form>
 </div>
-<div class="row">
-  <div class="large-12 columns">
-    <input type="submit" id="submitbutton" value="Create Contact" class="primary button">
-    <a href="{% url 'vince:searchcontacts' %}" class="button secondary">Cancel</a>
-  </div>
-</div>
-</form>
+  
 {% endblock %}

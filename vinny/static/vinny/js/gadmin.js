@@ -167,6 +167,18 @@ $(document).ready(function() {
     });
 
 
+    $(document).on("click", ".modemail", function(event) {
+        var url = $(this).attr("href");
+        event.preventDefault();
+        $.ajax({
+            url: url,
+            success: function(data) {
+                modal.html(data).foundation('open');
+            },
+        });
+    });
+    
+
     $(document).on("submit", "#genservice", function(event) {
 	event.preventDefault();
 	var url = $(this).attr("action");

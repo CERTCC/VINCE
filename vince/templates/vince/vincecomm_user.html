@@ -58,7 +58,13 @@
       <a id="resetusermfa" href="{% url 'vince:resetusermfa' vc_user.id %}"><button class="tiny button alert">Reset MFA</button></a>
       {% endif %}
       {% endif %}
-      <a href="{% url 'vince:newemailuser' 'user' vc_user.id %}"><button class="tiny button primary">Email User</button></a></p>
+      <a href="{% url 'vince:newemailuser' 'user' vc_user.id %}"><button class="tiny button primary">Email User</button></a>
+      {% if contact_record %}
+      <a href="{% url 'vince:contact' contact_record.contact.id %}"><button class="tiny button default">View Contact Information</button></a>
+      {% endif %}
+
+    </p>
+    
 
     {% if vc_user.is_active %}{% else %}
     <div class="callout alert">This user is inactive</div>

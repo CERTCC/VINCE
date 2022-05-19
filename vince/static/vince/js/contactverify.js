@@ -32,7 +32,6 @@ function replaceVendor() {
     var val = $("#id_contact").val();
     var email_body = $("#id_email_body").val();
     email_body = email_body.replace(/\[VENDOR\]/g, val);
-    console.log(email_body);
     $("#id_email_body").val(email_body);
 }
 
@@ -40,9 +39,27 @@ function replaceEmail() {
     var val = $("#id_user").val();
     var	email_body = $("#id_email_body").val();
     email_body = email_body.replace(/\[EMAIL\]/g, val);
-    console.log(email_body);
     $("#id_email_body").val(email_body);
 }
+
+
+function getEmails(e, taggle) {
+    if (e) {
+        e.preventDefault();
+    }
+
+    var contact_id = $("#id_contact").val();
+    $.ajax({
+        url: "/vince/ajax_calls/contact/"+contact_id,
+        success: function(data) {
+	    var emails = data['emails'].split(',');
+	    for (let i=0; i< emails.length; i++) {
+		taggle.add(emails[i]);
+	    }
+	}
+    });
+}
+
 
 
 $(document).ready(function() {
@@ -73,6 +90,7 @@ $(document).ready(function() {
 	options = {
 	    source:data,
 	    minLength: 2,
+	    select: function( event, ui) { $("#id_contact").val(ui.item.value); getEmails(event, taggle); }
 	};
     }
 
@@ -102,6 +120,21 @@ $(document).ready(function() {
 
 	return true;
     });
+
+    var taggle = null;
+
+    if (document.getElementById("email_tags")) {
+        var available_tags = JSON.parse(document.getElementById('emails').textContent);
+	var tags = [];
+        taggle =  new Taggle('email_tags', {
+            tags: available_tags,
+	    hiddenInputName: "email",
+	    preserveCase:true,
+            duplicateTagClass: 'bounce',
+	    allowedTags: available_tags,
+            placeholder: ["Verification emails must first be added to contact"]
+	});
+    }
 
     
 });

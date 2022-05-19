@@ -44,6 +44,11 @@
 	  Users without MFA
 	</div>
       </a>
+      <a class="query" href="{% url 'vince:contactreports' 5 %}">
+	<div class="callout">
+	  Users with Email notificiations disabled
+	</div>
+      </a>
     </div>
     
     <div class="large-8 columns">
@@ -59,6 +64,8 @@
 	  <a href="{% url 'vince:contact' x.id %}">{{ x.vendor_name }}</a>
 	  {% endif %}
 	</div>
+	{% empty %}
+	<p class="text-center"> 0 Results </p>
 	{% endfor %}
       </div>
     </div>

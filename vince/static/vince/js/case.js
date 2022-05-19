@@ -35,6 +35,17 @@ function permissionDenied(modal) {
 
 }
 
+function init_modal_markdown() {
+    var simplemde = new EasyMDE({element: $("#id_content")[0],
+                                 renderingConfig: {
+                                     singleLineBreaks: false,
+                                 },
+                                 status: false,
+                                 autoDownloadFontAwesome: false,
+                                });
+}
+
+
 
 function initTooltipster(element, umProfileStore, displayUserCard) {
     /*replaced to use standard jquery tooltip since plugin was failing */
@@ -967,6 +978,9 @@ $(document).ready(function() {
 
     });
 
+
+    
+
     $(document).on("click", "#sharevulnote", function(event) {
         event.preventDefault();
         var url = $(this).attr("action");
@@ -976,6 +990,7 @@ $(document).ready(function() {
             type: "GET",
             success: function(data) {
                 approvemodal.html(data).foundation('open');
+		init_modal_markdown();
             },
 	    error: function(xhr, status) {
                 permissionDenied(addmodal);

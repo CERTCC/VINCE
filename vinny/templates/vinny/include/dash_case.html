@@ -1,4 +1,5 @@
-<li class="case-list-item">
+<li class="case-list-item {% if case.id in unseen_cases %}unseen{% endif %}">
+
   <div class="row case-row">
   </div>
   <div class="row case-row">
@@ -41,7 +42,7 @@
 	<div class="large-6 medium-6 columns"></div>
 	<div class="large-6 medium-6 columns">
 	  
-	  <div class="case-comments"><i class="fas fa-comments"></i> {{ case.post_set.count }} posts</div>
+	  <div class="case-comments"><i class="fas fa-comments"></i> {{ case.post_set.count }} posts{% if case.id in unseen_cases %}<span class="goodtext">&nbsp;&nbsp;New!</span>{% endif %}</div>
 	</div>
       </div>
       <div class="row">
@@ -58,7 +59,7 @@
 	<div class="large-6 medium-6 columns">
 	  <div class="last-reply">
             <div class="case-last-poster">{{ last_post.author.vinceprofile.vince_username }}</div>
-            <div class="case-last-reply">{{ last_post.modified|timesince }} ago</div>
+            <div class="case-last-reply">{{ last_post.modified|timesince }} ago.</div>
 	    {% endwith %}	    
 	  </div>
 	</div>

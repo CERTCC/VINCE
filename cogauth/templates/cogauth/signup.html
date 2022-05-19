@@ -3,6 +3,8 @@
 
 {% block extrahead %}
 <script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/jquery.qtip.min.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery.qtip.min.css' %}" />
 <script type="text/javascript" src="{% static 'vince/js/signup.js' %}"></script>
 <script src="https://www.google.com/recaptcha/api.js"></script>
 {% endblock %}
@@ -13,6 +15,10 @@
 
 {% block content %}<div id="content-main">
 
+<span class="hidden" id="loginhelp">
+VINCE accounts are intended to be tied to a real person. If you would like to establish a group with multiple people (for example, <i>psirt@example.com</i>) and use an email list or alias for group notifications, please proceed with creating your individual account here, and once your account has been approved, you can request the creation of your group and manage the email addresses associated with your organization.
+</span>
+  
 <form method="post" id="signupform" onsubmit="return noDoubleClicks(this);">{% csrf_token %}
   <div class="login-form">
     {% if form.errors %}

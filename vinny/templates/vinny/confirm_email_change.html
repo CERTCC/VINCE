@@ -1,0 +1,28 @@
+{% load i18n %}
+{%  block content %}
+<div class="fullmodal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Modify Email</h5>
+    </div>
+    <div class="modal-body">
+      <p>{% if enable %}
+	Are you sure you want to enable email notifications?  By enabling, this email will receive all new case notifications and other important VINCE information.
+	{% elif disable %}
+	Are you sure you want to disable email notifications? By disabling email notifications, this user will not be notified of new cases and VINCE will automatically mute case notifications. You can unmute specific case notifications in each individual case discussion.
+	{% endif %}
+	
+    </div>
+    <div class="modal-footer text-right">
+      <form action="{{ post_url }}" method="POST">
+        {% csrf_token %}
+        <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+        <button class="alert button">Confirm</button>
+      </form>
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+
+{% endblock %}

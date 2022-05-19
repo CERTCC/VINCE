@@ -1,0 +1,22 @@
+{% extends "vince/login.html" %}
+
+{% load i18n static %}
+
+{% block content_title %}<h3>VINCE MFA Reset</h3>{% endblock %}
+
+
+{% block content %}
+  <p>
+    Please let us know why you need us to reset your multi-factor authentication (MFA) device. To continue the reset, you must follow the directions in the email that will be sent to you upon submitting this form.  Once we receive confirmation, an analyst will reset the MFA associated with your account during business hours.</p>
+  <p>After the reset is complete, you will be prompted to re-associate your MFA device with your VINCE account upon logging in. 
+  </p>
+  <form action="." method="post" class="form">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" class="primary button expanded search-button" value="Submit">
+  </form>
+  
+{% endblock %}
+
+
+

@@ -7,8 +7,17 @@
 
 {% block content %}
 
-<p>If you lost your multi-factor authentication (MFA) device, you will need to contact us at <a href="mailto:{{ CONTACT_EMAIL }}" ref="nofollow">{{ CONTACT_EMAIL }}</a> to reset your account.  </p>
+{% if showlink %}
+<p>If you lost your multi-factor authentication (MFA) device, you will need to initiate the MFA reset process.</p>
 
+<p><a href="{% url 'cogauth:resetmfa' %}" class="button expanded primary">Reset MFA</a></p>
+
+{% else %}
+<p>If you lost your multi-factor authentication (MFA) device, you can initiate the reset process with your username and password.  First <a href="{% url 'cogauth:login' %}">login</a> and then click the <b>Troubleshoot MFA</b> link.  You will be provided with further instructions to reset your MFA.  </p>
+<p>If you do not have your password, you can reset it <a href="{% url 'cogauth:init_password_reset' %}">here</a> and then attempt to reset your MFA.</p>
+<p>If you still need help, contact us at <a href="mailto:{{ CONTACT_EMAIL }}" ref="nofollow">{{ CONTACT_EMAIL }}</a>.
+</p>
+{% endif %}
 
 
 {% endblock %}

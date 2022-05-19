@@ -626,7 +626,7 @@ $(document).ready(function() {
             type: "POST",
             data: {'csrfmiddlewaretoken':csrftoken, 'vendor': vendor, 'email':$("#msgadmin").attr("email")},
             success: function(data) {
-		$("#vendor-results").html("<p>" + data['text'] + "</p><p><a href=\""+ data['contact_link']+"\">View Contact</a>")
+		$("#vendor-results").html("<p>" + data['text'] + "</p><p><a href=\""+ data['contact_link']+"\">View Contact</a> <b>OR</b> <a href=\""+data['email_link']+"\">Request Authorization via Email</a></p>")
 		if (data['msg_link']) {
 		    $("#msgadminform").attr("action", data['msg_link']);
 		    $("#msgabutton").prop("disabled", false);

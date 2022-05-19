@@ -221,7 +221,6 @@ class PreferencesForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(PreferencesForm, self).__init__(*args, **kwargs)
         #if setting is not set for this user, set to default
-        logger.debug("THIS IS THE INITIAL")
         logger.debug(self.initial)
         if self.initial.get('templates'):
             self.fields['case_template'].choices = self.initial.get('templates')
@@ -1676,6 +1675,12 @@ class AssignTicketTeamForm(forms.Form):
         label=_('Assign a Team'),
     )
 
+    reason = forms.CharField(
+        widget=forms.Textarea(attrs={'placeholder': 'Provide reason for transfer'}),
+        required=False,
+        label=_('Reason for Transfer'),
+    )
+
 class RejectCaseTransferForm(forms.Form):
 
     reason = forms.CharField(
@@ -1836,12 +1841,6 @@ class EditCaseRequestForm(forms.ModelForm):
             'queue':forms.HiddenInput()
         }
 
-class TicketDependencyForm(forms.ModelForm):
-    ''' Adds a different ticket as a dependency for this Ticket '''
-
-    class Meta:
-        model = TicketDependency
-        exclude = ('ticket',)
 
 ##### CONTACT FORMS ##########
 
@@ -1862,7 +1861,7 @@ class GroupForm(forms.ModelForm):
 
     class Meta:
         model=ContactGroup
-        fields=['name', 'vuid', 'description', 'srmail_peer_name', 'group_type', 'status', 'group_select', 'comment', 'version']
+        fields=['name', 'description', 'group_select', 'comment', 'version']
         widgets = {
             'comment' : forms.Textarea(attrs={'rows': 4}),
             'version':forms.HiddenInput()
@@ -1909,7 +1908,7 @@ class InitContactForm(forms.ModelForm):
         print(data)
         if data in [None, '', 'None']:
             return
-        contact = Contact.objects.filter(vendor_name=data, active=True).first()
+        contact = Contact.objects.filter(vendor_name=data).first()
         if contact:
             return contact
         else:
@@ -1926,27 +1925,28 @@ class InitContactForm(forms.ModelForm):
             raise forms.ValidationError("Invalid Ticket Selection. Use only numeric ID of Ticket.")
         
 class ContactForm(forms.ModelForm):
+
+
+    vtype = forms.ChoiceField(
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        choices=(('User', 'User'), ('Vendor', 'Vendor'), ('Coordinator', 'Coordinator'), ('Group', 'Group')),
+        required=True,
+        label=_('Type'),
+    ) 
+    
     def __init__(self, *args, **kwargs):
         super(ContactForm, self).__init__(*args, **kwargs)
-        self.fields['srmail_peer'].required=True
-        self.fields['lotus_id'].required=False
         self.fields['version'].required=False
+        self.fields['vtype'].initial='Vendor'
+
     class Meta:
         model = Contact
-        fields = ['vendor_name', 'vendor_type', 'srmail_peer', 'srmail_salutation', 'srmail_id', 'lotus_id', 'countrycode', 'active', 'location', 'comment', 'version']
+        fields = ['vendor_name', 'vtype', 'countrycode', 'location', 'comment', 'version']
         widgets = {
             'comment' : forms.Textarea(attrs={'rows': 4}),
             'countrycode': CountrySelectWidget(layout='{widget}</div><div class="large-1 medium-1 columns"><img class="country-select-flag" id="{flag_id}" style="margin: 16px 4px 0" src="{country.flag}"></div>'),
             'version': forms.HiddenInput()
             }
-
-    def clean_srmail_peer(self):
-        data = self.cleaned_data['srmail_peer']
-        if not data.islower():
-            raise forms.ValidationError("srmail peer names should be lowercase")
-        if " " in data or "'" in data or '@' in data or '+' in data:
-            raise forms.ValidationError("srmail peer names can not contain spaces, quotes, apostrophes, @, or + symbols")
-        return data
 
 
 class PostalForm(forms.ModelForm):
@@ -1976,12 +1976,21 @@ class PhoneForm(forms.ModelForm):
 
 
 class EmailContactForm(forms.ModelForm):
+
+    email_type = forms.ChoiceField(                                       
+        choices=[('User', 'User'), ('Notification', 'Notification Only')],
+        label='Is this a user or notification-only email address?',
+        required=False,
+        widget=forms.RadioSelect(attrs={'class':'ul_nobullet horizontal_bullet'}))                         
+    
     def __init__(self, *args, **kwargs):
         super(EmailContactForm, self).__init__(*args, **kwargs)
         self.fields['version'].required=False
         self.fields['email_list'].required=False
+        self.fields['name'].required = False
         self.fields['email_function'].required=False
         self.fields['email_function'].initial = "TO"
+        self.fields['email_type'].initial='User'
 
     def clean_email(self):
         email = self.cleaned_data['email']
@@ -1999,7 +2008,7 @@ class EmailContactForm(forms.ModelForm):
 
     class Meta:
         model = EmailContact
-        fields = ['id', 'email', 'email_type', 'name', 'email_function', 'status', 'version', 'email_list']
+        fields = ['id', 'email', 'email_type', 'name', 'email_function', 'status', 'version', 'email_list', 'email_type']
         widgets = {'version':forms.HiddenInput() }
 
 class WebsiteForm(forms.ModelForm):

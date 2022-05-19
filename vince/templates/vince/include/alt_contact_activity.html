@@ -1,0 +1,81 @@
+{% load i18n humanize contact_tags %}
+<h3 class="section-title">{% if title %}{% trans title %}{% else %}{% trans "Activity" %}
+  {% endif %}</h3>
+
+<div class="row">
+  <div class="large-12 columns">
+    <div class="article-row-section">
+      <div class="article-row-section-inner" id="timeline">
+	{% for item in activity_list %}
+	<article class="article-row">
+	  <div class="article-row-img">
+	    {% autoescape off %}{% if item.field %}{{ item.action|contactactionlogo:item.field }}{% else %}{{ item.action|contactactionlogo:"" }}{% endif %}{% endautoescape %}
+	  </div>
+	  <div class="article-row-content">
+	    <p class="article-row-content-description">
+	    {% if item.action == 1 %}
+	    {% if item.contact %}
+	    {{item.user.usersettings.preferred_username}} created vendor: <a href="{% url 'vince:contact' item.contact.id %}">{{ item.contact.vendor_name}}</a>
+	    {% elif item.group %}
+            {{item.user.usersettings.preferred_username}} created group: <a href="{% url 'vince:group' item.group.id %}">{{ item.group.name }}</a>
+	    {% endif %}
+	    {% elif item.action == 2 %}
+	    {% if item.group %}
+	    {{item.user.usersettings.preferred_username}} {{ item.text }}
+	    {% else %}
+	    {{item.user.usersettings.preferred_username}} removed vendor {{ item.contact.vendor_name }}{% endif %}
+	    {% elif item.action == 3 %}
+	    {% if item.user.usersettings.preferred_username %} {{ item.user.usersettings.preferred_username }} {% else %} {{ item.action.user.vinceprofile.preferred_username }}{% endif %} {{ item.text }}
+	    {% if show_contact and item.contact.vendor_name %}
+	    for <b>{{ item.contact.vendor_name }}</b>
+	    {% endif %}
+	    
+	    {% elif item.action == 4 %}
+	    {% if item.user.usersettings.preferred_username %} {{ item.user.usersettings.preferred_username }} {% else %} {{ item.action.user.vinceprofile.preferred_username }}{% endif %} {{ item.text }}
+	    {% if show_contact and item.contact.vendor_name %}
+	    for <b>{{ item.contact.vendor_name }}</b>
+	    {% endif %}
+
+	    {% elif item.action == 5 %}
+	    {% if item.user.usersettings.preferred_username %} {{ item.user.usersettings.preferred_username }} {% else %} {{ item.action.user.vinceprofile.preferred_username }}{% endif %} {{ item.text }}
+	    {% if show_contact and item.contact.vendor_name %}
+	    for <b>{{ item.contact.vendor_name }}</b>
+	    {% endif %}
+
+	    {% elif item.action == 6 %}
+	    {% if item.user.usersettings.preferred_username %} {{ item.user.usersettings.preferred_username }} {% else %} {{ item.action.user.vinceprofile.preferred_username }}{% endif %} {{ item.text }}
+	    for <b>{{ item.contact.vendor_name }}</b>
+	    {% else %}
+	    {% if item.field == "NEW" %}
+	    {{item.action.user.vinceprofile.preferred_username }} {{ item.field }} {{ item.model }} {{ item.new_value }}
+	    
+	    {% elif item.field == "REMOVED" %}
+	    {{item.action.user.vinceprofile.preferred_username }} {{ item.field }} {{ item.model }} {{ item.old_value }}
+
+	    {% else %}
+	    {{item.action.user.vinceprofile.preferred_username }} modified {{ item.model }}:<b>{{ item.field }}</b>
+	    {% if item.old_value and item.new_value %}
+	    from <span class="removedata">{{ item.old_value }} </span> to 
+            <span class="adddata">{{ item.new_value }}</span>
+	    {% elif item.old_value %}
+	    <span class="removedata">{{ item.old_value }} </span>
+	    {% elif item.new_value %}
+	    <span class="adddata">{{ item.new_value }}</span>
+	    {% endif %}
+	    {% endif %}
+	    {% endif %}
+	    </p>
+	    <p class="article-row-content-detail"></p>
+	    <time class="article-row-content-time"><i class="far fa-clock"></i>
+	      {{ item.action_ts|date:"Y-m-d" }}({{ item.action_ts|timesince }} ago)</time>
+	  </div>
+	  
+	</article>
+
+	{% empty %}
+	<p> No recent activity </p>
+	{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>

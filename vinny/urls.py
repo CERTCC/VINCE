@@ -70,6 +70,7 @@ urlpatterns = [
     re_path('^groupadmin/service/create/(?P<vendor_id>\d+)/$', views.CreateServiceAccountView.as_view(), name='createservice'),
     re_path('groupadmin/(?P<vendor_id>\d+)/adduser/', views.AdminAddUserView.as_view(), name='adduser'),
     re_path('^groupadmin/(?P<vendor_id>\d+)/rmuser/(?P<type>(contact|user))/(?P<uid>\d+)/$', views.AdminRemoveUser.as_view(), name='rmuser'),
+    re_path('^groupadmin/(?P<vendor_id>\d+)/email/modify/(?P<type>(email|user))/(?P<uid>\d+)/$', views.ModifyEmailNotifications.as_view(), name='changeemail'),
     path('inbox/', views.InboxView.as_view(), name='inbox'),
     re_path('^inbox/(?P<deleted>(sent))/$', views.InboxView.as_view(), name='inbox'),
     path('inbox/filter/', views.SearchThreadsView.as_view(), name='filterthreads'),

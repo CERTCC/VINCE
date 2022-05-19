@@ -83,6 +83,13 @@ class COGPasswordRegisterForm(forms.Form):
             'countrycode': CountrySelectWidget()}
 
 
+class COGResetMFA(forms.Form):
+
+    reason = forms.CharField(
+        widget=forms.Textarea(),
+        label=_('Reason for MFA reset'))
+        
+        
 class COGInitialPWResetForm(forms.Form):
     username = forms.CharField(max_length=200, required=True, label=_("Email"))
 
@@ -260,9 +267,11 @@ class SignUpForm(UserCreationForm):
         required=False)
     email = forms.CharField(
         max_length=254,
+        widget=forms.TextInput(attrs={'autocomplete':'username'}),
         required=True,
-        help_text=_('This will be your login username. Please note that this field is CASE SENSITIVE.'),
+        help_text=_('This will be your personal login username. <b>This field is CASE SENSITIVE.</b><br/><b>PLEASE NOTE:</b> Each VINCE user account is intended to be tied to a specific individual. If you would like to use an alias (for example, <i>psirt@example.com</i>) to receive group notifications, please create your account here first, and once your individual account has been approved, you will have the opportunity to create a group, join an existing group, and otherwise manage the email addresses associated with your organization.'), 
         label="Email address")
+
     title = forms.CharField(
         max_length=200,
         required=False,
@@ -279,7 +288,7 @@ class SignUpForm(UserCreationForm):
     password1 = forms.CharField(
         max_length=50,
         required=True,
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={'autocomplete':"new-password"}),
         label="New Password",
         help_text=_('Password Requirements:<ul>\
         <li>Minimum length is 8 characters</li>\
@@ -293,7 +302,7 @@ class SignUpForm(UserCreationForm):
     password2 = forms.CharField(
         max_length=50,
         required=True,
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={'autocomplete':"new-password"}),
         label="Password confirmation",
         help_text=_('Enter the same password as before, for verification')
     )

@@ -8,6 +8,7 @@
 	<th> Access </th>
 	<th> Date Joined </th>
 	<th> Last Login </th>
+	<th> Notifications</th>
 	<th> Actions </th>
       </tr>
     </thead>
@@ -18,6 +19,7 @@
 	<td>{% if u|groupadmin:object.id %} admin - all cases {% elif groupcontact.default_access %} user - all cases {% else %} {% if admin %}<a href="{% url 'vinny:caseaccess' object.id u.id %}" class="caseaccess">user - select</a>{% else %} user {% endif %} {% with my_cases=caseaccess|case_access:u.id %}<span class="needtip" title="This user has access to the following cases:<br/> {% for c in my_cases %}{{ CASE_ID }}{{ c }}<br/> {% endfor %}"> ({{ my_cases|length }} cases)</span> {% endwith %}{% endif %}</td>
 	<td>{{ u.date_joined|date:"Y-m-d" }}</td>
 	<td>{{ u.last_login|date:"Y-m-d, G:i" }}</td>
+	<td>{% if u|notify_emails:object.id %}Enabled <a href="{% url 'vinny:changeemail' object.id 'user' u.id %}" class="modemail"><i class="fas fa-edit" title="Disable"></i></a>{% else %}Disabled <a href="{% url 'vinny:changeemail' object.id 'user' u.id %}" class="modemail"><i class="fas fa-edit" title="Enable"></i></a>{% endif %}</td>
 	{% if admin %}
 	<td> {% if user == u %}<i class="fas fa-trash-alt" title="You can't remove yourself" aria-hidden="true"></i>{% else %}<a href="{% url 'vinny:rmuser' object.id 'user' u.id %}" class="rmuser"><i class="fas fa-trash-alt" aria-hidden="true" title="Remove user from group"></i></a>
 	  {% if u|groupadmin:object.id %}
@@ -38,6 +40,7 @@
         <td><i>Eligible*</i></td>
         <td></td>
         <td></td>
+	<td>{% if u|notify_emails:object.id %}Enabled <a href="{% url 'vinny:changeemail' object.id 'email' u.id %}" class="modemail"><i class="fas fa-edit" title="Disable"></i></a>{% else %}Disabled <a href="{% url 'vinny:changeemail' object.id 'user' u.id %}" class="modemail"><i class="fas fa-edit" title="Enable"></i></a>{% endif %}</td>
         {% if user.username != u.email %}
         <td> <a href="{% url 'vinny:rmuser' object.id 'contact' u.id %}" class="rmuser"><i class="fas fa-trash-alt" aria-hidden="true"></i></a>
 	</td>
@@ -52,6 +55,7 @@
         <td><i>Invited**</i></td>
         <td></td>
         <td></td>
+	<td>{% if u|notify_emails:object.id %}Enabled <a class="modemail" href="{% url 'vinny:changeemail' object.id 'email' u.id %}"><i class="fas fa-edit" title="Disable"></i></a>{% else %}Disabled <a class="modemail" href="{% url 'vinny:changeemail' object.id 'email' u.id %}"><i class="fas fa-edit" title="Enable"></i></a>{% endif %}</td>
         {% if user.username != u.email %}
         <td> <a href="{% url 'vinny:rmuser' object.id 'contact' u.id %}" class="rmuser"><i class="fas fa-trash-alt" aria-hidden="true"></i></a></td>
         {% else %}

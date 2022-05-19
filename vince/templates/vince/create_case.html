@@ -65,7 +65,7 @@
 	  <h6>Submitted on: {{ form.date_submitted.value }}</h6>
 	  {% else %}
 	  <div class="callout success">{% if create_case %}
-	    You requested to create a Case.  Please fill in the required information before creating the case.
+	    You requested to create a Case.  Please fill in the required information before creating the case. All information can be modified later.
 	    {% else %}
 	    You requested to create a Case Request.  Please fill in the following information to submit the request.
 	    {% endif %}
@@ -81,7 +81,7 @@
 	  <h4>Vulnerability Information</h4>
           <div class="form-group">
             <label for="id_product_name">What is the name of the affected product or software? <span class="required">*</span></label>
-            <small class="form-text text-muted">{{ form.product_name.help_text }}</small>
+            <small class="form-text text-muted">{{ form.product_name.help_text }} This will also be used as the Case title.</small>
             {% render_field form.product_name class="form-control" %}
           </div>
           <div class="form-group">

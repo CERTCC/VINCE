@@ -19,19 +19,12 @@
   </div>
 </div>
 
-<div class="row">
-  <div class="large-12 columns">
-    {% for message in messages %}
-    <div class="callout {{ message.tags }}">{{ message }}</div>
-    {% endfor %}
-  </div>
-</div>
-
-
+<form id="searchform" enctype="multipart/form-data" method="post" action="{% url 'vinny:dashboardfilter' %}">
+  {% csrf_token %}
 <div class="row">
   <div class="large-5 medium-5 small-8 columns">
     <div class="input-group">
-      <input class="input-group-field form-control" type="text" placeholder="Filter active cases" id="filter_threads" href="{% url 'vinny:dashboardfilter' %}">
+      <input class="input-group-field form-control" type="text" name="keyword" placeholder="Filter active cases" id="filter_threads">
       <div class="input-group-button">
 	<button type="submit" class="button"><i class="fas fa-search"></i></button>
       </div>
@@ -40,7 +33,6 @@
   <div class="large-3 columns medium-4 small-4">
     {% if user.vinceprofile.is_track %}
     <div class="dropdown-pane" id="role-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
-      <form>
 	<div class="row column">
 	  <div class="form-check border-bottom mb-2 pb-2">
 	    <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
@@ -48,7 +40,6 @@
 	  </div>
 	  {% render_field form.owner class="form_check_input" %}
 	</div>
-      </form>
     </div>
     <div class="filter-by-dropdown">
       <button type="button" class="filter-by-dropdown__toggle-button" data-toggle="role-dropdown">
@@ -60,17 +51,25 @@
   </div>
   <div class="large-4 medium-3 columns"><input type="hidden" name="page" id="id_page" value="1"></div>
 </div>
+</form>
 
 {% if cases %}
 {% if num_new_cases %}
 <div class="row">
   <div class="large-10 columns">
-    <div class="callout success">Welcome to VINCE! You have <b>{{ num_new_cases }}</b> new {% if num_new_cases > 1 %}cases{% else %}case{% endif %} to view.</div>
+    <div class="callout success">Welcome to VINCE! You have <b>{{ num_new_cases }}</b> new {% if num_new_cases > 1 %}cases{% else %}case{% endif %}{% if new_posts %} and {{ new_posts }} unread {% if new_posts > 1 %}posts{% else %}post{% endif %} in {{ unseen_cases|length }} {% if unseen_cases|length > 1 %}cases{% else %}case{% endif %}{% endif %}.
+    </div>
+  </div>
+  <div class="large-2 columns"></div>
+</div>
+{% elif new_posts %}
+<div class="row">
+  <div class="large-10 columns">
+    <div class="callout success">Welcome back to VINCE! You have {{ new_posts }} new {% if new_posts > 1 %}posts{% else %}post{% endif %} in {{ unseen_cases|length }} {% if unseen_cases|length > 1 %}cases{% else %}case{% endif %}.</div>
   </div>
   <div class="large-2 columns"></div>
 </div>
 {% endif %}
-
 <div class="row">
   <div class="large-12 columns">
     <div id="casecontainer">

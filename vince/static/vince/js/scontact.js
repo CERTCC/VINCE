@@ -43,34 +43,61 @@ function reloadActivity() {
     });
 }
 
-
-function add_admin(taggle, user){
+function add_group(taggle, group) {
     var csrftoken = getCookie('csrftoken');
-    var url = $("#admin_taggle").attr("action");
+    var url = $("#group_taggle").attr("action");
     $.post(url,
-           {'csrfmiddlewaretoken': csrftoken, 'user': user, 'add_admin': true}, function(data) {
+           {'csrfmiddlewaretoken': csrftoken, 'group': group},
+	   function(data) {
                console.log("success adding");
-	       reloadActivity();
+               reloadActivity();
            })
         .fail(function (data) {
-            alert("An error occurred while trying to add this tag: " + data['responseJSON']['error']);
-            taggle.remove(user);
+            alert("An error occurred while trying to add this group: " + data['responseJSON']['error']);
+            taggle.remove(group);
         });
 }
 
-function del_admin(taggle, user){
+function del_group(taggle, group) {
     var csrftoken = getCookie('csrftoken');
-    var url = $("#admin_taggle").attr("action");
+    var url = $("#group_taggle").attr("action");
+    $.post(url,
+           {'rm': 1, 'csrfmiddlewaretoken': csrftoken,
+            'group': group}, function (data) {
+                console.log("success removing");
+                reloadActivity();
+
+            })
+        .fail(function (data) {
+            alert("An error occurred while trying to delete this tag: " + data['responseJSON']['error']);
+            taggle.add(group);
+        });
+}
+
+
+function add_admin(user, url){
+    var csrftoken = getCookie('csrftoken');
+    $.post(url,
+           {'csrfmiddlewaretoken': csrftoken, 'user': user, 'add_admin': true}, function(data) {
+               console.log("success adding");
+	       window.location.reload(true);
+           })
+        .fail(function (data) {
+            alert("An error occurred while trying to add admin: " + data['responseJSON']['error']);
+        });
+}
+
+function del_admin(user, url){
+    var csrftoken = getCookie('csrftoken');
     $.post(url,
            {'state': 0, 'csrfmiddlewaretoken': csrftoken,
 	    'user': user, 'del_admin':true}, function (data) {
 		console.log("success removing");
-		reloadActivity();
+		window.location.reload(true);
 		
             })
         .fail(function (data) {
-            alert("An error occurred while trying to delete this tag: " + data['responseJSON']['error']);
-            taggle.add(user);
+            alert("An error occurred while trying to remove admin permissions: " + data['responseJSON']['error']);
         });
 }
 
@@ -117,7 +144,7 @@ function auto(data, taggle) {
             event.preventDefault();
             if (event.which === 1) {
                 taggle.add(data.item.value);
-                add_admin(taggle, data.item.label)
+                add_group(taggle, data.item.label)
             }
         }
     });
@@ -164,25 +191,26 @@ $(document).ready(function() {
 
     
 
-    if (document.getElementById('admin_taggle')) {
-        var subscribed_users = JSON.parse(document.getElementById('groupadmins').textContent);
-        var assignable = JSON.parse(document.getElementById('assignable_users').textContent);
-        var admin_taggle = new Taggle('admin_taggle', {
-            tags: subscribed_users,
+    if (document.getElementById('group_taggle')) {
+	var contact_groups = JSON.parse(document.getElementById('groups').textContent);
+        var assignable = JSON.parse(document.getElementById('all_groups').textContent);
+        var group_taggle = new Taggle('group_taggle', {
+            tags: contact_groups,
             duplicateTagClass: 'bounce',
             allowedTags: assignable,
-            placeholder: ["Add a user..."],
+	    preserveCase: true,
+            placeholder: ["Add a group..."],
             onTagAdd: function (event, tag) {
                 if (event) {
-                    add_admin(admin_taggle, tag)
+                    add_group(group_taggle, tag)
                 }
             },
             onBeforeTagRemove: function (event, tag) {
-                del_admin(admin_taggle, tag)
+                del_group(group_taggle, tag)
                 return true;
             },
         });
-        auto(assignable, admin_taggle);
+        auto(assignable, group_taggle);
     }
 
     if (document.getElementById('contact_taggle')) {
@@ -264,7 +292,27 @@ $(document).ready(function() {
                 window.location.reload(true);
             });
     });
-    
+
+
+    $('#showcharttip').qtip({
+        content: $("#vendor_type_help"),
+        style: {classes: 'qtip-youtube'}
+    });
+
+    $('#showtypehelp').qtip({
+        content: $("#email_type_help"),
+        style: {classes: 'qtip-youtube'}
+    });
+
+    $(document).on("click", ".adminuser", function(event) {
+	event.preventDefault();
+	add_admin($(this).attr("val"), $(this).attr("href"));
+    });
+
+    $(document).on("click", ".rmadminuser", function(event) {
+	event.preventDefault();
+	del_admin($(this).attr("val"), $(this).attr("href"));
+    });
 
     $(document).on("click", ".task_assign_cancel", function(event) {
         $(this).parent().prev().show();
@@ -295,6 +343,57 @@ $(document).ready(function() {
             }
         });
     });
+
+    $(document).on("click", ".rmemail", function(event) {
+	event.preventDefault();
+	var url = $(this).attr("href");
+        $.ajax({
+            url: url,
+            type: "GET",
+            success: function(data) {
+		$modal.html(data).foundation('open');
+            }
+        });
+    });
     
+    $(document).on("click", "#addemail", function(event) {
+	event.preventDefault();
+	var url = $(this).attr("href");
+	$.ajax({
+            url: url,
+            type: "GET",
+            success: function(data) {
+		$modal.html(data).foundation('open');
+            }
+	});
+    });
+
+    $(document).on("submit", "#addemailform", function(event) {
+	event.preventDefault();
+	var url = $("#addemailform").attr("action");
+	$.ajax({
+            url: url,
+            type: "POST",
+	    data: $("#addemailform").serialize(),
+            success: function(data) {
+		console.log(data);
+		if (data['ticket']) {
+		    location.href = data['ticket'];
+		}
+		else if (data['refresh']) {
+		    window.location.reload(true);
+		} else if (data['msg_body']){
+		    $("#vendor-results").html("<p><b>" + data['text'] + " Or <a href=\""+ data['email_link'] + "\">Request Authorization via Email</a></b></p>")
+                    $("#id_msg").val(data['msg_body']);
+                    $("#msgvendor").removeClass("hidden");
+		} else {
+		    $("#vendor-results").html("<p><b><span class=\"error\">" + data['text'] +"</span></b></p>");
+		    if (data['bypass']) {
+			$("#vendor-results").append("<p><a href=\"" + data['bypass'] + "\">Request Internal Validation for this Email</a></p>");
+		    }
+		}
+            }
+	});
+    });
 
 });

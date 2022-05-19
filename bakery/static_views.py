@@ -14,7 +14,8 @@ from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.http import HttpResponseNotModified
 from django.template import Template, Context, TemplateDoesNotExist
 from django.utils.http import http_date, parse_http_date
-
+from django.conf import settings
+from django.utils.http import is_same_domain, is_safe_url
 
 def serve(request, path, document_root=None, show_indexes=False, default=''):
     """
@@ -52,7 +53,10 @@ def serve(request, path, document_root=None, show_indexes=False, default=''):
             continue
         newpath = os.path.join(newpath, part).replace('\\', '/')
     if newpath and path != newpath:
-        return HttpResponseRedirect(newpath)
+        if is_safe_url(newpath,set(settings.ALLOWED_HOSTS),True):
+            return HttpResponseRedirect(newpath)
+        else:
+            raise Http404("Invalid or Incorrect path found")
     fullpath = os.path.join(document_root, newpath)
     if os.path.isdir(fullpath) and default:
         defaultpath = os.path.join(fullpath, default)

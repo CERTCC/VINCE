@@ -160,13 +160,17 @@ class ContactManager(models.Manager):
         return qs
 
 class Contact(models.Model):
+    #Kept Contact Type for backwards compatibility
+    
     VENDOR_TYPE = (
-    ('Contact', 'Contact'),
-    ('Vendor', 'Vendor'),
+        ('Contact', 'Contact'),
+        ('Vendor', 'Vendor'),
+        ('User', 'User'),
+        ('Coordinator', 'Coordinator'),
     )
     LOCATION_CHOICES=(
-    ('Domestic', 'Domestic'),
-    ('International', 'International')
+        ('Domestic', 'Domestic'),
+        ('International', 'International')
     )
     vendor_id = models.CharField(max_length=10, blank=True, null=True)
     vendor_name = models.CharField(max_length=100)

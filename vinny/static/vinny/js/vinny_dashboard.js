@@ -42,7 +42,7 @@ function searchThreads(e, newpage) {
     }
 
     var url = $("#filter_threads").attr("href");
-    var owner = $("input[id^='id_owner_']:checked").val();
+    var owner = $("input[id^='id_owner_']:checked");
     $.ajax({
         url : url,
         type: "POST",

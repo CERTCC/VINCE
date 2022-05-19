@@ -1,0 +1,25 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <form method="post" action="{% url 'vince:rmemail' contact.id email.id %}" id="rmpostform">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Remove Email From Contact</h3>
+    </div>
+
+    <div class="modal-body">
+      {% csrf_token %}
+      {% if vcuser %}
+      <p>Are you sure you want to remove {{ email.email }} from this Contact? Removing this email will also remove access for user <b><a href="{% url 'vince:vcuser' vcuser.id %}">{{ vcuser.vinceprofile.preferred_username }}</a></b> to {{ contact.vendor_name }}'s cases.</p>
+      {% else %}
+      <p>Are you sure you want to remove {{ email.email }} from this Contact? </p>
+      {% endif %}
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button alert" type='submit' value='{% trans "Yes, Remove" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

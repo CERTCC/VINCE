@@ -41,16 +41,11 @@ function searchThreads(e, newpage) {
 	page = newpage;
     }
 
-    var url = $("#filter_threads").attr("href");
-    var owner = $("input[id^='id_owner_']:checked").val();
+    var url = $("#searchform").attr("action");
     $.ajax({
         url : url,
         type: "POST",
-        data: {"keyword": $("#filter_threads").val(),
-	       "owner": owner,
-	       "page": page,
-               "csrfmiddlewaretoken": csrftoken
-              },
+        data: $('#searchform').serialize(),
         success: function(data) {
             $("#casecontainer").html(data);
         }
@@ -77,6 +72,15 @@ $(document).ready(function() {
 
     });
 
+    var form = document.getElementById('searchform');
+    if (form) {
+        if (form.attachEvent) {
+            form.attachEvent("submit", searchThreads);
+        } else {
+            form.addEventListener("submit", searchThreads);
+        }
+    }
+    
     $(document).on("click", '.search_notes', function(event) {
         var page = $(this).attr('next');
 	$("#id_page").val(page);

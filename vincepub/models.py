@@ -36,7 +36,7 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVectorField
 from bigvince.storage_backends import VRFReportsStorage
-
+from django.conf import settings
 
 class OldJSONField(fields.JSONField):
     def db_type(self, connection):

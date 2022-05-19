@@ -93,6 +93,7 @@ from boto3.exceptions import Boto3Error
 from bigvince.storage_backends import PrivateMediaStorage
 from vince.settings import VULNOTE_TEMPLATE
 from collections import OrderedDict
+from django.utils.http import is_safe_url
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -563,6 +564,18 @@ def autocomplete_tags(request):
     mimetype='application/json'
     return HttpResponse(data, mimetype)
 
+@login_required(login_url="vince:login")
+@user_passes_test(is_in_group_vincetrack, login_url="vince:login")
+def vince_user_lookup(request):
+    if request.POST.get('email'):
+        user = User.objects.using('vincecomm').filter(email__iexact=request.POST.get('email')).first()
+        if user:
+            data = json.dumps({'user': user.email, 'first': user.first_name, 'last': user.last_name})
+        else:
+            data = json.dumps({'message':'no user'})
+        mimetype = 'application/json'
+        return HttpResponse(data, mimetype)
+
 def group_name_exists(name):
     groups = ContactGroup.objects.filter(name=name).first()
     if groups:
@@ -616,20 +629,15 @@ def _add_groupadmin(emailcontact, contact):
     vinny_contact = VinceCommContact.objects.filter(vendor_id=contact.id).first()
     vinny_email_contact = VinceCommEmail.objects.filter(email = emailcontact.email, contact=vinny_contact).first()
     # check for other groupadmins:
-    current = VinceCommGroupAdmin.objects.filter(contact=vinny_contact, email=vinny_email_contact).first()
-    if current:
-        return
-    vcga = VinceCommGroupAdmin(contact= vinny_contact,
-                               email = vinny_email_contact)
-    vcga.save()
+    current = VinceCommGroupAdmin.objects.update_or_create(contact=vinny_contact, email=vinny_email_contact)
 
 def _remove_groupadmin(emailcontact, contact):
     vinny_contact = VinceCommContact.objects.filter(vendor_id=contact.id).first()
     vinny_email_contact = VinceCommEmail.objects.filter(email = emailcontact.email, contact=vinny_contact).first()
     # check for other groupadmins:
-    current = VinceCommGroupAdmin.objects.filter(contact=vinny_contact, email=vinny_email_contact).first()
-    if current:
-        current.delete()
+    current = VinceCommGroupAdmin.objects.filter(contact=vinny_contact, email=vinny_email_contact)
+    for x in current:
+        x.delete()
 
 def _remove_groupadmin_vc(email, contact):
     vtcontact = Contact.objects.filter(id=contact.vendor_id).first()
@@ -1460,9 +1468,13 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
                 case_results = VulnerabilityCase.objects.filter(id__in=casetags)
             casetitlesearch = VulnerabilityCase.objects.filter(title__icontains=search_nolive_query)
             case_results = case_results | casetitlesearch
-            email_results = EmailContact.objects.filter(Q(email__icontains=search_term) | Q(name__icontains=search_term)).values_list('contact', flat=True)
+
+            vince_user_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
+            user_contacts = list(vince_user_results.values_list('user__email', flat=True))
+            email_contacts = EmailContact.objects.filter(contact__vendor_type="Contact", email__in=user_contacts).values_list('contact__id', flat=True)
+            email_results = EmailContact.objects.filter(Q(email__icontains=search_term) | Q(name__icontains=search_term)).exclude(contact__id__in=email_contacts).values_list('contact', flat=True)
             emails = Contact.objects.filter(id__in=email_results)
-            contact_results = Contact.objects.search(search_nolive_query)
+            contact_results = Contact.objects.search(search_nolive_query).exclude(id__in=email_contacts)
             group_results = ContactGroup.objects.filter(Q(name__icontains=search_term) | Q(srmail_peer_name__icontains=search_term))
             ctags = ContactTag.objects.filter(tag__in=search_tags).values_list('contact__id', flat=True)
             if ctags:
@@ -1477,7 +1489,7 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
                 vul_results = vul_results | vultags
             cve_results = CVEAllocation.objects.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],
                                                       params=[search_query])
-            vince_user_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
+
             vulnote_results = VulNoteRevision.objects.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"], params=[search_query]).values_list('vulnote__case__id', flat=True)
             if vulnote_results:
                 vnote_cases = VulnerabilityCase.objects.filter(id__in=vulnote_results)
@@ -1496,16 +1508,19 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
             activities = Ticket.objects.filter(id__in=activity_results)
             ticket_results = ticket_results | tkt_title | activities
         elif facet == "Contacts":
-            email_results = EmailContact.objects.filter(Q(email__icontains=search_term) | Q(name__icontains=search_term)).values_list('contact', flat=True)
+            vince_user_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
+            user_contacts = list(vince_user_results.values_list('user__email', flat=True))
+            email_contacts = EmailContact.objects.filter(contact__vendor_type="Contact", email__in=user_contacts).values_list('contact__id', flat=True)
+            email_results = EmailContact.objects.filter(Q(email__icontains=search_term) | Q(name__icontains=search_term)).exclude(contact__id__in=email_contacts).values_list('contact', flat=True)
             emails = Contact.objects.filter(id__in=email_results)
             ctags = ContactTag.objects.filter(tag__in=search_tags).values_list('contact__id', flat=True)
-            contact_results = Contact.objects.search(search_nolive_query)
+            contact_results = Contact.objects.search(search_nolive_query).exclude(id__in=email_contacts)
             if ctags:
                 ctags = Contact.objects.filter(id__in=ctags)
                 contact_results = contact_results | emails | ctags
             else:
                 contact_results = contact_results | emails
-            vince_user_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
+
             group_results = ContactGroup.objects.filter(Q(name__icontains=search_term) | Q(srmail_peer_name__icontains=search_term))
         elif facet == "Cases":
             case_results = VulnerabilityCase.objects.search(search_query)
@@ -2366,6 +2381,14 @@ class AssignTicketNewTeam(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, F
                                title=f"Ticket re-assigned to team {new_group.name}",
                                date=timezone.now())
                 fup.save()
+
+                if form.cleaned_data['reason']:
+                    fup = FollowUp(ticket=ticket,
+                                   user=self.request.user,
+                                   title=f"Transfer reason",
+                                   date=timezone.now(),
+                                   comment=form.cleaned_data['reason'])
+                    fup.save()
 
                 #is this a CR?
                 cr = CaseRequest.objects.filter(ticket_ptr_id=ticket.id).first()
@@ -3784,7 +3807,115 @@ class AskApprovalVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
 
         return JsonResponse({'location': reverse('vince:ticket', args=[ticket.id])}, status=200)
 
+def add_vendor(vul):
+    v = {'uid': str(vul.contact.uuid), 'vendor': vul.contact.vendor_name, 'overall_status': vul.get_status()}
 
+    if vul.contact_date:
+        v['contact_date'] = vul.contact_date.strftime('%Y-%m-%d')
+    else:
+        v['contact_date'] = None
+    
+    if vul.date_modified:
+        v['dateupdated']= vul.date_modified.strftime('%Y-%m-%d')
+    else:
+        v['dateupdated'] = None
+        
+    if vul.approved:
+        v['references'] = vul.references
+        v['statement'] = vul.statement
+        v['addendum'] = vul.addendum
+        if vul.statement_date:
+            v['statement_date'] = vul.statement_date.strftime('%Y-%m-%d')
+        else:
+            v['statement_date'] = None
+
+    v['status'] = []
+
+    for status in vul.vendorstatus_set.all():
+        s = {'vul': status.vul.vul, 'vul_increment':status.vul.case_increment, 'status': status.get_status_display()}
+        if status.approved:
+            s['references'] = status.references
+            s['statement'] = status.statement
+        v['status'].append(s)
+    
+    return v
+
+    
+class DownloadVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            vulnote = get_object_or_404(VulNote, id=self.kwargs['pk'])
+            return has_case_read_access(self.request.user, vulnote.case)
+
+    def dispatch(self, request, *args, **kwargs):
+
+        vulnote = get_object_or_404(VulNote, id=self.kwargs['pk'])
+        case = vulnote.case
+        
+        vu_info = {}
+        vu_info['content'] = vulnote.current_revision.content
+        vu_info['title'] = vulnote.current_revision.title
+        vu_info['references'] = vulnote.current_revision.references
+        vu_info['vuid'] = vulnote.case.vuid
+        if vulnote.case.publicdate:
+            vu_info['publicdate'] = vulnote.case.publicdate.strftime('%Y-%m-%d')
+        else:
+            vu_info['publicdate'] = None
+        vu_info['vuls'] = []
+        vu_info['deleted_vuls'] = []
+        for vul in Vulnerability.casevuls(case):
+            v = {'cve': vul.cve, 'case_increment': vul.case_increment, 'description': vul.description, 'uid': vul.uid}
+            vu_info['vuls'].append(v)
+
+        for vul in case.vulnerability_set.filter(deleted=True):
+            vu_info['deleted_vuls'].append(vul.case_increment)
+            
+        vu_info['vendors'] = []
+        vu_info['deleted_vendors'] = []
+        vendors = []
+        
+        for vul in VulnerableVendor.casevendors(case).filter(vendorstatus__status=VendorStatus.AFFECTED_STATUS).distinct('vendor').order_by('vendor'):
+            v = add_vendor(vul)
+            if v['vendor'] not in vu_info['vendors']:
+                vu_info['vendors'].append(v)
+
+        for vul in VulnerableVendor.casevendors(case).filter(vendorstatus__status=VendorStatus.UNAFFECTED_STATUS).distinct('vendor').order_by('vendor'):
+            v =	add_vendor(vul)
+            if v['vendor'] not in vu_info['vendors']:
+                vu_info['vendors'].append(v)
+                
+        for vul in VulnerableVendor.casevendors(case).filter(Q(vendorstatus__status=VendorStatus.UNKNOWN_STATUS)|Q(vendorstatus__isnull=True)).distinct('vendor').order_by('vendor'):
+            v = add_vendor(vul)
+            if v['vendor'] not in vu_info['vendors']:
+                vu_info['vendors'].append(v)
+
+        for vul in case.vulnerablevendor_set.filter(deleted=True):
+            vu_info['deleted_vendors'].append(vul.contact.uuid)
+
+        vu_info['cveids'] = vulnote.case.get_cves()
+        if vulnote.date_last_published:
+            vu_info['dateupdated'] = vulnote.date_last_published.strftime('%Y-%m-%d')
+        else:
+            vu_info['dateupdated'] = None
+        vu_info['cert_id'] = vulnote.case.vu_vuid
+        vu_info['name'] = vulnote.current_revision.title
+        vu_info['idnumber'] = vulnote.case.vuid
+        
+        vu_json = json.dumps(vu_info, indent=4)
+
+        json_file = ContentFile(vu_json)
+        json_file.name = case.vu_vuid + ".json"
+        mime_type = 'application/json'
+        response = HttpResponse(json_file, content_type = mime_type)
+        response['Content-Disposition'] = 'attachment; filename=' + json_file.name
+        response["Content-type"] = "application/json"
+        response["Cache-Control"] = "must-revalidate"
+        response["Pragma"] = "must-revalidate"
+        return response
+    
+    
 class EditVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView, FormMixin):
     form_class = EditVulNote
     template_name = "vince/edit_vulnote.html"
@@ -4969,6 +5100,7 @@ class EditCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
 
     def post(self, request, *args, **kwargs):
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
+        self.object = self.get_object()
         form_class = self.get_form_class()
         form = self.get_form(form_class)
         case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
@@ -7071,7 +7203,7 @@ class RemoveVendorFromCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
     def dispatch(self, request, *args, **kwargs):
         vendor = get_object_or_404(VulnerableVendor, id=self.kwargs['vendor'])
         case = vendor.case
-        if vendor.case.published:
+        if vendor.case.published or vendor.case.publicdate:
             vendor.deleted = True
             vendor.save()
         else:
@@ -7799,10 +7931,15 @@ class CompleteContactAssociation(LoginRequiredMixin, TokenMixin, UserPassesTestM
                 else:
                     full_name = "Unknown"
 
+                if req.contact.active == False:
+                    req.contact.active = True
+                    req.contact.save()
+                    _add_activity(self.request.user, 3, req.contact, "changed status to ACTIVE through contact association process")
+                    
                 #then approve
                 ec, created = EmailContact.objects.update_or_create(contact=req.contact,
                                                       email=req.user,
-                                                      defaults = {'user_added': self.request.user, 'name': full_name})
+                                                      defaults = {'user_added': self.request.user, 'name': full_name, 'email_list':False})
                 #search vc_contact
                 vccontact = VinceCommContact.objects.filter(vendor_id = req.contact.id).first()
                 VinceCommEmail.objects.update_or_create(contact=vccontact,
@@ -7810,19 +7947,43 @@ class CompleteContactAssociation(LoginRequiredMixin, TokenMixin, UserPassesTestM
                                                         defaults={'email_list':False,
                                                                  'name':full_name})
                 _add_activity(self.request.user, 3, req.contact, f"added email {req.user} through contact association tool")
-                _add_group_permissions(req.user, self.request.user)
-                #add group admin
-                ga = GroupAdmin.objects.update_or_create(contact=req.contact,
-                                                         email=ec)
-                _add_groupadmin(ec, req.contact)
+                if vc_user:
+                    _add_group_permissions(req.user, self.request.user)
 
-                fup = FollowUp(
-                    ticket = req.ticket,
-                    user=self.request.user,
-                    title="Contact Association Approved and Complete",
-                    comment = f"{req.user} has been added to {req.contact.vendor_name} and made group administrator"
+                    #does this contact already have a groupadmin?
+                    ga = GroupAdmin.objects.filter(contact=req.contact).first()
+                    if ga == None:
+                        #add group admin
+                        ga = GroupAdmin.objects.update_or_create(contact=req.contact,
+                                                                 email=ec)
+                        _add_groupadmin_perms(ec)
+                        _add_groupadmin(ec, req.contact)
+
+                        fup = FollowUp(
+                            ticket = req.ticket,
+                            user=self.request.user,
+                            title="Contact Association Approved and Complete",
+                            comment = f"{req.user} has been added to {req.contact.vendor_name} and made group administrator"
+                        )
+                        fup.save()
+                    else:
+                        # this contact already has a group admin so let group admin promote user if needed
+                        fup = FollowUp(
+                            ticket = req.ticket,
+                            user=self.request.user,
+                            title="Contact Association Approved and Complete",
+                            comment = f"{req.user} has been added to {req.contact.vendor_name}"
+                        )
+                        fup.save()
+                else:
+                    # no user, but email added
+                    fup = FollowUp(
+			ticket = req.ticket,
+                        user=self.request.user,
+	                title="Contact Association Approved and Complete",
+			comment = f"{req.user} has been added to {req.contact.vendor_name}"
                     )
-                fup.save()
+                    fup.save()
 
                 req.complete=True
                 req.authorized_by = self.request.user
@@ -8004,7 +8165,7 @@ class ContactAdminLookup(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
                 ticket.status = Ticket.CLOSED_STATUS
                 ticket.save()
 
-            return redirect("vince:ticket", ticket.id)
+            return JsonResponse({'ticket': reverse("vince:ticket", args=[ticket.id])}, status=200)
 
         if self.request.POST.get('vendor'):
             contact = Contact.objects.filter(vendor_name = self.request.POST['vendor']).first()
@@ -8032,7 +8193,7 @@ class ContactAdminLookup(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
                     msg_link = None
                     msg_body = None
                     
-                return JsonResponse({'text':text, "action_link": action_link, "msg_link":msg_link, 'contact_link': reverse("vince:contact", args=[contact.id]), 'msg_body':msg_body}, status=200)
+                return JsonResponse({'text':text, "action_link": action_link, "msg_link":msg_link, 'contact_link': reverse("vince:contact", args=[contact.id]), 'email_link': reverse("vince:initcontactverify", args=[contact.id])+"?tkt="+str(ticket.id), 'msg_body':msg_body}, status=200)
             return JsonResponse({'error':"No such vendor"}, status=401)
 
     
@@ -8053,9 +8214,18 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             contact = get_object_or_404(Contact, id=self.kwargs.get('pk'))
             initial['contact'] = contact.vendor_name
             #get emails for this contact
-            emails = contact.get_official_emails()
+            emails = contact.get_emails()
             if emails:
-                initial['email'] = ",".join(emails)
+                #initial['email'] = ",".join(emails)
+                context['emails'] = emails
+            if self.request.GET.get('email'):
+                initial['user'] = self.request.GET.get('email')
+            if self.request.GET.get('bypass'):
+                context['emails'] = [self.request.GET.get('email')]
+                initial['internal'] = True
+                messages.warning(self.request,
+                                 _(f"You have requested internal verification for this user. Please provide justification in the email field."))
+                
         if self.request.GET.get('tkt'):
             initial['ticket'] = self.request.GET["tkt"]
             ticket = get_object_or_404(Ticket, id=self.request.GET['tkt'])
@@ -8092,31 +8262,53 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             contact = form.cleaned_data['contact']
             #check to make sure this user isn't already a part of the contact
             if EmailContact.objects.filter(contact = contact,
-                                           email = self.request.POST['user']).exists():
+                                           email = self.request.POST['user'],
+                                           email_list=False).exists():
                 form._errors.setdefault("user", ErrorList([
 		    u"Email already exists for this contact"
 	        ]))
                 messages.error(
                     self.request,
 		    _(f'Email already exists for this contact'))
-                return render(request, self.template_name, {'form': form})
+                return render(request, self.template_name, {'form': form, 'emails': contact.get_emails()})
             
-            if VinceCommEmail.objects.filter(contact__vendor_id=contact.id, email=self.request.POST['user']).exists():
+            if VinceCommEmail.objects.filter(contact__vendor_id=contact.id, email=self.request.POST['user'],
+                                             email_list=False).exists():
                 form._errors.setdefault("user", ErrorList([
                     u"Email already exists for this contact in VINCEComm. Check Contact Updates and Approve"
                 ]))
                 messages.error(
                     self.request,
 		    _(f'Email already exists for this contact in VINCEComm.'))
-                return render(request, self.template_name, {'form': form})
+                return render(request, self.template_name, {'form': form, 'emails':contact.get_emails()})
+
+            #make sure all emails are legit
+            emails = self.request.POST.getlist('email')
+            logger.debug(emails)
+            for email in emails:
+                email = email.strip()
+                if EmailContact.objects.filter(contact=contact,
+                                               email__iexact=email).exists():
+                    continue
+                else:
+                    if (self.request.POST.get('internal')):
+                        continue
+                    form._errors.setdefault("email", ErrorList([
+                        f"Invalid email ({email}) for this contact."
+                    ]))
+                    messages.error(
+                        self.request,
+                        _(f'Invalid verification email for this contact. Verification emails must be added to contact before initiating process.'))
+                    return render(request, self.template_name, {'form': form, 'emails':contact.get_emails()})
+            
             return self.form_valid(form)
         else:
             logger.debug(form.errors)
             return self.form_invalid(form)
 
     def form_invalid(self, form):
-        if self.kwargs.get('pk'):
-            ca = get_object_or_404(ContactAssocation, id=self.kwargs.get('pk'))
+        if self.kwargs.get('ca'):
+            ca = get_object_or_404(ContactAssociation, id=self.kwargs.get('ca'))
         else:
             ca = None
             
@@ -8130,6 +8322,7 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
         assoc.complete=False
         assoc.restart=False
         assoc.initiated_by=self.request.user
+        assoc.email = ",".join(self.request.POST.getlist('email'))
         assoc.save()
 
         if form.cleaned_data['ticket']:
@@ -8150,12 +8343,12 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
 
 
         if form.cleaned_data['internal'] == False:
-            title = f"Sent email to {form.cleaned_data['email']} with subject {form.cleaned_data['subject']} to attempt to verify {form.cleaned_data['user']} works for {form.cleaned_data['contact'].vendor_name}."
+            title = f"Sent email to {assoc.email} with subject {form.cleaned_data['subject']} to attempt to verify {form.cleaned_data['user']} works for {form.cleaned_data['contact'].vendor_name}."
             body = form.cleaned_data['email_body']
             if len(title) > 299:
                 #title too long for followup, add important info to comment instead
                 title = f"Sent email to attempt to verify {form.cleaned_data['user']} works for {form.cleaned_data['contact'].vendor_name}."
-                body = f"Email sent to {form.cleaned_data['email']}\r\nSubject:{form.cleaned_data['subject']}\r\nBody:{body}"
+                body = f"Email sent to {assoc.email}\r\nSubject:{form.cleaned_data['subject']}\r\nBody:{body}"
                 
             fup = FollowUp(ticket=ticket,
                            title=title,
@@ -8165,9 +8358,10 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             
             subject = f"[{ticket.queue.slug}-{ticket.id}] {form.cleaned_data['subject']}"
 
-            emails = form.cleaned_data['email'].split(',')
+            emails = self.request.POST.getlist('email')
             
             send_regular_email_notification(emails, subject, form.cleaned_data['email_body'])
+            
             messages.success(
                 self.request,
                 "Your email has been sent."
@@ -8244,9 +8438,14 @@ class ContactsResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
 
         if search_query:
             if facet == "All":
-                email_results = EmailContact.objects.filter(Q(email__icontains=search_term) | Q(name__icontains=search_term)).values_list('contact', flat=True)
+                vince_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
+                user_contacts = list(vince_results.values_list('user__email', flat=True))
+                logger.debug(user_contacts)
+                email_contacts = EmailContact.objects.filter(contact__vendor_type="Contact", email__in=user_contacts).values_list('contact__id', flat=True)
+                email_results = EmailContact.objects.filter(Q(email__icontains=search_term) | Q(name__icontains=search_term)).exclude(contact__id__in=email_contacts).values_list('contact', flat=True)
                 emails = Contact.objects.filter(id__in=email_results)
-                contact_results = Contact.objects.search(search_query)
+                logger.debug(email_contacts)
+                contact_results = Contact.objects.search(search_query).exclude(id__in=email_contacts)
                 ctags = ContactTag.objects.filter(tag__in=search_tags).values_list('contact__id', flat=True)
                 if ctags:
                     ctags = Contact.objects.filter(id__in=ctags)
@@ -8254,7 +8453,7 @@ class ContactsResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                 else:
                     contact_results = contact_results | emails
                 group_results = ContactGroup.objects.filter(Q(name__icontains=search_term) | Q(srmail_peer_name__icontains=search_term))
-                vince_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
+
             elif facet == "Groups":
                 group_results = ContactGroup.objects.filter(Q(name__icontains=search_term) | Q(srmail_peer_name__icontains=search_term))
             elif facet == "Contacts":
@@ -8421,6 +8620,46 @@ class CreateGroupView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
         _add_group_activity(self.request.user, 1, newgroup, text)
         return redirect("vince:group", newgroup.id)
 
+
+    
+class AddContactToGroupView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url="vince:login"
+    template_name="vince/addcontacttogroup.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        logger.debug(self.request.POST)
+        contact = get_object_or_404(Contact, id=self.kwargs.get('pk'))
+        group = get_object_or_404(ContactGroup, name=self.request.POST.get('group'))
+        if self.request.POST.get('rm'):
+            #remove contact from group
+            member = GroupMember.objects.filter(group=group, contact=contact).first()
+            if member:
+                member.delete()
+                text = "removed %s from '%s' group" % (contact.vendor_name, group.name)
+                _add_group_activity(self.request.user, 3, group, text)
+                _add_activity(self.request.user, 5, contact, text)
+                update_srmail_file()
+            else:
+                return JsonResponse({'error': 'Contact is not in Group'}, status=403)
+        else:
+        
+            newmember=GroupMember(group=group,
+                                  contact=contact,
+                                  user_added=self.request.user,
+                                  member_type=contact.vendor_type)
+            newmember.save()
+            text = "added %s to '%s' group" % (contact.vendor_name, group.name)
+            _add_activity(self.request.user, 4, contact, text)
+            _add_group_activity(self.request.user, 2, group, text)
+            update_srmail_file()
+            
+        return JsonResponse({'message': 'success'}, status=200)
+
+
+    
 class RemoveContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     model = Contact
     login_url = "vince:login"
@@ -8484,7 +8723,7 @@ class RemoveGroupView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
 class ContactActivity(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.ListView):
     model = Activity
     login_url = "vince:login"
-    template_name = "vince/include/contactactivity.html"
+    template_name = "vince/include/alt_contact_activity.html"
 
     def test_func(self):
         return is_in_group_vincetrack(self.request.user) and get_contact_read_perms(self.request.user)
@@ -8497,11 +8736,6 @@ class CreateContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
     login_url = "vince:login"
     template_name = 'vince/newcontact.html'
     form_class = ContactForm
-    PostalFormSet = formset_factory(PostalForm, max_num=10, min_num=1, can_delete=True, extra=0)
-    PhoneFormSet = formset_factory(PhoneForm, max_num=10, min_num=1, can_delete=True, extra=0)
-    WebFormSet = formset_factory(WebsiteForm, max_num=10, min_num=1, can_delete=True, extra=0)
-    PgPFormSet = formset_factory(ContactPgPForm, max_num=10, min_num=1, can_delete=True, extra=0)
-    EmailFormSet = formset_factory(EmailContactForm, max_num=10, min_num=1, can_delete=True, extra=0)
 
     def	test_func(self):
         return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
@@ -8512,11 +8746,6 @@ class CreateContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
 
         return render(self.request, 'vince/newcontact.html',
                       {'form': form,
-                       'postal_formset': self.PostalFormSet(prefix='postal'),
-                       'phone_formset': self.PhoneFormSet(prefix='phone'),
-                       'web_formset': self.WebFormSet(prefix='web'),
-                       'pgp_formset': self.PgPFormSet(prefix='pgp'),
-                       'email_formset': self.EmailFormSet(prefix='email'),
                        })
 
     def post(self, request, *args, **kwargs):
@@ -8531,242 +8760,74 @@ class CreateContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
 
     def form_valid(self, form):
         logger.debug("VALID FORM")
-        postalformset = self.PostalFormSet(self.request.POST, prefix='postal')
-        phoneformset = self.PhoneFormSet(self.request.POST, prefix='phone')
-        webformset = self.WebFormSet(self.request.POST, prefix='web')
-        pgpformset = self.PgPFormSet(self.request.POST, prefix='pgp')
-        emailformset = self.EmailFormSet(self.request.POST, prefix='email')
-
-        if 'active' in self.request.POST:
-            active = True
-        else:
-            active = False
-
         vendor_name = self.request.POST['vendor_name'].strip()
-
-        old_contact = Contact.objects.filter(Q(vendor_name=vendor_name) | Q(srmail_peer=self.request.POST['srmail_peer'])).first()
-
-        if old_contact:
-            error_str = "Contact already exists with this vendor name or srmail peer name. View "
-            return render(self.request, 'vince/newcontact.html',
-                      {'form': form,
-                       'postal_formset': self.PostalFormSet(prefix='postal'),
-                       'phone_formset': self.PhoneFormSet(prefix='phone'),
-                       'web_formset': self.WebFormSet(prefix='web'),
-                       'pgp_formset': self.PgPFormSet(prefix='pgp'),
-                       'error': error_str, 'oldid': old_contact.id,
-                       'email_formset': self.EmailFormSet(prefix='email'),
-                       'old_vendor':old_contact.vendor_name
-                       })
-        if active:
-            if not(emailformset.is_valid()):
-                error_str=f"Check required email fields: {emailformset.errors}."
-                forms = {'form': form, 'email_error': error_str,
-                         'postal_formset': self.PostalFormSet(prefix='postal'),
-                         'phone_formset': self.PhoneFormSet(prefix='phone'),
-                         'web_formset': self.WebFormSet(prefix='web'),
-                         'pgp_formset': self.PgPFormSet(prefix='pgp'),
-                         'email_formset': self.EmailFormSet(prefix='email')}
-                return render(self.request, 'vince/newcontact.html', forms)
-
-        if self.request.POST['vendor_type'] == "Contact":
-            lotus_id = 0
-        elif self.request.POST['lotus_id']:
-            lotus_id = self.request.POST['lotus_id']
+        group = False
+        vendor_type = self.request.POST['vtype']
+        if (vendor_type == "Group"):
+            group = True
+            if group_name_exists(vendor_name):
+                error_str = "Group already exists with this name."
+                return JsonResponse({'error': error_str}, status=401)
         else:
-            lotus_id = 0
+            old_contact = Contact.objects.filter(vendor_name__iexact=vendor_name).first()
 
+            if old_contact:
+                error_str = "Contact already exists with this vendor name."
+                return JsonResponse({'error': error_str,
+                                     'oldid': old_contact.id}, status=401)
+
+        srmail_peer = vendor_name.lower().replace(" ", "_").replace("'", "")
+        srmail_peer = srmail_peer.translate({ord(i):None for i in '"@+.,;'})
+
+        if srmail_name_exists(srmail_peer):
+            srmail_peer = f"{srmail_peer}_1"
+
+
+        if group:
+            newgroup = ContactGroup(name=vendor_name,
+                                    description=f"New group added by {self.request.user.usersettings.preferred_username}",
+                                    srmail_peer_name=srmail_peer,
+                                    status="Inactive",
+                                    comment = self.request.POST['comment'],
+                                    user_added=self.request.user)
+            newgroup.save()
+            # add the duplicate group hack                                                                
+            dupgroup = GroupDuplicate(group=newgroup)
+            dupgroup.save()
+            update_srmail_file()
+            text = "created group %s" % newgroup.name
+            _add_group_activity(self.request.user, 1, newgroup, text)
+            return JsonResponse({'new': reverse("vince:group", args=[newgroup.id])}, status=200)
+
+        if vendor_type == "User":
+            vendor_type = "Contact"
+        
+        
         contact = Contact(vendor_name = vendor_name,
-                          vendor_type=self.request.POST['vendor_type'],
-                          srmail_peer = self.request.POST['srmail_peer'],
-                          srmail_salutation = self.request.POST['srmail_salutation'],
+                          vendor_type=vendor_type,
+                          srmail_peer = srmail_peer,
                           countrycode = self.request.POST['countrycode'],
-                          lotus_id = lotus_id,
+                          lotus_id = 0,
                           location = self.request.POST['location'],
-                          active = active,
+                          active = False,
                           comment = self.request.POST['comment'],
                           user_added=self.request.user)
 
         contact.save()
-        #get vinny contact
-        vinny_contact = VinceCommContact.objects.filter(vendor_id=contact.id).first()
 
         if contact:
-            _add_activity(self.request.user, 1, contact, "created new contact (" + contact.vendor_type + ")")
-
-        emails=[]
-        vinny_emails=[]
-        vinny_emails_add = []
-        if emailformset.is_valid():
-            for f in emailformset:
-                cd = f.cleaned_data
-                logger.debug(cd)
-
-                emails.append(EmailContact(contact=contact,
-                                           email = cd['email'],
-                                           email_type=cd['email_type'],
-                                           name=cd['name'],
-                                           user_added=self.request.user,
-                                           email_function="TO",
-                                           status = cd['status'],
-                                           email_list = cd['email_list']))
-                vinny_emails.append(VinceCommEmail(contact=vinny_contact,
-                                                   email = cd['email'],
-                                                   email_type=cd['email_type'],
-                                                   name=cd['name'],
-                                                   email_function="TO",
-                                                   status = cd['status'],
-                                                   email_list = cd['email_list']))
-
-                if cd['status'] and cd['email_list']==False:
-                    vinny_emails_add.append(cd['email'])
-
-            EmailContact.objects.bulk_create(emails)
-            VinceCommEmail.objects.bulk_create(vinny_emails)
-        else:
-            logger.debug(emailformset.errors)
+            _add_activity(self.request.user, 1, contact, f"created new contact ({contact.vendor_type})")
 
 
-        # check permissions on users associated with this contact
-        for vemail in vinny_emails_add:
-            _add_group_permissions(vemail, self.request.user)
-
-
-        if postalformset.is_valid():
-            postal=[]
-            vinny_postal=[]
-            for count, f in enumerate(postalformset):
-                cd = f.cleaned_data
-                logger.debug(cd)
-                postal.append(PostalAddress(contact=contact,
-                                            country=cd['country'],
-                                            address_type=cd['address_type'],
-                                            street=cd['street'],
-                                            street2=cd['street2'],
-                                            city=cd['city'],
-                                            state=cd['state'],
-                                            zip_code=cd['zip_code'],
-                                            user_added=self.request.user))
-                vinny_postal.append(VinceCommPostal(contact__id=contact.id,
-                                                    country=cd['country'],
-                                                    address_type=cd['address_type'],
-                                                    street=cd['street'],
-                                                    street2=cd['street2'],
-                                                    city=cd['city'],
-                                                    state=cd['state'],
-                                                    zip_code=cd['zip_code']))
-            PostalAddress.objects.bulk_create(postal)
-            VinceCommPostal.objects.bulk_create(vinny_postal)
-        else:
-            logger.debug(postalformset.errors)
-
-
-        if phoneformset.is_valid():
-            phones=[]
-            vinny_phones=[]
-            for count, f in enumerate(phoneformset):
-                cd = f.cleaned_data
-                phones.append(PhoneContact(contact=contact,
-                                           country_code=cd['country_code'],
-                                           phone=cd['phone'],
-                                           phone_type=cd['phone_type'],
-                                           comment=cd['comment'],
-                                           user_added=self.request.user))
-                vinny_phones.append(VinceCommPhone(contact=vinny_contact,
-                                                   country_code=cd['country_code'],
-                                                   phone=cd['phone'],
-                                                   phone_type=cd['phone_type'],
-                                                   comment=cd['comment']))
-
-
-            PhoneContact.objects.bulk_create(phones)
-            VinceCommPhone.objects.bulk_create(vinny_phones)
-
-        else:
-            logger.debug(phoneformset.errors)
-
-        if webformset.is_valid():
-            websites = []
-            vinny_websites = []
-            for count, f in enumerate(webformset):
-                cd = f.cleaned_data
-                websites.append(Website(contact=contact,
-                                        url=cd['url'],
-                                        description=cd['description'],
-                                        user_added=self.request.user))
-                vinny_websites.append(VinceCommWebsite(contact=vinny_contact,
-                                                       url=cd['url'],
-                                                       description=cd['description']))
-
-
-            Website.objects.bulk_create(websites)
-            VinceCommWebsite.objects.bulk_create(vinny_websites)
-
-        else:
-            logger.debug(webformset.errors)
-
-        pgpkeys = []
-        vinny_pgpkeys = []
-        for f in pgpformset:
-            if f.is_valid():
-                cd = f.cleaned_data
-                if cd['revoked'] == 'on':
-                    revoked=True
-                else:
-                    revoked=False
-                if cd['pgp_key_data']:
-                    cd = extract_pgp_info(cd)
-                    if cd == None:
-                        messages.error(self.request,
-                                       f"There was an error in parsing the PGP Key #{count}")
-                        continue
-                pgpkeys.append(ContactPgP(contact=contact,
-                                          pgp_key_id=cd['pgp_key_id'],
-                                          pgp_protocol=cd['pgp_protocol'],
-                                          startdate=cd['startdate'],
-                                          enddate=cd['enddate'],
-                                          pgp_key_data=cd['pgp_key_data'],
-                                          pgp_fingerprint=cd['pgp_fingerprint'],
-                                          revoked=revoked,
-                                          pgp_email=cd['pgp_email'],
-                                          user=self.request.user
-                                          ))
-                vinny_pgpkeys.append(VinceCommPgP(contact=vinny_contact,
-                                                  pgp_key_id=cd['pgp_key_id'],
-                                                  pgp_protocol=cd['pgp_protocol'],
-                                                  startdate=cd['startdate'],
-                                                  enddate=cd['enddate'],
-                                                  pgp_key_data=cd['pgp_key_data'],
-                                                  pgp_email=cd['pgp_email'],
-                                                  revoked=revoked))
-
-            else:
-                for x in pgpformset.errors:
-                    for k,v in x.items():
-                        if 'This field is required.' not in v:
-                            if "Either PGP Key or ID is required" in v and not(f.cleaned_data.get('pgp_key_data') or f.cleaned_data.get('pgp_key_id')):
-                                continue
-                            messages.error(self.request,
-                                           f"PGP Key Validation Error: {v}")
-                logger.debug(pgpformset.errors)
-
-        if pgpkeys:
-            ContactPgP.objects.bulk_create(pgpkeys)
-            VinceCommPgP.objects.bulk_create(vinny_pgpkeys)
-
-
-        return redirect("vince:contact", contact.id)
+        messages.warning(
+            self.request,
+            _(f"Contact will remain inactive until email is added.  Add new email(s) to activate contact."))
+            
+        return JsonResponse({'new':reverse("vince:contact", args=[contact.id])}, status=200)
 
     def get_context_data(self, **kwargs):
         context = super(CreateContactView, self).get_context_data(**kwargs)
-        forms = {'postal_formset': self.PostalFormSet(prefix='postal'),
-                 'phone_formset': self.PhoneFormSet(prefix='phone'),
-                 'web_formset': self.WebFormSet(prefix='web'),
-                 'pgp_formset': self.PgPFormSet(prefix='pgp'),
-                 'email_formset': self.EmailFormSet(prefix='email')}
-
         context['form'] = self.form_class()
-        context.update(forms)
         context['contactpage']=1
         return context
 
@@ -8784,27 +8845,15 @@ class GroupDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         group = ContactGroup.objects.filter(id=self.kwargs['pk']).first()
         context['members'] = GroupMember.objects.filter(group=group).exclude(contact__isnull=True).values_list('contact', flat=True)
         context['group_members'] = GroupMember.objects.filter(group=group).exclude(contact__isnull=True).order_by('contact')
-        context['group_half_first'] = ":"+str(int(len(context['group_members'])/2))
-        context['group_half_last'] = str(int(len(context['group_members'])/2))+":"
         # the groups in the group - give the list of groupduplicates
         groupdups = GroupMember.objects.filter(group=group).values_list('group_member', flat=True)
         duplicates = GroupDuplicate.objects.filter(group__in=groupdups).values_list('group', flat=True)
         context['groupmembers'] = ContactGroup.objects.filter(id__in=duplicates)
         context['group'] = group
-        contactkeys = ContactPgP.objects.filter(contact__in=context['members']).values_list('contact', flat=True)
-        nokeys = [i for i in context['members'] if not i in contactkeys]
-        context['contacts_without_keys'] = Contact.objects.filter(id__in=nokeys)
-        emails = EmailContact.objects.filter(contact__in=context['members']).values_list('contact', flat=True)
-        noemails = [i for i in context['members'] if not i in emails]
-        context['contacts_without_emails'] = Contact.objects.filter(id__in=noemails)
         context['contactpage']=1
         context['activity'] = GroupActivity.objects.filter(group=group).order_by('-action_ts')
         context['cases'] = VulnerableVendor.objects.filter(from_group=group).order_by('case').distinct('case')
-        #        expired_keys = ExpiredKeyResults.objects.order_by('-id')
-#        if expired_keys:
-#            expired_keys = expired_keys[0]
-#            context['expired_keys_contacts'] = Contact.objects.filter(vendor_name__in=expired_keys.contacts_expired, id__in=context['members'])
-
+        context['inactive_contacts'] = context['members'].filter(contact__active=False).count()
         return context
 
 class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView, FormMixin):
@@ -8826,26 +8875,38 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
         context['contactpage']=1
         context['members'] = GroupMember.objects.filter(group=group[0]).exclude(contact__isnull=True).values_list('contact', flat=True)
         context['group_members'] = GroupMember.objects.filter(group=group[0]).exclude(contact__isnull=True).order_by('contact')
-        context['group_half_first'] = ":"+str(int(len(context['group_members'])/2))
-        context['group_half_last'] = str(int(len(context['group_members'])/2))+":"
 
         # the groups in the group - give the list of groupduplicates
         groupdups = GroupMember.objects.filter(group=group[0]).values_list('group_member', flat=True)
         duplicates = GroupDuplicate.objects.filter(group__in=groupdups).values_list('group', flat=True)
         context['groupmembers'] = ContactGroup.objects.filter(id__in=duplicates)
         context['group'] = group.first()
-        contactkeys = ContactPgP.objects.filter(contact__in=context['members']).values_list('contact', flat=True)
-        nokeys = [i for i in context['members'] if not i in contactkeys]
-        context['contacts_without_keys'] = Contact.objects.filter(id__in=nokeys)
-        emails = EmailContact.objects.filter(contact__in=context['members']).values_list('contact', flat=True)
-        noemails = [i for i in context['members'] if not i in emails]
-        context['contacts_without_emails'] = Contact.objects.filter(id__in=noemails)
-#        expired_keys = ExpiredKeyResults.objects.order_by('-id')
-#        if expired_keys:
-#            expired_keys = expired_keys[0]
-#            context['expired_keys_contacts'] = Contact.objects.filter(vendor_name__in=expired_keys.contacts_expired, id__in=context['members'])
-#
+        context['inactive_contacts'] = context['members'].filter(contact__active=False).count()
         return context
+
+
+    def get(self, request, *args, **kwargs):
+        group = ContactGroup.objects.filter(id=self.kwargs['pk']).first()
+        if self.request.GET.get('activate'):
+            #does this group have members?
+            members = GroupMember.objects.filter(group=group).count()
+            if members:
+                group.status="Active"
+                group.save()
+                _add_group_activity(self.request.user, 4, group, f"activated {group.name} group")
+            else:
+                messages.error(
+                    self.request,
+                    _(f"You cannot activate a group without members."))
+
+            return redirect("vince:group", group.id)
+        elif self.request.GET.get('deactivate'):
+            group.status="Inactive"
+            group.save()
+            _add_group_activity(self.request.user, 4, group, f"deactivated {group.name} group")
+            return redirect("vince:group", group.id)
+        return super().get(request, *args, **kwargs)
+    
 
     def form_invalid(self, form):
         logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
@@ -8900,6 +8961,7 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
                            'members': members
                           })
 
+        initial_members = GroupMember.objects.filter(group=current_group).count()
         if current_group.name != self.request.POST['name']:
             if group_name_exists(self.request.POST['name']):
                 self.error = "Group name already exists"
@@ -8907,23 +8969,9 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
             _add_group_activity(self.request.user, 4, current_group, 'modified group name')
             current_group.name = self.request.POST['name']
             current_group.save()
-
-        if current_group.status != self.request.POST['status']:
-            activity_msg = "changed status from %s to %s" % (current_group.status, self.request.POST['status'])
-            _add_group_activity(self.request.user, 4, current_group, activity_msg)
-            current_group.status = self.request.POST['status']
-            current_group.save()
-
         if current_group.description != self.request.POST['description']:
             _add_group_activity(self.request.user, 4, current_group, 'modified group description')
             current_group.description = self.request.POST['description']
-            current_group.save()
-        if current_group.srmail_peer_name != self.request.POST['srmail_peer_name']:
-            if srmail_name_exists(self.request.POST['srmail_peer_name']):
-                self.error = "SRMail Peer Name already exists"
-                return form.invalid(self.form)
-            _add_group_activity(self.request.user, 4, current_group, 'modified group srmail peer name')
-            current_group.srmail_peer_name = self.request.POST['srmail_peer_name']
             current_group.save()
         if current_group.comment != self.request.POST['comment']:
             _add_group_activity(self.request.user, 4, current_group, 'modified comment')
@@ -8953,7 +9001,7 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
                 newmember.save()
                 if newmember.id:
                     added = added + 1
-                    text = "Added %s to group %s" % (contact.vendor_name, current_group.name)
+                    text = "added %s to %s group" % (contact.vendor_name, current_group.name)
                     _add_activity(self.request.user, 4, contact, text)
                 else:
                     logger.debug("NOT ADDED")
@@ -8968,7 +9016,7 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
                                             member_type="Group")
                     newmember.save()
                     if newmember.id:
-                        text = "Added %s to group %s" % (groupdup.group.name, current_group.name)
+                        text = "added %s to %s group" % (groupdup.group.name, current_group.name)
                         _add_group_activity(self.request.user, 2, groupdup.group, text)
                         added=added+1
             text = "Added %s to group" % group
@@ -8984,7 +9032,7 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
                     grouptorm = GroupMember.objects.filter(group=current_group, contact=contact)
                     grouptorm.delete()
                     removed += 1
-                    text = "Removed %s from group %s" % (group, current_group.name)
+                    text = "removed %s from %s group" % (group, current_group.name)
                     _add_group_activity(self.request.user, 3, current_group, text)
                     _add_activity(self.request.user, 5, contact, text)
                 else:
@@ -8995,7 +9043,7 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
                         grouprm = GroupMember.objects.filter(group=current_group, group_member=groupdup).first()
                         if grouprm:
                             grouprm.delete()
-                            text = "Removed %s from group %s" % (group, current_group.name)
+                            text = "removed %s from %s group" % (group, current_group.name)
                             _add_group_activity(self.request.user, 3, current_group, text)
                             _add_group_activity(self.request.user, 3, grouptorm, text)
                             removed += 1
@@ -9005,6 +9053,12 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
             messages.warning(
                 self.request,
                 _(f"Updating SRMAIL file due to group membership changes."))
+            #get number of members:
+            members = GroupMember.objects.filter(group=current_group).count()
+            if (initial_members == 0) and members:
+                #activate group now that we have members
+                current_group.status="Active"
+                current_group.save()
 
         logger.debug("Removed %d members" % removed)
         current_group.version = current_group.version + 1
@@ -9424,6 +9478,234 @@ class ContactCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         return VulnerableVendor.objects.filter(contact=self.kwargs['pk']).order_by('-date_modified')
 
 
+class RemoveEmailFromContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/confirm_rm_email.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super(RemoveEmailFromContact, self).get_context_data(**kwargs)
+        context['contact'] = get_object_or_404(Contact, id=self.kwargs['pk'])
+        context['email'] = get_object_or_404(EmailContact, id=self.kwargs['email'])
+        context['vcuser'] = User.objects.using('vincecomm').filter(email=context['email'].email).first()
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        contact = get_object_or_404(Contact, id=self.kwargs['pk'])
+        email = get_object_or_404(EmailContact, id=self.kwargs['email'])
+
+        _add_activity(self.request.user, 3, contact, f"removed email: {email.email}")
+	#close any bounces that may be associated with this email
+        bn = BounceEmailNotification.objects.filter(email=email.email, action_taken=False)
+        for b in bn:
+            b.action_taken=True
+            b.save()
+        #remove group permissions if this user has any
+        vinny_contact = VinceCommContact.objects.filter(vendor_id=self.kwargs['pk']).first()
+        _remove_group_permissions(email.email, vinny_contact, self.request.user)
+        #is this uer a groupadmin?
+        cga = GroupAdmin.objects.filter(contact=contact, email__email=email.email)
+        if cga:
+            _remove_groupadmin(email, contact)
+            _remove_groupadmin_perms(email)
+        
+        #remove address from VINCEComm
+        vcemail = VinceCommEmail.objects.filter(email=email.email, contact=vinny_contact).first()
+
+        vcemail.delete()
+        
+        email.delete()
+
+        #if we've removed all emails, this should contact should deactivate
+        all_emails = EmailContact.objects.filter(contact=contact).count()
+        if all_emails == 0:
+            contact.active=False
+            contact.save()
+            messages.warning(self.request,
+                             _(f"Deactivating contact due to removal of all email addresses."))
+
+        update_srmail_file()
+        return redirect("vince:contact", contact.id)
+
+class AddEmailToContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
+    login_url = "vince:login"
+    template_name = "vince/add_email_contact.html"
+    form_class = EmailContactForm
+    
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super(AddEmailToContact, self).get_context_data(**kwargs)
+        context['contact'] = get_object_or_404(Contact, id=self.kwargs['pk'])
+        return context
+
+    def post(self, request, *args, **kwargs):
+        logger.debug(self.request.POST)
+        contact = get_object_or_404(Contact, id=self.kwargs['pk'])
+        vinny_contact = VinceCommContact.objects.filter(vendor_id=self.kwargs['pk']).first()
+        email_type = self.request.POST.get('email_type')
+        email = self.request.POST.get('email')
+        email = email.strip()
+        
+        #make sure email doesn't already exist in this contact?
+        
+        prev_email = EmailContact.objects.filter(contact=contact, email=email).first()
+        if prev_email:
+            return JsonResponse({'text':"This email has already been added to this contact."}, status=200)
+        #make sure this email is not in the verification process
+        prev_email = ContactAssociation.objects.filter(contact=contact, user=email, complete=False)
+        if prev_email:
+            return JsonResponse({'text':"This user is already in the process of being associated with this vendor."}, status=200)       
+
+
+        if contact.vendor_type == "Contact":
+            #notification only
+            email = EmailContact(email=email,
+                                 email_list = False,
+                                 name=self.request.POST.get('name'),
+                                 email_function="TO",
+                                 contact=contact)
+            email.save()
+
+            vc_email = VinceCommEmail(contact=vinny_contact,
+                                      email=email,
+                                      email_function="TO",
+                                      email_list=False,
+                                      name=self.request.POST.get('name'))
+            vc_email.save()
+
+            _add_activity(self.request.user, 3, contact, f"added email: {email}")
+
+            messages.success(
+                self.request,
+                _(f"Email address added to contact."))
+
+            contact.active=True
+            contact.save()
+
+            update_srmail_file()
+            
+            return JsonResponse({'refresh':1}, status=200)
+        
+        if email_type == "User":
+                
+            #does this contact have an admin?
+            admins = list(GroupAdmin.objects.filter(contact=contact).values_list('email__email', flat=True))
+            if self.request.POST.get('msg'):                
+                #we're on second post at this point
+                users = User.objects.using('vincecomm').filter(email__in=admins).values_list('id', flat=True)
+                if users:
+                    sender = User.objects.using('vincecomm').filter(email=self.request.user.email).first()
+                    msg = Message.new_message(sender, users, None, "VINCE Vendor User Request", self.request.POST['msg'])
+                    user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
+                    if user_groups:
+                        msg.thread.from_group=user_groups[0].groupsettings.contact.vendor_name
+                    msg.thread.save()
+
+                    #create Ticket
+                    admins = ", " .join(admins)
+                    assoc = ContactAssociation(contact=contact,
+                                               user=email,
+                                               initiated_by=self.request.user,
+                                               approval_requested=True,
+                                               email=f"Sent message to admins: {admins}")
+                    assoc.save()
+                    ticket = Ticket(title=f"Contact Verification Process Initiated for {email}",
+                                    description=f"Adding user {email} to {contact.vendor_name}",
+                                    status = Ticket.CLOSED_STATUS,
+                                    queue = get_vendor_queue(self.request.user),
+                                    submitter_email = self.request.user.email,
+                                    assigned_to=self.request.user)
+                    ticket.save()
+                    assoc.ticket = ticket
+                    assoc.save()
+
+                    
+                    fup = FollowUp(title=f"Sent message to {contact.vendor_name} admins: {admins}",
+                                   comment=self.request.POST.get('msg'), ticket=ticket,
+                                   user=self.request.user)
+                    fup.save()
+                    tm = TicketThread(thread=msg.thread.id,
+                                      ticket=ticket.id)
+
+                    tm.save()
+                    fm = FollowupMessage(followup=fup,
+                                         msg=msg.id)
+                    fm.save()
+                    
+                    ticket.status = Ticket.CLOSED_STATUS
+                    ticket.save()
+
+                    _add_activity(self.request.user, 3, contact, f"started contact verification process for: {email}")
+
+                return JsonResponse({'ticket': reverse("vince:ticket", args=[ticket.id])}, status=200)
+
+            num_admins = len(admins)
+            admins = ", " .join(admins)
+            action_link = None
+
+            if num_admins:
+                if num_admins > 1:
+                    text = f"There are {num_admins} admins for this contact: {admins}."
+                else:
+                    text = f"There is {num_admins} admin for this contact: {admins}."
+                text = f"{text} Do you want to send a message to the admin(s) to add this user?"
+                #msg_link = reverse("vince:msgadmin")
+                tmpl = EmailTemplate.objects.filter(template_name='vendor_admin_user_request').first()
+                if tmpl:
+                    team_sig = get_team_sig(self.request.user)
+                    msg_body = tmpl.plain_text.replace('[EMAIL]', self.request.POST.get('email')).replace('[VENDOR]', contact.vendor_name).replace('[team_signature]', team_sig)
+                else:
+                    msg_body = "A 'vendor_admin_user_request' template has not been created. Please add a template or fill in the message to send the admin"
+                return JsonResponse({'text':text, "action_link": action_link, 'contact_link': reverse("vince:contact", args=[contact.id]), 'email_link': reverse("vince:initcontactverify", args=[contact.id])+f"?email={self.request.POST.get('email')}", 'msg_body':msg_body}, status=200)
+
+            else:
+                # no admins - so inititate process....
+                #does this contact have any email addresses?
+                emails = EmailContact.objects.filter(contact=contact, status=True).count()
+                if emails:
+                    messages.warning(
+                        self.request,
+                        _(f"This contact does not have a group admin. Initiate contact verification process to add user."))
+                
+                    return JsonResponse({'ticket': reverse("vince:initcontactverify", args=[contact.id])+"?email="+email}, status=200)
+                else:
+                    return JsonResponse({'text':"In order to add a user, you must add an email address to contact to verify this user works for this organization. Try adding a notification-only email address before attempting to verify a user.", 'bypass': reverse("vince:initcontactverify", args=[contact.id])+f"?email={self.request.POST.get('email')}&bypass=1"},  status=200)
+
+        else:
+            #notification only
+            email = EmailContact(email=email,
+                                 email_list = True,
+                                 name="Notification-Only",
+                                 email_function="TO",
+                                 contact=contact)
+            email.save()
+
+            vc_email = VinceCommEmail(contact=vinny_contact,
+                                      email=email,
+                                      email_function="TO",
+                                      email_list=True,
+                                      name="Notification Email")
+            vc_email.save()
+
+            _add_activity(self.request.user, 3, contact, f"added notification-only email: {email}")
+            
+            messages.success(
+                self.request,
+                _(f"Notification-only email address added to contact."))
+
+            contact.active=True
+            contact.save()
+
+            update_srmail_file()
+            
+            return JsonResponse({'refresh':1}, status=200)
+
+        
+    
 class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.DetailView):
     model = Contact
     login_url = "vince:login"
@@ -9436,7 +9718,8 @@ class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         context = super(ContactDetailView, self).get_context_data(**kwargs)
         context['contactpage']=1
         logger.debug("IN CONTACT PAGE")
-        context['groups'] = GroupMember.objects.filter(contact=self.kwargs['pk'])
+        context['groups'] = [group.group.name for group in GroupMember.objects.filter(contact=self.kwargs['pk'])]
+        
         context['activity_list'] = Activity.objects.filter(contact=self.kwargs['pk']).order_by('-action_ts')
         context['cases'] = VulnerableVendor.objects.filter(contact=self.kwargs['pk'], case__lotus_notes=True).order_by('-date_modified')[:20]
         tkt_list = TicketContact.objects.filter(contact=self.kwargs['pk']).values_list('ticket', flat=True)
@@ -9444,19 +9727,23 @@ class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         context['assignable_users'] = EmailContact.objects.filter(contact=self.kwargs['pk'], email_list=False, status=True)
         context['contacttags'] = [tag.tag for tag in ContactTag.objects.filter(contact__id=self.kwargs['pk'])]
         context['othertags'] = [tag.tag for tag in TagManager.objects.filter(tag_type=2).exclude(tag__in=context['contacttags']).order_by('tag').distinct('tag')]
-        logger.debug(context['contacttags'])
-        logger.debug(context['othertags'])
+        emails = EmailContact.objects.filter(contact__id=self.kwargs['pk']).values_list('email', flat=True)
+        context['associations'] = ContactAssociation.objects.filter(contact__id=self.kwargs['pk'], complete=False).exclude(user__in=emails)
         context['vinceusers'] = User.objects.filter(is_active=True, groups__name='vince')
-        context['assignable'] = [user.email for user in context['assignable_users']]
+        context['all_groups'] = [group.name for group in ContactGroup.objects.all().exclude(name__in=context['groups'])]
         context['groupadmins'] = [admin.email.email for admin in GroupAdmin.objects.filter(contact=self.kwargs['pk'])]
         vc_contact = VinceCommContact.objects.using('vincecomm').filter(vendor_id=self.kwargs['pk']).first()
         if vc_contact:
+            logger.debug("VINCE COMM CONTACT")
             gc = GroupContact.objects.using('vincecomm').filter(contact=vc_contact).first()
             context['vc_contact'] = vc_contact
-            if gc:
+            if vc_contact.vendor_type != 'Contact' and gc:
                 context['participants'] = CaseMember.objects.filter(group=gc.group).order_by('-case__modified')[:20]
                 logger.debug(context['participants'])
-                context['vince_users'] = list(User.objects.using('vincecomm').filter(groups=gc.group).values_list('id','username','vinceprofile__preferred_username', named=True))
+                context['vince_users'] = list(User.objects.using('vincecomm').filter(groups=gc.group).values_list('username', flat=True))
+            elif vc_contact.vendor_type in ['Contact', 'User']:
+                #this is prob a contact
+                context['vince_users'] = list(User.objects.using('vincecomm').filter(email__in=list(emails)).values_list('username', flat=True))
             #Check on unapproved changes
             changes = ContactInfoChange.objects.filter(contact=vc_contact)
             allchanges = chain(context['activity_list'], changes)
@@ -9519,7 +9806,39 @@ class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return redirect("vince:contact", contact.id)
 
 
+class ChangeEmailNotifications(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
 
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        email = get_object_or_404(EmailContact, id=self.kwargs['pk'])
+        
+        if email.email_function in ["TO", "CC"]:
+            email.email_function = "EMAIL"
+            email.save()
+            _add_activity(self.request.user, 3, email.contact, f"disabled email notifications for {email.email}")
+            #change it in VINCECOMM
+            vcemail = VinceCommEmail.objects.filter(email=email.email, contact__vendor_id=email.contact.id).first()
+            if vcemail:
+                vcemail.email_function = "EMAIL"
+                vcemail.save()
+        else:
+            email.email_function = "TO"
+            email.save()
+            _add_activity(self.request.user, 3, email.contact, f"enabled email notifications for {email.email}")
+            #change it in VINCECOMM
+            vcemail = VinceCommEmail.objects.filter(email=email.email, contact__vendor_id=email.contact.id).first()
+            if vcemail:
+                vcemail.email_function = "TO"
+                vcemail.save()
+
+        update_srmail_file()
+        return redirect("vince:contact", email.contact.id)
+
+    
 class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView, FormMixin):
     model = Contact
     login_url = "vince:login"
@@ -9529,11 +9848,46 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
     PhoneFormSet = inlineformset_factory(Contact, PhoneContact, form=PhoneForm, max_num=10, min_num=1, can_delete=True, extra=0)
     WebFormSet = inlineformset_factory(Contact, Website, form=WebsiteForm, max_num=10, min_num=1, can_delete=True, extra=0)
     PgPFormSet = inlineformset_factory(Contact, ContactPgP, form=ContactPgPForm, max_num=10, min_num=1, can_delete=True, extra=0)
-    EmailFormSet = inlineformset_factory(Contact, EmailContact, form=EmailContactForm, max_num=30, min_num=1, can_delete=True, extra=0)
+    #EmailFormSet = inlineformset_factory(Contact, EmailContact, form=EmailContactForm, max_num=30, min_num=1, can_delete=True, extra=0)
 
     def	test_func(self):
         return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
 
+
+    def get(self, request, *args, **kwargs):
+        contact = Contact.objects.filter(id=self.kwargs['pk']).first()
+        if self.request.GET.get('activate'):
+            #does this contact have emails?
+            emails = EmailContact.objects.filter(contact=contact).count()
+            if emails:
+                _add_activity(self.request.user, 3, contact, "changed status to ACTIVE")
+                contact.active=True
+                contact.save()
+            else:
+                messages.error(
+                    self.request,
+                    _(f"You cannot activate a contact without email addresses."))
+
+            update_srmail_file()
+            return redirect("vince:contact", contact.id)
+        elif self.request.GET.get('deactivate'):
+            contact.active=False
+            contact.save()
+            _add_activity(self.request.user, 3, contact, "deactivated contact")
+
+            emails = EmailContact.objects.filter(contact=contact).values_list('email', flat=True)
+            vince_users = User.objects.using('vincecomm').filter(email__in=list(emails), is_active=True)
+
+            if vince_users:
+                messages.warning(
+                    self.request,
+                    _(f"You are deactivating a contact with active users. Remove users from this contact if they should not access cases associated with this contact."))
+
+            update_srmail_file()
+            return redirect("vince:contact", contact.id)
+
+        return super().get(request, *args, **kwargs)
+    
     def form_invalid(self, form):
         logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
         contact = Contact.objects.filter(id=self.kwargs['pk']).first()
@@ -9541,14 +9895,14 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
         postal = PostalAddress.objects.filter(contact=self.kwargs['pk'])
         website = Website.objects.filter(contact=self.kwargs['pk'])
         pgp = ContactPgP.objects.filter(contact=self.kwargs['pk'])
-        email = EmailContact.objects.filter(contact=self.kwargs['pk']).order_by('-email_function')
+        #email = EmailContact.objects.filter(contact=self.kwargs['pk']).order_by('-email_function')
         forms = {'form': form,
                 'postal_formset': self.PostalFormSet(prefix='postal', queryset=postal, instance=contact),
                  'phone_formset': self.PhoneFormSet(prefix='phone', queryset=phones, instance=contact),
                  'web_formset': self.WebFormSet(prefix='web', queryset=website, instance=contact),
                  'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp, instance=contact),
-                 'contact': Contact.objects.filter(id=self.kwargs['pk']).first(),
-                 'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact)}
+                 'contact': Contact.objects.filter(id=self.kwargs['pk']).first()}
+        #'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact)}
         return render(self.request, 'vince/editcontact.html', forms)
 
     def post(self, request, *args, **kwargs):
@@ -9572,13 +9926,13 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
         postal = PostalAddress.objects.filter(contact=self.kwargs['pk'])
         website = Website.objects.filter(contact=self.kwargs['pk'])
         pgp = ContactPgP.objects.filter(contact=self.kwargs['pk'])
-        email = EmailContact.objects.filter(contact=self.kwargs['pk'])
+        #email = EmailContact.objects.filter(contact=self.kwargs['pk'])
 
         postalformset = self.PostalFormSet(self.request.POST, prefix='postal', queryset=postal, instance=contact)
         phoneformset = self.PhoneFormSet(self.request.POST, prefix='phone', queryset=phones, instance=contact)
         webformset = self.WebFormSet(self.request.POST, prefix='web', queryset=website, instance=contact)
         pgpformset = self.PgPFormSet(self.request.POST, prefix='pgp', queryset=pgp, instance=contact)
-        emailformset = self.EmailFormSet(self.request.POST, prefix='email', queryset=email, instance=contact)
+        #emailformset = self.EmailFormSet(self.request.POST, prefix='email', queryset=email, instance=contact)
 
         logger.debug(vinny_contact)
 
@@ -9592,31 +9946,16 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                      'phone_formset': self.PhoneFormSet(prefix='phone', queryset=phones),
                      'web_formset': self.WebFormSet(prefix='web', queryset=website),
                      'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp),
-                     'contact': Contact.objects.filter(id=self.kwargs['pk']).first(),
-                     'email_formset': self.EmailFormSet(prefix='email', queryset=email)}
+                     'contact': Contact.objects.filter(id=self.kwargs['pk']).first()}
+            #'email_formset': self.EmailFormSet(prefix='email', queryset=email)}
             return render(self.request, 'vince/editcontact.html', forms)
-
-        if 'active' in self.request.POST:
-            active = True
-        else:
-            active = False
-
-        # moved this bc we need to determine user permissions
-        if contact.active != active:
-            if active:
-                _add_activity(self.request.user, 3, contact, "changed status to ACTIVE")
-            else:
-                _add_activity(self.request.user, 3, contact, "changed status to INACTIVE")
-            contact.active = active
-            contact.save()
-            some_changes=True
 
         groupadmins = []
         gas = GroupAdmin.objects.filter(contact=contact)
         if gas:
             for ga in gas:
                 groupadmins.append(ga.email.email)
-
+        """        
         if not(emailformset.is_valid()):
             logger.debug(emailformset.errors)
             if active:
@@ -9630,7 +9969,8 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                          'contact': Contact.objects.filter(id=self.kwargs['pk']).first(),
                          'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact)}
                 return render(self.request, 'vince/editcontact.html', forms)
-
+        """
+        
         vinny_postal=[]
         for f in postalformset:
             if f.is_valid():
@@ -9767,7 +10107,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                 VinceCommWebsite.objects.bulk_create(vinny_webs)
         except:
             return HttpResponseServerError()
-
+        """
         email_changes = False
         logger.debug("EMAIL FORMSET")
         vinny_emails = []
@@ -9843,7 +10183,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
         # check permissions on users associated with this contact
         for vemail in vinny_emails_add:
             _add_group_permissions(vemail, self.request.user)
-
+        """
 
         pgp_updates = False
         vinny_pgp=[]
@@ -9948,21 +10288,20 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
         else:
             active = False
 
-        if contact.vendor_type != self.request.POST['vendor_type']:
-            contact.vendor_type = self.request.POST['vendor_type']
+        if contact.vendor_type != self.request.POST['vtype']:
+            # set to true so srmail is recreated
+            pgp_updates = True
+            _add_activity(self.request.user, 3, contact, f"modified contact type from {contact.vendor_type} to {self.request.POST['vtype']}")
+            if self.request.POST['vtype'] == "User":
+                contact.vendor_type = "Contact"
+            else:
+                contact.vendor_type = self.request.POST['vtype']
             contact.save()
-            _add_activity(self.request.user, 3, contact, "modified contact type")
+
             some_changes=True
-        if self.request.POST['lotus_id']:
-            if int(self.request.POST['lotus_id']) != contact.lotus_id:
-                logger.debug(contact.lotus_id)
-                logger.debug(self.request.POST['lotus_id'])
-                _add_activity(self.request.user, 3, contact, "modified vendor id")
-                some_changes=True
-                contact.lotus_id = self.request.POST['lotus_id']
         vendor_name = self.request.POST['vendor_name'].strip()
         if contact.vendor_name != vendor_name:
-            oldvendorcontact = Contact.objects.filter(vendor_name=vendor_name).first()
+            oldvendorcontact = Contact.objects.filter(vendor_name__iexact=vendor_name).first()
             if oldvendorcontact:
                 error_str="Vendor Name already exists. Please choose a different Vendor Name"
                 return render(self.request, 'vince/editcontact.html',
@@ -9970,15 +10309,18 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                                'postal_formset': self.PostalFormSet(prefix='postal'),
                                'phone_formset': self.PhoneFormSet(prefix='phone'),
                                'web_formset': self.WebFormSet(prefix='web'),
-                               'email_error':error_str,
                                'contact': contact,
                                'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp, instance=contact),
-                               'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact),
+                               """'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact),"""
                                'error': error_str
                               })
             _add_activity(self.request.user, 3, contact, f"modified contact name from {contact.vendor_name} to {vendor_name}")
             some_changes=True
             contact.vendor_name = vendor_name
+            srmail_peer = vendor_name.lower().replace(" ", "_").replace("'", "")
+            srmail_peer = srmail_peer.translate({ord(i):None for i in '"@+.,;'})
+            contact.srmail_peer = srmail_peer
+
         if contact.countrycode != self.request.POST['countrycode']:
             _add_activity(self.request.user, 3, contact, "modified country code")
             contact.countrycode = self.request.POST['countrycode']
@@ -9999,43 +10341,18 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                     _add_activity(self.request.user, 3, contact, f"added comment: {self.request.POST['comment']}")
             contact.comment = self.request.POST['comment']
             some_changes=True
-        if contact.srmail_salutation != self.request.POST['srmail_salutation']:
-            _add_activity(self.request.user, 3, contact, "modified srmail salutation")
-            contact.srmail_salutation = self.request.POST['srmail_salutation']
-            some_changes = True
-        if contact.srmail_peer != self.request.POST['srmail_peer']:
-            if srmail_name_exists(self.request.POST['srmail_peer']):
-                error_str="SRMail Peer Name already exists. Please choose a different SRMail Peer Name"
-                return render(self.request, 'vince/editcontact.html',
-                              {'form': form,
-                               'postal_formset': self.PostalFormSet(prefix='postal'),
-                               'phone_formset': self.PhoneFormSet(prefix='phone'),
-                               'web_formset': self.WebFormSet(prefix='web'),
-                               'email_error':error_str,
-                               'contact': contact,
-                               'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp, instance=contact),
-                               'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact),
-                               'error': error_str
-                              })
-            _add_activity(self.request.user, 3, contact, f"modified peer address from {contact.srmail_peer} to {self.request.POST['srmail_peer']}")
-            contact.srmail_peer = self.request.POST['srmail_peer']
-            email_changes = True
 
-        if pgp_updates or email_changes:
+        if pgp_updates: #or email_changes
             #rebuild srmail file
             if pgp_updates:
                 messages.info(
                     self.request,
-                    _(f"SRMAIL file has been recreated due to updated PGP Key Information"))
-            else:
-                messages.info(
-                    self.request,
-                    _(f"SRMAIL file has been recreated due to updated Email Updates"))
+                    _(f"SRMAIL file has been recreated"))
             update_srmail_file()
 
         #bump version
         contact.version = contact.version + 1
-
+        """
         if active and groupadmins:
             for ga in groupadmins:
                 ec = EmailContact.objects.filter(contact=contact, email=ga).first()
@@ -10048,8 +10365,8 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                     messages.warning(
                         self.request,
                         _(f"The email {ga} has been removed. Please reassign a new group admin."))
-
-        if some_changes or pgp_updates or email_changes:
+        """
+        if some_changes or pgp_updates: # or email_changes:
             contact.save()
             
         return redirect("vince:contact", self.kwargs['pk'])
@@ -10075,15 +10392,17 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
         postal = PostalAddress.objects.filter(contact=self.kwargs['pk'])
         website = Website.objects.filter(contact=self.kwargs['pk'])
         pgp = ContactPgP.objects.filter(contact=self.kwargs['pk'])
-        email = EmailContact.objects.filter(contact=self.kwargs['pk']).order_by('-email_function')
+        #email = EmailContact.objects.filter(contact=self.kwargs['pk']).order_by('-email_function')
         contact = Contact.objects.filter(id=self.kwargs['pk']).first()
         forms = {'postal_formset': self.PostalFormSet(prefix='postal', queryset=postal, instance=contact),
                  'phone_formset': self.PhoneFormSet(prefix='phone', queryset=phones, instance=contact),
                  'web_formset': self.WebFormSet(prefix='web', queryset=website, instance=contact),
-                 'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp, instance=contact),
-                 'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact)}
+                 'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp, instance=contact)}
+        #'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact)}
         context['groups'] = GroupMember.objects.filter(contact=self.kwargs['pk'])
         context['form'] = self.form_class(initial=Contact.objects.filter(id=self.kwargs['pk']).values()[0])
+        context['form'].fields['vtype'].choices = [('User', 'User'), ('Vendor', 'Vendor'), ('Coordinator', 'Coordinator')]
+        context['form'].fields['vtype'].initial = contact.vendor_type
         context['contact'] = contact
 
         context.update(forms)
@@ -11199,7 +11518,8 @@ class EditVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
             messages.error(self.request,
                            f"Error processing vulnerability information: {errors}")
         
-        if self.request.META.get('HTTP_REFERER'):
+        if self.request.META.get('HTTP_REFERER') and is_safe_url(self.request.META.get('HTTP_REFERER'),set(settings.ALLOWED_HOSTS),True):
+            
             return HttpResponseRedirect(self.request.META.get('HTTP_REFERER') + "#vuls")
         else:
             return redirect("vince:editvuls", vul.case.id)
@@ -11469,7 +11789,7 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
                 #connect any new reservations
                 cve_res = CVEReservation.objects.filter(cve_id=cve.cve_name).first()
                 if cve_res:
-                    logger.debug(f"FOUND RESERVATION for {x}")
+                    logger.debug(f"FOUND RESERVATION for {cve.cve_name}")
                     cve_res.cve_info = cve
                     cve_res.save()
             
@@ -11495,8 +11815,7 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
                     CVEAffectedProduct.objects.bulk_create(prods)
             except:
                 return HttpResponseServerError()
-
-        if self.request.META.get('HTTP_REFERER') and (self.request.path not in self.request.META.get('HTTP_REFERER')):
+        if self.request.META.get('HTTP_REFERER') and (self.request.path not in self.request.META.get('HTTP_REFERER')) and is_safe_url(self.request.META.get('HTTP_REFERER'),set(settings.ALLOWED_HOSTS),True):
             return HttpResponseRedirect(self.request.META.get('HTTP_REFERER') + "#vuls")
         else:
             return redirect("vince:vul", cve.vul.id)
@@ -11590,7 +11909,7 @@ class CVEFormView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView)
         if form.cleaned_data['vul']:
             return redirect("vince:case", form.cleaned_data['vul'].case.id)
 
-        if self.request.META.get('HTTP_REFERER'):
+        if self.request.META.get('HTTP_REFERER') and is_safe_url(self.request.META.get('HTTP_REFERER'),set(settings.ALLOWED_HOSTS),True):
             return HttpResponseRedirect(self.request.META.get('HTTP_REFERER') + "#vuls")
         else:
             return redirect("vince:vul", cve.vul.id)
@@ -11796,7 +12115,7 @@ class AddVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
         if form.cleaned_data['cve_allocator'] == 'True':
             return redirect("vince:newcve",vul.id)
         """
-        if self.request.META.get('HTTP_REFERER'):
+        if self.request.META.get('HTTP_REFERER') and is_safe_url(self.request.META.get('HTTP_REFERER'),set(settings.ALLOWED_HOSTS),True):
             return HttpResponseRedirect(self.request.META.get('HTTP_REFERER')+"#vuls")
 
         return redirect("vince:editvuls", case.id)
@@ -11959,7 +12278,7 @@ class RemoveVulnerability(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
                             action_type=1)
         action.save()
         try:
-            if case.vulnote.date_published:
+            if case.vulnote.date_published or case.publicdate:
                 vul.deleted = True
                 vul.ask_vendor_status = False
                 vul.save()
@@ -11969,7 +12288,7 @@ class RemoveVulnerability(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
             #vul note prob doesn't exist
             vul.delete()
 
-        if self.request.META.get('HTTP_REFERER'):
+        if self.request.META.get('HTTP_REFERER') and is_safe_url(self.request.META.get('HTTP_REFERER'),set(settings.ALLOWED_HOSTS),True):
             return HttpResponseRedirect(self.request.META.get('HTTP_REFERER') + "#vuls")
         return redirect("vince:editvuls", case.id)
 
@@ -12873,6 +13192,7 @@ class VinceCommUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         if context['vc_user']:
             context['activity'] = VendorAction.objects.using('vincecomm').filter(user=context['vc_user']).order_by('-created')[:30]
             context['contact'] = EmailContact.objects.filter(email=context['vc_user'].username)
+            context['contact_record'] = EmailContact.objects.filter(email=context['vc_user'].username, contact__vendor_type="Contact").first()
             threads = Thread.ordered(Thread.all(context['vc_user']))
             paginator = Paginator(threads, 10)
             page = 1
@@ -13353,6 +13673,11 @@ class VinceContactReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                 context['results'] = Contact.objects.filter(active=False)
             elif t==4:
                 context['results'] = User.objects.using('vincecomm').filter(vinceprofile__multifactor=False, is_active=True)
+            elif t== 5:
+                # contacts with EMAIL type emails also associated with a user
+                all_users = list(User.objects.using('vincecomm').filter(is_active=True).values_list('email', flat=True))
+                emails = EmailContact.objects.filter(email__in=all_users, email_function__in=['EMAIL', 'REPLYTO']).values_list('contact__id', flat=True)
+                context['results'] = Contact.objects.filter(active=True, id__in=emails)
         return context
 
 
@@ -14640,8 +14965,9 @@ class CVEListReserved(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
             x["cve_link"] = reverse("vince:detailedcve", args=[acc.id, x["cve_id"]])
             if v_cve:
                 if v_cve.cve_info:
-                    x["vul"] = reverse("vince:vul", args=[v_cve.cve_info.vul.id])
-                    x["case"] = v_cve.cve_info.vul.case.vu_vuid
+                    if v_cve.cve_info.vul:
+                        x["vul"] = reverse("vince:vul", args=[v_cve.cve_info.vul.id])
+                        x["case"] = v_cve.cve_info.vul.case.vu_vuid
                 if v_cve.user_reserved:
                     x["user"] = v_cve.user_reserved.usersettings.preferred_username
             else:

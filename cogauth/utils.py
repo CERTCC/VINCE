@@ -123,7 +123,6 @@ def token_verify(token, expire_fail=False):
         logger.debug(e)
         if expire_fail:
             return False
-        pass
     except JWTError as e:
         logger.debug('JWT Signature is invalid')
         logger.debug(e)
@@ -292,6 +291,17 @@ def cognito_check_track_permissions(request):
                 else:
                     vincegroup.user_set.add(request.user)
 
+                
+            if settings.COGNITO_SUPERUSER_GROUP in groups:
+                request.user.is_superuser=True
+                request.user.save()
+            else:
+                if request.user.is_superuser:
+                    logger.warning("Downgrading permissions on %s" % request.user.username)
+                    request.user.is_superuser=False
+                    request.user.save()
+
+                    
             for g in groups:
                 #Does COGNITO group exist in VINCE?  If so, add the user to that track group.
                 gs = GroupSettings.objects.filter(organization=g).first()
@@ -308,7 +318,8 @@ def cognito_check_track_permissions(request):
                             request.user.usersettings.contacts_write = vgroup.groupsettings.contacts_write
                             request.user.usersettings.save()
                 else:
-                    logger.info(f"LOCAL GROUP tied to Cognito group {g} doesn't exist")
+                    if g not in settings.COGNITO_SUPERUSER_GROUP:
+                        logger.info(f"LOCAL GROUP tied to Cognito group {g} doesn't exist")
 
 
             if settings.COGNITO_ADMIN_GROUP in groups:
@@ -335,8 +346,7 @@ def cognito_check_permissions(request):
                 request.user.vinceprofile.pending = False
                 request.user.vinceprofile.save()
             except:
-                logger.debug("No vinceprofile, this is probably a VINCE (not Vinny) system")
-                pass
+                logger.debug("No vinceprofile, this is probably a VINCE system")
             
         if settings.COGNITO_SUPERUSER_GROUP in groups:
             request.user.is_superuser=True

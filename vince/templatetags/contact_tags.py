@@ -177,3 +177,32 @@ def vince_user_link(email):
 
     return User.objects.using('vincecomm').filter(username=email).first()
 
+@register.filter
+def inviteduser(contact, email):
+    try:
+        from vinny.models import VinceCommEmail
+    except ImportError:
+        if settings.DEBUG:
+            raise template.TemplateSyntaxError("Error in contact template tags. Can't load VinceCommInvitedUsers model")
+    return VinceCommEmail.objects.filter(contact__vendor_id=contact, email=email, invited=True).exists()
+
+@register.filter
+def contactactionlogo(action, field):
+    if action in [1, 4]:
+        return f"<div class=\"profile-pic text-center\" style=\"background-color:#b00;\"><span class=\"logo-initial\"><i class=\"fas fa-plus-square\"></i></span></div>"
+    elif action in [2, 5]:
+        return f"<div class=\"profile-pic text-center\" style=\"background-color:#b00;\"><span class=\"logo-initial\"><i class=\"far fa-trash-alt\"></i></span></div>"
+    elif action == 3:
+        return f"<div class=\"profile-pic text-center\" style=\"background-color:#b00;\"><span class=\"logo-initial\"><i class=\"fas fa-edit\"></i></span></div>"
+    elif action == 6:
+        
+        return f"<div class=\"profile-pic text-center\" style=\"background-color:#b00;\"><span class=\"logo-initial\"><i class=\"fas fa-tag\"></i></span></div>"
+    else:
+        if field == "NEW":
+            return f"<div class=\"profile-pic text-center\" style=\"background-color:#b00;\"><span class=\"logo-initial\"><i class=\"fas fa-plus\"></i></span></div>"
+        elif field == "REMOVED":
+            return f"<div class=\"profile-pic text-center\" style=\"background-color:#b00;\"><span class=\"logo-initial\"><i class=\"fas fa-minus\"></i></span></div>"
+        else:
+            return f"<div class=\"profile-pic text-center\" style=\"background-color:#b00;\"><span class=\"logo-initial\"><i class=\"fas fa-cogs\"></i></span></div>"
+        
+        

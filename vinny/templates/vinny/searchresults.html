@@ -18,10 +18,7 @@
         <a href="{% url 'vinny:case' ticket.id %}">
 	  {{ ticket.get_title }} </a> {% autoescape off %}{{ ticket.get_status_html }}{% endautoescape %}
       </h4>
-      <h6> Last updated {{ ticket.modified|naturaltime }}</h6>
-      {% if note.dateupdated != note.datefirstpublished %}
-      <span class="updated-date">Updated {{ note.dateupdated|date:"F d, Y" }}</span>
-      {% endif %}
+      <h6> Last updated {% if ticket.last_post_date %}{{ ticket.last_post_date|naturaltime }}{% else %}{{ ticket.modified|naturaltime }}{% endif %}</h6>
     </div>
     {% endfor %}
     

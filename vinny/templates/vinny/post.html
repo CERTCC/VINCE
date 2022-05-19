@@ -44,10 +44,20 @@
 	<br/><a href="#pinthispost" title="Pin this post" class="pin-post" item="{{post.id}}"><i class="fas fa-thumbtack remove-icon" aria-hidden="true"></i> Pin this post </a>{% endif %}
 	{% endif %}
       </div>
+      {% if post.author != user %}
+      <div class="text-right reply-button">
+	<button post_id="{{ post.id }}" class="reply-to-post button tiny primary {% if post.pinned or replypinned %}pinned{% endif %}">Reply</button>
+      </div>
+      {% endif %}      
     </div>
     {% else %}
     <div class="tester medium-1 large-1 columns hide-for-small-only">
-       {% if last_viewed %}{% if post.author == user %}{% else %}{% if post.created > last_viewed %}<span class="unseenpost">New!</span>{% endif %}{% endif %}{% endif %}
+      {% if last_viewed %}{% if post.author == user %}{% else %}{% if post.created > last_viewed %}<span class="unseenpost">New!</span>{% endif %}{% endif %}{% endif %}
+      {% if post.author != user %}
+      <div class="text-right reply-button">
+	<button post_id="{{ post.id }}" class="reply-to-post button tiny primary {% if post.pinned or replypinned %}pinned{% endif %}">Reply</button>
+      </div>
+      {% endif %}      
     </div>
     {% endif %}
   </div>
@@ -61,11 +71,6 @@
       </div>
     </div>
   </div>
-  {% if post.author != user %}
-  <div class="row column text-right reply-button">
-    <button post_id="{{ post.id }}" class="reply-to-post button tiny primary {% if post.pinned or replypinned %}pinned{% endif %}">Reply</button>
-  </div>
-  {% endif %}
   {% if post.num_replies > 0 %}
   <div class="row column text-right">
     <div class="post_reply_count loadreply"> <i class="far fa-comment-dots"></i> {{ post.num_replies }} replies <i class="fas fa-caret-down"></i></div>

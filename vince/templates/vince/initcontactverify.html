@@ -19,7 +19,7 @@
     </div>
   </div>
 </div>
-
+{{ emails|json_script:"emails" }}
 {% if ca %}
 <div class="row">
   <div class="large-12 columns">
@@ -70,13 +70,25 @@
       </div>
       {% endif %}
       {% for field in form %}
+
+      {% if field.name == "email" %}
+      <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %} </label>
+      <div class="taggle input custom" id="email_tags"></div>
+        {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+
+      {% else %}
+      
+
       <div class="form-group">
         <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %} {% if field.name == "email_body" %}<a href="#refresh" title="Customize email with above information" id="customize"><i class="fas fa-sync-alt"></i></a>{% endif %}</label>
         {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+
         {{ field }}
         {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
-	
+
       </div>
+      	{% endif %}
+
       {% endfor %}
 
       <div class="row submitrow">

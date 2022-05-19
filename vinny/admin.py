@@ -29,7 +29,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.models import Group
-from vinny.models import GroupContact, VinceProfile, VinceCommContact, Case, Thread, VinceCommInvitedUsers, VinceCommEmail, VinceCommGroupAdmin, VCVulnerabilityNote, CaseMemberStatus, CaseStatement, VinceAttachment, VinceTrackAttachment, CaseVulnerability, CaseTracking, CoordinatorSettings, VTCaseRequest, CaseMember
+from vinny.models import GroupContact, VinceProfile, VinceCommContact, Case, Thread, VinceCommInvitedUsers, VinceCommEmail, VinceCommGroupAdmin, VCVulnerabilityNote, CaseMemberStatus, CaseStatement, VinceAttachment, VinceTrackAttachment, CaseVulnerability, CaseTracking, CoordinatorSettings, VTCaseRequest, CaseMember, CaseViewed
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
@@ -218,6 +218,12 @@ class GroupAdminAdmin(admin.ModelAdmin):
     get_email_vendor.short_description = "Email Contact Name"
 
 
+class CaseViewedAdmin(admin.ModelAdmin):
+    list_display = ('get_vuid', 'user')
+
+    def get_vuid(self, instance):
+        return instance.case.vuid
+    
 class CaseAdmin(admin.ModelAdmin):
     list_display = ('vuid', 'title', 'created', 'status', 'published', 'get_team_owner')
     list_filter = ('status',)
@@ -253,6 +259,7 @@ vinnyadmin.register(CaseStatement)
 vinnyadmin.register(VinceAttachment)
 vinnyadmin.register(VinceTrackAttachment)
 vinnyadmin.register(CaseTracking)
+vinnyadmin.register(CaseViewed, CaseViewedAdmin)
 #vinnyadmin.register(CaseMember, CaseMemberAdmin)
 #vinnyadmin.register(VTCaseRequest)
 #vinnyadmin.register(CaseVulnerability)

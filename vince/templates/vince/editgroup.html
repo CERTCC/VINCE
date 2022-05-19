@@ -38,20 +38,12 @@
 </div>
 {% endif %}
 
-{% if contacts_without_keys or expired_keys_contacts or contacts_without_emails %}
+{% if inactive_contacts %}
 <div class="row">
   <div class="large-12 columns">
     <div class="callout warning" role="alert">
       <p><b> <span style="color:red;">WARNING</span> - see below for details </b><br/>
-	{% if contacts_without_keys %}
-	This group has contact(s) without keys<br/>
-	{% endif %}
-	{% if expired_keys_contacts %}
-	This group has contact(s) with expired keys<br/>
-	{% endif %}
-	{% if contacts_without_emails %}
-	This group has contact(s) without email addresses<br/>
-	{% endif %}
+	This group has {{ inactive_contacts }} inactive member(s).
     </div>
   </div>
 </div>
@@ -63,39 +55,11 @@
   <div class="large-6 medium-6 columns">
   {% csrf_token %}
   <input type="hidden" name="version" value="{{ group.version }}" />
-    <div class="row">      
-      <div class="form-group">
-        <div class="large-4 medium-4 columns">
-          {{ form.status.label_tag }}{% render_field form.status class="form-control" %}
-        </div>
-        <div class="large-8 medium-8 columns">
-        </div>
-      </div>
-    </div>
     <div class="row">
       <div class="large-8 medium-8 columns">
 	<div class="form-group">
           <div class="required">{{ form.name.label_tag }}</div>
           {% render_field form.name class="form-control" %}
-        </div>
-      </div>
-      <div class="large-4 columns"></div>
-    </div>
-    <div class="row">
-      <div class="large-8 medium-8 columns">
-        <div class="form-group">
-          <div class="required"><label for="srmail_peer_name">SRMail Peer Name: </label></div>
-          {% render_field form.srmail_peer_name class="form-control"%}
-        </div>
-      </div>
-      <div class="large-4 columns"></div>
-    </div>
-
-    <div class="row">
-      <div class="large-8 medium-8 columns">
-	<div class="form-group">
-          <div class="required">{{ form.group_type.label_tag }}</div>
-	  {% render_field form.group_type class="form-control"%}
         </div>
       </div>
       <div class="large-4 columns"></div>
@@ -112,6 +76,14 @@
   </div>
   <div class="large-6 columns">
   </div>
+</div>
+<div class="row">
+  <div class="form-group">
+    <div class="large-12 medium-12 columns">
+      {{ form.comment.label_tag }}
+      {% render_field form.comment class="form-control"%}
+    </div>
+    </div>
 </div>
 <div class="row">
   <div class="large-12 medium-12 columns">	
@@ -143,14 +115,6 @@
 </div>
 <br/>
 <div class="row">
-  <div class="form-group">
-    <div class="large-12 medium-12 columns">
-      {{ form.comment.label_tag }}
-      {% render_field form.comment class="form-control"%}
-    </div>
-  </div>
-</div>
-<div class="row">
   <div class="large-12 columns">
     <input type="submit" value="Update Group" class="primary button">
     <a href="{% url 'vince:group' group.id %}" class="button secondary">Cancel</a>
@@ -158,43 +122,5 @@
 </div>
 
 </form>
-<br/>
-{% if contacts_without_keys %}
-<div class="row">
-  <div class="large-12 columns">
-    <div class="callout alert" role="alert">
-      <strong>WARNING:</strong> The following contact(s) do not have a PGP key on file:<br/>
-      {% for contact in contacts_without_keys %}
-      <a href="{% url 'vince:contact' contact.id %}">{{ contact }}</a><br/>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-{% endif %}
-{% if expired_keys_contacts %}
-<div class="row">
-  <div class="large-12 columns">
-    <div class="callout alert" role="alert">
-      <strong>WARNING:</strong> The following contact(s) have expired PGP Keys on file:<br/>
-      {% for contact in expired_keys_contacts %}
-      <a href="{% url 'vince:contact' contact.id %}">{{ contact }}</a><br/>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-{% endif %}
-{% if contacts_without_emails %}
-<div class="row">
-  <div class="large-12 columns">
-    <div class="callout alert" role="alert">
-      <strong>WARNING:</strong> The following contact(s) do not have an EMAIL on file:<br/>
-      {% for contact in contacts_without_emails %}
-      <a href="{% url 'vince:contact' contact.id %}">{{ contact }}</a><br/>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-{% endif %}
-
 {% endblock %}
 

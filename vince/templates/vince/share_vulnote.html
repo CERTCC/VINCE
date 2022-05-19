@@ -1,13 +1,4 @@
-{% extends "vince/modal.html" %}{% load i18n %}
-
-{% load staticfiles %}
-{% block js %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">
-<script src="{% static 'vince/js/easymde.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'vince/js/vulnote.js' %}"></script>
-{% endblock %}
-{% block content %}
+{% load i18n %}
 <div class="fullmodal">
   <form method="POST" action="{% url 'vince:sharevulnote' vulnote.id %}">
   <div class="modal-content">
@@ -30,6 +21,5 @@
   </form>
 </div>
 
-{% endblock %}
 
     

@@ -280,7 +280,7 @@ $(document).ready(function() {
 
 
     $(document).on('click', '.reply-to-post', function() {
-	var post = $(this).parent().prev().prev().find('.post_author');
+	var post = $(this).parent().parent().parent().find('.post_author');
 	var lines = post.text().trim(); /*.split('\n');*/
 	var post_id = $(this).attr("post_id");
 	/*$("#post_reply").slideToggle( "slow", function() {});*/

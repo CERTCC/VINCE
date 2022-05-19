@@ -157,9 +157,9 @@ class VinceProfile(models.Model):
     logo = property(_get_logo)
 
     def _get_vendor_status(self):
-        groups = self.user.groups.exclude(groupcontact__contact__isnull=True)
+        groups = self.user.groups.filter(groupcontact__contact__active=True).exclude(groupcontact__contact__isnull=True)
         if len(groups) >= 1:
-            vendor_groups = groups.exclude(groupcontact__contact__vendor_type="Contact")
+            vendor_groups = groups.exclude(groupcontact__contact__vendor_type__in=["Contact", "User"])
             if len(vendor_groups) >= 1:
                 return True
         return False
@@ -167,7 +167,7 @@ class VinceProfile(models.Model):
     is_vendor = property(_get_vendor_status)
 
     def _get_admin_status(self):
-        admin = VinceCommGroupAdmin.objects.filter(email__email=self.user.email)
+        admin = VinceCommGroupAdmin.objects.filter(email__email=self.user.email, contact__active=True, contact__vendor_type__in=["Coordinator", "Vendor"])
         if admin:
             return True
         return False
@@ -263,6 +263,8 @@ class VinceCommContact(models.Model):
     VENDOR_TYPE = (
     ('Contact', 'Contact'),
     ('Vendor', 'Vendor'),
+    ('User', 'User'),
+    ('Coordinator', 'Coordinator'),
     )
 
     LOCATION_CHOICES=(
@@ -445,7 +447,7 @@ class ContactInfoChange(models.Model):
     action_ts = property(_get_ts)
     
     def __str__(self):
-        out = '%s: %s ' % (self.model, self.field)
+        out = '%s: %s: %s ' % (self.action, self.model, self.field)
         if not self.new_value:
 #            out += ugettext('removed')
             out += '%s' % self.old_value

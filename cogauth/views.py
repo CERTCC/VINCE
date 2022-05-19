@@ -31,7 +31,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin, UserPassesTestMixin
 from django.forms.utils import ErrorList
 from django.http import Http404
-from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.translation import ugettext as _
 from django.utils.decorators import method_decorator
@@ -44,21 +43,20 @@ except ImportError:
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from django.views.generic import FormView, TemplateView
-from django.views.generic.list import ListView
 from django.contrib import messages
 from django.urls import resolve
 from django.contrib.auth import authenticate, login as auth_login
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.views import LogoutView as CALogoutView
-from django.contrib.auth import update_session_auth_hash
 from django.conf import settings
 from django.contrib.auth import logout
 from lib.warrant import UserObj, Cognito
 from django.template.defaulttags import register
-from cogauth.utils import get_cognito, password_challenge_dance, get_group, cognito_verify_email, cognito_to_dict, cognito_check_permissions, mfa_challenge, rm_mfa, cognito_verify_sms, send_courtesy_email
+from cogauth.utils import get_cognito, password_challenge_dance, get_group, cognito_verify_email, cognito_check_permissions, mfa_challenge, rm_mfa, send_courtesy_email
 from cogauth.forms import *
 from vinny.models import Thread, VinceAPIToken, VinceCommGroupAdmin, GroupContact
 from vinny.permissions import is_in_group_vincegroupadmin
+from vinny.lib import vince_comm_send_sqs
 from django.core.exceptions import SuspiciousOperation
 import boto3
 import os
@@ -68,6 +66,7 @@ import logging
 import traceback
 from boto3.exceptions import Boto3Error
 from botocore.exceptions import ClientError, ParamValidationError
+from django.utils.http import is_safe_url
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -78,7 +77,7 @@ def _unread_msg_count(user):
     return len(Thread.ordered(Thread.unread(user)))
 
 def _my_contact_group(user):
-    groups = user.groups.exclude(groupcontact__isnull=True)
+    groups = user.groups.filter(groupcontact__contact__vendor_type__in=["Coordinator", "Vendor"]).exclude(groupcontact__isnull=True)
     return groups
 
 def _other_groups(user):
@@ -118,12 +117,12 @@ class GetUserMixin(object):
     cognito = None
     
     def get_token_groups(self):
-        if (self.cognito == None):
+        if (self.cognito is None):
             self.cognito = get_cognito(self.request)
         return get_group(self.request.session.get('ACCESS_TOKEN'))
     
     def get_user(self):
-        if (self.cognito == None):
+        if (self.cognito is None):
             self.cognito = get_cognito(self.request)
         return self.cognito.get_user(attr_map=settings.COGNITO_ATTR_MAPPING)
 
@@ -282,6 +281,33 @@ class AssociateTOTPView(LoginRequiredMixin,TokenMixin,GetUserMixin,FormView):
             context['qrtext'] = f"otpauth://totp/VINCE:{self.request.user.username}?secret={context['secretcode']}&issuer=VINCE"
             return render(request, 'cogauth/totp.html', context)
 
+class ResetMFAView(FormView, AccessMixin):
+    template_name = 'cogauth/resetmfa.html'
+    form_class = COGResetMFA
+    login_url = "cogauth:login"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not (request.session.get('MFAREQUIRED') and request.session.get('username')):
+            return self.handle_no_permission()
+        return super(ResetMFAView, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(ResetMFAView, self).get_context_data(**kwargs)
+        return context
+
+    def form_valid(self, form):
+
+        del(self.request.session['MFAREQUIRED'])
+
+        vince_comm_send_sqs("ResetMFA", "MFA", "None", self.request.session['username'], None, form.cleaned_data['reason'])
+        
+        del(self.request.session['username'])
+        
+        messages.success(self.request,
+                         "Please check your email for further instructions on resetting your MFA.")
+        
+        return redirect('cogauth:login')
+        
 class RemoveMFAView(LoginRequiredMixin,TokenMixin,GetUserMixin,PendingTestMixin,TemplateView):
     template_name = 'cogauth/rmmfa.html'
     login_url = "cogauth:login"
@@ -297,7 +323,7 @@ class RemoveMFAView(LoginRequiredMixin,TokenMixin,GetUserMixin,PendingTestMixin,
             logger.debug("trying to auth...")
             user = authenticate(request, username=self.request.user.username, password=password)
             logger.debug(user)
-            if (user == None) and request.session.get('MFAREQUIRED'):
+            if (user is None) and request.session.get('MFAREQUIRED'):
                 request.session['CHANGEMFA'] = True
                 request.session.save()
                 return redirect(settings.MFA_REDIRECT_URL)
@@ -311,8 +337,7 @@ class GenerateTokenView(LoginRequiredMixin,TokenMixin,GetUserMixin,TemplateView)
     def get_context_data(self, **kwargs):
         context = super(GenerateTokenView, self).get_context_data(**kwargs)
         context['coguser'] = self.get_user()
-        # generate a token
-        context['token'] = generate_key()
+        # generate a token        context['token'] = generate_key()
         # does user already have a token
         try:
             token = VinceAPIToken.objects.get(user=self.request.user)
@@ -345,7 +370,7 @@ class GenerateServiceTokenView(LoginRequiredMixin,TokenMixin,UserPassesTestMixin
         gc = get_object_or_404(GroupContact, id=self.kwargs.get('vendor_id'))
 
         service = User.objects.filter(groups__in=[gc.group], vinceprofile__service=True).first()
-        if service == None:
+        if service is None:
             raise Http404
 
         # generate a token
@@ -548,7 +573,6 @@ class InitialPasswordResetView(FormView):
             c.initiate_forgot_password()
         except (Boto3Error, ClientError) as e:
             logger.warning("User %s does not exist" % form.cleaned_data['username'])
-            pass
             
         self.request.session['RESETPASSWORD']=True
         self.request.session['username']=form.cleaned_data['username']
@@ -741,7 +765,10 @@ class MFAAuthRequiredView(FormView, AccessMixin):
                 if next_url:
                     logger.debug(next_url)
                     try:
-                        return redirect(next_url)
+                        if is_safe_url(next_url,set(settings.ALLOWED_HOSTS),True):
+                            return redirect(next_url)
+                        else:
+                            return redirect(settings.LOGIN_REDIRECT_URL)
                     except:
                         pass
                 logger.debug("redirecting...")
@@ -915,7 +942,7 @@ class ChangePasswordandRegisterView(FormView, AccessMixin):
 #        user = form.save()
         logger.debug(self.request.session.get('username'))
         tokens = password_challenge_dance(self.request.session.get('username'), form.cleaned_data['old_password'], form.cleaned_data['new_password1'])
-        if tokens == None:
+        if tokens is None:
             form._errors.setdefault("old_password", ErrorList([
                         u"Your temporary password is incorrect."
                     ]))
@@ -947,6 +974,20 @@ class ChangePasswordandRegisterView(FormView, AccessMixin):
             return self.handle_no_permission()
         return super(ChangePasswordandRegisterView, self).dispatch(
             request, *args, **kwargs)
+
+
+class LoginHelpView(TemplateView):
+    template_name = 'cogauth/loginhelp.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(LoginHelpView, self).get_context_data(**kwargs)
+
+        if self.request.session.get('username'):
+            #this user has already entered their name and password
+            context['showlink'] = 1
+
+            
+        return context
     
 class RegisterView(FormView):
     template_name = 'cogauth/signup.html'
@@ -972,7 +1013,7 @@ class RegisterView(FormView):
             'secret' : settings.GOOGLE_RECAPTCHA_SECRET_KEY,
             'response': recaptcha_response
         }
-        logger.debug(data)
+
         r = requests.post(GOOGLE_VERIFY_URL, data=data)
         result = r.json()
         if result['success']:
@@ -991,6 +1032,7 @@ class RegisterView(FormView):
                 u'Email already exists. Usernames are <b>CASE SENSITIVE</b>. Or did you forget your password? <a href="/comm/auth/init/resetpassword/">Reset your password</a>.'
             ]))
             return super().form_invalid(form)
+
         c = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID, user_pool_region=settings.COGNITO_REGION)
         c.add_base_attributes(email=form.cleaned_data['email'], given_name=form.cleaned_data['first_name'], family_name=form.cleaned_data['last_name'], preferred_username=form.cleaned_data['preferred_username'])
         c.add_custom_attributes(Organization=form.cleaned_data['organization'], title=form.cleaned_data['title'])

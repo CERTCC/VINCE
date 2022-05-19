@@ -2182,7 +2182,7 @@
     "subject": "You have been requested to join VINCE",
     "heading": "Invitation to join VINCE",
     "plain_text": "Hello, you have been requested to join VINCE in the group {{ group }} by {{ groupadmin }}. \r\n\r\nPlease create a VINCE account and you will be able to view any vulnerability case information associated with {{ group }}. \r\n\r\nSign up here: {{ signup }} \r\n\r\nThank you, \r\n\r\n{{ team_signature }}",
-    "html": "<p style=\"font-family: sans-serif; font-size: 1em;\">Hello,</p> <p style=\"font-family: sans-serif; font-size: 1em;\">Hello, you have been requested to join VINCE in the group {{ group }} by {{ groupadmin }}. Please create a VINCE account and you will be able to view any vulnerability case information associated with {{ group }}.</p> <p style=\"font-family: sans-serif; font-size: 1em;\"> <b>Sign up here:</b> {{ signup }}<br> </p> \r\n\r\n<p style=\"font-family: sans-serif; font-size: 1em;\"> Thank you,\r\n<br/> {{ team_signature }} </p>",
+    "html": "<p style=\"font-family: sans-serif; font-size: 1em;\">Hello,</p> <p style=\"font-family: sans-serif; font-size: 1em;\">You have been requested to join VINCE in the group {{ group }} by {{ groupadmin }}. Please create a VINCE account and you will be able to view any vulnerability case information associated with {{ group }}.</p> <p style=\"font-family: sans-serif; font-size: 1em;\"> <b>Sign up here:</b> {{ signup }}<br> </p> \r\n\r\n<p style=\"font-family: sans-serif; font-size: 1em;\"> Thank you,\r\n<br/> {{ team_signature }} </p>",
     "locale": "en",
     "body_only": false,
     "user": null,

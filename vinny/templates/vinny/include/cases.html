@@ -7,30 +7,31 @@
 <div class="resultCount"> {{ paginator.count }} Results </div>
 {% endif %}
 
-{% if dashboard %}
+{% if dashboard and cases %}
 <div class="case-category">  
-  {% if cases|open|length %}
   <h3> Your active cases</h3>
   <ul class="case-list">
-    {% for case in cases|open %}
-    {% include 'vinny/include/dash_case.html' with case=case %}
+    {% for case in cases %}
+    {% if case.note.datefirstpublished %}{% else %}
+    {% include 'vinny/include/dash_case.html' with case=case unseen_cases=unseen_cases %} {% endif %}
     {% endfor %}
   </ul>
-  {% endif %}
 </div>
 <div class="case-category">
-  {% if cases|published|length %}
+  {% if num_published %}
   <h3> Your active published cases</h3>
   <ul class="case-list">
-    {% for case in cases|published %}
-    {% include 'vinny/include/dash_case.html' with case=case %}
+    {% for case in cases %}
+    {% if case.note.datefirstpublished %}
+    {% include 'vinny/include/dash_case.html' with case=case unseen_cases=unseen_cases %}
+    {% endif %}
     {% endfor %}
   </ul>
   {% endif %}
 </div>
 {% else %}
 {% for case in cases %}
-{% include 'vinny/include/dash_case.html' with case=case %}
+{% include 'vinny/include/dash_case.html' with case=case unseen_cases=unseen_cases %}
 {% empty %}
 <h4>No cases matched your filter criteria</h4>
 {% endfor %}

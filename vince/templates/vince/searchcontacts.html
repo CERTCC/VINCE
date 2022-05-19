@@ -13,8 +13,7 @@
       <h2>Contacts</h2>
     </div>
     <div class="large-6 columns text-right">
-      <a href="{% url 'vince:newcontact' %}"><button class="button small primary"><i class="fas fa-plus"></i> Create Contact</button></a>&nbsp;&nbsp;
-      <a href="{% url 'vince:newgroup' %}"><button class="button small default"><i class="fas fa-user"></i> Create Group</button></a>&nbsp;&nbsp;
+      <a href="{% url 'vince:newcontact' %}" id="createcontact"><button class="button small primary"><i class="fas fa-plus"></i> Create Contact</button></a>&nbsp;&nbsp;
     </div>
   </div>
 </div>
@@ -26,7 +25,7 @@
     {% endfor %}
   </div>
 </div>
-
+<div id="modal" class="reveal" data-close-on-click="false" data-reveal></div>
 <div class="row">
   <div class="large-8 columns">
 

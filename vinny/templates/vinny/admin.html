@@ -54,13 +54,58 @@
 <div class="row">
   <div class="large-12 medium-12 small-12 columns">
     <small>
-    <p>* Eligible users are emails that are associated with your account but have not yet created a VINCE account.</p>
+    <p>* Eligible users are emails that are associated with your organization but have not yet created a VINCE account.</p>
     <p>** Invited users are emails that were sent a VINCE invitation by a group admin.</p>
     <p><i class="fas fa-crown" title="Group Admin"></i> Group administrators are assigned by the VINCE coordinators or another group administator. <br/>Group administrators have access to <b>all</b> cases that the organization is involved in. Please <a href="{% url 'vinny:sendmsg' 4 %}">contact the VINCE coordination team</a> for questions about group administrators.</p>
     </small>
   </div>
 </div>
-
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Notification Emails</h2>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 columns">
+    <p>Notification emails are contact email addresses associated with your organization that are not owned by one particular person or user.  They are typically mailing list or team email addresses and/or listed as your contact information on public facing websites. Contact information marked as public will be visible to other VINCE users in case discussions. You can add/remove/edit notification emails on the <a href="{% url 'vinny:contact' object.id %}"> Contact Information page</a>. Notification emails are used strictly for receiving notifications concerning new cases or VINCE.</p>
+  </div>
+</div>
+<div class="row">
+  <div class="large-8 small-12 medium-8 columns">
+    <table class="hover usermgmt">
+      <thead>
+	<tr>
+	  <th>Email</th>
+	  <th>Email Notifications</th>
+	  <th>Public</th>
+	</tr>
+      </thead>
+      <tbody>
+	{% for email in notification_emails %}
+	<tr>
+	  <td>
+	    {{ email.email }}
+	  </td>
+	  <td>
+	    {% if email.email_function in "TO,CC" %}
+	    Enabled <a href="{% url 'vinny:changeemail' object.id 'email' email.id %}" class="modemail"><i class="fas fa-edit" title="Disable"></i></a>{% else %}Disabled <a href="{% url 'vinny:changeemail' object.id 'email' email.id %}" class="modemail"><i class="fas fa-edit" title="Enable"></i></a>{% endif %}</td>
+	  <td>
+	    {% if email.public %} YES {% else %} NO {% endif %}
+	  </td>
+	</tr>
+	{% empty %}
+	<tr>
+	  <td colspan="3"><a href="{% url 'vinny:contact' object.id %}">Add a Notification Email</a></td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="large-4 columns small-12 medium-4">
+  </div>
+</div>
 <div class="app-top-panel">
   <div class="row">
     <div class="large-12 columns">

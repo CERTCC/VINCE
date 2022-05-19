@@ -141,6 +141,39 @@ $(document).ready(function() {
 	searchContacts();
     });
 
+    $(document).on("submit", "#cmgrform", function(event) {
+	event.preventDefault();
+	/*lookup vendor name first */
+	var url = $(this).attr("action");
+        $.ajax({
+            url: url,
+            type: "POST",
+            data: $(this).serialize(),
+            success: function(data) {
+		location.href=data['new'];
+	    },
+	    error: function(xhr, status) {
+		var data = JSON.parse(xhr.responseText);
+		$("#error").html("<p>"+ data["error"] + "</p>");
+		$("#error").show();
+	    }
+	});
+    });
+
+
+    var $modal = $("#modal");
+    
+    $(document).on("click", "#createcontact", function(event) {
+	event.preventDefault();
+        var url = $(this).attr("href");
+        $.ajax({
+            url: url,
+            type: "GET",
+            success: function(data) {
+                $modal.html(data).foundation('open');
+            }
+        });
+    });
     
 
 });

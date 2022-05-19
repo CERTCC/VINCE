@@ -38,6 +38,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.utils.translation import ugettext as _
 from django.utils import timezone
+from django.db.models import Case as DBCase
 import pytz
 import difflib
 import json
@@ -79,7 +80,7 @@ import traceback
 import html
 import re
 from itertools import chain
-from django.db.models import Q
+from django.db.models import Q, OuterRef, Subquery, Max
 from botocore.exceptions import ClientError
 from botocore.client import Config
 
@@ -184,7 +185,7 @@ def _my_cases(user):
     return Case.objects.filter(id__in=my_cases)
 
 def _my_active_cases(user):
-    return _my_cases(user).filter(status=Case.ACTIVE_STATUS).order_by('-modified')
+    return _my_cases(user).filter(status=Case.ACTIVE_STATUS)
 
 
 def _my_reports(user):
@@ -239,8 +240,8 @@ def _my_group_id_for_case(user, case):
 
 
 def _my_contact_group(user):
-    admin_groups = VinceCommGroupAdmin.objects.filter(email__email=user.email).values_list('contact__id', flat=True)
-    groups = user.groups.filter(groupcontact__contact__vendor_type="Vendor", groupcontact__contact__in=admin_groups).exclude(groupcontact__isnull=True)
+    admin_groups = VinceCommGroupAdmin.objects.filter(email__email=user.email, contact__active=True).values_list('contact__id', flat=True)
+    groups = user.groups.filter(groupcontact__contact__vendor_type__in=["Vendor", "Coordinator"], groupcontact__contact__in=admin_groups).exclude(groupcontact__isnull=True)
     my_groups = []
     for ug in groups:
         my_groups.append(ug.groupcontact.contact)
@@ -612,7 +613,7 @@ class DashboardView(LoginRequiredMixin, TokenMixin, PendingTestMixin,  generic.T
     def get_context_data(self, **kwargs):
         context = super(DashboardView, self).get_context_data(**kwargs)
         context['unread_msg_count'] = _unread_msg_count(self.request.user)
-        context['dashboard']="yes"
+        context['dashboard'] = 'yes'
         if settings.DEBUG:
             context['devmode'] = True
 
@@ -632,25 +633,52 @@ class DashboardView(LoginRequiredMixin, TokenMixin, PendingTestMixin,  generic.T
             form = CaseRoleForm()
             form.fields['owner'].choices = [
                 (u.id, u.vinceprofile.vince_username) for u in assignable_users]
+
             context['form'] = form
-            context['cases'] = _my_active_cases(self.request.user)
+            my_cases = _my_active_cases(self.request.user)
+            cases = my_cases.annotate(last_post_date=Max('post__created')).exclude(last_post_date__isnull=True).order_by('-last_post_date')
+            cases_no_posts = my_cases.exclude(id__in=cases).order_by('-modified')
+            context['cases'] = chain(cases, cases_no_posts)
             context['pending'] =  VTCaseRequest.objects.filter(user=self.request.user, status=0).order_by('-date_submitted')
             return context
 
         last_login = self.request.session.get("LAST_LOGIN")
         my_cases = _get_my_cases(self.request.user)
-        cases = my_cases.order_by('-modified')
+        my_cases = my_cases.filter(status=Case.ACTIVE_STATUS)
+        #get posts in those cases
+        unseen_cases = []
+        context['new_posts'] = 0
+        # build tuple: case, last modified (first post, if no post, details)
+        cases = my_cases.annotate(last_post_date=Max('post__created')).exclude(last_post_date__isnull=True).order_by('-last_post_date')
+        context['num_published'] = my_cases.filter(note__datefirstpublished__isnull=False).count()
+        cases_no_posts = my_cases.exclude(id__in=cases).order_by('-modified')
+        context['cases'] = list(chain(cases, cases_no_posts))
+        context['num_new_cases'] = 0
+        
+        for case in my_cases:
+            logger.debug(case)
+            last_post = Post.objects.filter(case=case).order_by('-modified')
+            last_viewed = CaseViewed.objects.filter(user=self.request.user, case=case).first()
+            if last_post and last_viewed:
+                #is there a new post since last viewed?
+                posts = last_post.filter(created__gt=last_viewed.date_viewed)
+                if posts:
+                    unseen_cases.append(case.id)
+                    context['new_posts'] += posts.count()
+            elif last_viewed == None and last_login != "New":
+                #this user hasn't viewed this case yet
+                context['num_new_cases'] += 1
+                context['new_posts'] += last_post.count()
+                unseen_cases.append(case.id)
+                
+        context['unseen_cases'] = unseen_cases
         if last_login == "New":
-            context['num_new_cases'] = len(cases)
+            context['num_new_cases'] = len(my_cases)
             context['new_user'] = True
         elif last_login:
             context['last_login'] = parse(last_login)
-            viewed_cases = CaseViewed.objects.filter(user=self.request.user).values_list('case__id', flat=True)
-            context['num_new_cases'] = my_cases.filter(created__gte=context['last_login']).exclude(id__in=viewed_cases).count()
             
-        context['total_cases'] = len(cases)
         context['pending'] =  VTCaseRequest.objects.filter(user=self.request.user, status=0).order_by('-date_submitted')
-        context['cases'] = cases.filter(status=Case.ACTIVE_STATUS)
         return context
 
 
@@ -1092,7 +1120,7 @@ class AdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Tem
     login_url = "vinny:login"
 
     def test_func(self):
-        ga_groups = VinceCommGroupAdmin.objects.filter(email__email=self.request.user.email)
+        ga_groups = VinceCommGroupAdmin.objects.filter(email__email=self.request.user.email, contact__vendor_type__in=["Coordinator", "Vendor"], contact__active=True)
         if len(ga_groups) > 0:
             if self.kwargs.get('vendor_id'):
                 admin = VinceCommGroupAdmin.objects.filter(contact__id=self.kwargs.get('vendor_id'), email__email=self.request.user.email).first()
@@ -1105,7 +1133,7 @@ class AdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Tem
             return super().dispatch(request, *args, **kwargs)
         
         if is_in_group_vincegroupadmin(self.request.user):
-            ga_groups = VinceCommGroupAdmin.objects.filter(email__email=self.request.user.email)
+            ga_groups = VinceCommGroupAdmin.objects.filter(email__email=self.request.user.email, contact__vendor_type__in=["Coordinator", "Vendor"], contact__active=True)
             if len(ga_groups) > 1:
                 return redirect("vinny:multiple_admins")
         return super().dispatch(request, *args, **kwargs)
@@ -1122,6 +1150,7 @@ class AdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Tem
                 context['users'] = _users_in_group(admin.contact)
                 context['object'] = admin.contact
                 context['vendor_name'] = admin.contact.vendor_name
+                context['notification_emails'] = VinceCommEmail.objects.filter(contact=context['object'], email_list=True)
                 if context['users']:
                     emaillist = context['users'].values_list('username', flat=True)
                     context['invited_users'] = VinceCommEmail.objects.filter(invited=True, contact=context['object']).exclude(email__in=emaillist)
@@ -1135,23 +1164,27 @@ class AdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Tem
                 context['groupcontact'] = GroupContact.objects.filter(contact__id=self.kwargs.get('vendor_id')).first()
                 cases = _cases_for_group(Group.objects.filter(groupcontact=context['groupcontact']).first())
                 context['caseaccess'] = CaseMemberUserAccess.objects.filter(casemember__case__in=cases)
-                context['users'] = _users_in_group(context['groupcontact'].contact)
-                context['object'] = context['groupcontact'].contact
-                context['vendor_name'] = context['object'].vendor_name
-                if context['users']:
-                    emaillist = context['users'].values_list('username', flat=True)
-                    context['invited_users'] = VinceCommEmail.objects.filter(invited=True, contact=context['object']).exclude(email__in=emaillist)
-                    context['eligible_users'] = VinceCommEmail.objects.filter(invited=False, contact=context['object'],email_list=False, status=True).exclude(email__in=emaillist)
-                    #get service account        
-                    context['service'] = User.objects.filter(groups__in=[context['groupcontact'].group], vinceprofile__service=True).first()
+                if context['groupcontact']:
+                    context['users'] = _users_in_group(context['groupcontact'].contact)
+                    context['object'] = context['groupcontact'].contact
+                    
+                    context['vendor_name'] = context['object'].vendor_name
+                    context['notification_emails'] = VinceCommEmail.objects.filter(contact=context['object'], email_list=True)
+                    if context['users']:
+                        emaillist = context['users'].values_list('username', flat=True)
+                        context['invited_users'] = VinceCommEmail.objects.filter(invited=True, contact=context['object']).exclude(email__in=emaillist)
+                        context['eligible_users'] = VinceCommEmail.objects.filter(invited=False, contact=context['object'],email_list=False, status=True).exclude(email__in=emaillist)
+                        #get service account        
+                        context['service'] = User.objects.filter(groups__in=[context['groupcontact'].group], vinceprofile__service=True).first()
             
         elif is_in_group_vincegroupadmin(self.request.user):
-            ga_group = VinceCommGroupAdmin.objects.filter(email__email=self.request.user.username).first()
+            ga_group = VinceCommGroupAdmin.objects.filter(email__email=self.request.user.username, contact__vendor_type__in=["Coordinator", "Vendor"], contact__active=True).first()
             if ga_group:
                 context['admin'] = True
                 context['users'] = _users_in_group(ga_group.contact)
                 context['object'] = ga_group.contact
                 context['vendor_name'] = ga_group.contact.vendor_name
+                context['notification_emails'] = VinceCommEmail.objects.filter(contact=context['object'], email_list=True)
                 if context['users']:
                     emaillist = context['users'].values_list('username', flat=True)
                     context['invited_users'] = VinceCommEmail.objects.filter(invited=True, contact=context['object']).exclude(email__in=emaillist)
@@ -1292,7 +1325,9 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         # check if email already exists
         old_email = VinceCommEmail.objects.filter(email__iexact=users, contact=my_group).first()
         if old_email:
-            if old_email.invited:
+            if old_email.email_list:
+                return JsonResponse({'response':'This email has already been added as notification-only email and cannot be used for user access.'}, status=200)
+            elif old_email.invited:
                 if old_user:
                     send_templated_mail("vincecomm_add_existing_user", context, [users])
                     return JsonResponse({'response': 'success'}, status=200)
@@ -1301,9 +1336,9 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             else:
                 # send email
                 if old_user:
-                    # send a different email
-                    send_templated_mail("vincecomm_add_existing_user", context, [users])
+                    return JsonResponse({'response': 'User already exists.'}, status=200)
                 else:
+                    # actually send the invitation email to a user
                     send_templated_mail("vincecomm_add_user", context, [users])
                 old_email.invited=True
                 create_action("f{self.request.user.vinceprofile.vince_username} invited new user {users}", self.request.user)
@@ -1329,6 +1364,56 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         
         return JsonResponse({'response': 'success'}, status=200)
 
+
+class ModifyEmailNotifications(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vinny:login"
+    template_name = "vinny/confirm_email_change.html"
+
+    def test_func(self):
+        if (is_in_group_vincegroupadmin(self.request.user) and PendingTestMixin.test_func(self)):
+            vendor_id = self.kwargs.get('vendor_id')
+            admin = VinceCommGroupAdmin.objects.filter(contact__id=vendor_id, email__email=self.request.user.email).first()
+            if admin:
+                return True
+        return False
+
+    def post(self, request, *args, **kwargs):
+        logger.debug(request.POST)
+        email = get_object_or_404(VinceCommEmail, id=self.kwargs.get('uid'))
+        if email.email_function in ["TO", "CC"]:
+            email.email_function = "EMAIL"
+            email.save()
+            change = contact_update.create_contact_change(email.contact, email.email, "email notifications", "Enabled", "Disabled", self.request.user)
+        else:
+            email.email_function = "TO"
+            email.save()
+            change = contact_update.create_contact_change(email.contact, email.email, "email notifications", "Disabled", "Enabled", self.request.user)
+
+        contact_update.send_ticket([change], email.contact, self.request.user)
+        messages.success(
+            self.request,
+            "Got it!  Your preferences have been saved!"
+        )
+        return redirect("vinny:admin", email.contact.id)
+
+    def get_context_data(self, **kwargs):
+        context = super(ModifyEmailNotifications, self).get_context_data(**kwargs)
+        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['adminpage']=1
+        context['type'] = self.kwargs.get('type')
+        if self.kwargs.get('type') == "user":
+            context['user'] = get_object_or_404(User, id=self.kwargs.get('uid'))
+            context['email'] = VinceCommEmail.objects.filter(email=context['user'].email, contact=self.kwargs.get('vendor_id')).first()
+        elif self.kwargs.get('type') == 'email':
+            context['email'] = get_object_or_404(VinceCommEmail, id=self.kwargs.get('uid'))
+
+        if context['email'].email_function in ["TO", "CC"]:
+            context['disable'] = 1
+        else:
+            context['enable'] = 1
+            
+        context['post_url'] = reverse("vinny:changeemail", args=[self.kwargs.get('vendor_id'), 'email', context['email'].id])
+        return context    
 
 class MultipleStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     template_name = "vinny/multi_status.html"
@@ -1389,7 +1474,7 @@ class MultipleGroupAdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
     def get_context_data(self, **kwargs):
         context = super(MultipleGroupAdminView, self).get_context_data(**kwargs)
         context['unread_msg_count'] = _unread_msg_count(self.request.user)
-        context['groups'] = VinceCommGroupAdmin.objects.filter(email__email=self.request.user)
+        context['groups'] = VinceCommGroupAdmin.objects.filter(email__email=self.request.user, contact__vendor_type__in=["Coordinator", "Vendor"], contact__active=True)
         
         context['adminview']=1
         return context
@@ -1603,14 +1688,15 @@ class DashboardCaseView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
             coordinators = CaseCoordinator.objects.filter(assigned__id__in=owner_list).values_list('case', flat=True)
             res = res.filter(id__in=coordinators)
         
-        if self.request.POST['keyword'] != '':
-            wordSearch = process_query(self.request.POST['keyword'])
-            res = res.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],params=[wordSearch])
-            #search posts
-            post_result = PostRevision.objects.filter(post__case__in=my_cases).extra(where=["search_vector @@ (to_tsquery('english', %s))=true"], params=[wordSearch]).values_list('post__case', flat=True)
-            if post_result:
-                extra_cases = Case.objects.filter(id__in=post_result).exclude(id__in=res)
-                res = list(chain(res, extra_cases))
+        if self.request.POST.get('keyword'):
+            if self.request.POST['keyword'] != "":
+                wordSearch = process_query(self.request.POST['keyword'])
+                res = res.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],params=[wordSearch])
+                #search posts
+                post_result = PostRevision.objects.filter(post__case__in=my_cases).extra(where=["search_vector @@ (to_tsquery('english', %s))=true"], params=[wordSearch]).values_list('post__case', flat=True)
+                if post_result:
+                    extra_cases = Case.objects.filter(id__in=post_result).exclude(id__in=res)
+                    res = list(chain(res, extra_cases))
 
         paginator = Paginator(res, 10)
         return render(request, self.template_name, {'cases': paginator.page(page), 'total': len(res)})
@@ -3044,14 +3130,21 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
         if cognito_admin_user(self.request):
             return Case.objects.all().order_by('-modified')
         my_cases = _get_my_cases(self.request.user)
-        return my_cases.order_by('-modified')
-
+        my_cases = my_cases.annotate(last_post_date=Max('post__created')).order_by('-last_post_date')
+        # sort by posts/no posts                                            
+        cp = my_cases.exclude(last_post_date__isnull=True)
+        cnop= my_cases.exclude(last_post_date__isnull=False)
+        res = list(chain(cp, cnop))
+        return res
+                                 
+    
     def post(self, request, *args, **kwargs):
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         if cognito_admin_user(self.request):
-            res = Case.objects.all().order_by('-modified')
+            res = Case.objects.all().annotate(last_post_date=Max('post__created')).order_by('-last_post_date')
         else:
-            res = self.get_queryset()
+            res = _get_my_cases(self.request.user)
+            res = res.annotate(last_post_date=Max('post__created')).order_by('-last_post_date')
 
         my_cases = res
         page = self.request.POST.get('page', 1)
@@ -3080,6 +3173,16 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
                 if post_result:
                     extra_cases = Case.objects.filter(id__in=post_result).exclude(id__in=res)
                     res = list(chain(res, extra_cases))
+            else:
+                # sort by posts/no posts
+                cp = res.exclude(last_post_date__isnull=True)
+                cnop=res.exclude(last_post_date__isnull=False)
+                res = list(chain(cp, cnop))
+        else:
+            # sort by posts/no posts
+            cp = res.exclude(last_post_date__isnull=True)
+            cnop=res.exclude(last_post_date__isnull=False)            
+            res = list(chain(cp, cnop))
 
         paginator = Paginator(res, 10)
 
