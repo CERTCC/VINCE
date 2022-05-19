@@ -15,7 +15,7 @@ cffi==1.13.2
 chardet==3.0.4
 charset-normalizer==2.0.9
 colorama==0.4.3
-cryptography==2.8
+cryptography==3.3.2
 cvelib==0.7.0
 click==8.0.4
 dictdiffer==0.8.1
