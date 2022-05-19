@@ -30,7 +30,7 @@ django-storages==1.7.1
 django-widget-tweaks==1.4.3
 djangorestframework==3.11.2
 docutils==0.14
-ecdsa==0.13.2
+ecdsa==0.13.3
 envs==1.3
 fs==2.4.11
 fs-s3fs==1.1.1
