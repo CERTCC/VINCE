@@ -159,4 +159,4 @@ Remember to give the "vince" group access to all of the Ticket Queues in admin c
 
 ### AWS Install
 
-See docs for full AWS configuration
+See docs for [full AWS configuration](./docs/aws-install.md)
