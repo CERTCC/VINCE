@@ -83,7 +83,6 @@ python3 -c 'from django.core.management.utils import get_random_secret_key; prin
 ```
 Swap out any "$" characters if they exist. $ characters mess with API key generation.  Or continue to regenerate until you get a key without a "$"
 Add it to bigvince/.env
-```
 
 6. Edit bigvince/settings_.py as needed with your settings. Important settings to pay attention to:
 
