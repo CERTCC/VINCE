@@ -35,7 +35,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.translation import ugettext as _
 from django.utils.decorators import method_decorator
 from django.core.exceptions import PermissionDenied
-from urllib.parse import urlparse
 try:
     from django.urls import reverse_lazy, reverse
 except ImportError:
@@ -67,6 +66,7 @@ import traceback
 from boto3.exceptions import Boto3Error
 from botocore.exceptions import ClientError, ParamValidationError
 from django.utils.http import is_safe_url
+from django.http.response import JsonResponse
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -329,6 +329,24 @@ class RemoveMFAView(LoginRequiredMixin,TokenMixin,GetUserMixin,PendingTestMixin,
                 return redirect(settings.MFA_REDIRECT_URL)
         messages.error(request, "Password was incorrect.  MFA not removed")
         return redirect("cogauth:profile")
+
+
+class DeleteTokenView(LoginRequiredMixin,TokenMixin,GetUserMixin,TemplateView):
+    
+    template_name = 'cogauth/gentoken.html'
+    login_url = "cogauth:login"
+
+    def get(self, request, *args, **kwargs):
+        dresponse = {"delete": 0}
+        try:
+            token = VinceAPIToken.objects.get(user=self.request.user)
+            token.delete()
+            dresponse['delete'] = 1
+            logger.info(f"The User's previous token was deleted  { self.request.user.username }")            
+        except VinceAPIToken.DoesNotExist:
+            logger.debug(f"The User's token does not exist { self.request.user.username }")
+            dresponse['delete'] = 0
+        return JsonResponse(dresponse)
         
 class GenerateTokenView(LoginRequiredMixin,TokenMixin,GetUserMixin,TemplateView):
     template_name = 'cogauth/gentoken.html'
@@ -337,18 +355,17 @@ class GenerateTokenView(LoginRequiredMixin,TokenMixin,GetUserMixin,TemplateView)
     def get_context_data(self, **kwargs):
         context = super(GenerateTokenView, self).get_context_data(**kwargs)
         context['coguser'] = self.get_user()
-        # generate a token        context['token'] = generate_key()
-        # does user already have a token
-        try:
-            token = VinceAPIToken.objects.get(user=self.request.user)
-            token.delete()
-        except VinceAPIToken.DoesNotExist:
-            pass
-
+        # generate a token
+        context['token'] = generate_key()
+        # If the user already has a token
+        # the action to check and delete key happens
+        # in Javascript by request /delapikey url
+        # identified by var vinny:deltoken
         token = VinceAPIToken(user=self.request.user)
         token.save(context['token'])
         c = get_cognito(self.request)
         c.update_profile({'custom:api_key':str(token)})
+        logger.debug(f"New API key generated for { self.request.user.username }")        
         return context
     
 
@@ -426,28 +443,43 @@ class EnableMFAView(LoginRequiredMixin,TokenMixin,GetUserMixin,TemplateView):
         return redirect("cogauth:mfa")
 
 
-def pretty_request(request):
-    headers = ''
-    for header, value in request.META.items():
-        if not header.startswith('HTTP'):
-            continue
-        header = '-'.join([h.capitalize() for h in header[5:].lower().split('_')])
-        headers += '{}: {}\n'.format(header, value)
+class IndexView(TemplateView):
 
-    return (
-        '{method} HTTP/1.1\n'
-        'Content-Length: {content_length}\n'
-        'Content-Type: {content_type}\n'
-        '{headers}\n\n'
-        '{body}'
-    ).format(
-        method=request.method,
-        content_length=request.META.get('CONTENT_LENGTH'),
-        content_type=request.META.get('CONTENT_TYPE'),
-        headers=headers,
-        body=request.body,
-    )
-    
+    def get_context_data(self, **kwargs):
+        context = super(IndexView, self).get_context_data(**kwargs)
+        code = self.request.GET.get('code', False)
+        logger.debug(code)
+        if code:
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+            data = {
+                'grant_type': 'authorization_code',
+                'client_id': settings.COGNITO_APP_ID,
+                'redirect_uri':settings.COGNITO_REDIRECT_TO,
+                'code':code
+                }
+            r = requests.post(COGNITO_OAUTH_URL, headers=headers,data=data)
+            if not(r == None or (r.status_code != requests.codes.ok)):
+                rj = r.json()
+                access_token = rj['access_token']
+                refresh_token =	rj['refresh_token']
+                id_token=rj['id_token']
+                u = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID,
+                            user_pool_region=settings.COGNITO_REGION,
+                            id_token=id_token, refresh_token=refresh_token,
+                            access_token=access_token)
+
+                u.check_token()
+                self.request.session['ACCESS_TOKEN'] = access_token
+                self.request.session['ID_TOKEN'] = id_token
+                self.request.session['REFRESH_TOKEN'] = refresh_token
+                self.request.session.save()
+                client= boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+                user = client.get_user(AccessToken=access_token)
+                userauth = authenticate(self.request, username=user['Username'])
+                if userauth:
+                    redirect("vinny:dashboard")
+        return context
+
 class COGLoginView(FormView):
     template_name = 'cogauth/login.html'
     form_class = COGAuthenticationForm
@@ -459,9 +491,6 @@ class COGLoginView(FormView):
     def get_context_data(self, **kwargs):
         context = super(COGLoginView, self).get_context_data(**kwargs)
         logger.debug("IN COGLOGIN")
-        logger.debug(self.request.META.get('HTTP_REFERER'))
-        referer = self.request.META.get('HTTP_REFERER')
-        referer = urlparse(referer)
         if settings.DEBUG:
             context['token_login'] = True
             
@@ -963,7 +992,7 @@ class ChangePasswordandRegisterView(FormView, AccessMixin):
                 return redirect('cogauth:password_change')
             else:
                 form._errors.setdefault("username", ErrorList([
-                    u"Error Occurred. Please try again."
+                    u"Error Occurred. Please contact cert@cert.org"
                 ]))
                 return super().form_invalid(form)        
 

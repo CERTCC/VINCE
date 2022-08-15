@@ -50,6 +50,7 @@ urlpatterns = [
     path('verify/error/', views.LimitExceededView.as_view(), name='limitexceeded'),
     path('register/', views.RegisterView.as_view(), name='register'),
     path('genapikey/', views.GenerateTokenView.as_view(), name='gentoken'),
+    path('delapikey/', views.DeleteTokenView.as_view(), name='deltoken'),    
     re_path(r'^genapikey/service/(?P<vendor_id>\d+)/', views.GenerateServiceTokenView.as_view(), name='genservicetoken'),
     path('account/help/', views.LoginHelpView.as_view(), name='loginhelp'),
     path('confirmed/', TemplateView.as_view(template_name='cogauth/account_confirmed.html'), name='account_confirmed'),

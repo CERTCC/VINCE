@@ -27,52 +27,67 @@
 # DM21-1126
 ########################################################################
 */
+$.ajaxSetup({
+    error : function(jqXHR, textStatus, errorThrown) {
+        console.log(arguments);
+        check_confirm("Sorry the request failed. Please contact "+
+		      " the administrator or your support channel "+
+		      " with the browser console log!");
+    }
+});
+function check_confirm(msg,url,nexturl) {
+    /*
+      Script to alert a message and allow for OK to proceed or Cancel
+      If action urls is not provided this will just be an alert. 
+     */
+    $('#modal').html($('#confirm').html()).foundation("open");
+    $('#modal .cmessage').html(msg);
+    if(url) {
+	$('#modal .getaction').attr("action",url);
+	$('#modal .getaction').attr("nextaction",nexturl);	
+	$('#modal .getaction').on("click", getaction);	
+	$('#modal .modal-title').html("Are You Sure?");
+    }
+    else {
+	$('#modal .modal-title').html("Alert!");	
+	$('#modal .modal-footer').hide();
+    }
+};
+function getaction(event) {
+    event.preventDefault();
+    var url = $(event.target).attr("action");
+    var preaction = $(event.target).attr("preaction");
+    var nextaction = $(event.target).attr("nextaction");
+    if(!url) {
+	console.log("Dummy button return");
+	return;
+    }
+    if(preaction) {
+	var msg = $(event.target).data("confirm");
+	return check_confirm(msg,preaction,url);
+    } else if(nextaction) {
+	$.ajax({url: url,
+		type: "GET",
+		success: function(data) {
+		    console.log(data);
+		    doaction(nextaction);
+		}
+	       });
+    } else {
+	doaction(url);
+    }
+};
+function doaction(url) {
+    var modal = $('#modal');	
+    $.ajax({
+        url: url,
+        type: "GET",
+        success: function(data) {
+	    modal.html(data).foundation("open");
+        }
+    });
+};
+
 $(document).ready(function() {
-
-    var modal = $("#modal");
-    
-    $(document).on("click", "#enablemfa", function(event) {
-	event.preventDefault();
-        var url = $(this).attr("action");
-	
-        $.ajax({
-            url: url,
-            type: "GET",
-            success: function(data) {
-                modal.html(data).foundation('open');
-            }
-        });
-	
-    });
-
-
-    $(document).on("click", "#rmmfa", function(event) {
-        event.preventDefault();
-        var url = $(this).attr("action");
-
-        $.ajax({
-            url: url,
-            type: "GET",
-            success: function(data) {
-                modal.html(data).foundation('open');
-            }
-        });
-
-    });
-
-
-    $(document).on("click", "#gentoken", function(event) {
-        event.preventDefault();
-        var url = $(this).attr("action");
-
-        $.ajax({
-            url: url,
-            type: "GET",
-            success: function(data) {
-                modal.html(data).foundation('open');
-            }
-        });
-
-    });
-    
+    $('.getaction').on("click", getaction);
 });

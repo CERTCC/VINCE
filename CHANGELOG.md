@@ -1,5 +1,11 @@
 # VINCE Changelog
 
+Version 1.50.1: 2022-08-08
+==========================
+
+BugFix for API key generation issue. The generate_key method was disabled accidentally
+
+
 # Version 1.50.0: 2022-07-19
 ============================
 

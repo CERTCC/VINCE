@@ -1,4 +1,4 @@
-{% extends VINCECOMM_BASE_TEMPLATE %}
+{% extends 'vinny/base.html' %}
 {% load i18n static %}
 {% block js %}
 {{ block.super }}
@@ -27,6 +27,34 @@
   </div>
 </div>
 <div class="reveal" data-reveal id="modal" data-close-on-click='false'></div>
+<div id="confirm" style="display:none"> 
+  <div class="fullmodal">
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title"></h5>
+      </div>
+      <form method="GET" action="#areusure">
+	<div class="modal-body">
+	  <p class="cmessage">
+	  </p>
+	</div>
+	<div class="modal-footer">
+	  <div class="row column text-right">
+            <button type="button" class="primary button getaction">
+	      OK
+	    </button>
+            <button type="button" data-close="" class="alert button">
+	      Cancel
+	    </button>	
+	  </div>
+	</div>
+      </form>
+    </div>
+    <button class="close-button" data-close="" aria-label="Close modal" type="button">
+      <span aria-hidden="true">X</span>
+    </button>
+  </div>
+</div>
 <div class="card-profile-stats">
   <div class="row column">
     <div class="card-profile-stats-intro">
@@ -84,7 +112,7 @@
       </tr>
       <tr>
 	<td>Multi-factor Authentication (MFA)</td>
-	<td>{% if coguser.mfa %}{{ coguser.mfa|mfafilter }} <button action="{% url 'cogauth:rmmfa' %}" id="rmmfa" class="button default">Change MFA Method</button>{% else %}<button action="{% url 'cogauth:mfa' %}" id="enablemfa" class="button default">Enable MFA</button>{% endif %}</td>
+	<td>{% if coguser.mfa %}{{ coguser.mfa|mfafilter }} <button action="{% url 'cogauth:rmmfa' %}" id="rmmfa" class="button default getaction">Change MFA Method</button>{% else %}<button action="{% url 'cogauth:mfa' %}" id="enablemfa" class="button default getaction">Enable MFA</button>{% endif %}</td>
       </tr>
       {% if mfa_on %}
       <tr>
@@ -94,9 +122,15 @@
       {% endif %}
       <tr>
 	<td>API Key</td>
-	<td>{% if coguser.api_key %}ENABLED{% endif %} <button id="gentoken" action="{% url 'cogauth:gentoken' %}" class="button default">{% if coguser.api_key %}Generate New Key{% else %}Generate API Key{% endif %}</button></td>
+	<td>
+<<<<<<< HEAD
+	  <button id="gentoken" action="{% url 'cogauth:gentoken' %}" {% if coguser.api_key %} preaction="{% url 'cogauth:deltoken' %}" class="button default getaction" data-confirm="Would you like to create a new API key and revoke your old API key?">Refresh API Key{% else %}>Generate API Key{% endif %}</button>
+=======
+	  <button id="gentoken" class="button default getaction" action="{% url 'cogauth:gentoken' %}" {% if coguser.api_key %} preaction="{% url 'cogauth:deltoken' %}" data-confirm="Would you like to create a new API key and revoke your old API key?">Refresh API Key{% else %}>Generate API Key{% endif %}</button>
+>>>>>>> 8a48f75ae87 (Fix API generate as a synchronous Delete and Create for)
+	</td>
       </tr>
-  </table>
-</div>
+    </table>
+  </div>
 
-{% endblock %}
+  {% endblock %}
