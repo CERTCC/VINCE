@@ -1,4 +1,4 @@
-{% extends 'vinny/base.html' %}
+{% extends VINCECOMM_BASE_TEMPLATE %}
 {% load i18n static %}
 {% block js %}
 {{ block.super }}
@@ -123,11 +123,7 @@
       <tr>
 	<td>API Key</td>
 	<td>
-<<<<<<< HEAD
-	  <button id="gentoken" action="{% url 'cogauth:gentoken' %}" {% if coguser.api_key %} preaction="{% url 'cogauth:deltoken' %}" class="button default getaction" data-confirm="Would you like to create a new API key and revoke your old API key?">Refresh API Key{% else %}>Generate API Key{% endif %}</button>
-=======
 	  <button id="gentoken" class="button default getaction" action="{% url 'cogauth:gentoken' %}" {% if coguser.api_key %} preaction="{% url 'cogauth:deltoken' %}" data-confirm="Would you like to create a new API key and revoke your old API key?">Refresh API Key{% else %}>Generate API Key{% endif %}</button>
->>>>>>> 8a48f75ae87 (Fix API generate as a synchronous Delete and Create for)
 	</td>
       </tr>
     </table>
