@@ -992,7 +992,7 @@ class ChangePasswordandRegisterView(FormView, AccessMixin):
                 return redirect('cogauth:password_change')
             else:
                 form._errors.setdefault("username", ErrorList([
-                    u"Error Occurred. Please contact cert@cert.org"
+                    u"Error Occurred. Please contact System Administrator."
                 ]))
                 return super().form_invalid(form)        
 
