@@ -17,6 +17,8 @@ Sorting improvements on VINCEComm Dashboard
 
 Add Vul Note download button in VINCETrack
 
+Fix open redirect vulnerability [#45](https://github.com/CERTCC/VINCE/issues/45)
+
 Bug Fixes
 
 # Version 1.49.0: 2022-07-19
