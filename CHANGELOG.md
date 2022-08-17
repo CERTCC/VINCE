@@ -17,7 +17,7 @@ Sorting improvements on VINCEComm Dashboard
 
 Add Vul Note download button in VINCETrack
 
-Fix open redirect vulnerability [#45](https://github.com/CERTCC/VINCE/issues/45)
+Fixed open redirect vulnerability (CVE-2022-25799)[https://nvd.nist.gov/vuln/detail/CVE-2022-25799] reported by Jonathan Leitschuh   [#45](https://github.com/CERTCC/VINCE/issues/45)
 
 Bug Fixes
 
