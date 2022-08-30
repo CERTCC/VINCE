@@ -1,5 +1,13 @@
 # VINCE Changelog
 
+Version 1.50.2: 2022-08-29
+==========================
+
+Resolves issue of enumerating user_id and group_id - reported by Sharon Brizinov of Claroty Research [#51](https://github.com/CERTCC/VINCE/issues/51)
+Removed lxml library no longer in use in requirements.txt - reported by dependabot via [#38](https://github.com/CERTCC/VINCE/pull/38)
+Add [DISABLED] Keyword for users in `inactive` status in vincetrack `Teams` menu view.
+
+
 Version 1.50.1: 2022-08-08
 ==========================
 

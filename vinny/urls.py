@@ -126,9 +126,11 @@ urlpatterns = [
     path('report/', views.ReportView.as_view(), name='report'),
     re_path('^report/(?P<pk>[0-9]+)?/add/file/$', views.ReportDocumentCreateView.as_view(), name='addreportfile'),
     re_path('^report/(?P<pk>[0-9]+)?/update/$', views.UpdateReportView.as_view(), name='reportupdate'),
-    re_path('profile/user_card/(?P<id>[0-9]+)?/$', views.UserCardView.as_view(), name='usercard'),
-    re_path('profile/group_card/(?P<id>[0-9]+)?/$', views.GroupCardView.as_view(), name='groupcard'),
-    re_path('profile/group_card/(?P<id>[0-9]+)?/(?P<case>[0-9]+)?/$', views.GroupCardView.as_view(), name='groupcardcase'),
+    re_path('profile/user_card/(?P<euid>[0-9a-fA-F]+)?/$', views.UserCardView.as_view(), name='usercard'),
+    re_path('profile/group_card/(?P<egid>[0-9a-fA-F]+)?/$', views.GroupCardView.as_view(), name='groupcard'),
+    #note: var "vinny:groupcardcase" is not used in templates anymore
+    # use {{groupcontact.url}}{{case.id}} to build groupcardcase URLs
+    re_path('profile/group_card/(?P<egid>[0-9a-fA-F]+)?/(?P<case>[0-9]+)?/$', views.GroupCardView.as_view(), name='groupcardcase'),
     path('reports/pub/', views.AdminReportsView.as_view(), name='adminreports'),
     path('reports/', views.ReportsView.as_view(), name='reports'),
     path('api/vendor/', views.VendorInfoAPIView.as_view(), name='vendor_api'),
