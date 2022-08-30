@@ -498,7 +498,7 @@ class GroupContact(models.Model):
 
     def _get_url(self):
         ed = ED(base64.b64encode(settings.SECRET_KEY.encode()))
-        euid = ed.encrypt(str(self.group.pk))
+        egid = ed.encrypt(str(self.group.pk))
         return reverse("vinny:groupcard", args=[egid])
 
     url = property(_get_url)
