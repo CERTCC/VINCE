@@ -45,6 +45,8 @@ from django.utils.functional import cached_property
 from vinny.mailer import send_newmessage_mail
 from bigvince.storage_backends import PrivateMediaStorage, SharedMediaStorage
 from django.utils.encoding import smart_text
+from lib.vince.m2crypto_encrypt_decrypt import ED
+import base64
 import os
 import boto3
 import random
@@ -142,7 +144,9 @@ class VinceProfile(models.Model):
     is_track = property(_get_track_access)
     
     def _get_url(self):
-        return reverse("vinny:usercard", args=[self.user.pk])
+        ed = ED(base64.b64encode(settings.SECRET_KEY.encode()))
+        euid = ed.encrypt(str(self.user.pk))
+        return reverse("vinny:usercard", args=[euid])
 
     url = property(_get_url)
     
@@ -493,7 +497,9 @@ class GroupContact(models.Model):
     )
 
     def _get_url(self):
-        return reverse("vinny:groupcard", args=[self.group.pk])
+        ed = ED(base64.b64encode(settings.SECRET_KEY.encode()))
+        egid = ed.encrypt(str(self.group.pk))
+        return reverse("vinny:groupcard", args=[egid])
 
     url = property(_get_url)
     
@@ -974,7 +980,7 @@ class Case(models.Model):
         return "%s%s: %s" % (settings.CASE_IDENTIFIER, self.vuid, self.title)
 
     def get_vuid(self):
-        return f"{settings.CASE_IDENTIFIER}{self.vuid}"
+        return f"{settings.CASE_IDENTIFIER}%s" % self.vuid
 
     vu_vuid = property(get_vuid)
     
