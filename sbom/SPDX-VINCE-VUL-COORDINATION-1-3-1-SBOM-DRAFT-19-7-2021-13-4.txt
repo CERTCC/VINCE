@@ -1,0 +1,999 @@
+## Document Header
+SPDXVersion: SPDX-2.1
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: VINCE-VUL-COORDINATION-1.0-SBOM-DRAFT
+DocumentNamespace: https://kb.cert.org
+Creator: Organization:  Software Engineering Institute
+Created: 2021-06-23T00:00:00Z
+CreatorComment: <text>SwiftBOM generated at 2021-07-19T17:03:01.355Z</text>
+## Packages
+## 2.4 Primary Component (described by the SBOM)
+PackageName: VINCE
+SPDXID: SPDXRef-VINCE
+PackageComment: <text>PURL is pkg:supplier/%20Software%20Engineering%20Institute/VINCE@1.31.0  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/%20Software%20Engineering%20Institute/VINCE@1.31.0
+PackageVersion: 1.31.0
+PackageSupplier: Organization:  Software Engineering Institute
+Relationship: SPDXRef-DOCUMENT DESCRIBES SPDXRef-VINCE
+Relationship: SPDXRef-VINCE CONTAINS NONE
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: amqp
+SPDXID: SPDXRef-amqp
+PackageComment:  <text>PURL is pkg:supplier/Barry%20Pederson/amqp@2.4.2 Warning: Package version was pinned to 2.4.2, latest is 5.0.6</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Barry%20Pederson/amqp@2.4.2	
+PackageVersion: 2.4.2
+PackageSupplier: Organization: Barry Pederson
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-amqp
+Relationship: SPDXRef-amqp CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: appdirs
+SPDXID: SPDXRef-appdirs
+PackageComment:  <text>PURL is pkg:supplier/Trent%20Mick/appdirs@1.4.3 Warning: Package version was pinned to 1.4.3, latest is 1.4.4</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Trent%20Mick/appdirs@1.4.3	
+PackageVersion: 1.4.3
+PackageSupplier: Organization: Trent Mick
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-appdirs
+Relationship: SPDXRef-appdirs CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: asgiref
+SPDXID: SPDXRef-asgiref
+PackageComment:  <text>PURL is pkg:supplier/Django%20Software%20Foundation/asgiref@3.2.3 Warning: Package version was pinned to 3.2.3, latest is 3.4.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Django%20Software%20Foundation/asgiref@3.2.3	
+PackageVersion: 3.2.3
+PackageSupplier: Organization: Django Software Foundation
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-asgiref
+Relationship: SPDXRef-asgiref CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: asn1crypto
+SPDXID: SPDXRef-asn1crypto
+PackageComment:  <text>PURL is pkg:supplier/wbond/asn1crypto@1.4.0  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/wbond/asn1crypto@1.4.0	
+PackageVersion: 1.4.0
+PackageSupplier: Organization: wbond
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-asn1crypto
+Relationship: SPDXRef-asn1crypto CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: beautifulsoup4
+SPDXID: SPDXRef-beautifulsoup4
+PackageComment:  <text>PURL is pkg:supplier/Leonard%20Richardson/beautifulsoup4@4.8.2 Warning: Package version was pinned to 4.8.2, latest is 4.9.3</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Leonard%20Richardson/beautifulsoup4@4.8.2	
+PackageVersion: 4.8.2
+PackageSupplier: Organization: Leonard Richardson
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-beautifulsoup4
+Relationship: SPDXRef-beautifulsoup4 CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: billiard
+SPDXID: SPDXRef-billiard
+PackageComment:  <text>PURL is pkg:supplier/R%20Oudkerk%20%2F%20Python%20Software%20Foundation/billiard@3.6.0.0 Warning: Package version was pinned to 3.6.0.0, latest is 3.6.4.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/R%20Oudkerk%20%2F%20Python%20Software%20Foundation/billiard@3.6.0.0	
+PackageVersion: 3.6.0.0
+PackageSupplier: Organization: R Oudkerk / Python Software Foundation
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-billiard
+Relationship: SPDXRef-billiard CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: bleach
+SPDXID: SPDXRef-bleach
+PackageComment:  <text>PURL is pkg:supplier/https%3A%2F%2Fgithub.com%2Fmozilla%2Fbleach/bleach@3.1.3 Warning: Package version was pinned to 3.1.3, latest is 3.3.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/https%3A%2F%2Fgithub.com%2Fmozilla%2Fbleach/bleach@3.1.3	
+PackageVersion: 3.1.3
+PackageSupplier: Organization: https://github.com/mozilla/bleach
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-bleach
+Relationship: SPDXRef-bleach CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: bleach-whitelist
+SPDXID: SPDXRef-bleach-whitelist
+PackageComment:  <text>PURL is pkg:supplier/Charlie%20DeTar/bleach-whitelist@0.0.10 Warning: Package version was pinned to 0.0.10, latest is 0.0.11</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Charlie%20DeTar/bleach-whitelist@0.0.10	
+PackageVersion: 0.0.10
+PackageSupplier: Organization: Charlie DeTar
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-bleach-whitelist
+Relationship: SPDXRef-bleach-whitelist CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: boto
+SPDXID: SPDXRef-boto
+PackageComment:  <text>PURL is pkg:supplier/Mitch%20Garnaat/boto@2.49.0  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Mitch%20Garnaat/boto@2.49.0	
+PackageVersion: 2.49.0
+PackageSupplier: Organization: Mitch Garnaat
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-boto
+Relationship: SPDXRef-boto CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: boto3
+SPDXID: SPDXRef-boto3
+PackageComment:  <text>PURL is pkg:supplier/Amazon%20Web%20Services/boto3@1.17.49 Warning: Package version was pinned to 1.17.49, latest is 1.18.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Amazon%20Web%20Services/boto3@1.17.49	
+PackageVersion: 1.17.49
+PackageSupplier: Organization: Amazon Web Services
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-boto3
+Relationship: SPDXRef-boto3 CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: botocore
+SPDXID: SPDXRef-botocore
+PackageComment:  <text>PURL is pkg:supplier/Amazon%20Web%20Services/botocore@1.20.49 Warning: Package version was pinned to 1.20.49, latest is 1.21.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Amazon%20Web%20Services/botocore@1.20.49	
+PackageVersion: 1.20.49
+PackageSupplier: Organization: Amazon Web Services
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-botocore
+Relationship: SPDXRef-botocore CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: celery
+SPDXID: SPDXRef-celery
+PackageComment:  <text>PURL is pkg:supplier/Ask%20Solem/celery@4.3.0 Warning: Package version was pinned to 4.3.0, latest is 5.1.2</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Ask%20Solem/celery@4.3.0	
+PackageVersion: 4.3.0
+PackageSupplier: Organization: Ask Solem
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-celery
+Relationship: SPDXRef-celery CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: certifi
+SPDXID: SPDXRef-certifi
+PackageComment:  <text>PURL is pkg:supplier/Kenneth%20Reitz/certifi@2019.6.16 Warning: Package version was pinned to 2019.6.16, latest is 2021.5.30</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Kenneth%20Reitz/certifi@2019.6.16	
+PackageVersion: 2019.6.16
+PackageSupplier: Organization: Kenneth Reitz
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-certifi
+Relationship: SPDXRef-certifi CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: cffi
+SPDXID: SPDXRef-cffi
+PackageComment:  <text>PURL is pkg:supplier/Armin%20Rigo%2C%20Maciej%20Fijalkowski/cffi@1.13.2 Warning: Package version was pinned to 1.13.2, latest is 1.14.6</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Armin%20Rigo%2C%20Maciej%20Fijalkowski/cffi@1.13.2	
+PackageVersion: 1.13.2
+PackageSupplier: Organization: Armin Rigo, Maciej Fijalkowski
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-cffi
+Relationship: SPDXRef-cffi CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: chardet
+SPDXID: SPDXRef-chardet
+PackageComment:  <text>PURL is pkg:supplier/Mark%20Pilgrim/chardet@3.0.4 Warning: Package version was pinned to 3.0.4, latest is 4.0.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Mark%20Pilgrim/chardet@3.0.4	
+PackageVersion: 3.0.4
+PackageSupplier: Organization: Mark Pilgrim
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-chardet
+Relationship: SPDXRef-chardet CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: cryptography
+SPDXID: SPDXRef-cryptography
+PackageComment:  <text>PURL is pkg:supplier/The%20Python%20Cryptographic%20Authority%20and%20individual%20contributors/cryptography@2.8 Warning: Package version was pinned to 2.8, latest is 3.4.7</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/The%20Python%20Cryptographic%20Authority%20and%20individual%20contributors/cryptography@2.8	
+PackageVersion: 2.8
+PackageSupplier: Organization: The Python Cryptographic Authority and individual contributors
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-cryptography
+Relationship: SPDXRef-cryptography CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: dictdiffer
+SPDXID: SPDXRef-dictdiffer
+PackageComment:  <text>PURL is pkg:supplier/Invenio%20Collaboration/dictdiffer@0.8.1  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Invenio%20Collaboration/dictdiffer@0.8.1	
+PackageVersion: 0.8.1
+PackageSupplier: Organization: Invenio Collaboration
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-dictdiffer
+Relationship: SPDXRef-dictdiffer CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: Django
+SPDXID: SPDXRef-Django
+PackageComment:  <text>PURL is pkg:supplier/Django%20Software%20Foundation/Django@2.2.19 Warning: Package version was pinned to 2.2.19, latest is 3.2.5</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Django%20Software%20Foundation/Django@2.2.19	
+PackageVersion: 2.2.19
+PackageSupplier: Organization: Django Software Foundation
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-Django
+Relationship: SPDXRef-Django CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: django-appconf
+SPDXID: SPDXRef-django-appconf
+PackageComment:  <text>PURL is pkg:supplier/Jannis%20Leidel/django-appconf@1.0.3 Warning: Package version was pinned to 1.0.3, latest is 1.0.4</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Jannis%20Leidel/django-appconf@1.0.3	
+PackageVersion: 1.0.3
+PackageSupplier: Organization: Jannis Leidel
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-django-appconf
+Relationship: SPDXRef-django-appconf CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: django-celery-results
+SPDXID: SPDXRef-django-celery-results
+PackageComment:  <text>PURL is pkg:supplier/Asif%20Saif%20Uddin%2C%20Ask%20Solem/django-celery-results@1.0.4 Warning: Package version was pinned to 1.0.4, latest is 2.2.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Asif%20Saif%20Uddin%2C%20Ask%20Solem/django-celery-results@1.0.4	
+PackageVersion: 1.0.4
+PackageSupplier: Organization: Asif Saif Uddin, Ask Solem
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-django-celery-results
+Relationship: SPDXRef-django-celery-results CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: django-countries
+SPDXID: SPDXRef-django-countries
+PackageComment:  <text>PURL is pkg:supplier/Chris%20Beaven/django-countries@5.3.3 Warning: Package version was pinned to 5.3.3, latest is 7.2.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Chris%20Beaven/django-countries@5.3.3	
+PackageVersion: 5.3.3
+PackageSupplier: Organization: Chris Beaven
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-django-countries
+Relationship: SPDXRef-django-countries CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: django-environ
+SPDXID: SPDXRef-django-environ
+PackageComment:  <text>PURL is pkg:supplier/joke2k/django-environ@0.4.5  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/joke2k/django-environ@0.4.5	
+PackageVersion: 0.4.5
+PackageSupplier: Organization: joke2k
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-django-environ
+Relationship: SPDXRef-django-environ CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: django-qr-code
+SPDXID: SPDXRef-django-qr-code
+PackageComment:  <text>PURL is pkg:supplier/Philippe%20Docourt/django-qr-code@1.1.0 Warning: Package version was pinned to 1.1.0, latest is 2.2.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Philippe%20Docourt/django-qr-code@1.1.0	
+PackageVersion: 1.1.0
+PackageSupplier: Organization: Philippe Docourt
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-django-qr-code
+Relationship: SPDXRef-django-qr-code CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: django-ses
+SPDXID: SPDXRef-django-ses
+PackageComment:  <text>PURL is pkg:supplier/Harry%20Marr/django-ses@1.0.3 Warning: Package version was pinned to 1.0.3, latest is 2.2.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Harry%20Marr/django-ses@1.0.3	
+PackageVersion: 1.0.3
+PackageSupplier: Organization: Harry Marr
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-django-ses
+Relationship: SPDXRef-django-ses CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: django-storages
+SPDXID: SPDXRef-django-storages
+PackageComment:  <text>PURL is pkg:supplier/Josh%20Schneier/django-storages@1.7.1 Warning: Package version was pinned to 1.7.1, latest is 1.11.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Josh%20Schneier/django-storages@1.7.1	
+PackageVersion: 1.7.1
+PackageSupplier: Organization: Josh Schneier
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-django-storages
+Relationship: SPDXRef-django-storages CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: django-widget-tweaks
+SPDXID: SPDXRef-django-widget-tweaks
+PackageComment:  <text>PURL is pkg:supplier/Mikhail%20Korobov/django-widget-tweaks@1.4.3 Warning: Package version was pinned to 1.4.3, latest is 1.4.8</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Mikhail%20Korobov/django-widget-tweaks@1.4.3	
+PackageVersion: 1.4.3
+PackageSupplier: Organization: Mikhail Korobov
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-django-widget-tweaks
+Relationship: SPDXRef-django-widget-tweaks CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: djangorestframework
+SPDXID: SPDXRef-djangorestframework
+PackageComment:  <text>PURL is pkg:supplier/Tom%20Christie/djangorestframework@3.10.3 Warning: Package version was pinned to 3.10.3, latest is 3.12.4</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Tom%20Christie/djangorestframework@3.10.3	
+PackageVersion: 3.10.3
+PackageSupplier: Organization: Tom Christie
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-djangorestframework
+Relationship: SPDXRef-djangorestframework CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: docutils
+SPDXID: SPDXRef-docutils
+PackageComment:  <text>PURL is pkg:supplier/David%20Goodger/docutils@0.14 Warning: Package version was pinned to 0.14, latest is 0.17.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/David%20Goodger/docutils@0.14	
+PackageVersion: 0.14
+PackageSupplier: Organization: David Goodger
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-docutils
+Relationship: SPDXRef-docutils CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: ecdsa
+SPDXID: SPDXRef-ecdsa
+PackageComment:  <text>PURL is pkg:supplier/Brian%20Warner/ecdsa@0.13.2 Warning: Package version was pinned to 0.13.2, latest is 0.17.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Brian%20Warner/ecdsa@0.13.2	
+PackageVersion: 0.13.2
+PackageSupplier: Organization: Brian Warner
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-ecdsa
+Relationship: SPDXRef-ecdsa CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: envs
+SPDXID: SPDXRef-envs
+PackageComment:  <text>PURL is pkg:supplier/Brian%20Jinwright/envs@1.3  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Brian%20Jinwright/envs@1.3	
+PackageVersion: 1.3
+PackageSupplier: Organization: Brian Jinwright
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-envs
+Relationship: SPDXRef-envs CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: fs
+SPDXID: SPDXRef-fs
+PackageComment:  <text>PURL is pkg:supplier/Will%20McGugan/fs@2.4.11 Warning: Package version was pinned to 2.4.11, latest is 2.4.13</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Will%20McGugan/fs@2.4.11	
+PackageVersion: 2.4.11
+PackageSupplier: Organization: Will McGugan
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-fs
+Relationship: SPDXRef-fs CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: fs-s3fs
+SPDXID: SPDXRef-fs-s3fs
+PackageComment:  <text>PURL is pkg:supplier/Will%20McGugan/fs-s3fs@1.1.1  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Will%20McGugan/fs-s3fs@1.1.1	
+PackageVersion: 1.1.1
+PackageSupplier: Organization: Will McGugan
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-fs-s3fs
+Relationship: SPDXRef-fs-s3fs CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: future
+SPDXID: SPDXRef-future
+PackageComment:  <text>PURL is pkg:supplier/Ed%20Schofield/future@0.17.1 Warning: Package version was pinned to 0.17.1, latest is 0.18.2</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Ed%20Schofield/future@0.17.1	
+PackageVersion: 0.17.1
+PackageSupplier: Organization: Ed Schofield
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-future
+Relationship: SPDXRef-future CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: idna
+SPDXID: SPDXRef-idna
+PackageComment:  <text>PURL is pkg:supplier/Kim%20Davies/idna@2.8 Warning: Package version was pinned to 2.8, latest is 3.2</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Kim%20Davies/idna@2.8	
+PackageVersion: 2.8
+PackageSupplier: Organization: Kim Davies
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-idna
+Relationship: SPDXRef-idna CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: jmespath
+SPDXID: SPDXRef-jmespath
+PackageComment:  <text>PURL is pkg:supplier/James%20Saryerwinnie/jmespath@0.9.3 Warning: Package version was pinned to 0.9.3, latest is 0.10.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/James%20Saryerwinnie/jmespath@0.9.3	
+PackageVersion: 0.9.3
+PackageSupplier: Organization: James Saryerwinnie
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-jmespath
+Relationship: SPDXRef-jmespath CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: kombu
+SPDXID: SPDXRef-kombu
+PackageComment:  <text>PURL is pkg:supplier/Ask%20Solem/kombu@4.5.0 Warning: Package version was pinned to 4.5.0, latest is 5.1.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Ask%20Solem/kombu@4.5.0	
+PackageVersion: 4.5.0
+PackageSupplier: Organization: Ask Solem
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-kombu
+Relationship: SPDXRef-kombu CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: lxml
+SPDXID: SPDXRef-lxml
+PackageComment:  <text>PURL is pkg:supplier/lxml%20dev%20team/lxml@4.5.0 Warning: Package version was pinned to 4.5.0, latest is 4.6.3</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/lxml%20dev%20team/lxml@4.5.0	
+PackageVersion: 4.5.0
+PackageSupplier: Organization: lxml dev team
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-lxml
+Relationship: SPDXRef-lxml CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: M2Crypto
+SPDXID: SPDXRef-M2Crypto
+PackageComment:  <text>PURL is pkg:supplier/Ng%20Pheng%20Siong/M2Crypto@0.36.0 Warning: Package version was pinned to 0.36.0, latest is 0.38.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Ng%20Pheng%20Siong/M2Crypto@0.36.0	
+PackageVersion: 0.36.0
+PackageSupplier: Organization: Ng Pheng Siong
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-M2Crypto
+Relationship: SPDXRef-M2Crypto CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: Markdown
+SPDXID: SPDXRef-Markdown
+PackageComment:  <text>PURL is pkg:supplier/Manfred%20Stienstra%2C%20Yuri%20takhteyev%20and%20Waylan%20limberg/Markdown@3.1 Warning: Package version was pinned to 3.1, latest is 3.3.4</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Manfred%20Stienstra%2C%20Yuri%20takhteyev%20and%20Waylan%20limberg/Markdown@3.1	
+PackageVersion: 3.1
+PackageSupplier: Organization: Manfred Stienstra, Yuri takhteyev and Waylan limberg
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-Markdown
+Relationship: SPDXRef-Markdown CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: pinax-messages
+SPDXID: SPDXRef-pinax-messages
+PackageComment:  <text>PURL is pkg:supplier/Pinax%20Team/pinax-messages@2.0.2 Warning: Package version was pinned to 2.0.2, latest is 3.0.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Pinax%20Team/pinax-messages@2.0.2	
+PackageVersion: 2.0.2
+PackageSupplier: Organization: Pinax Team
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-pinax-messages
+Relationship: SPDXRef-pinax-messages CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: pip-autoremove
+SPDXID: SPDXRef-pip-autoremove
+PackageComment:  <text>PURL is pkg:supplier/https%3A%2F%2Fgithub.com%2Finvl%2Fpip-autoremove/pip-autoremove@0.9.1  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/https%3A%2F%2Fgithub.com%2Finvl%2Fpip-autoremove/pip-autoremove@0.9.1	
+PackageVersion: 0.9.1
+PackageSupplier: Organization: https://github.com/invl/pip-autoremove
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-pip-autoremove
+Relationship: SPDXRef-pip-autoremove CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: psycopg2
+SPDXID: SPDXRef-psycopg2
+PackageComment:  <text>PURL is pkg:supplier/Federico%20Di%20Gregorio/psycopg2@2.7.7 Warning: Package version was pinned to 2.7.7, latest is 2.9.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Federico%20Di%20Gregorio/psycopg2@2.7.7	
+PackageVersion: 2.7.7
+PackageSupplier: Organization: Federico Di Gregorio
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-psycopg2
+Relationship: SPDXRef-psycopg2 CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: psycopg2-binary
+SPDXID: SPDXRef-psycopg2-binary
+PackageComment:  <text>PURL is pkg:supplier/Federico%20Di%20Gregorio/psycopg2-binary@2.8.2 Warning: Package version was pinned to 2.8.2, latest is 2.9.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Federico%20Di%20Gregorio/psycopg2-binary@2.8.2	
+PackageVersion: 2.8.2
+PackageSupplier: Organization: Federico Di Gregorio
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-psycopg2-binary
+Relationship: SPDXRef-psycopg2-binary CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: pyasn1
+SPDXID: SPDXRef-pyasn1
+PackageComment:  <text>PURL is pkg:supplier/Ilya%20Etingof/pyasn1@0.4.8  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Ilya%20Etingof/pyasn1@0.4.8	
+PackageVersion: 0.4.8
+PackageSupplier: Organization: Ilya Etingof
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-pyasn1
+Relationship: SPDXRef-pyasn1 CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: pycparser
+SPDXID: SPDXRef-pycparser
+PackageComment:  <text>PURL is pkg:supplier/Eli%20Bendersky/pycparser@2.19 Warning: Package version was pinned to 2.19, latest is 2.20</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Eli%20Bendersky/pycparser@2.19	
+PackageVersion: 2.19
+PackageSupplier: Organization: Eli Bendersky
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-pycparser
+Relationship: SPDXRef-pycparser CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: pycryptodome
+SPDXID: SPDXRef-pycryptodome
+PackageComment:  <text>PURL is pkg:supplier/Helder%20Eijs/pycryptodome@3.3.1 Warning: Package version was pinned to 3.3.1, latest is 3.10.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Helder%20Eijs/pycryptodome@3.3.1	
+PackageVersion: 3.3.1
+PackageSupplier: Organization: Helder Eijs
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-pycryptodome
+Relationship: SPDXRef-pycryptodome CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: PyJWT
+SPDXID: SPDXRef-PyJWT
+PackageComment:  <text>PURL is pkg:supplier/Jose%20Padilla/PyJWT@1.7.1 Warning: Package version was pinned to 1.7.1, latest is 2.1.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Jose%20Padilla/PyJWT@1.7.1	
+PackageVersion: 1.7.1
+PackageSupplier: Organization: Jose Padilla
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-PyJWT
+Relationship: SPDXRef-PyJWT CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: python-dateutil
+SPDXID: SPDXRef-python-dateutil
+PackageComment:  <text>PURL is pkg:supplier/Gustavo%20Niemeyer/python-dateutil@2.8.0 Warning: Package version was pinned to 2.8.0, latest is 2.8.2</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Gustavo%20Niemeyer/python-dateutil@2.8.0	
+PackageVersion: 2.8.0
+PackageSupplier: Organization: Gustavo Niemeyer
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-python-dateutil
+Relationship: SPDXRef-python-dateutil CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: python-gnupg
+SPDXID: SPDXRef-python-gnupg
+PackageComment:  <text>PURL is pkg:supplier/Vinay%20Sajip/python-gnupg@0.4.5 Warning: Package version was pinned to 0.4.5, latest is 0.4.7</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Vinay%20Sajip/python-gnupg@0.4.5	
+PackageVersion: 0.4.5
+PackageSupplier: Organization: Vinay Sajip
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-python-gnupg
+Relationship: SPDXRef-python-gnupg CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: python-jose
+SPDXID: SPDXRef-python-jose
+PackageComment:  <text>PURL is pkg:supplier/Michael%20Davis/python-jose@3.2.0 Warning: Package version was pinned to 3.2.0, latest is 3.3.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Michael%20Davis/python-jose@3.2.0	
+PackageVersion: 3.2.0
+PackageSupplier: Organization: Michael Davis
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-python-jose
+Relationship: SPDXRef-python-jose CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: pytz
+SPDXID: SPDXRef-pytz
+PackageComment:  <text>PURL is pkg:supplier/Stuart%20Bishop/pytz@2019.3 Warning: Package version was pinned to 2019.3, latest is 2021.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Stuart%20Bishop/pytz@2019.3	
+PackageVersion: 2019.3
+PackageSupplier: Organization: Stuart Bishop
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-pytz
+Relationship: SPDXRef-pytz CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: qrcode
+SPDXID: SPDXRef-qrcode
+PackageComment:  <text>PURL is pkg:supplier/Lincoln%20Loop/qrcode@6.1 Warning: Package version was pinned to 6.1, latest is 7.2</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Lincoln%20Loop/qrcode@6.1	
+PackageVersion: 6.1
+PackageSupplier: Organization: Lincoln Loop
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-qrcode
+Relationship: SPDXRef-qrcode CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: redis
+SPDXID: SPDXRef-redis
+PackageComment:  <text>PURL is pkg:supplier/Andy%20McCurdy/redis@3.2.1 Warning: Package version was pinned to 3.2.1, latest is 3.5.3</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Andy%20McCurdy/redis@3.2.1	
+PackageVersion: 3.2.1
+PackageSupplier: Organization: Andy McCurdy
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-redis
+Relationship: SPDXRef-redis CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: requests
+SPDXID: SPDXRef-requests
+PackageComment:  <text>PURL is pkg:supplier/Kenneth%20Reitz/requests@2.22.0 Warning: Package version was pinned to 2.22.0, latest is 2.26.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Kenneth%20Reitz/requests@2.22.0	
+PackageVersion: 2.22.0
+PackageSupplier: Organization: Kenneth Reitz
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-requests
+Relationship: SPDXRef-requests CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: rsa
+SPDXID: SPDXRef-rsa
+PackageComment:  <text>PURL is pkg:supplier/Sybren%20A.%20Stuvel/rsa@4.6 Warning: Package version was pinned to 4.6, latest is 4.7.2</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Sybren%20A.%20Stuvel/rsa@4.6	
+PackageVersion: 4.6
+PackageSupplier: Organization: Sybren A. Stuvel
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-rsa
+Relationship: SPDXRef-rsa CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: s3transfer
+SPDXID: SPDXRef-s3transfer
+PackageComment:  <text>PURL is pkg:supplier/Amazon%20Web%20Services/s3transfer@0.3.6 Warning: Package version was pinned to 0.3.6, latest is 0.5.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Amazon%20Web%20Services/s3transfer@0.3.6	
+PackageVersion: 0.3.6
+PackageSupplier: Organization: Amazon Web Services
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-s3transfer
+Relationship: SPDXRef-s3transfer CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: simplejson
+SPDXID: SPDXRef-simplejson
+PackageComment:  <text>PURL is pkg:supplier/Bob%20Ippolito/simplejson@3.17.0 Warning: Package version was pinned to 3.17.0, latest is 3.17.3</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Bob%20Ippolito/simplejson@3.17.0	
+PackageVersion: 3.17.0
+PackageSupplier: Organization: Bob Ippolito
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-simplejson
+Relationship: SPDXRef-simplejson CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: six
+SPDXID: SPDXRef-six
+PackageComment:  <text>PURL is pkg:supplier/Benjamin%20Peterson/six@1.12.0 Warning: Package version was pinned to 1.12.0, latest is 1.16.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Benjamin%20Peterson/six@1.12.0	
+PackageVersion: 1.12.0
+PackageSupplier: Organization: Benjamin Peterson
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-six
+Relationship: SPDXRef-six CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: soupsieve
+SPDXID: SPDXRef-soupsieve
+PackageComment:  <text>PURL is pkg:supplier/Isaac%20Muse/soupsieve@1.9.5 Warning: Package version was pinned to 1.9.5, latest is 2.2.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Isaac%20Muse/soupsieve@1.9.5	
+PackageVersion: 1.9.5
+PackageSupplier: Organization: Isaac Muse
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-soupsieve
+Relationship: SPDXRef-soupsieve CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: sqlparse
+SPDXID: SPDXRef-sqlparse
+PackageComment:  <text>PURL is pkg:supplier/Andi%20Albrecht/sqlparse@0.3.0 Warning: Package version was pinned to 0.3.0, latest is 0.4.1</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Andi%20Albrecht/sqlparse@0.3.0	
+PackageVersion: 0.3.0
+PackageSupplier: Organization: Andi Albrecht
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-sqlparse
+Relationship: SPDXRef-sqlparse CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: urllib3
+SPDXID: SPDXRef-urllib3
+PackageComment:  <text>PURL is pkg:supplier/Andrey%20Petrov/urllib3@1.26.4 Warning: Package version was pinned to 1.26.4, latest is 1.26.6</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Andrey%20Petrov/urllib3@1.26.4	
+PackageVersion: 1.26.4
+PackageSupplier: Organization: Andrey Petrov
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-urllib3
+Relationship: SPDXRef-urllib3 CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: vine
+SPDXID: SPDXRef-vine
+PackageComment:  <text>PURL is pkg:supplier/Ask%20Solem/vine@1.3.0 Warning: Package version was pinned to 1.3.0, latest is 5.0.0</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Ask%20Solem/vine@1.3.0	
+PackageVersion: 1.3.0
+PackageSupplier: Organization: Ask Solem
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-vine
+Relationship: SPDXRef-vine CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: watchtower
+SPDXID: SPDXRef-watchtower
+PackageComment:  <text>PURL is pkg:supplier/Andrey%20Kislyuk/watchtower@1.0.6  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Andrey%20Kislyuk/watchtower@1.0.6	
+PackageVersion: 1.0.6
+PackageSupplier: Organization: Andrey Kislyuk
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-watchtower
+Relationship: SPDXRef-watchtower CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: webencodings
+SPDXID: SPDXRef-webencodings
+PackageComment:  <text>PURL is pkg:supplier/Geoffrey%20Sneddon/webencodings@0.5.1  </text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/Geoffrey%20Sneddon/webencodings@0.5.1	
+PackageVersion: 0.5.1
+PackageSupplier: Organization: Geoffrey Sneddon
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-webencodings
+Relationship: SPDXRef-webencodings CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+## 2.4 All-Levels Components
+##
+PackageName: django-bakery
+SPDXID: SPDXRef-django-bakery
+PackageComment:  <text>PURL is pkg:supplier/The%20Los%20Angeles%20Times%20Data%20Desk/django-bakery@0.12.7+cert.1 Warning: Package version was pinned to 0.12.7+cert.1, latest is 0.12.7</text>
+ExternalRef: PACKAGE-MANAGER purl pkg:supplier/The%20Los%20Angeles%20Times%20Data%20Desk/django-bakery@0.12.7+cert.1	
+PackageVersion: 0.12.7+cert.1
+PackageSupplier: Organization: The Los Angeles Times Data Desk
+Relationship: SPDXRef-VINCE CONTAINS SPDXRef-django-bakery
+Relationship: SPDXRef-django-bakery CONTAINS NOASSERTION	
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
