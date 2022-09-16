@@ -2,12 +2,12 @@
     "acknowledgments": [
         {
             "urls": [
-                "%(publicurl)s"
+                "%(ackurl)s"
                 
             ]
         }
     ],
-    "category": "generic_csaf",
+    "category": "CERT/CC Vulnerability Note",
     "csaf_version": "2.0",
     "notes": [
         {
@@ -19,29 +19,34 @@
             "category": "legal_disclaimer",
             "text": "%(LEGAL_DISCLAIMER)s",
             "title": "Legal Disclaimer"
-        }
+        },
+	{
+         "category": "other",
+         "text": "CERT/CC Vulnerability Note is a limited advisory. It primarily identifies vendors impacted by the advisory and not specific products. We only support \"known_affected\" and \"known_not_affected\" status. Please consult the vendor's statements and advisory URL if provided by the vendor for more details ",
+         "title": "Limitations of Advisory"
+      }
     ],
     "publisher": {
         "category": "coordinator",
-        "contact_details": "Email: %(CONTACT_EMAIL)",
-        "issuing_authority": "%(ORG_NAME)",
-        "name": "%(ORG_NAME)",
-        "namespace": "%(WEBSITE)"
+        "contact_details": "Email: cert@cert.org, Phone: +1412 268 5800",
+        "issuing_authority": "CERT/CC under DHS/CISA https://www.cisa.gov/cybersecurity also see https://kb.cert.org/ ",
+        "name": "CERT/CC",
+        "namespace": "https://kb.cert.org/"
     },
     "references": [
         {
-            "url": "References link here",
-            "summary": "%(ORG_NAME) vulnerability disclosure policy"
+            "url": "https://vuls.cert.org/confluence/display/Wiki/Vulnerability+Disclosure+Policy",
+            "summary": "CERT/CC vulnerability disclosure policy"
         },
         {
-            "summary": "%(ORG_NAME) document released",
+            "summary": "CERT/CC document released",
             "category": "self",
             "url": "%(publicurl)s"
         }
     ],
     "title": %(title)s,
     "tracking": {
-        "current_release_date": "%(due_date)s",
+        "current_release_date": "%(revision_date)s",
         "generator": {
             "engine": {
                 "name": "VINCE",
@@ -52,12 +57,12 @@
         "initial_release_date": "%(due_date)s",
         "revision_history": [
             {
-                "date": "%(due_date)s",
-                "number": "1.0.0",
-                "summary": "Public released after peer review"
+                "date": "%(revision_date)s",
+                "number": "%(revision_number)s",
+                "summary": "Released on %(revision_date)s"
             }
         ],
-        "status": "final",
-        "version": "1.0.0"
+        "status": "%(case_status)s",
+        "version": "%(case_version)s"
     }
 }

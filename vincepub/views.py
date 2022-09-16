@@ -1345,3 +1345,17 @@ def autocomplete_vendor(request):
 def error_404(request):
     data = {}
     return render(request, 'vincepub/404.html', data, status=404)
+
+class CaseCSAFAPIView(generics.RetrieveAPIView):
+    serializer_class = serializers.CSAFSerializer
+
+    def get_view_name(self):
+        return "Public Vulnerability Advisory in CSAF format"
+
+    def get_object(self):
+        svuid = re.sub('[^\d]','',self.kwargs['vuid'])
+        vr = get_object_or_404(VUReport, vuid=f"VU#{svuid}")
+        vrs = VUReport.objects.filter(vuid=f"VU#{svuid}")
+        if vrs:
+            return vr
+
