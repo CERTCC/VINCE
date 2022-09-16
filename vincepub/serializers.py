@@ -186,6 +186,12 @@ class CSAFSerializer(serializers.ModelSerializer):
             "title": json.dumps(vr.name),
             "due_date": vr.publicdate,
             "VINCE_VERSION": settings.VERSION,
+            "ORG_NAME": settings.ORG_NAME,
+            "ORG_POLICY_URL": settings.ORG_POLICY_URL,
+            "ORG_AUTHORITY": settings.ORG_AUTHORITY,
+            "CONTACT_EMAIL": settings.CONTACT_EMAIL,
+            "CONTACT_PHONE": settings.CONTACT_PHONE,
+            "WEBSITE": settings.KB_SERVER_NAME,
             "vu_vuid": vr.vuid,
             "revision_date": revision_date,
             "revision_number": revision_number,
@@ -209,7 +215,7 @@ class CSAFSerializer(serializers.ModelSerializer):
             if ven.addendum:
                 addinfo = {"category": "other",
                            "text": ven.addendum,
-                           "title": "CERT/CC comment on {ven.vendor} notes"}
+                           "title": f"{settings.ORG_NAME} comment on {ven.vendor} notes"}
                 csafdoc["notes"] += [addinfo]
         return csafdoc
 
@@ -236,7 +242,9 @@ class CSAFSerializer(serializers.ModelSerializer):
                 "vuid":  vr.vuid,
                 "cve":  cve,
                 "title": json.dumps(casevul.description.split(".")[0]+"."),
-                "description": json.dumps(casevul.description) }
+                "description": json.dumps(casevul.description),
+                "ORG_NAME": settings.ORG_NAME
+            }
             csafvulj = json.loads(csafvul,strict=False)
             if cve is None:
                 del csafvulj['cve']

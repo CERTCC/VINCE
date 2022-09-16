@@ -289,6 +289,12 @@ class CSAFSerializer(serializers.ModelSerializer):
             "title": json.dumps(case.title),
             "due_date": case.due_date,
             "VINCE_VERSION": settings.VERSION,
+            "ORG_NAME": settings.ORG_NAME,
+            "ORG_POLICY_URL": settings.ORG_POLICY_URL,
+            "ORG_AUTHORITY": settings.ORG_AUTHORITY,
+            "CONTACT_EMAIL": settings.CONTACT_EMAIL,
+            "CONTACT_PHONE": settings.CONTACT_PHONE,
+            "WEBSITE": settings.KB_SERVER_NAME,
             "vu_vuid": f"VU#{case.vuid}",
             "revision_date": revision_date,
             "revision_number": revision_number,
@@ -322,6 +328,7 @@ class CSAFSerializer(serializers.ModelSerializer):
             csafvul = csafvul_template % {
                 "vuid":  casevul.vul,
                 "cve":  cve,
+                "ORG_NAME": settings.ORG_NAME,
                 "title": json.dumps(casevul.description.split(".")[0]+"."),
                 "description": json.dumps(casevul.description) }
             csafvulj = json.loads(csafvul,strict=False)

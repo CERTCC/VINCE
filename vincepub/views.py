@@ -340,7 +340,7 @@ def va_bullhorn(value):
     if value:
         if value == "There are no additional comments at this time.":
             return False
-        elif value == "The CERT/CC has no additional comments at this time.":
+        elif value == f"The {settings.ORG_NAME} has no additional comments at this time.":
             return False
         return True
     return False
