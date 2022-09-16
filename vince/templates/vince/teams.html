@@ -48,7 +48,7 @@
 	    <h4>Team Members</h4>
 	    <ul>
 	      {% for u in team.user_set.all %}
-	      <li><a href="{% url 'vince:vvuser' u.id %}"> {{ u.usersettings.preferred_username }}</a></li>
+	      <li><a href="{% url 'vince:vvuser' u.id %}"> {{ u.usersettings.preferred_username }} {% if not u.is_active %}<span style="color:red">[DISABLED]</span>{% endif %}</a></li>
 	      {% endfor %}
 	      </ul>
 	  </div>

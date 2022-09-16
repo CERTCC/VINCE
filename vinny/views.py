@@ -83,7 +83,7 @@ from itertools import chain
 from django.db.models import Q, OuterRef, Subquery, Max
 from botocore.exceptions import ClientError
 from botocore.client import Config
-
+from lib.vince.m2crypto_encrypt_decrypt import ED
 # Create your views here.
 
 logger = logging.getLogger(__name__)
@@ -2209,7 +2209,19 @@ class UserCardView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.Det
     model = VinceProfile
 
     def get_object(self):
-        return VinceProfile.objects.get(user__id=self.kwargs['id'])
+        euid = self.kwargs['euid']
+        if len(euid) % 32:
+            logger.info("Invalid encrypted EUID value found returning user's self profile %s length does not match" %(euid))
+            return VinceProfile.objects.get(user=self.request.user)
+        try:
+            ed = ED(base64.b64encode(settings.SECRET_KEY.encode()))
+            q = ed.decrypt(str(self.kwargs['euid']))
+            logger.debug("Decrypted value of user pk id is %s for %s" %(q,euid))
+            return VinceProfile.objects.get(user__id=int(q))
+        except Exception as e:
+            logger.info("Invalid encrypted EUID value found returning user's self profile %s error %s" %(euid,str(e)))
+            return VinceProfile.objects.get(user=self.request.user)
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -2225,11 +2237,22 @@ class GroupCardView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.De
     model = GroupContact
 
     def get_object(self):
-        return GroupContact.objects.get(group__id=self.kwargs['id'])
+        egid = self.kwargs['egid']
+        if len(egid) % 32:
+            logger.info("Invalid encrypted EGID value found returning user's self profile %s length does not match" %(egid))
+            return None
+        try:
+            ed = ED(base64.b64encode(settings.SECRET_KEY.encode()))
+            q = ed.decrypt(str(self.kwargs['egid']))
+            logger.debug("Decrypted value of user pk id is %s for %s" %(q,egid))
+            return GroupContact.objects.get(group__id=int(q))
+        except Exception as e:
+            logger.info("Invalid encrypted EGID value found returning user's self profile %s error %s" %(egid,str(e)))
+            return None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.kwargs.get('case') and self.get_object().default_access == False:
+        if self.kwargs.get('case') and self.get_object() and self.get_object().default_access == False:
             groupcontact = self.get_object()
             admins = list(VinceCommGroupAdmin.objects.filter(contact=groupcontact.contact.id).values_list('email__email', flat=True))
             casemember = CaseMember.objects.filter(case=self.kwargs.get('case'), group=groupcontact.group.id).first()

@@ -325,7 +325,7 @@ urlpatterns = [
     path('manage/bounces/', views.VINCEBounceManager.as_view(), name='bouncemanager'),
 ]
 try:
-    if settings.MULTIURL_CONFIG:
+    if settings.MULTIURL_CONFIG or settings.VINCE_NAMESPACE == "vince":
         urlpatterns.extend([
             path('login/', cogauth_views.COGLoginView.as_view(template_name='vince/tracklogin.html'), name="login"),
             path('login/mfa/', cogauth_views.MFAAuthRequiredView.as_view(), name='mfaauth'),
@@ -338,8 +338,8 @@ try:
             path('logout/', auth_views.LogoutView.as_view(template_name='vince/logout.html'), name="logout"),
         ])
         
-
-except:
+except Exception as e:
+    print("Error when trying to detect VINCE_NAMESPACE %s" %(str(e)))
     urlpatterns.extend([
         path('login/', auth_views.LoginView.as_view(template_name='vince/login.html'), name='login'),
         path('logout/', auth_views.LogoutView.as_view(template_name='vince/logout.html'), name="logout")

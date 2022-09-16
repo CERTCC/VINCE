@@ -6,7 +6,7 @@
         <div class="participant-pic">
           {% autoescape off %}{{ vendor|grouplogo:"profile-pic" }}{% endautoescape %}
         </div>
-        <div class="participant-info"><span class="participant-name"><a href="{% url 'vinny:groupcardcase' vendor.group.id case.id %}" class="vendor-participant">{{ vendor.group.groupcontact.contact.vendor_name }}</a></span>
+        <div class="participant-info"><span class="participant-name"><a href="{{ vendor.group.groupcontact.url }}{{ case.id }}" class="vendor-participant">{{ vendor.group.groupcontact.contact.vendor_name }}</a></span>
           {% if vendor.share_status %}
           <a href="{% url 'vinny:statement' case.id vendor.id %}" class="openmodal {% show_status_class vendor.get_general_status %}" data-open="modal" title="View Statement">{% show_status vendor.get_general_status %}</a>
           {% endif %}
