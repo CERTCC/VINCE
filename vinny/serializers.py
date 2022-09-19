@@ -295,7 +295,7 @@ class CSAFSerializer(serializers.ModelSerializer):
             "CONTACT_EMAIL": settings.CONTACT_EMAIL,
             "CONTACT_PHONE": settings.CONTACT_PHONE,
             "WEBSITE": settings.KB_SERVER_NAME,
-            "vu_vuid": f"VU#{case.vuid}",
+            "vu_vuid": f"{settings.CASE_IDENTIFIER}#{case.vuid}",
             "revision_date": revision_date,
             "revision_number": revision_number,
             "case_status": case_status,

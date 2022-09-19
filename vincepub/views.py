@@ -1354,8 +1354,6 @@ class CaseCSAFAPIView(generics.RetrieveAPIView):
 
     def get_object(self):
         svuid = re.sub('[^\d]','',self.kwargs['vuid'])
-        vr = get_object_or_404(VUReport, vuid=f"VU#{svuid}")
-        vrs = VUReport.objects.filter(vuid=f"VU#{svuid}")
-        if vrs:
-            return vr
+        vr = get_object_or_404(VUReport, idnumber=svuid)
+        return vr
 
