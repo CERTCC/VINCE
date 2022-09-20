@@ -52,6 +52,7 @@ urlpatterns = [
     re_path('^byid$', RedirectView.as_view(pattern_name='vincepub:quickSearch', query_string=True)),
     re_path('^api/vendors/(?P<pk>\d+)/$', views.VendorViewAPI.as_view(), name='vendorview'),
     re_path('^api/(?P<pk>\d+)/vendors/$', views.VendorViewAPI.as_view(), name='vendorview'),
+    re_path('^api/(?P<vuid>\d+)/csaf/$', views.CaseCSAFAPIView.as_view(), name="vulcsaf"),
     re_path('^vendors/(?P<pk>\d+)/$', RedirectView.as_view(pattern_name="vincepub:vendorview")),
     re_path('^api/vuls/(?P<pk>\d+)/$', views.VulViewAPI.as_view(), name='vulview'),
     re_path('^api/vuls/cve/(?P<year>\d+)-(?P<pk>\d+)/$', views.CVEVulViewAPI.as_view(), name='cvevulview'),

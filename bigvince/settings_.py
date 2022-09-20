@@ -56,7 +56,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "1.50.2"
+VERSION = "1.50.3"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -744,7 +744,10 @@ FAVICON = "vincepub/images/favicon.ico"
 
 WEB_TITLE = "Vulnerability Notes Database"
 ORG_NAME = "Your Organization Name"
-CONTACT_EMAIL = "vuls@vince.org"
+CONTACT_EMAIL = "vuls@vince.example"
+CONTACT_PHONE = "+12021115555"
+ORG_POLICY_URL = "https://vuls.vince.example/terms"
+ORG_AUTHORITY =  f"{ORG_NAME} "
 VINCEPUB_BASE_TEMPLATE = "vincepub/base_public.html"
 VINCECOMM_BASE_TEMPLATE = "vinny/base_public.html"
 VINCETRACK_BASE_TEMPLATE = "vince/base_public.html"

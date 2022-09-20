@@ -32,6 +32,7 @@ from vinny.models import Case, Post, VTCaseRequest, CaseMemberStatus, CaseVulner
 import uuid
 import os
 import json
+import datetime
 from django.conf import settings
 import logging
 from django.urls import reverse
@@ -238,102 +239,131 @@ class CSAFSerializer(serializers.ModelSerializer):
     """
     This serializer starts with a Case and then builds out using both
     OriginalReport and CaseVulnerability(s) to create the CSAF document
+    case = list(Case.objects.filter(vuid="419889"))
+    v = list(CaseVulnerability.objects.filter(case=case[0]))
+    cs = list(CaseMemberStatus.objects.filter(vulnerability = v[i]))
+    case.published || cs[i].member.share_status() then loop
+    status = cs[i].status (1 == 'AFFECTED', 2 == 'UNAFFECTED')
+    vendor = cs[i].member.group.groupcontact.contact.vendor_name
     """
     document = serializers.SerializerMethodField('get_csafdocument')
     vulnerabilities = serializers.SerializerMethodField('get_csafvuls')
-    product_tree = serializers.SerializerMethodField('get_csafproducts')
-    #csaf_productid = serializers.CharField(write_only=True)
-    csaf_productid = "CSAFPID-"+str(uuid.uuid1())    
-    #template_json_dir = serializers.CharField(write_only=True)
+    product_tree = serializers.SerializerMethodField('get_csafprods')
+    mproduct_tree = {"branches": []}
     template_json_dir = os.path.join(os.path.dirname(__file__),
                                      'templatesjson', 'csaf')
     
     class Meta:
         model = Case
         fields = ["document","vulnerabilities","product_tree"]
+
     def get_csafdocument(self,case):
         tfile = os.path.join(self.template_json_dir,"document.json")
         if not os.path.exists(tfile):
             return {"error": "Template file for csaf missing"}
         csafdocument_template = open(tfile,"r").read()
+        vulnote = reverse("vincepub:vudetail", args=[case.vuid])
         if case.publicurl:
-            publicurl = case.publicurl
-        elif case.publicdate:
-            if case.published:
-                vulnote = reverse("vincepub:vudetail", args=[case.vuid])
-                publicurl = f"{settings.KB_SERVER_NAME}{vulnote}#acknowledgements"
-            else:
-                publicurl = "Unknown"
+            publicurl = f"{settings.KB_SERVER_NAME}{vulnote}"
         else:
-            publicurl = "Pending public release"
-            
+            publicurl = f"{settings.KB_SERVER_NAME}{vulnote}#PendingRelease"
+        ackurl = f"{settings.KB_SERVER_NAME}{vulnote}#acknowledgments"
+        if case.published:
+            case_status = "final"
+        else:
+            case_status = "interim"
+
+        if case.modified:
+            revision_date = case.modified
+            revision_number = case.modified.strftime("1.%Y%m%d%H%M%S.0")
+            case_version = revision_number
+        else:
+            revision_date = datetime.datetime.now()
+            revision_number = revision_date.strftime("1.%Y%m%d%H%M%S.0")
+            case_version = revision_number
         csafdocument = csafdocument_template % {
-            "summary": json.dumps(case.summary),"publicurl": publicurl,
-            "title":json.dumps(case.title),"due_date":case.due_date,
-            "vu_vuid": f"{case.vu_vuid}",
+            "publicurl": publicurl,
+            "ackurl": ackurl,
+            "summary": json.dumps(case.summary),
             "LEGAL_DISCLAIMER": settings.LEGAL_DISCLAIMER,
+            "title": json.dumps(case.title),
+            "due_date": case.due_date,
             "VINCE_VERSION": settings.VERSION,
-            "CONTACT_EMAIL": settings.CONTACT_EMAIL,
             "ORG_NAME": settings.ORG_NAME,
-            "WEBSITE": settings.KB_SERVER_NAME
+            "ORG_POLICY_URL": settings.ORG_POLICY_URL,
+            "ORG_AUTHORITY": settings.ORG_AUTHORITY,
+            "CONTACT_EMAIL": settings.CONTACT_EMAIL,
+            "CONTACT_PHONE": settings.CONTACT_PHONE,
+            "WEBSITE": settings.KB_SERVER_NAME,
+            "vu_vuid": f"{settings.CASE_IDENTIFIER}#{case.vuid}",
+            "revision_date": revision_date,
+            "revision_number": revision_number,
+            "case_status": case_status,
+            "case_version": case_version
         }
         logger.debug(csafdocument)
         return json.loads(csafdocument, strict=False)
 
     def get_csafvuls(self, case):
-        casevuls = CaseVulnerability.objects.filter(case=case, deleted=False)
+        self.mproduct_tree = {"branches": []}
+        casevuls = list(CaseVulnerability.objects.filter(case=case, deleted=False))
         logger.debug(casevuls)
         csafvuls = []
         tfile = os.path.join(self.template_json_dir,"vulnerability.json")
-        nocvefile = os.path.join(self.template_json_dir,"vulnocve.json")
-        if not os.path.exists(tfile) or not os.path.exists(nocvefile):
-            return [{"error": "Template file for csaf vul missing"}]      
         csafvul_template = open(tfile,"r").read()
-        csafnocvevul_template = open(nocvefile,"r").read()
-        for casevul in casevuls:
-            if casevul.cve:
-                csafvul = csafvul_template % {
-                    "cve":  casevul.vul,
-                    "title": json.dumps(casevul.description.split(".")[0]+"."),
-                    "csaf_productid": self.csaf_productid,
-                    "description": json.dumps(casevul.description) }
-                csafvuls.append(json.loads(csafvul, strict=False))
-            else:
-                #if cve doesn't exist, just leave it blank.
-                csafvul = csafnocvevul_template % {
-                    "title": json.dumps(casevul.description.split(".")[0]+"."),
-                    "csaf_productid": self.csaf_productid,
-                    "description": json.dumps(casevul.description) }
-                csafvuls.append(json.loads(csafvul, strict=False))
-        return csafvuls
-
-    def get_csafproducts(self, case):
-        vendor_name = "Unknown"
-        product_name = "Unknown"
-        product_version = "1.0.0"
         tfile = os.path.join(self.template_json_dir,"product_tree.json")
         if not os.path.exists(tfile):
             return [{"error": "Template file for csaf missing"}]
-        csafproducts_template = open(tfile,"r").read()        
-        cr = case.cr
-        if cr:
-            if cr.vendor_name:
-                vendor_name = cr.vendor_name
-            if cr.product_name:
-                product_name = cr.product_name
-            if cr.product_version:
-                product_version = cr.product_version
-        product_fullname = f"{vendor_name} {product_name} {product_version}"
-        csafproducts = csafproducts_template % {
-            "vendor_name": vendor_name,
-            "product_name": product_name,
-            "product_version": product_version,
-            "product_fullname": product_fullname,
-            "csaf_productid": self.csaf_productid }
-        return json.loads(csafproducts, strict=False)
-        
-        
-                
-                                             
-                                   
-                               
+        csafproduct_template = open(tfile,"r").read()
+        for casevul in casevuls:
+            casems = list(CaseMemberStatus.objects.filter(vulnerability = casevul))
+            known_affected = []
+            known_not_affected = []
+            if casevul.cve:
+                cve = casevul.cve.upper()
+                if cve.find("CVE-") < 0:
+                    cve = f"CVE-{cve}"
+            else:
+                cve = None
+            csafvul = csafvul_template % {
+                "vuid":  casevul.vul,
+                "cve":  cve,
+                "ORG_NAME": settings.ORG_NAME,
+                "title": json.dumps(casevul.description.split(".")[0]+"."),
+                "description": json.dumps(casevul.description) }
+            csafvulj = json.loads(csafvul,strict=False)
+            if cve is None:
+                del csafvulj['cve']
+            for casem in casems:
+                try:
+                    vendor = casem.member.group.groupcontact.contact.vendor_name
+                except Exception as e:
+                    logger.info(f"Strange vendor without a vendor name {casem} for case # {case}")
+                    vendor = "Unspecified"
+                if case.published or casem.member.share_status():
+                    csaf_productid = "CSAFPID-"+str(uuid.uuid1())
+                else:
+                    logger.debug(f"Vendor {vendor} for case {case} is not sharing their status")
+                    continue
+                if casem.status == 1:
+                    known_affected.append(csaf_productid)
+                elif casem.status == 2:
+                    known_not_affected.append(csaf_productid)
+                #(1 == 'AFFECTED', 2 == 'UNAFFECTED')
+                # we include products that are Unknown
+                # so it is clear that we have anounced to this vendor
+                # who has not responded.
+                csafproduct = csafproduct_template % {
+                    "vendor_name": vendor,
+                    "csaf_productid": csaf_productid }
+                self.mproduct_tree["branches"].append(json.loads(csafproduct))
+            if len(known_affected) > 0:
+                csafvulj['product_status'] = {}
+                csafvulj['product_status']['known_affected'] = known_affected
+            if len(known_not_affected) > 0:
+                csafvulj['product_status'] = {}
+                csafvulj['product_status']['known_not_affected'] = known_not_affected
+            csafvuls.append(csafvulj)
+        return csafvuls
+    def get_csafprods(self,case):
+        return self.mproduct_tree

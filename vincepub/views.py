@@ -340,7 +340,7 @@ def va_bullhorn(value):
     if value:
         if value == "There are no additional comments at this time.":
             return False
-        elif value == "The CERT/CC has no additional comments at this time.":
+        elif value == f"The {settings.ORG_NAME} has no additional comments at this time.":
             return False
         return True
     return False
@@ -1345,3 +1345,15 @@ def autocomplete_vendor(request):
 def error_404(request):
     data = {}
     return render(request, 'vincepub/404.html', data, status=404)
+
+class CaseCSAFAPIView(generics.RetrieveAPIView):
+    serializer_class = serializers.CSAFSerializer
+
+    def get_view_name(self):
+        return "Public Vulnerability Advisory in CSAF format"
+
+    def get_object(self):
+        svuid = re.sub('[^\d]','',self.kwargs['vuid'])
+        vr = get_object_or_404(VUReport, idnumber=svuid)
+        return vr
+

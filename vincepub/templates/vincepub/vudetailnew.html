@@ -101,6 +101,10 @@
 		{% if vuln.cve %}
                 <a href="http://web.nvd.nist.gov/vuln/detail/{{ vuln.vul }}">{{ vuln.vul }}  </a>
 		{% endif %}
+              <tr>
+                <td><b>API URL: </b></td>
+                <td><a href="{% url 'vincepub:index' %}api/{{ object.idnumber }}/" target="_blank">VINCE JSON</a> | <a href="{% url 'vincepub:vulcsaf' object.idnumber %}" target="_blank">CSAF</a></td>
+              </tr>
                 {% endfor %}
 		</td>
 	      </tr>

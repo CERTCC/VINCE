@@ -3930,8 +3930,10 @@ class CVEVulAPIView(generics.GenericAPIView):
         return f"CVE Lookup View"
 
     def get(self, request, *args, **kwargs):
-        cve = f"CVE-{self.kwargs['year']}-{self.kwargs['pk']}"
-        cvewo = f"{self.kwargs['year']}-{self.kwargs['pk']}"
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        pk = re.sub('[^\d]','',self.kwargs['pk'])
+        cve = f"CVE-{year}-{pk}"
+        cvewo = f"{year}-{pk}"
         report = None
         old_report = VUReport.objects.raw(f"SELECT * from vincepub_vureport where cveids::text like '%%{cve}%%'")
         for x in old_report:
@@ -4287,6 +4289,14 @@ class CaseCSAFAPIView(generics.RetrieveAPIView):
      
     def get_view_name(self):
         return "Vulnerability Advisory in CSAF format"
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.published:
+            iurl = settings.KB_SERVER_NAME + reverse("vincepub:vulcsaf", args=[self.kwargs['vuid']])
+            return redirect(iurl)
+        else:
+            return super(CaseCSAFAPIView,self).get(request, *args, **kwargs)
  
     def get_object(self):
         svuid = self.kwargs['vuid']

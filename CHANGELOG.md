@@ -1,7 +1,16 @@
 # VINCE Changelog
 
-Version 1.50.2: 2022-08-29
+Version 1.50.3: 2022-09-16
 ==========================
+
+Full support for CSAF 2.0 export of vulnerability Case
+Fix for a number of Views to avoid digit parameter confusion
+Add view CSAF and VINCE JSON to support download of Case data in machine-readable format
+If upgrading, make sure you verify settings.py has new variables `CONTACT_PHONE` `ORG_POLICY_URL` and `ORG_AUTHORITY` populated.
+
+
+Version 1.50.2: 2022-08-29
+-=========================
 
 Resolves issue of enumerating user_id and group_id - reported by Sharon Brizinov of Claroty Research [#51](https://github.com/CERTCC/VINCE/issues/51)
 Removed lxml library no longer in use in requirements.txt - reported by dependabot via [#38](https://github.com/CERTCC/VINCE/pull/38)
