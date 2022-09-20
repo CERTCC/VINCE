@@ -335,13 +335,16 @@ class CSAFSerializer(serializers.ModelSerializer):
             if cve is None:
                 del csafvulj['cve']
             for casem in casems:
-                if case.published or casem.member.share_status():
-                    csaf_productid = "CSAFPID-"+str(uuid.uuid1())
                 try:
                     vendor = casem.member.group.groupcontact.contact.vendor_name
                 except Exception as e:
-                    logger.info("Strange vendor without a vendor name")
+                    logger.info(f"Strange vendor without a vendor name {casem} for case # {case}")
                     vendor = "Unspecified"
+                if case.published or casem.member.share_status():
+                    csaf_productid = "CSAFPID-"+str(uuid.uuid1())
+                else:
+                    logger.debug(f"Vendor {vendor} for case {case} is not sharing their status")
+                    continue
                 if casem.status == 1:
                     known_affected.append(csaf_productid)
                 elif casem.status == 2:
