@@ -80,9 +80,17 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_author(self, obj):
         if obj.author:
-            return obj.author.vinceprofile.preferred_username
+            return {"org": obj.get_org_name(),
+                    "active": obj.author.is_active,
+                    "name": obj.author.vinceprofile.preferred_username,
+                    "email": obj.author.email}
         else:
-            return "User removed"
+            return {"org": obj.get_org_name(),
+                    "active": False,
+                    "name": "User removed",
+                    "email": "unknown@example.com"}
+
+
 
 class OrigReportSerializer(serializers.ModelSerializer):
 
@@ -358,10 +366,12 @@ class CSAFSerializer(serializers.ModelSerializer):
                     "csaf_productid": csaf_productid }
                 self.mproduct_tree["branches"].append(json.loads(csafproduct))
             if len(known_affected) > 0:
-                csafvulj['product_status'] = {}
+                if not 'product_status' in csafvulj:
+                    csafvulj['product_status'] = {}
                 csafvulj['product_status']['known_affected'] = known_affected
             if len(known_not_affected) > 0:
-                csafvulj['product_status'] = {}
+                if not 'product_status' in csafvulj:
+                    csafvulj['product_status'] = {}
                 csafvulj['product_status']['known_not_affected'] = known_not_affected
             csafvuls.append(csafvulj)
         return csafvuls

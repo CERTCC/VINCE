@@ -63,8 +63,12 @@
 	  <h3> References </h3>
 	  <ul>
 	    {% with refs=object.vulnote.references|splitlines %}
-	  {% for ref in refs %}
-	  <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+	    {% for ref in refs %}
+	    {% if ref|slice:":7" in "http://,https:/" %}
+            <li><a href="{{ref}}" class="vulreflink safereflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+            {% else %}
+            <li>{{ref}}</li>
+            {% endif %}
           {% endfor %}
 	  {% endwith %}
 	  </ul>
@@ -110,7 +114,7 @@
 	</div>
     </div>
   </div>
-  
+  {% include "vincepub/detail_sidebar.html" %}
 </div>
 
 {% endblock %}

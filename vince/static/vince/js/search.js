@@ -55,24 +55,59 @@ function nextTickets(page) {
     });
 
 }
+function lockunlock(f) {
+    if(f) {
+	/* Show search is in progress */
+	$('div.vtmainbody').css({opacity:0.5});
+	if($('#searchresults > .loading').length != 1)
+	    $('#searchresults').prepend($('#hiddenloading').html());
+    } else {
+	/* Back to normal */
+	$('div.vtmainbody').css({opacity:1});
+	$('#searchresults > #loadingbanner').remove();
+    }
+}
+
 function searchTickets(e) {
     if (e) {
 	e.preventDefault();
     }
     $("#id_page").val("1");
     var url = "/vince/ticket/results/";
-    $.ajax({
+    lockunlock(true);
+    window.txhr = $.ajax({
 	url: url,
 	type: "POST",
 	data: $('#searchform').serialize(),
 	success: function(data) {
+	    lockunlock(false);
 	    $("#searchresults").html(data);
+	},
+	error: function() {
+	    lockunlock(false);	    
+	    console.log(arguments);
+	    alert("Search failed or canceled! See console log for details.");
+	},
+	complete: function() {
+	    /* Just safety net */
+	    lockunlock(false);	    
+	    delete window.txhr;
 	}
     });
 }
 
 $(document).ready(function() {
 
+    $(document).keyup(function(e) {
+	if (e.key === "Escape") { 
+	    if('txhr' in window && 'abort' in window.txhr) {
+		console.log("Aborting search because user hit Escape");
+		window.txhr.abort();
+		delete window.txhr;
+	    }
+	}
+    });
+    
     $(document).on("click", '.search_page', function(event) {
 	var page = $(this).attr('next');
 	nextPage(page);

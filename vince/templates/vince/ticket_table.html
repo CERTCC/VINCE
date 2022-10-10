@@ -5,7 +5,7 @@
 
 <div class="row align">
   <div class="large-9 medium-8 small-12 columns">
-    <h3>{{ ticket.title|email_to_user }}</h3>
+    <h3>{{ ticket.title|escape|email_to_user }}</h3>
     <p>Submitted by
       {% if message %}
       <a href="{% url 'vince:vinny_redirect' %}?next={% url 'vinny:thread_detail' message.thread %}"> {{ ticket.submitter_email }}</a>

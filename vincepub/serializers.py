@@ -29,10 +29,15 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from vincepub.models import *
+from django.core.validators import URLValidator
 import os
 import json
 import uuid
 import re
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class VUReportSerializer(serializers.ModelSerializer):
     public = serializers.SerializerMethodField()
@@ -152,10 +157,22 @@ class CSAFSerializer(serializers.ModelSerializer):
     mproduct_tree = {"branches": []}
     template_json_dir = os.path.join(os.path.dirname(__file__),
                                      '..','vinny','templatesjson', 'csaf')
+    validurl = URLValidator()
 
     class Meta:
         model = VUReport
         fields = ["document","vulnerabilities","product_tree"]
+
+    def isvalid_reference(self,ref):
+        if not ref:
+            return False
+        try:
+            self.validurl(ref)
+            return True
+        except Exception as e:
+            logger.debug("Encountered invalid URI for reference ignoring %s due to error %s" %(ref,str(e)))
+            return False
+
 
     def get_csafdocument(self,vr):
         tfile = os.path.join(self.template_json_dir,"document.json")
@@ -199,8 +216,8 @@ class CSAFSerializer(serializers.ModelSerializer):
             "case_version": case_version
         }
         csafdoc = json.loads(csafdocument, strict=False)
-        if vr.vulnote.references and vr.vulnote.references != '':
-            refs = re.split('\r?\n',vr.vulnote.references)
+        if vr.vulnote.references and vr.vulnote.references != '' and vr.vulnote.references != 'None':
+            refs = filter(self.isvalid_reference,re.split('\r?\n',vr.vulnote.references))
             csafdoc["references"] += list(map(lambda x: {"url": x, "summary": x},refs))
         vens = list(Vendor.objects.filter(note=vr.vulnote))
         for ven in vens:
@@ -209,8 +226,8 @@ class CSAFSerializer(serializers.ModelSerializer):
                            "text": ven.statement,
                            "title": f"Vendor statment from {ven.vendor}"}
                 csafdoc["notes"] += [veninfo]
-            if ven.references:
-                refs = re.split('\r?\n',ven.references)
+            if ven.references :
+                refs = filter(self.isvalid_reference,re.split('\r?\n',ven.references))
                 csafdoc["references"] += list(map(lambda x: {"url": x, "summary": f"Reference(s) from vendor \"{ven.vendor}\""},refs))
             if ven.addendum:
                 addinfo = {"category": "other",
@@ -259,7 +276,7 @@ class CSAFSerializer(serializers.ModelSerializer):
                 if casem.references:
                     if not "references" in csafvulj:
                         csafvulj["references"] = []
-                    crfs = re.split('\r?\n',casem.references)
+                    crfs = filter(self.isvalid_reference,re.split('\r?\n',casem.references))
                     csafvulj["references"] += list(map(lambda x: {"url": x, "summary": x, "category": "external"},crfs))
                     if casem.statement:
                         for crf in csafvulj["references"]:
@@ -270,10 +287,12 @@ class CSAFSerializer(serializers.ModelSerializer):
                 self.mproduct_tree["branches"].append(json.loads(csafproduct,strict=False))
             #Add vendor statement and any reference URLS
             if len(known_affected) > 0:
-                csafvulj['product_status'] = {}
+                if not 'product_status' in csafvulj:
+                    csafvulj['product_status'] = {}
                 csafvulj['product_status']['known_affected'] = known_affected
             if len(known_not_affected) > 0:
-                csafvulj['product_status'] = {}
+                if not 'product_status' in csafvulj:
+                    csafvulj['product_status'] = {}                
                 csafvulj['product_status']['known_not_affected'] = known_not_affected
             csafvuls.append(csafvulj)
         return csafvuls

@@ -4290,17 +4290,14 @@ class CaseCSAFAPIView(generics.RetrieveAPIView):
     def get_view_name(self):
         return "Vulnerability Advisory in CSAF format"
 
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        if self.object.published:
-            iurl = settings.KB_SERVER_NAME + reverse("vincepub:vulcsaf", args=[self.kwargs['vuid']])
-            return redirect(iurl)
-        else:
-            return super(CaseCSAFAPIView,self).get(request, *args, **kwargs)
- 
+#Removed the redirect so authenticated user can still get additional
+#CSAF elements not available in the public unauthenticated view
     def get_object(self):
         svuid = self.kwargs['vuid']
         case = get_object_or_404(Case, vuid=svuid)
         casevuls = CaseVulnerability.objects.filter(case=case, deleted=False)
+        #For cases without vulnerabilities we cannot send CSAF!
         if casevuls:
             return case
+        return {"error": "Case is invalid or has no vulnerabilities defined"}
+

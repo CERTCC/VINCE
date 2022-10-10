@@ -104,8 +104,12 @@
 	<div class="large-12 columns">
 	  <h3 name="References">References</h3>
 	  <ul>
-	  {% for ref in references %}
-	  <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+	    {% for ref in references %}
+	    {% if ref|slice:":7" in "http://,https:/" %}
+            <li><a href="{{ref}}" class="vulreflink safereflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+            {% else %}
+            <li>{{ref}}</li>
+            {% endif %}
           {% endfor %}
 	  </ul>
 	</div>
@@ -160,6 +164,7 @@
 	</div>
     </div>
   </div>
+  {% include "vincepub/detail_sidebar.html" %}
 </div>
     
 {% endblock %}

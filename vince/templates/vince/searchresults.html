@@ -34,9 +34,9 @@
       <div class="row">
 	<div class="large-12 medium-12 small-12 columns">
           {% if total %}
-          <div class="resultCount"> Showing results {{ object_list.start_index }} - {{ object_list.end_index }} of {{ total }} Results </div>
+          <div class="resultCount"> Showing results {{ object_list.start_index }} - {{ object_list.end_index }} of <span id="resultTotal">{{ total }}</span> Results </div>
           {% elif paginator.count %}
-          <div class="resultCount"> {{ paginator.count }} Results </div>
+          <div class="resultCount"> <span id="resultTotal">{{ paginator.count }}</span> Results </div>
           {% endif %}
 	</div>
       </div>
