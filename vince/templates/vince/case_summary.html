@@ -213,6 +213,7 @@
 	{% if vulnote %}
 	<a href="{% url 'vince:edit_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vul Note</button></a>
 	<a href="{% url 'vince:download_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-download"></i> Download</button></a>
+	<a href="{% url 'vince:download_vulnote_html' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-download"></i> Download HTML</button></a>
 	<a href="{% url 'vince:changelog' vulnote.id %}"><button class="button cmu tiny"> <i class="fas fa-clock"></i> View Full History</button></a>
 	<button id="sharevulnote" class="button cmu tiny" action="{% url 'vince:sharevulnote' vulnote.id %}" {% if case.lotus_notes %}disabled{% endif %}> <i class="fas fa-share-square"></i> Share in VinceComm</button>
 	{% if vulnote.ticket_to_approve %}

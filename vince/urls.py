@@ -262,6 +262,7 @@ urlpatterns = [
     re_path('^create/(?P<case_id>[0-9]+)/$', views.CreateVulNote.as_view(), name='create'),
     re_path('^vulnote/(?P<pk>[0-9]+)/$', views.EditVulNote.as_view(), name='edit_vulnote'),
     re_path('^vulnote/download/(?P<pk>[0-9]+)/$', views.DownloadVulNote.as_view(), name='download_vulnote'),
+    re_path('^vulnote/download_html/(?P<pk>[0-9]+)/$', views.DownloadVulNoteHtml.as_view(), name='download_vulnote_html'),
     re_path('^artifact/detail/(?P<pk>[0-9]+)/$', views.ArtifactDetailView.as_view(), name='artifact_detail'),
     re_path('^artifact/share/(?P<pk>[0-9]+)/$', views.ShareArtifactView.as_view(), name='artifact_share'),
     re_path('^artifact/(?P<post>post)/share/(?P<pk>[0-9]+)/$', views.ShareArtifactView.as_view(), name='post_artifact_share'),
