@@ -1,5 +1,13 @@
 # VINCE Changelog
 
+Version 1.50.4: 2022-10-05
+==========================
+
+UI improvements for vincetrack for search experience
+Performance tweaks for Tickets search use $queryset.count() instead len($queryset) when pagination is used
+Fix HTML injection vulnerabilities reported by Rapid7 researcher Nick Sanzotta (CVE-2022-40248,CVE-2022-40257)
+
+
 Version 1.50.3: 2022-09-16
 ==========================
 

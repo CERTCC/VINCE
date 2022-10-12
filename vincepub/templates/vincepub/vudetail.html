@@ -106,11 +106,19 @@
 	{% if object.public|is_list:"list" %}
 	<ul>
 	  {% for ref in object.public %}
-	  <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+          {% if ref|slice:":7" in "http://,https:/" %}
+          <li><a href="{{ref}}" class="vulreflink safereflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+          {% else %}
+          <li>{{ref}}</li>
+          {% endif %}
 	  {% endfor %}
 	</ul>
 	{% else %}
-	<p><a href="{{ object.public }}" class="vulreflink" target="_blank" rel="noopener">{{ object.public }}</a></p>
+        {% if object.public|slice:":7" in "http://,https:/" %}	
+	<p><a href="{{ object.public }}" class="vulreflink safereflink" target="_blank" rel="noopener">{{ object.public }}</a></p>
+        {% else %}
+        <li>{{object.public}}</li>
+        {% endif %}	
 	{% endif %}
       </div>
       <h3 id="acknowledgements">Acknowledgements</h3>

@@ -24,6 +24,7 @@
     {#<link rel="stylesheet" type="text/css" href="{% static 'vince/css/dropzone.css' %}" />#}
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{% static 'vince/css/fontawesome/all.css' %}" />
+
     <link rel="stylesheet" type="text/css" href="{% static 'vince/css/taggle.css' %}">
     <link rel="shortcut icon" href="{% static 'vince/images/favicon.ico' %}" type="image/x-icon" />
     
@@ -40,6 +41,9 @@
   </head>
   
   <body id="top-body">
+    <div id="hiddenloading" style="display:none">
+      <p id="loadingbanner" class="loading text-center"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></p>
+    </div>
     <div class="off-canvas-wrapper">
       <div class="off-canvas position-top" id="offCanvas" data-off-canvas>
         <div class="row column">

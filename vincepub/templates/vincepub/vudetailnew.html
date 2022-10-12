@@ -81,8 +81,12 @@
 	  <h3 id="references">References</h3>
 	  <ul>
 	    {% with refs=object.vulnote.references|splitlines %}
-	  {% for ref in refs %}
-	  <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+	    {% for ref in refs %}
+	    {% if ref|slice:":7" in "http://,https:/" %}
+            <li><a href="{{ref}}" class="vulreflink safereflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+            {% else %}
+            <li>{{ref}}</li>
+            {% endif %}
           {% endfor %}
 	  {% endwith %}
 	  </ul>
@@ -101,14 +105,14 @@
 		{% if vuln.cve %}
                 <a href="http://web.nvd.nist.gov/vuln/detail/{{ vuln.vul }}">{{ vuln.vul }}  </a>
 		{% endif %}
-              <tr>
-                <td><b>API URL: </b></td>
-                <td><a href="{% url 'vincepub:index' %}api/{{ object.idnumber }}/" target="_blank">VINCE JSON</a> | <a href="{% url 'vincepub:vulcsaf' object.idnumber %}" target="_blank">CSAF</a></td>
-              </tr>
                 {% endfor %}
 		</td>
 	      </tr>
 	      {% endif %}
+              <tr>
+                <td><b>API URL: </b></td>
+                <td><a href="{% url 'vincepub:index' %}api/{{ object.idnumber }}/" target="_blank">VINCE JSON</a> | <a href="{% url 'vincepub:vulcsaf' object.idnumber %}" target="_blank">CSAF</a></td>
+              </tr>
 	      <tr>
 		<td>
 		  <b>Date Public:</b>
@@ -132,7 +136,7 @@
 	</div>
     </div>
   </div>
-  <div class="large-2 columns"></div>
+  {% include "vincepub/detail_sidebar.html" %}
 </div>
     
 {% endblock %}

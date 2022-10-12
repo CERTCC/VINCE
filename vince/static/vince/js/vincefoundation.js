@@ -30,3 +30,36 @@
 
 $(document).foundation();
 
+$(function() {
+    $('.dateprinted').on('click',function(event) {
+	event.preventDefault();
+	let mdate = new Date();
+	let unit = $(this);
+	let formats = ["defaultISO","toLocaleString","toString"]
+	let format = unit.attr("format");
+	if(!format) {
+	    try {
+		mdate = new Date(Date.parse(unit.html()));
+	    } catch(error) {
+		console.log("Error parsing date field "+String(error));
+		return;
+	    }
+	    unit.attr(formats[0],unit.html());	    
+	    for(let i=1; i < formats.length; i++) {
+		unit.attr(formats[i],mdate[formats[i]]());
+	    }
+	    unit.html(unit.attr(formats[1]));
+	    unit.attr("format",formats[1]);
+	    return;
+	} 
+	let findex = formats.findIndex(function(u) { return u == format});
+	findex = (findex + 1) %3;
+	if(unit.attr(formats[findex])) {
+	    unit.html(unit.attr(formats[findex]));
+	    unit.attr("format",formats[findex]);
+	}
+
+    });
+    
+
+});

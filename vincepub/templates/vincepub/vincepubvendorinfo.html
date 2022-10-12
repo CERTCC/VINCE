@@ -43,12 +43,16 @@
 	  <tr><td colspan="2"><b>Vendor Statement:</b></td></tr>
 	  <tr><td colspan="2">{{ s1.statement }}</td></tr>
 	  {% endif %}
-	  {% if status.references %}
+	  {% if s1.references %}
 	  <tr><td colspan="2"><b> References: </b>
 	      {% with refs=s1.references|splitlines %}
 	      <ul class="ul_nobullet vendorref">
 		{% for ref in refs %}
-		<li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+		{% if ref|slice:":7" in "http://,https:/" %}
+		<li><a href="{{ref}}" class="vulreflink safereflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+		{% else %}
+		<li>{{ref}}</li>
+		{% endif %}
 		{% endfor %}
 	      </ul>
 	    </td>
@@ -70,9 +74,13 @@
 	<h4>References</h4>
 	{% with refs=item.references|splitlines %}
 	<ul class="ul_nobullet">
-        {% for ref in refs %}
-        <li><a href="{{ref}}" class="vulreflink" target="_blank" rel="noopener">{{ ref }}</a></li>
-        {% endfor %}
+          {% for ref in refs %}
+	  {% if ref|slice:":7" in "http://,https:/" %}
+	  <li><a href="{{ref}}" class="vulreflink safereflink" target="_blank" rel="noopener">{{ ref }}</a></li>
+	  {% else %}
+	  <li>{{ref}}</li>
+	  {% endif %}
+          {% endfor %}
 	</ul>
 	{% endwith %}
 	{% endif %}

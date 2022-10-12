@@ -23,7 +23,7 @@
 	    {% endautoescape %}
 	  </div>
 	  <div class="article-row-content">
-            <p class="article-row-content-description">{{ followup.title|email_to_user }} {% if followup.title in "Comment,Closed" and followup.user == user %} <small><a href="{% url 'vince:followup_edit' followup.id %}" class='followup-edit'><i class="fas fa-edit" title="Edit this comment"></i></a></small>{% elif "Email" in followup.title %}{% if followup.email_id %}<span class="email-detail" title="{{ followup.email_id }} in {{ followup.email_bucket }}"><i class="fas fa-envelope-open-text"></i></span>{% endif %}{% endif %}</p>
+            <p class="article-row-content-description trescaped">{{ followup.title|escape|email_to_user }} {% if followup.title in "Comment,Closed" and followup.user == user %} <small><a href="{% url 'vince:followup_edit' followup.id %}" class='followup-edit'><i class="fas fa-edit" title="Edit this comment"></i></a></small>{% elif "Email" in followup.title %}{% if followup.email_id %}<span class="email-detail" title="{{ followup.email_id }} in {{ followup.email_bucket }}"><i class="fas fa-envelope-open-text"></i></span>{% endif %}{% endif %}</p>
 	    <p class="article-row-content-detail">
 	      {% if followup.comment|is_json %}
 	      <div class="long_text_container">

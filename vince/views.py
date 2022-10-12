@@ -1698,9 +1698,9 @@ class TicketFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         paginator = Paginator(res, 50)
 
         if self.request.POST.get('contact') or self.request.POST.get('submitted_by'):
-            return render(request, self.template_name, {'ticket_list': paginator.page(page), 'total': len(res) })
+            return render(request, self.template_name, {'ticket_list': paginator.page(page), 'total': res.count() })
         else:
-            return render(request, self.template_name, {'object_list': paginator.page(page), 'total': len(res), 'form': form })
+            return render(request, self.template_name, {'object_list': paginator.page(page), 'total': res.count(), 'form': form })
 
 
 class ActivityFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.ListView):
@@ -1758,7 +1758,7 @@ class ActivityFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
 
         paginator = Paginator(res, 50)
 
-        return render(request, self.template_name, {'activity': paginator.page(page), 'paginator': 1, 'total': len(res) })
+        return render(request, self.template_name, {'activity': paginator.page(page), 'paginator': 1, 'total': res.count() })
 
 class ActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     template_name = 'vince/activity.html'
@@ -2096,7 +2096,7 @@ class CommunicationsFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTest
 
         paginator = Paginator(activity, 10)
         print(paginator.page(1))
-        return render(request, self.template_name, {'activity': activity, 'total': len(activity), 'case': case, 'allow_edit': True})
+        return render(request, self.template_name, {'activity': activity, 'total': activity.count(), 'case': case, 'allow_edit': True})
 
 
 class CaseFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.ListView):
@@ -2194,7 +2194,7 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         res = res.order_by('-modified')
         
         paginator = Paginator(res, 50)
-        return render(request, self.template_name, {'object_list': paginator.page(page), 'total': len(res), 'form': form, 'case':1 })
+        return render(request, self.template_name, {'object_list': paginator.page(page), 'total': res.count(), 'form': form, 'case':1 })
 
 class CaseFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
     form_class = CaseFilterForm
@@ -3018,7 +3018,8 @@ class CreateNewCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             case = form.save(user=assignment)
 
         if "ticket_id" in self.kwargs:
-            # Add ticket to the case and close it.
+            # this was just a general ticket, and not a CR. So add it to
+            # the case and close it.
             ticket = get_object_or_404(Ticket, id=self.kwargs["ticket_id"])
             ticket.case = case
             ticket.status = Ticket.CLOSED_STATUS
@@ -3027,12 +3028,10 @@ class CreateNewCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             if ticket.queue.team:
                 if self.request.user.groups.filter(id=ticket.queue.team.id).exists():
                     #get case queue for this team
-                    newq = TicketQueue.objects.filter(queue_type=3, team=ticket.queue.team).first()
+                    ticket.queue = TicketQueue.objects.filter(queue_type=3, team=ticket.queue.team).first()
                     # if it returns none, then try the default
-                    if newq == None:
+                    if ticket.queue == None:
                         ticket.queue = get_user_case_queue(self.request.user)
-                    else:
-                        ticket.queue = newq
                 else:
                     ticket.queue = get_user_case_queue(self.request.user)
             else:
@@ -3544,7 +3543,7 @@ class VulNoteReviewView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         #get reviews for this revision:
         reviews = VulNoteReview.objects.filter(vulnote=revision, complete=True).order_by('-date_complete')
         context['review'] = reviews.first()
-        if len(reviews) > 1:
+        if reviews.count() > 1:
             context['next'] = reviews[1]
             logger.debug(context['next'])
             context['reviews'] = reviews.exclude(id=context['review'].id)
@@ -13094,7 +13093,7 @@ class TriageView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Li
 
         paginator = Paginator(res, 50)
 
-        return render(request, "vince/searchresults.html", {'object_list': paginator.page(page), 'total': len(res), 'show_params': 1 })
+        return render(request, "vince/searchresults.html", {'object_list': paginator.page(page), 'total': res.count(), 'show_params': 1 })
 
     def get_context_data(self, **kwargs):
         context = super(TriageView, self).get_context_data(**kwargs)
@@ -13795,7 +13794,7 @@ class EmailFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
 
         paginator = Paginator(res, 50)
 
-        return render(request, self.template_name, {'object_list': paginator.page(page), 'total': len(res) })
+        return render(request, self.template_name, {'object_list': paginator.page(page), 'total': res.count() })
 
 
 class EmailFilterView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
@@ -15085,8 +15084,12 @@ class VINCEBounceManager(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
 
         context['permanent'] = BounceEmailNotification.objects.filter(bounce_type=BounceEmailNotification.PERMANENT, action_taken=False).order_by('-bounce_date')
 
+        
+
         context['transient'] = BounceEmailNotification.objects.filter(bounce_type=BounceEmailNotification.TRANSIENT, ticket__status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS, Ticket.IN_PROGRESS_STATUS]).order_by('-bounce_date')
 
+
+        context['operm'] = FollowUp.objects.filter(title__startswith="Email Bounce Notification", ticket__status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS], comment__icontains="Permanent")
         return context
 
 
