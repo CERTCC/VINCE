@@ -28,6 +28,7 @@
 ########################################################################
 import difflib
 import json
+import markdown
 import random
 import re
 import requests
@@ -3910,6 +3911,80 @@ class DownloadVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         response = HttpResponse(json_file, content_type = mime_type)
         response['Content-Disposition'] = 'attachment; filename=' + json_file.name
         response["Content-type"] = "application/json"
+        response["Cache-Control"] = "must-revalidate"
+        response["Pragma"] = "must-revalidate"
+        return response
+
+class DownloadVulNoteHtml(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            vulnote = get_object_or_404(VulNote, id=self.kwargs['pk'])
+            return has_case_read_access(self.request.user, vulnote.case)
+
+    def dispatch(self, request, *args, **kwargs):
+
+        vulnote = get_object_or_404(VulNote, id=self.kwargs['pk'])
+        case = vulnote.case
+        
+        vu_info = {}
+        vu_info['content'] = vulnote.current_revision.content
+        vu_info['title'] = vulnote.current_revision.title
+        vu_info['references'] = vulnote.current_revision.references
+        vu_info['vuid'] = vulnote.case.vuid
+        if vulnote.case.publicdate:
+            vu_info['publicdate'] = vulnote.case.publicdate.strftime('%Y-%m-%d')
+        else:
+            vu_info['publicdate'] = None
+        vu_info['vuls'] = []
+        vu_info['deleted_vuls'] = []
+        for vul in Vulnerability.casevuls(case):
+            v = {'cve': vul.cve, 'case_increment': vul.case_increment, 'description': vul.description, 'uid': vul.uid}
+            vu_info['vuls'].append(v)
+
+        for vul in case.vulnerability_set.filter(deleted=True):
+            vu_info['deleted_vuls'].append(vul.case_increment)
+            
+        vu_info['vendors'] = []
+        vu_info['deleted_vendors'] = []
+        vendors = []
+        
+        for vul in VulnerableVendor.casevendors(case).filter(vendorstatus__status=VendorStatus.AFFECTED_STATUS).distinct('vendor').order_by('vendor'):
+            v = add_vendor(vul)
+            if v['vendor'] not in vu_info['vendors']:
+                vu_info['vendors'].append(v)
+
+        for vul in VulnerableVendor.casevendors(case).filter(vendorstatus__status=VendorStatus.UNAFFECTED_STATUS).distinct('vendor').order_by('vendor'):
+            v =	add_vendor(vul)
+            if v['vendor'] not in vu_info['vendors']:
+                vu_info['vendors'].append(v)
+                
+        for vul in VulnerableVendor.casevendors(case).filter(Q(vendorstatus__status=VendorStatus.UNKNOWN_STATUS)|Q(vendorstatus__isnull=True)).distinct('vendor').order_by('vendor'):
+            v = add_vendor(vul)
+            if v['vendor'] not in vu_info['vendors']:
+                vu_info['vendors'].append(v)
+
+        for vul in case.vulnerablevendor_set.filter(deleted=True):
+            vu_info['deleted_vendors'].append(vul.contact.uuid)
+
+        vu_info['cveids'] = vulnote.case.get_cves()
+        if vulnote.date_last_published:
+            vu_info['dateupdated'] = vulnote.date_last_published.strftime('%Y-%m-%d')
+        else:
+            vu_info['dateupdated'] = None
+        vu_info['cert_id'] = vulnote.case.vu_vuid
+        vu_info['name'] = vulnote.current_revision.title
+        vu_info['idnumber'] = vulnote.case.vuid
+        
+        vu_html = markdown.markdown(vulnote.current_revision.content)
+
+        html_file = ContentFile(vu_html)
+        html_file.name = case.vu_vuid + ".html"
+        mime_type = 'text/html'
+        response = HttpResponse(html_file, content_type = mime_type)
+        response['Content-Disposition'] = 'attachment; filename=' + html_file.name
+        response["Content-type"] = "text/html"
         response["Cache-Control"] = "must-revalidate"
         response["Pragma"] = "must-revalidate"
         return response
