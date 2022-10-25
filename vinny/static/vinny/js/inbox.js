@@ -46,7 +46,6 @@ function nextThreads(page) {
     });
 }
 
-
 function searchThreads(e) {
     if (e) {
         e.preventDefault();
@@ -54,13 +53,25 @@ function searchThreads(e) {
 
     $("#id_page").val("1");
     var url = $("#filterform").attr("action");
-    $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#inbox');
+    window.txhr = $.ajax({
 	url : url,
         type: "POST",
 	data: $('#filterform').serialize(),
 	success: function(data) {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#inbox');
             $("#inbox").html(data);
-	}
+	},
+       error: function() {
+           lockunlock(false,'div.mainbody,div.vtmainbody','#inbox');      
+           console.log(arguments);
+           alert("Search failed or canceled! See console log for details.");
+       },
+       complete: function() {
+           /* Just safety net */
+           lockunlock(false,'div.mainbody,div.vtmainbody','#inbox');      
+           window.txhr = null;
+       }
     });
 }
 
@@ -77,7 +88,6 @@ function nextSent(page) {
 
 
 $(document).ready(function() {
-
 
     $(document).on("click", '.search_page', function(event) {
         var page = $(this).attr('next');
@@ -99,9 +109,9 @@ $(document).ready(function() {
     
     var filter_msg = document.getElementById("id_keyword");
     if (filter_msg) {
-	filter_msg.addEventListener("keyup", function(event) {
-            searchThreads(event);
-	});
+	filter_msg.addEventListener("keyup", delaySearch(function(event) {
+             searchThreads(event);
+        },1000));
     }
 
     var modal = $("#deletemodal");

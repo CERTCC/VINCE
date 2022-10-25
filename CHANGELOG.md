@@ -1,5 +1,15 @@
 # VINCE Changelog
 
+Version 1.50.5: 2022-10-25
+==========================
+
+Updates to settings_.py to match public GitHub
+UI tweaks for Loading div, asynchronous search via delaySearch
+Add Access-Control-Origin header to CSAF output for Secvisogram
+Fix Python Pickle Code Injection vulnerability CVE-2022-40238
+Address reported failure with better error reporting from Encrypt-and-Send
+Avoid TimeZone spurious warning errors flooding logs
+
 Version 1.50.4: 2022-10-05
 ==========================
 

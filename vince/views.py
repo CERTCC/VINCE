@@ -5778,8 +5778,12 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         user_groups= self.request.user.groups.exclude(groupsettings__contact__isnull=True)
         context['case_tags'] = [tag.tag for tag in context['case'].casetag_set.all()]
         context['case_available_tags'] = [tag.tag for tag in TagManager.objects.filter(tag_type=3).filter(Q(team__in=user_groups)|Q(team__isnull=True)).exclude(tag__in=context['case_tags']).order_by('tag').distinct('tag')] 
-        context['casepage']=1
-        context['reminders'] = VinceReminder.objects.filter(case=context['case'], alert_date__lte=datetime.today()).order_by('-alert_date')
+        context['casepage'] = 1
+        #Use TZ to avoid RunTimeWarning
+        #RuntimeWarning: DateTimeField VinceReminder.alert_date received 
+        #a naive datetime (2022-10-21 17:54:18.020583) while time zone
+        #support is  active
+        context['reminders'] = VinceReminder.objects.filter(case=context['case'], alert_date__lte=datetime.now(pytz.utc)).order_by('-alert_date')
         context['allow_edit'] = True
         # need this for task reassignment
         context['assignable_users'] = User.objects.filter(is_active=True, groups__name='vince')

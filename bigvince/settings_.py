@@ -56,7 +56,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "1.50.3"
+VERSION = "1.50.5"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -206,7 +206,7 @@ else:
     LOGGER_HANDLER = 'console'
 #    EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
     EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.vince.org')
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.vince.example')
     EMAIL_PORT = os.environ.get('EMAIL_PORT', 25)
 
     #BELOW IS FOR A LOCAL (DEBUG) setup - use the local static directory
@@ -493,12 +493,6 @@ COGNITO_VINCETRACK_GROUPS = os.environ.get("AWS_COGNITO_VINCETRACK_GROUPS", defa
 # VINCETrack group
 COGNITO_SUPERUSER_GROUP = os.environ.get('AWS_COGNITO_SUPERUSER_GROUP', COGNITO_ADMIN_GROUP)
 
-# the following 2 vars can be comma separated string if more than 1 group
-# anyone in the COGNITO_VINCETRACK_GROUPS will be put in a "vincetrack" local group
-COGNITO_VINCETRACK_GROUPS = os.environ.get("AWS_COGNITO_VINCETRACK_GROUPS", default="Coordinator")
-
-COGNITO_SUPERUSER_GROUP = os.environ.get('AWS_COGNITO_SUPERUSER_GROUP', "ADMIN")
-
 #COGNITO_LIMITED_ACCESS_GROUPS can be used to give special permission to views
 # in VINCECOMM
 
@@ -565,9 +559,9 @@ DEFAULT_USER_SETTINGS = {
 }
 
 #from emails on auto-notifications
-DEFAULT_FROM_EMAIL = os.environ.get('NO_REPLY_EMAIL', "vuls+donotreply@vince.org")
+DEFAULT_FROM_EMAIL = os.environ.get('NO_REPLY_EMAIL', "vuls+donotreply@vince.example")
 #from for emails sent from VINCE
-DEFAULT_REPLY_EMAIL = os.environ.get('REPLY_EMAIL', "vuls@vince.org")
+DEFAULT_REPLY_EMAIL = os.environ.get('REPLY_EMAIL', "vuls@vince.example")
 
 #EMAIL_BUCKET = os.environ.get('S3_EMAIL_BUCKET', 'vince-email')
 
@@ -585,7 +579,7 @@ DEFAULT_EMAIL_HEADERS = {'X-VINCE': 'auto-notify'}
 
 VINCE_MAX_EMAIL_LENGTH = 300000
 
-IGNORE_EMAILS_TO = ['vuls+donotreply@vince.org']
+IGNORE_EMAILS_TO = ['vuls+donotreply@vince.example']
 
 LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
 DJANGO_LOGLEVEL = os.environ.get('DJANGO_LOGLEVEL', 'info').upper()

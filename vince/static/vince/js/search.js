@@ -55,59 +55,36 @@ function nextTickets(page) {
     });
 
 }
-function lockunlock(f) {
-    if(f) {
-	/* Show search is in progress */
-	$('div.vtmainbody').css({opacity:0.5});
-	if($('#searchresults > .loading').length != 1)
-	    $('#searchresults').prepend($('#hiddenloading').html());
-    } else {
-	/* Back to normal */
-	$('div.vtmainbody').css({opacity:1});
-	$('#searchresults > #loadingbanner').remove();
-    }
-}
-
 function searchTickets(e) {
     if (e) {
 	e.preventDefault();
     }
     $("#id_page").val("1");
     var url = "/vince/ticket/results/";
-    lockunlock(true);
+    lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
     window.txhr = $.ajax({
 	url: url,
 	type: "POST",
 	data: $('#searchform').serialize(),
 	success: function(data) {
-	    lockunlock(false);
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
 	    $("#searchresults").html(data);
 	},
 	error: function() {
-	    lockunlock(false);	    
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
 	    console.log(arguments);
 	    alert("Search failed or canceled! See console log for details.");
 	},
 	complete: function() {
 	    /* Just safety net */
-	    lockunlock(false);	    
-	    delete window.txhr;
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    window.txhr = null;
 	}
     });
 }
 
 $(document).ready(function() {
 
-    $(document).keyup(function(e) {
-	if (e.key === "Escape") { 
-	    if('txhr' in window && 'abort' in window.txhr) {
-		console.log("Aborting search because user hit Escape");
-		window.txhr.abort();
-		delete window.txhr;
-	    }
-	}
-    });
-    
     $(document).on("click", '.search_page', function(event) {
 	var page = $(this).attr('next');
 	nextPage(page);

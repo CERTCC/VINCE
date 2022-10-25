@@ -654,10 +654,10 @@ def send_templated_mail(template_name,
         locale = context['queue'].get('locale') or VINCE_EMAIL_FALLBACK_LOCALE
     else:
         locale = VINCE_EMAIL_FALLBACK_LOCALE
-
+ 
 
     context['homepage'] = f"{settings.KB_SERVER_NAME}/vince/comm/dashboard/"
-        
+    
     try:
         t = EmailTemplate.objects.get(template_name__iexact=template_name, locale=locale)
     except EmailTemplate.DoesNotExist:
@@ -999,10 +999,9 @@ def encrypt_mail(contents, admin_email):
         logger.debug(encrypted_data.ok)
         logger.debug(encrypted_data.status)
         logger.debug(encrypted_data.stderr)
-    except:
-        send_sns(traceback.format_exc())
-        logger.warning(traceback.format_exc())
-        logger.warning("Could not encrypt data")
+    except Exception as e:
+        logger.warning("PGP Encryption failed due to error "+str(e))
+        send_sns(str(e))
         return None
     return encrypted_data
 
@@ -1020,7 +1019,6 @@ def send_encrypted_mail(to_email, subject, contents, attachment=None):
     msg.add_header(_name="Content-Type", _value="multipart/mixed", protected_headers="v1")
     msg["From"] = settings.DEFAULT_REPLY_EMAIL
     msg["To"] = admin_email.email
-    #msg["Cc"] = "test@example.org"
     msg['Subject'] = subject
     
     msg_text = Message()
@@ -1050,7 +1048,6 @@ def send_encrypted_mail(to_email, subject, contents, attachment=None):
     pgp_msg = MIMEBase(_maintype="multipart", _subtype="encrypted", protocol="application/pgp-encrypted")
     pgp_msg["From"] = settings.DEFAULT_REPLY_EMAIL
     pgp_msg["To"] = admin_email.email
-    #pgp_msg["Cc"] = "test@example.org"
     pgp_msg["Subject"] = subject
     
     pgp_msg_part1 = Message()
@@ -1064,7 +1061,8 @@ def send_encrypted_mail(to_email, subject, contents, attachment=None):
     pgp_msg_part2.add_header(_name="Content-Disposition", _value="inline", filename="encrypted.asc")
     try:
         payload = encrypt_mail(msg.as_string(), admin_email)
-    except:
+    except Exception as e:
+        logger.warning("Encrypting PGP Email failed due to error "+str(e))
         return f"Error encrypting data. Check key for {admin_email.email}"
 
     if payload == None:

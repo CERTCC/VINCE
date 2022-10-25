@@ -51,7 +51,7 @@ function nextResults(page) {
 
 }
 
-var priorSearchReq = null;
+var txhr = null;
 
 function searchContacts() {
     var url = $("#searchform").attr("action");
@@ -63,24 +63,34 @@ function searchContacts() {
         window.history.pushState({path:newurl},'',newurl);
     }
     var data = $('#searchform').serialize() + "&facet=" + facet;
-    if(priorSearchReq) {
-        priorSearchReq.abort();
+    if(window.txhr && 'abort' in window.txhr) {
+        txhr.abort();
     }
-    priorSearchReq = $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
+    txhr = $.ajax({
 	url: url,
 	type: "GET",
 	data: data,
 	success: function(data) {
 	    $("#searchresults").html(data);
 	    $(document).foundation();
-	    priorSearchReq = null;
-	}
+	    txhr = null;
+	},
+	error: function() {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+            console.log(arguments);
+            alert("Search failed or canceled! See console log for details.");
+        },
+        complete: function() {
+            /* Just safety net */
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    window.txhr = null;
+        }
     });
 }
 
 
 $(document).ready(function() {
-
 
     $(document).on("click", '.search_page', function(event) {
         var page = $(this).attr('next');
@@ -128,12 +138,11 @@ $(document).ready(function() {
 
     });
     
-
     var input = document.getElementById("search_vector");
     if (input) {
-	input.addEventListener("keyup", function(event) {
+	input.addEventListener("keyup", delaySearch(function(event) {
             searchContacts();
-	});
+	},1000));
     }
 
     $(document).on("submit", "#searchform", function(event) {

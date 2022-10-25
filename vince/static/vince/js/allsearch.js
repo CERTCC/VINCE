@@ -47,8 +47,6 @@ function nextResults(page) {
 
 }
 
-
-
 function searchAll(e) {
     if (e) {
         e.preventDefault();
@@ -64,14 +62,26 @@ function searchAll(e) {
     }
     
     var data = $('#searchall').serialize() + "&facet=" + facet;
-    $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
+    window.txhr = $.ajax({
         url: url,
         type: "GET",
         data: data,
-        success: function(data) {
-            $("#searchresults").html(data);
-        }
-    });
+	success: function(data) {
+	    lockunlock(false);
+ 	    $("#searchresults").html(data);
+	},
+	error: function() {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    console.log(arguments);
+	    alert("Search failed or canceled! See console log for details.");
+	},
+	complete: function() {
+	    /* Just safety net */
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    window.txhr = null;
+ 	}
+     });
 }
 
 $(document).ready(function() {

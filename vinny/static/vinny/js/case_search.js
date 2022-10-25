@@ -56,19 +56,33 @@ function nextTickets(page) {
     });
 
 }
-function searchTickets(e) {
+
+function searchTickets(e,noalert) {
     if (e) {
 	e.preventDefault();
     }
     $("#id_page").val("1");
     var url = $("#searchform").attr("action");
-    $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
+    window.txhr = $.ajax({
 	url: url,
 	type: "POST",
 	data: $('#searchform').serialize(),
-	success: function(data) {
-	    $("#searchresults").html(data);
-	}
+ 	success: function(data) {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+ 	    $("#searchresults").html(data);
+	},
+	error: function() {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    console.log(arguments);
+	    if(noalert != true)
+		alert("Search failed or canceled! See console log for details.");
+	},
+	complete: function() {
+	    /* Just safety net */
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    window.txhr = null;
+ 	}
     });
 }
 
@@ -86,7 +100,7 @@ $(document).ready(function() {
     
     var input = document.getElementById("id_wordSearch");
     input.addEventListener("keyup", function(event) {
-        searchTickets(event);
+        searchTickets(event,true);
     });
 
     var form = document.getElementById('searchform');
