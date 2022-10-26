@@ -28,8 +28,6 @@
 ########################################################################
 */
 
-
-
 function searchThreads(e, newpage) {
     var csrftoken = getCookie('csrftoken');
 
@@ -43,7 +41,8 @@ function searchThreads(e, newpage) {
 
     var url = $("#filter_threads").attr("href");
     var owner = $("input[id^='id_owner_']:checked");
-    $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#casecontainer');
+    window.txhr = $.ajax({
         url : url,
         type: "POST",
         data: {"keyword": $("#filter_threads").val(),
@@ -52,7 +51,20 @@ function searchThreads(e, newpage) {
                "csrfmiddlewaretoken": csrftoken
               },
         success: function(data) {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#casecontainer');
             $("#casecontainer").html(data);
+        },
+	error: function() {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#casecontainer');
+            console.log(arguments);
+            /* 
+	      alert("Search failed or canceled! See console log for details.");
+	    */
+	},
+	complete: function() {
+            /* Just safety net */
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#casecontainer');
+            window.txhr = null;
         }
     });
 }
@@ -71,7 +83,7 @@ function searchReports(e, newpage) {
     var idSelector = function() { return this.value; };
     var url = $("#filter_reports").attr("href");
     var status = $("#id_status input[type=checkbox]:checked").map(idSelector).get();
-    $.ajax({
+    window.txhr = $.ajax({
         url : url,
         type: "POST",
         data: {"keyword": $("#filter_reports").val(),
@@ -80,8 +92,21 @@ function searchReports(e, newpage) {
                "csrfmiddlewaretoken": csrftoken
               },
         success: function(data) {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#casecontainer');
             $("#casecontainer").html(data);
-        }
+        },
+	error: function() {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#casecontainer');
+            console.log(arguments);
+            /*
+	      alert("Search failed or canceled! See console log for details.");
+	    */
+	},
+	complete: function() {
+            /* Just safety net */
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#casecontainer');
+            window.txhr = null;
+        }	
     });
 }
 
@@ -90,16 +115,16 @@ $(document).ready(function() {
 
     var filter_msg = document.getElementById("filter_threads");
     if (filter_msg) {
-        filter_msg.addEventListener("keyup", function(event) {
+        filter_msg.addEventListener("keyup", delaySearch(function(event) {
             searchThreads(event);
-        });
+        },1000));
     }
 
     var filter_report = document.getElementById("filter_reports");
     if (filter_report) {
-	filter_report.addEventListener("keyup", function(event) {
+	filter_report.addEventListener("keyup", delaySearch(function(event) {
 	    searchReports(event);
-	});
+        },1000));
     }
     
     $("input[id^='id_owner_']").change(function() {

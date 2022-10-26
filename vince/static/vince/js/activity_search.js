@@ -55,28 +55,38 @@ function nextActivity(page) {
 
 }
 
-var priorSearchReq = null;
+var txhr = null;
 
 function searchActivity(e) {
     if (e) {
         e.preventDefault();
     }
-    $("#searchresults").html("<p class=\"loading text-center\"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></p>");
     $("#id_page").val("1");
     var url = "/vince/activity/results/";
 
-    if(priorSearchReq) {
-        priorSearchReq.abort();
+    if(window.txhr && 'abort' in window.txhr) {
+        window.txhr.abort();
     }
-    
-    priorSearchReq = $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
+    txhr = $.ajax({
         url: url,
         type: "POST",
         data: $('#searchform').serialize(),
-        success: function(data) {
-            $("#searchresults").html(data);
-        }
-    });
+	success: function(data) {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+ 	    $("#searchresults").html(data);
+	},
+	error: function() {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    console.log(arguments);
+	    alert("Search failed or canceled! See console log for details.");
+	},
+	complete: function() {
+	    /* Just safety net */
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    window.txhr = null;
+ 	}
+     });
 }
 
 

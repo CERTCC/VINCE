@@ -27,6 +27,7 @@
 # DM21-1126
 ########################################################################
 */
+
 function searchTasks(e) {
     var csrftoken = getCookie('csrftoken');
 
@@ -37,7 +38,8 @@ function searchTasks(e) {
     var url = $("#filter_tasks").attr("href");
     var sort = $("#filterstatus option:selected").val();
     var name = $("#filter_tasks").attr("name");
-    $.ajax({
+    lockunlock(true,'div.vtmainbody,div.mainbody','#case_tasks');
+    window.txhr = $.ajax({
         url : url,
         type: "POST",
         data: {"wordSearch": $("#filter_tasks").val(),
@@ -46,7 +48,18 @@ function searchTasks(e) {
                "submitted_by": name,
               },
         success: function(data) {
+	    lockunlock(false,'div.vtmainbody,div.mainbody','#case_tasks');
             $("#case_tasks").html(data);
+        },
+	error: function() {
+            lockunlock(false,'div.vtmainbody,div.mainbody','#case_tasks');
+            console.log(arguments);
+            alert("Search failed or canceled! See console log for details.");
+        },
+        complete: function() {
+            /* Just safety net */
+            lockunlock(false,'div.vtmainbody,div.mainbody','#case_tasks');
+            window.txhr = null;
         }
     });
 }
@@ -121,9 +134,9 @@ $(document).ready(function() {
 
     var filter_task = document.getElementById("filter_tasks");
     if (filter_task) {
-        filter_task.addEventListener("keyup", function(event) {
-            searchTasks(event);
-        });
+        filter_task.addEventListener("keyup", delaySearch(function(event) {
+            searchTasks(event);	    
+        },1000));
     }
 
     $("#filterstatus").change(function(event) {

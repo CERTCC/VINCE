@@ -232,7 +232,7 @@ class CSAFSerializer(serializers.ModelSerializer):
             if ven.addendum:
                 addinfo = {"category": "other",
                            "text": ven.addendum,
-                           "title": f"{settings.ORG_NAME} comment on {ven.vendor} notes"}
+                           "title": f"settings.ORG_NAME comment on {ven.vendor} notes"}
                 csafdoc["notes"] += [addinfo]
         return csafdoc
 
@@ -259,9 +259,7 @@ class CSAFSerializer(serializers.ModelSerializer):
                 "vuid":  vr.vuid,
                 "cve":  cve,
                 "title": json.dumps(casevul.description.split(".")[0]+"."),
-                "description": json.dumps(casevul.description),
-                "ORG_NAME": settings.ORG_NAME
-            }
+                "description": json.dumps(casevul.description) }
             csafvulj = json.loads(csafvul,strict=False)
             if cve is None:
                 del csafvulj['cve']

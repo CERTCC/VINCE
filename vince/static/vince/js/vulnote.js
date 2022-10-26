@@ -287,3 +287,20 @@ $(document).ready(function() {
 
 
 });
+/* Request from INL to create a HTML download button*/
+function getHTML() {
+    var vulnote = $('#vulnote a').attr('href');
+    $.get(vulnote).done(function(h) {
+        var plainText = $($.parseHTML(h)).find("#id_content").val();
+        $('body').append('<textarea style="display:none" id="ccB"></textarea>');
+        var simplemde = new EasyMDE({element: document.getElementById('ccB')})
+        var simpleHTML = simplemde.markdown(plainText);
+	var link = document.createElement("a");
+	link.download = "VulReport.html";
+	link.href = "data:text/html;charset=utf8,"+ encodeURIComponent(simpleHTML);
+	document.body.appendChild(link);
+	link.click();
+	document.body.removeChild(link);
+	delete link;
+    });
+}

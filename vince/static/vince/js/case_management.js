@@ -54,7 +54,6 @@ function getCookie(name) {
     }
     return cookieValue;
 }
-
 function searchTmpls(e, table) {
     var csrftoken = getCookie('csrftoken');
 
@@ -64,7 +63,8 @@ function searchTmpls(e, table) {
 
     var url = $("#filter_templates").attr("href");
     var owner = $("input[id^='id_owner_']:checked").val();
-    $.ajax({
+    lockunlock(true,'div.vtmainbody,div.mainboxy','#' + table.id);
+    window.txhr = $.ajax({
         url : url,
         type: "POST",
         data: {"keyword": $("#filter_templates").val(),
@@ -72,8 +72,19 @@ function searchTmpls(e, table) {
                "csrfmiddlewaretoken": csrftoken
               },
         success: function(data) {
+	    lockunlock(false,'div.vtmainbody,div.mainbody','#' + table.id);
 	    table.replaceData(data['templates'])
-        }
+        },
+        error: function() {
+	    lockunlock(false,'div.vtmainbody,div.mainbody','#' + table.id);
+            console.log(arguments);
+            alert("Search failed or canceled! See console log for details.");
+        },
+        complete: function() {
+            /* Just safety net */
+	    lockunlock(false,'div.vtmainbody,div.mainbody','#' + table.id);
+            window.txhr = null;
+        }	
     });
 }
 
@@ -81,12 +92,11 @@ function searchTmpls(e, table) {
 
 $(document).ready(function() {
 
-
     var filter_msg = document.getElementById("filter_templates");
     if (filter_msg) {
-        filter_msg.addEventListener("keyup", function(event) {
+        filter_msg.addEventListener("keyup", delaySearch(function(event) {
             searchTmpls(event, table);
-        });
+        },1000));
     }
 
     $("input[id^='id_owner_']").change(function() {

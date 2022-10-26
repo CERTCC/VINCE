@@ -640,6 +640,7 @@ class SearchResultView(generic.ListView):
         if 'years' in self.request.POST:
             yearlist = self.request.POST.getlist('years')
             for year in yearlist:
+                year = re.sub('[^\d]','',year)
                 if year != "":
                     datefilter.append(Q(datefirstpublished__year=year))
 
@@ -1113,15 +1114,15 @@ class VUNoteViewByMonth(generics.ListAPIView):
         return "Vulnerability Notes Published by Month"
     
     def get_queryset(self):
-        year = self.kwargs['year']
-        month = self.kwargs['month']
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        month = re.sub('[^\d]','',self.kwargs['month'])
         return VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month)
 
 class VUNoteViewByYear(generics.ListAPIView):
     serializer_class = serializers.VUReportSerializer
 
     def get_queryset(self):
-        year = self.kwargs['year']
+        year = re.sub('[^\d]','',self.kwargs['year'])
         return VUReport.objects.filter(datefirstpublished__year=year)
 
 class VUNoteViewByMonthSummary(VUNoteViewByMonth):
@@ -1167,14 +1168,14 @@ class VendorViewByMonth(generics.ListAPIView):
         return "Vendors By Month"
 
     def get_queryset(self):
-        year = self.kwargs['year']
-        month = self.kwargs['month']
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        month = re.sub('[^\d]','',self.kwargs['month'])
         reports = VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month).values_list('vuid', flat=True)
         return VendorRecord.objects.filter(vuid__in=reports)
     
     def get(self, request, *args, **kwargs):
-        year = self.kwargs['year']
-        month = self.kwargs['month']
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        month = re.sub('[^\d]','',self.kwargs['month'])
         reports = VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month).values_list('idnumber', flat=True)
         oldrecs = VendorRecord.objects.filter(idnumber__in=reports)
         x = serializers.VendorRecordSerializer(oldrecs, many=True)
@@ -1186,7 +1187,7 @@ class VendorViewByYear(generics.ListAPIView):
     serializer_class = serializers.VendorRecordSerializer
 
     def get_queryset(self):
-        year = self.kwargs['year']
+        year = re.sub('[^\d]','',self.kwargs['year'])
         reports = VUReport.objects.filter(datefirstpublished__year=year).values_list('vuid', flat=True)
         return VendorRecord.objects.filter(vuid__in=reports)
 
@@ -1197,8 +1198,8 @@ class VendorViewByMonthSummary(VendorViewByMonth):
     
     def	summarize(self, request, *args, **kwargs):
         # make sure the filters of the parent class get applied
-        year = self.kwargs['year']
-        month = self.kwargs['month']
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        month = re.sub('[^\d]','',self.kwargs['month'])
         reports = VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month).values_list('idnumber', flat=True)
         oldrecs = VendorRecord.objects.filter(idnumber__in=reports).distinct('vendor')
         vendor = Vendor.objects.filter(note__vuid__in=reports).distinct('vendor')
@@ -1277,8 +1278,12 @@ class VendorVulViewAPI(generics.GenericAPIView, mixins.ListModelMixin):
 class CVEVulViewAPI(generics.GenericAPIView):
 
     def get(self, request, *args, **kwargs):
-        cve = f"CVE-{self.kwargs['year']}-{self.kwargs['pk']}"
-        cvewo = f"{self.kwargs['year']}-{self.kwargs['pk']}"
+        #Be safe and remove all alpha character if this view
+        #is accessed some other way than URL regex map
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        pk = re.sub('[^\d]','',self.kwargs['pk'])
+        cve = f"CVE-{year}-{pk}"
+        cvewo = f"{year}-{pk}"
         report = None
         old_report = VUReport.objects.raw(f"SELECT * from vincepub_vureport where cveids::text like '%%{cve}%%'")
         for x in old_report:
@@ -1356,4 +1361,9 @@ class CaseCSAFAPIView(generics.RetrieveAPIView):
         svuid = re.sub('[^\d]','',self.kwargs['vuid'])
         vr = get_object_or_404(VUReport, idnumber=svuid)
         return vr
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
 
+        if request.headers.get('Origin') and request.headers.get('Origin').find("https://") > -1:
+            response["Access-Control-Allow-Origin"] = request.headers.get('Origin')
+        return response
