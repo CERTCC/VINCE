@@ -9,7 +9,11 @@
     </div>
     <div class="modal-footer text-right">
       <a href="{% url 'vince:vrffullscreen' ticket.id %}" target="_blank" rel="noopener" class="secondary button">View Full Screen</a>
+      {% if vrf_url %}
       <a href="{{ vrf_url }}" class="downloadvrf primary button">Download</a>
+      {% else %}
+      <span>[No associated VRF Found]</span>
+      {% endif %}
     </div>
   </div>
   <button class="close-button" data-close aria-label="Close modal" type="button">
