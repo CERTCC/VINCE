@@ -67,7 +67,8 @@
 	<div class="large-2 columns">
 	  {% if u.ticket %}
 	  {% if u.approval_requested %}
-	  <a href="{% url 'vince:complete_contact' u.id %}" class="complete button small default">Complete Association</a>
+	  <a href="{% url 'vince:complete_contact' u.id %}" class="complete button small cmu">Complete Association</a>
+        <a href="{% url 'vince:restart_contact' u.id %}" class="complete button small default">Restart</a>
 	  {% else %}
 	  <a href="{% url 'vince:contactreqauth' u.id %}" class="approve button small default">Request Authorization</a>
 	  {% endif %}

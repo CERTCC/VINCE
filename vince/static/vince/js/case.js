@@ -271,6 +271,27 @@ $(document).ready(function() {
             form.addEventListener("submit", searchComms);
 	}
     }
+    $('#download_html').on("click", function() {    
+	var vulnote = $('#vulnote a').attr('href');
+	$.get(vulnote).done(function(h) {
+            var plainText = $($.parseHTML(h)).find("#id_content").val();
+	    var tarea = document.createElement("textarea");
+	    tarea.style.display = "none";
+	    tarea.id = "ccB";
+	    document.body.appendChild(tarea);
+            var simplemde = new EasyMDE({element: tarea})
+            var simpleHTML = simplemde.markdown(plainText);
+            var link = document.createElement("a");
+            link.download = $('#vutitle').html() + " - Notice (Draft).html";
+            link.href = "data:text/html;charset=utf8,"+ encodeURIComponent(simpleHTML);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+	    document.body.removeChild(tarea);
+	    delete tarea;
+            delete link;
+	});
+    });
 
     if (document.getElementById("user_taggs")) {
 	var tag_url = $("#user_taggs").attr("href");

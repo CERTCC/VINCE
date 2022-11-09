@@ -29,9 +29,9 @@
 <div class="app-top-panel">
   <div class="row">
     <div class="large-10 medium-8 small-12 columns">
-      <h2>{% if case.team_owner %}{{ case.team_owner.name }} {% endif %}Case {{ case.vu_vuid }} - {{ case.title }} {% autoescape off %}{{ case.get_status_html }}{% endautoescape %}</h2>
+      <h2>{% if case.team_owner %}{{ case.team_owner.name }} {% endif %}Case <span id="vutitle">{{ case.vu_vuid }} - {{ case.title }}</span> {% autoescape off %}{{ case.get_status_html }}{% endautoescape %}</h2>
     </div>
-    <div class="large-2 medium-4 small-12 columns text-right">{% if case.lotus_notes %}{% else %}<a class="button cmu small-only-expanded" href="{% url 'vinny:vincase' case.id %}">View in VinceComm</a>{% endif %}</div>
+    <div class="large-2 medium-4 small-12 columns text-right">{% if case.lotus_notes %}{% else %}<a class="button cmu small-only-expanded primary" href="{% url 'vinny:vincase' case.id %}">View in VinceComm</a>{% endif %}</div>
   </div>
 </div>
 

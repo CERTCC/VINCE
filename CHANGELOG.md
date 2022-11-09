@@ -1,5 +1,13 @@
 # VINCE Changelog
 
+## Version 1.50.6: 2022-11-04
+
+* Allow Vendor Association when Ticket is associated with a Case
+* Adding Download HTML per INL request GH Issue #60
+* Avoid Alert severity colors to buttons that don't do deletes/sensitive actions - UI feedback.
+* Show MFA type for users in VinceTrack to support troubleshooting Users
+* Catch errors on failure to email when a Post is submitted.
+
 ## Version 1.50.5: 2022-10-25
 
 * Updates to settings_.py to match public GitHub
