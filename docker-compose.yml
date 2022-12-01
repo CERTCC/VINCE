@@ -1,0 +1,65 @@
+version: "3.8"
+services:
+  localstack:
+    container_name: localstack
+    image: localstack/localstack
+    ports:
+      - "127.0.0.1:4566:4566"            # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+      - "127.0.0.1:53:53"                # DNS config (only required for Pro)
+      - "127.0.0.1:53:53/udp"            # DNS config (only required for Pro)
+      - "127.0.0.1:443:443"              # LocalStack HTTPS Gateway (only required for Pro)
+    environment:
+
+      - SERVICES=${LOCALSTACK_SERVICES}
+      - DEBUG=1
+      - PERSISTENCE=1
+      - LAMBDA_EXECUTOR=local
+      - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY}
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - LS_LOG=${LOCALSTACK_LOG_LEVEL}
+      - MOCK_UNIMPLEMENTED=1
+      - REQUIRE_PRO=1
+      - IGNORE_ES_DOWNLOAD_ERRORS=1
+      - HOSTNAME=localstack
+      - HOSTNAME_EXTERNAL=localstack
+    volumes:
+      - ./volumes:/var/lib/localstack
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      vince_net:
+        aliases:
+          - ${POOL_NAME}.localstack
+          - ${BUCKET_NAME}.s3.${REGION}.localstack
+          - cognito-idp.${REGION}.localstack
+          - ${POOL_NAME}.${REGION}.localstack
+  bv-postgres:
+    container_name: bv-postgres
+    image: postgres:latest
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRESQL_PASS}
+    volumes:
+      - ./volumes:/var/lib/localstack
+    networks:
+      - vince_net
+  vince:
+    container_name: vince
+    build:
+      context: .
+      dockerfile: localstackdev/Dockerfile-dev
+    image: vince
+    ports:
+      - "127.0.0.1:80:80"
+    volumes:
+      - ./:/opt/vince
+    networks:
+      - vince_net
+    env_file:
+      - .env
+    depends_on:
+      - localstack
+      - bv-postgres
+networks:
+  vince_net:

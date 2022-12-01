@@ -47,6 +47,7 @@ from rest_framework import exceptions
 from rest_framework.authentication import BaseAuthentication, TokenAuthentication, get_authorization_header
 from django.utils.encoding import smart_text
 from django.utils.translation import ugettext as _
+from bigvince.utils import get_cognito_url, get_cognito_pool_url
 import traceback
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -181,7 +182,8 @@ class CognitoAuthenticate(ModelBackend):
             # for tokens or we already have tokens - in which case we just need to get
             # the user and return
 
-            client= boto3.client('cognito-idp', region_name=settings.COGNITO_REGION) 
+            client= boto3.client('cognito-idp',
+             endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION) 
             user = client.get_user(AccessToken=request.session['ACCESS_TOKEN'])
             # the username returned is the unique id, which doesn't help us since we use
             # emails for username - so get email and return CognitoUser
@@ -220,7 +222,8 @@ class CognitoAuthenticate(ModelBackend):
 
                 u.check_token()
                 
-                client= boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+                client= boto3.client('cognito-idp',
+             endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
                 user = client.get_user(AccessToken=access_token)
                 username = user['Username']
                 cognito_user = CognitoUser(

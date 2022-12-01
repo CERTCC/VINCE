@@ -67,6 +67,7 @@ from boto3.exceptions import Boto3Error
 from botocore.exceptions import ClientError, ParamValidationError
 from django.utils.http import is_safe_url
 from django.http.response import JsonResponse
+from bigvince.utils import get_cognito_url, get_cognito_pool_url
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -124,7 +125,12 @@ class GetUserMixin(object):
     def get_user(self):
         if (self.cognito is None):
             self.cognito = get_cognito(self.request)
-        return self.cognito.get_user(attr_map=settings.COGNITO_ATTR_MAPPING)
+        user =  self.cognito.get_user(attr_map=settings.COGNITO_ATTR_MAPPING)
+        # BYPASSED with localstack
+        if settings.LOCALSTACK:
+            user.phone_number_verified = True
+            user.mfa = "SMS"
+        return user
 
 
 class PendingTestMixin(UserPassesTestMixin):
@@ -148,6 +154,10 @@ class PendingTestMixin(UserPassesTestMixin):
         if self.request.user.vinceprofile.service:
             return False
         if self.request.user.vinceprofile.pending:
+            if settings.LOCALSTACK:
+                # BYPASSED with localstack
+                self.request.user.vinceprofile.pending = False
+                return True
             return False
         else:
             return True
@@ -196,7 +206,7 @@ class AssociateSMSView(LoginRequiredMixin, TokenMixin, GetUserMixin, FormView):
     def form_valid(self, form):
         logger.debug("in form valid")
         coguser = self.get_user()
-        client= boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+        client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         u = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID,
                     user_pool_region=settings.COGNITO_REGION,
                     id_token=coguser.id_token, refresh_token=coguser.refresh_token,
@@ -227,7 +237,7 @@ class AssociateTOTPView(LoginRequiredMixin,TokenMixin,GetUserMixin,FormView):
     def get_context_data(self, **kwargs):
         context = super(AssociateTOTPView, self).get_context_data(**kwargs)
         coguser = self.get_user()
-        client= boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+        client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         response = client.associate_software_token(
             AccessToken=coguser.access_token)
         logger.debug(response)
@@ -239,7 +249,7 @@ class AssociateTOTPView(LoginRequiredMixin,TokenMixin,GetUserMixin,FormView):
     def form_valid(self, form):
         logger.debug("in form valid")
         coguser = self.get_user()
-        client= boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+        client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         try:
             response = client.verify_software_token(
                 AccessToken= coguser.access_token,
@@ -473,7 +483,7 @@ class IndexView(TemplateView):
                 self.request.session['ID_TOKEN'] = id_token
                 self.request.session['REFRESH_TOKEN'] = refresh_token
                 self.request.session.save()
-                client= boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+                client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
                 user = client.get_user(AccessToken=access_token)
                 userauth = authenticate(self.request, username=user['Username'])
                 if userauth:
@@ -572,7 +582,7 @@ class ResendConfirmationCode(TemplateView):
         if self.request.session.get('CONFIRM_ID'):
             username = User.objects.filter(id=self.request.session.get('CONFIRM_ID')).first()
             if username:
-                client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+                client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
                 try:
                     user = client.resend_confirmation_code(
                         ClientId=settings.COGNITO_APP_ID,
@@ -621,7 +631,7 @@ class VerifyPhoneView(LoginRequiredMixin, TokenMixin, FormView):
     #    return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
-        client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+        client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         user = None
         try:
             user = client.verify_user_attribute(
@@ -672,7 +682,7 @@ class VerifyEmailView(LoginRequiredMixin, TokenMixin, FormView):
         return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
-        client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+        client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         try:
             user = client.verify_user_attribute(
                 AccessToken=self.request.session['ACCESS_TOKEN'],
@@ -1166,10 +1176,10 @@ class LogoutView(CALogoutView):
 
 
 class GetCognitoUserMixin(object):
-    client = boto3.client('apigateway')
+    client = boto3.client('apigateway', region_name=settings.COGNITO_REGION, endpoint_url=get_cognito_url())
 
     def get_user_object(self):
-        cog_client = boto3.client('cognito-idp', region=settings.COGNITO_REGION)
+        cog_client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region=settings.COGNITO_REGION)
         user = cog_client.get_user(
             AccessToken=self.request.session['ACCESS_TOKEN'])
         c = get_cognito(self.request)
