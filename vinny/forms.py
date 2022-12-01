@@ -674,7 +674,7 @@ class StatementForm(forms.Form):
         disabled=True,
         widget = forms.Textarea(),
         label = _('Coordinator Addendum'),
-        help_text=_('Coordination team may add additional text about the vendor statements and status.'),
+        help_text=_('The coordination team may add additional text about the vendor statements and status.'),
         required=False
     )
 
@@ -934,7 +934,7 @@ class PreferencesForm(forms.Form):
         super(PreferencesForm, self).__init__(*args, **kwargs)
         #if setting is not set for this user, set to default
         for x,y in DEFAULT_USER_SETTINGS.items():
-            if self.initial.get(x) is None:
+            if self.initial.get(x) is None and x in self.fields:
                 self.fields[x].initial=y
 
 

@@ -55,16 +55,17 @@ function getCookie(name) {
     return cookieValue;
 }
 
-function searchTmpls(e, table) {
+function searchTmpls(e, tablet) {
     var csrftoken = getCookie('csrftoken');
 
     if (e) {
         e.preventDefault();
     }
-
+    
     var url = $("#filter_templates").attr("href");
     var owner = $("input[id^='id_owner_']:checked").val();
-    $.ajax({
+    lockunlock(true,'div.vtmainbody','#template-table');
+    window.txhr = $.ajax({
         url : url,
         type: "POST",
         data: {"keyword": $("#filter_templates").val(),
@@ -72,7 +73,18 @@ function searchTmpls(e, table) {
                "csrfmiddlewaretoken": csrftoken
               },
         success: function(data) {
-	    table.replaceData(data['templates'])
+	    lockunlock(false,'div.vtmainbody','#template-table');	    
+	    tablet.replaceData(data['templates'])
+        },
+	error: function() {
+	    lockunlock(false,'div.vtmainbody','#template-table');
+            console.log(arguments);
+           alert("Search failed or canceled! See console log for details.");
+        },
+        complete: function() {
+            /* Just safety net */
+	    lockunlock(false,'div.vtmainbody','#template-table');
+            window.txhr = null;
         }
     });
 }
@@ -80,22 +92,20 @@ function searchTmpls(e, table) {
 
 
 $(document).ready(function() {
-
-
     var filter_msg = document.getElementById("filter_templates");
     if (filter_msg) {
-        filter_msg.addEventListener("keyup", function(event) {
-            searchTmpls(event, table);
-        });
+        filter_msg.addEventListener("keyup", delaySearch(function(event) {
+            searchTmpls(event, tablet);	    
+        },1000));
     }
 
     $("input[id^='id_owner_']").change(function() {
-        searchTmpls(null, table);
+        searchTmpls(null, tablet);
     });
 
     $("#filter_by_dropdown_select_all_0").click(function(){
         $("input[type=checkbox]").prop('checked', $(this).prop('checked'));
-        searchTmpls(null, table);
+        searchTmpls(null, tablet);
 
     });
     
@@ -131,8 +141,9 @@ $(document).ready(function() {
         });
     });
     
-   if (data) {
-	var table = new Tabulator("#template-table", {
+    if (data) {
+	/* table is an inbuilt function in Safari */
+	var tablet = new Tabulator("#template-table", {
         data:data, //set initial table data          
             layout:"fitColumns",
             columns:[

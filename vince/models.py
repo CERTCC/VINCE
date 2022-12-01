@@ -1759,6 +1759,7 @@ class VulNoteReview(models.Model):
             return f"{self.vulnote.vulnote.case.vu_vuid} review by {self.reviewer.usersettings.preferred_username}"
         else:
             return f"{self.vulnote.vulnote.case.vu_vuid} review unassigned."
+    
 
 class EmailTemplate(models.Model):
     """
@@ -3952,6 +3953,9 @@ class UserSettings(models.Model):
     
     def _set_settings(self, data):
         # data should always be a Python dictionary.
+        if not isinstance(data,dict):
+            logger.warn("Non dictionary item sent to pickle %s" % str(data))
+            data = {}        
         try:
             import pickle
         except ImportError:
@@ -3965,12 +3969,24 @@ class UserSettings(models.Model):
             import pickle
         except ImportError:
             import cPickle as pickle
-
-
+        class RestrictedUnpickler(pickle.Unpickler):
+            def find_class(self, module, name):
+                """ If find_class gets called then return error """
+                raise pickle.UnpicklingError("global '%s.%s' is forbidden" %
+                                             (module, name))
         try:
             from base64 import decodebytes as b64decode
-            return pickle.loads(b64decode(self.settings_pickled.encode('utf-8')))
-        except pickle.UnpicklingError:
+            if self.settings_pickled:
+                s = b64decode(self.settings_pickled.encode('utf-8'))
+                #replacement for pickle.loads()
+                return RestrictedUnpickler(io.BytesIO(s)).load()
+            else:
+                return {}
+        except (pickle.UnpicklingError, AttributeError) as e:
+            logger.warn("Error when trying to unpickle data %s " %(str(e)))
+            return {}
+        except Exception as e:
+            logger.warn("Generic error when trying to unpickle data %s " %(str(e)))
             return {}
 
     settings = property(_get_settings, _set_settings)

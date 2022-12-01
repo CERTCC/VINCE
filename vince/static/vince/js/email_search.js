@@ -55,22 +55,31 @@ function nextEmails(page) {
 
 }
 
-
-
-
 function searchEmails(e) {
     if (e) {
         e.preventDefault();
     }
     $("#id_page").val("1");
     var url = "/vince/email/results/";
-    $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
+    window.txhr = $.ajax({
         url: url,
         type: "POST",
         data: $('#searchform').serialize(),
         success: function(data) {
+	    lockunlock(false);
             $("#searchresults").html(data);
-        }
+        },
+        error: function() {
+            lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+            console.log(arguments);
+            alert("Search failed or canceled! See console log for details.");
+        },
+        complete: function() {
+            /* Just safety net */
+            lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+            window.txhr = null;
+        }	
     });
 }
 
@@ -79,7 +88,7 @@ function searchEmails(e) {
 
 
 $(document).ready(function() {
-
+    
     $(document).on("click", '.search_page', function(event) {
         var page = $(this).attr('next');
         nextPage(page);

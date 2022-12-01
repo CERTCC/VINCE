@@ -25,7 +25,7 @@
     </div>
     <div class="large-4 columns text-right">
       {% if ticket.case %}
-      <a href="{% url 'vince:case' ticket.case.id %}" class="button cmu"><i class="fas fa-suitcase"></i> View case {{ticket.case.vu_vuid}}</a>{% else %}
+      <a href="{% url 'vince:case' ticket.case.id %}" class="button primary"><i class="fas fa-suitcase"></i> View case {{ticket.case.vu_vuid}}</a>{% else %}
       {% if vincecomm_link %}
       <a href="{{ vincecomm_link }}" class="button default small small-only-expanded"><i class="fas fa-eye"></i> View in VinceComm</a>
       {% endif %}

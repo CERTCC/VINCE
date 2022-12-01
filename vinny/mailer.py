@@ -337,7 +337,9 @@ def send_templated_mail(template_name,
         except EmailTemplate.DoesNotExist:
             logger.warning('template "%s" does not exist, no mail sent', template_name)
             return  # just ignore if template doesn't exist
-
+    if not hasattr(t,'subject'):
+        logger.error('template "%s" returns invalid object, no mail sent', template_name)
+        return  # just ignore if template doesn't exist
     subject_part = from_string(
         "VINCE %(subject)s" % {
             "subject": t.subject

@@ -82,8 +82,8 @@ function reloadVendorStats(case_id) {
 
 
 
-function reloadVendors(case_id, table) {
-    table.replaceData();
+function reloadVendors(case_id, tablet) {
+    tablet.replaceData();
     /*$.ajax({
 	url: "/vince/ajax_calls/case/vendors/"+case_id+"/",
 	success: function(data) {
@@ -97,7 +97,7 @@ function reloadVuls(case_id, table) {
     $.ajax({
         url: "/vince/ajax_calls/case/vulnerabilities/"+case_id+"/",
         success: function(data) {
-            table.replaceData(data)
+            tablet.replaceData(data)
         }});
 }
 
@@ -121,11 +121,11 @@ function reloadArtifacts(case_id) {
 	}});
 }
 
-function reloadParticipants(case_id, table) {
+function reloadParticipants(case_id, tablet) {
     $.ajax({
 	url: "/vince/ajax_calls/case/participants/"+case_id+"/",
         success: function(data) {
-	    table.replaceData(data);
+	    tablet.replaceData(data);
         }});
 }
 
@@ -141,38 +141,51 @@ function reload_case_activity() {
     });
 }
 
+var txhr = null;
+
 function searchComms(e) {
     if (e) {
         e.preventDefault();
     }
-    $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#timeline');
+    window.txhr = $.ajax({
         url: $("#filterform").attr("action"),
         type: "POST",
         data: $('#filterform').serialize(),
         success: function(data) {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#timeline');
             $("#timeline").html(data);
 	    /* reload plugins */
             $(document).foundation();
+        },
+	error: function() {
+            lockunlock(false,'div.mainbody,div.vtmainbody','#timeline');
+            console.log(arguments);
+           alert("Search failed or canceled! See console log for details.");
+        },
+        complete: function() {
+            /* Just safety net */
+            lockunlock(false,'div.mainbody,div.vtmainbody','#timeline');
+	    window.txhr = null;
         }
     });
 }
 
-var priorSearchReq = null;
-
-function searchTasks(e, table) {
+function searchTasks(e, tablet) {
     var csrftoken = getCookie('csrftoken');
     
     if (e) {
 	e.preventDefault();
     }
 
-    if (priorSearchReq) {
-        priorSearchReq.abort();
+    if (window.txhr && 'abort' in window.txhr) {
+        window.txhr.abort();
     }
     
     var url = $("#filter_tasks").attr("href");
     var sort = $("#filterstatus option:selected").val();
-    priorSearchReq = $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#case_tasks');
+    window.txhr = $.ajax({
 	url : url,
 	type: "POST",
 	data: {"keyword": $("#filter_tasks").val(),
@@ -180,9 +193,20 @@ function searchTasks(e, table) {
 	       "sort": sort
 	      },
 	success: function(data) {
-	    table.replaceData(data);
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#case_tasks');
+	    tablet.replaceData(data);
 	    //$("#case_tasks").html(data);
-	}
+	},
+        error: function() {
+            console.log(arguments);
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#case_tasks');
+           alert("Search failed or canceled! See console log for details.");
+        },
+        complete: function() {
+            /* Just safety net */
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#case_tasks');
+	    window.txhr = null;
+        }
     });
 }
 
@@ -223,8 +247,6 @@ function auto(data, taggle, tag_url, modal) {
 }
 
 $(document).ready(function() {
-
-
      $('a').each(function () {
         $(this).qtip({
             content: $(this).attr("title"),
@@ -249,6 +271,27 @@ $(document).ready(function() {
             form.addEventListener("submit", searchComms);
 	}
     }
+    $('#download_html').on("click", function() {    
+	var vulnote = $('#vulnote a').attr('href');
+	$.get(vulnote).done(function(h) {
+            var plainText = $($.parseHTML(h)).find("#id_content").val();
+	    var tarea = document.createElement("textarea");
+	    tarea.style.display = "none";
+	    tarea.id = "ccB";
+	    document.body.appendChild(tarea);
+            var simplemde = new EasyMDE({element: tarea})
+            var simpleHTML = simplemde.markdown(plainText);
+            var link = document.createElement("a");
+            link.download = $('#vutitle').html() + " - Notice (Draft).html";
+            link.href = "data:text/html;charset=utf8,"+ encodeURIComponent(simpleHTML);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+	    document.body.removeChild(tarea);
+	    delete tarea;
+            delete link;
+	});
+    });
 
     if (document.getElementById("user_taggs")) {
 	var tag_url = $("#user_taggs").attr("href");
@@ -1216,8 +1259,8 @@ $(document).ready(function() {
     }
     
     if (data) {
-	var table = new Tabulator("#vuls-table", {
-        data:data, //set initial table data                                                       
+	var tablet = new Tabulator("#vuls-table", {
+            data:data,
             layout:"fitColumns",
 	    placeholder: "No vulnerabilites have been added",
 	    tooltipsHeader:true,
@@ -1751,7 +1794,7 @@ $(document).ready(function() {
 	}
     }
 
-    var assignable_users = JSON.parse(document.getElementById('user_data').textContent)
+    var assignable_users = JSON.parse(document.getElementById('user_data').textContent);
     tasks_table = new Tabulator("#case_tasks", {
         ajaxURL:"/vince/ajax_calls/case/tasks/"+$(".addvulmodal").attr("caseid"),
 	ajaxProgressiveLoad:"scroll",
@@ -1841,9 +1884,9 @@ $(document).ready(function() {
     
     var filter_task = document.getElementById("filter_tasks");
     if (filter_task) {
-       filter_task.addEventListener("keyup", function(event) {
-           searchTasks(event, tasks_table);
-       });
+	filter_task.addEventListener("keyup", delaySearch(function(event) {
+            searchTasks(event, tasks_table);	    
+        },1000));
     }
 
     $("#filterstatus").change(function(event) {

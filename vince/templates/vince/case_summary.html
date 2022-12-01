@@ -209,10 +209,19 @@
     </div>
     
     <div class="tabs-panel" id="vulnote">
-      <p>
+      <div>
 	{% if vulnote %}
 	<a href="{% url 'vince:edit_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vul Note</button></a>
-	<a href="{% url 'vince:download_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-download"></i> Download</button></a>
+	<ul class="dropdown menu" data-dropdown-menu="fake-dropdown-menu" role="menubar" id="download_drop">
+          <li class="is-dropdown-submenu-parent opens-right" role="menuitem" aria-haspopup="true" data-is-click="false" aria-label="Download Options"><a href="#" class="button cmu tiny download_btn">Download</a>
+	    <ul class="menu submenu is-dropdown-submenu first-sub vertical" data-submenu="" role="menu" id="download_menu">
+              <li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="{% url 'vince:download_vulnote' vulnote.id %}">JSON</a></li>
+	      <li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="javascript:void(0)" id="download_html">HTML</a></li>
+            </ul>
+	  </li>
+	</ul>
+
+	
 	<a href="{% url 'vince:changelog' vulnote.id %}"><button class="button cmu tiny"> <i class="fas fa-clock"></i> View Full History</button></a>
 	<button id="sharevulnote" class="button cmu tiny" action="{% url 'vince:sharevulnote' vulnote.id %}" {% if case.lotus_notes %}disabled{% endif %}> <i class="fas fa-share-square"></i> Share in VinceComm</button>
 	{% if vulnote.ticket_to_approve %}
@@ -233,7 +242,7 @@
 	{% else %}
 	<a href="{% url 'vince:create' case.id %}"> <button class="button cmu tiny"> <i class="fas fa-plus"></i> Start Vul Note </button></a>
 	{% endif %}
-      </p>
+      </div>
       {% include 'vince/include/changelog.html' %}
     </div>
     <div id="approvenote" class="reveal" data-reveal data-close-on-click='false'></div>

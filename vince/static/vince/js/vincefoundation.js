@@ -60,6 +60,35 @@ $(function() {
 	}
 
     });
-    
-
+    function put_unread(ucount,update) {
+	if(ucount > 0) {
+	    $('.unread_msg_count').html(String(ucount)).addClass("badge success");
+	    if(update)
+		sessionStorage.setItem('unread_msg_count',String(ucount));
+	} else {
+	    $('.unread_msg_count').html("").removeClass("badge success");
+	    sessionStorage.removeItem('unread_msg_count');
+	}
+    }
+    function update_unread() {
+	let count = 0;
+	if(sessionStorage.getItem('unread_msg_count')) {
+	    /* On page load show current unread count and wait for Ajax data*/
+	    count = parseInt(sessionStorage.getItem('unread_msg_count'));
+	    if(count > 0)
+		put_unread(count,false);
+	}
+	    
+	if($('#unread_msg_count').length > 0 &&
+	   $('#unread_msg_count').data('url')) {
+	    $.getJSON($('#unread_msg_count').data('url'),function(d) {
+		if(('unread' in d) && (d.unread != count))
+		    put_unread(d.unread,true);
+	    });
+	}
+    }
+    update_unread();
+    /* Every 5 minutes updates Inbox unread count */
+    setTimeout(update_unread,300000);
 });
+

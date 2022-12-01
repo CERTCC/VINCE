@@ -4261,7 +4261,10 @@ class CaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         context['artifacts'] = artifacts.order_by('-date_added')
         context['artifactsjs'] = [ obj.as_dict() for obj in context['artifacts'] ]
         context['form'] = AddArtifactForm()
-        context['vrf_url'] = download_vrf(context['ticket'].vrf_id)
+        if hasattr(context['ticket'],'vrf_id'):
+            context['vrf_url'] = download_vrf(context['ticket'].vrf_id)
+        else:
+            context['vrf_url'] = None
         # look up vrf in vincecomm:
         vc_cr = VTCaseRequest.objects.filter(vrf_id=context['ticket'].vrf_id).first()
         if vc_cr:
@@ -5758,18 +5761,21 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
     def get_context_data(self, **kwargs):
         context = super(CaseView, self).get_context_data(**kwargs)
         context['case'] = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
-        try:
-            context['cr'] = context['case'].case_request.caserequest
-            if context['cr'].vrf_id:
-                context['vrf_url'] = download_vrf(context['cr'].vrf_id)
-                vc_cr = VTCaseRequest.objects.filter(vrf_id=context['cr'].vrf_id).first()
-                if vc_cr:
-                    context['vincecomm_link'] = reverse("vinny:cr_report", args=[vc_cr.id])
-        except:
+        #Assume we have not vrf_url unless we get one from below methods
+        context['vrf_url'] = None
+        context['vincecomm_link'] = None
+        if hasattr(context['case'],'caserequest'):
+            if hasattr(context['case'].case_request,'caserequest'):
+                context['cr'] = context['case'].case_request.caserequest
+                if hasattr(context['cr'],'vrf_id') and context['cr'].vrf_id:
+                    context['vrf_url'] = download_vrf(context['cr'].vrf_id)
+                    vc_cr = VTCaseRequest.objects.filter(vrf_id=context['cr'].vrf_id).first()
+                    if vc_cr:
+                        context['vincecomm_link'] = reverse("vinny:cr_report", args=[vc_cr.id])
+        elif hasattr(context['case'],'case_request'):
             context['ticket'] = context['case'].case_request
-            if context['ticket']:
+            if hasattr(context['ticket'],'vrf_id') and context['ticket'].vrf_id:
                 context['vrf_url'] = download_vrf(context['ticket'].vrf_id)
-            
         context['ticket_list'] = Ticket.objects.filter(case=context['case'])
         #context['ticketsjs'] = [ obj.as_dict() for obj in context['ticket_list'] ]
         users = CaseAssignment.objects.filter(case=context['case'])
@@ -5778,8 +5784,12 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         user_groups= self.request.user.groups.exclude(groupsettings__contact__isnull=True)
         context['case_tags'] = [tag.tag for tag in context['case'].casetag_set.all()]
         context['case_available_tags'] = [tag.tag for tag in TagManager.objects.filter(tag_type=3).filter(Q(team__in=user_groups)|Q(team__isnull=True)).exclude(tag__in=context['case_tags']).order_by('tag').distinct('tag')] 
-        context['casepage']=1
-        context['reminders'] = VinceReminder.objects.filter(case=context['case'], alert_date__lte=datetime.today()).order_by('-alert_date')
+        context['casepage'] = 1
+        #Use TZ to avoid RunTimeWarning
+        #RuntimeWarning: DateTimeField VinceReminder.alert_date received 
+        #a naive datetime (2022-10-21 17:54:18.020583) while time zone
+        #support is  active
+        context['reminders'] = VinceReminder.objects.filter(case=context['case'], alert_date__lte=datetime.now(pytz.utc)).order_by('-alert_date')
         context['allow_edit'] = True
         # need this for task reassignment
         context['assignable_users'] = User.objects.filter(is_active=True, groups__name='vince')
@@ -13200,6 +13210,12 @@ class VinceCommUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             context['reset_mfa'] = MFAResetTicket.objects.filter(user_id=context['vc_user'].id, ticket__status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS, Ticket.IN_PROGRESS_STATUS]).exists()
             context['bounce_stats'] = get_bounce_stats(context['vc_user'].email, context['vc_user'])
             context['bounces'] = BounceEmailNotification.objects.filter(email=context['vc_user'].email)
+            try :
+                data = get_user_details(context['vc_user'].username)
+                context['PreferredMfaSetting'] = data.get('PreferredMfaSetting',"Unknown")
+            except:
+                logger.debug("User's MFA settings is not available for %s " %(context['vc_user'].username))
+                context['PreferredMfaSetting'] = "Unavailable"
         return context
 
 class VinceCommRemoveUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):

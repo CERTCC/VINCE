@@ -27,7 +27,8 @@
 # DM21-1126
 ########################################################################
 */
-//Emily Test
+
+/* Global functions for VINCETrack */
 
 function getCookie(name) {
     var cookieValue = null;
@@ -35,7 +36,7 @@ function getCookie(name) {
         var cookies = document.cookie.split(';');
         for (var i = 0; i < cookies.length; i++) {
             var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?                                                                                                          
+            // Does this cookie string begin with the name we want?
             if (cookie.substring(0, name.length + 1) === (name + '=')) {
                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                 break;
@@ -53,8 +54,28 @@ function copyToClipboard(text) {
     document.execCommand("copy");
     $temp.remove();
 }
-
-
+function lockunlock(f,divmain,divhtml) {
+    if(f) {
+       /* Show search is in progress */
+	$(divmain).css({opacity:0.5});
+	if($(divhtml + ' > .loading').length < 1)
+	    $(divhtml).prepend($('#hiddenloading').html());
+    } else {
+       /* Back to normal */
+       $(divmain).css({opacity:1});
+       $(divhtml + ' > .loading').remove();
+    }
+}
+function delaySearch(callfun,wait) {
+    var timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(
+            function () {
+                callfun.apply(this, args);
+            }, wait);
+    };
+}
 $(function () {
 
     /*$('span[title]').qtip({
@@ -113,6 +134,15 @@ $(function () {
          }, 600);
          return false;
      });
+    $(document).keyup(function(e) {
+        if (e.key === "Escape") {
+           if(window.txhr && 'abort' in window.txhr) {
+               console.log("Aborting search because user hit Escape");
+               window.txhr.abort();
+               window.txhr = null;
+           }
+	}    
+    });
 
 });
 

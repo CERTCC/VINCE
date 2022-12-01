@@ -28,57 +28,69 @@
 ########################################################################
 */
 
+function fload(fdiv,furl,fmethod) {
+    lockunlock(true,'div.mainbody,div.vtmainbody',fdiv);
+    window.txhr = $.ajax({
+	url : furl,
+        type: fmethod,
+	data: fmethod == "POST" ? $('#filterform').serialize() : null,
+	success: function(data) {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#inbox');
+            $(fdiv).html(data);
+	},
+       error: function() {
+           lockunlock(false,'div.mainbody,div.vtmainbody','#inbox');      
+           console.log(arguments);
+           alert("Search failed or canceled! See console log for details.");
+       },
+       complete: function() {
+           /* Just safety net */
+           lockunlock(false,'div.mainbody,div.vtmainbody','#inbox');      
+           window.txhr = null;
+       }
+    });
+}
+
 function nextPage(page) {
-    var url = $("#filterform").attr("action");
-    $("#inbox").load(url+"?page=" + page);
+    var url = $("#filterform").attr("action") + "?page=" + page;
+    fload('#inbox',url,"GET");
 }
 
 function nextThreads(page) {
     $("#id_page").val(page);
     var url = $("#filterform").attr("action");
-    $.ajax({
-        url : url,
-        type: "POST",
-        data: $('#filterform').serialize(),
-        success: function(data) {
-            $("#inbox").html(data);
-        }
-    });
+    fload('#inbox',url,"POST");
 }
-
 
 function searchThreads(e) {
     if (e) {
         e.preventDefault();
     }
-
     $("#id_page").val("1");
     var url = $("#filterform").attr("action");
-    $.ajax({
-	url : url,
-        type: "POST",
-	data: $('#filterform').serialize(),
-	success: function(data) {
-            $("#inbox").html(data);
-	}
-    });
+    fload('#inbox',url,"POST");
 }
 
 function nextSent(page) {
-    var url = $("#filterform").attr("action") + "?page="+page;
-    $.ajax({
-        url : url,
-        type: "GET",
-        success: function(data) {
-            $("#sent").html(data);
-        }
-    });
+    var url = $("#filterform").attr("action") + "?page=" + page;
+    fload('#sent',url,"GET");
+}
+function async_load() {
+    /* Async loading of inbox and sent items */
+    nextThreads(1);
+    /* Load nextSent only on tab click 
+       nextSent(1);
+    */
 }
 
 
 $(document).ready(function() {
-
-
+    /* Async loading of inbox and sent items */
+    async_load();
+    $('#sent-label').on("click", function() {
+	if($('#sent div').length < 1)
+	    nextSent(1);
+    });
     $(document).on("click", '.search_page', function(event) {
         var page = $(this).attr('next');
         nextPage(page);
@@ -99,9 +111,9 @@ $(document).ready(function() {
     
     var filter_msg = document.getElementById("id_keyword");
     if (filter_msg) {
-	filter_msg.addEventListener("keyup", function(event) {
-            searchThreads(event);
-	});
+	filter_msg.addEventListener("keyup", delaySearch(function(event) {
+             searchThreads(event);
+        },1000));
     }
 
     var modal = $("#deletemodal");
