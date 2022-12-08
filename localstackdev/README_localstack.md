@@ -6,23 +6,41 @@ First install:
 - git
 
 Then clone down this repository and `cd` into it.
+Run the following:
+`git checkout development`
 
 ### Configuration
 Then acquire a valid [Localstack](https://localstack.cloud/) Pro license key (trial will work)
 
-Modify the `LOCALSTACK_API_KEY variable` in `.env` to be proper API key.
+Environment Variables:
+#### VINCE/.env:
+- Modify the `LOCALSTACK_API_KEY` variable to be proper API key.
 
-Add `testbucket.s3.us-east-1.localstack` and `localstack` to `/etc/hosts`. An example line is below:
+#### VINCE/bigvince/.env:
+- Modify the `SECRET_KEY` variable if desired. This is accomplished by running the following command from a python environment that has django installed:
+```
+python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+```
 
-    127.0.1.1   testbucket.s3.us-east-1.localstack
-    127.0.2.1   localstack
+Add the following to `/etc/hosts`. An example line is below:
 
+    127.0.0.1   localstack
+    127.0.0.1   testpool.us-east-1.localstack
+
+An example `.env` for usage under `bigvince` is provided with fake or development only values. Although it must be copied to the proper location
+
+#### Copy settings_.py
+`bigvince/settings_.py` will need to be copied to `bigvince/settings.py`
+
+
+#### Windows Specific
+- Modify Dockerfile-dev to use 20.04.
+- Set `git config --global core.autocrlf input` before cloning the repository.
 
 ### Usage
 Run `sudo docker-compose up`, and wait 2-5 minutes
 
 Navigate to `http://localstack`
-
 
 ### Additional commands
 Commands of note are below:
@@ -33,8 +51,10 @@ Commands of note are below:
 - `docker-compose ps` (show status of containers)
 - `docker-compose exec <name_of_container> /bin/bash` (start a bash shell in a running container)
 
-
 ## Additional notes
+- The default password is currently set in the fixtures, it can be modified after logging in for the first time
+- The ADMIN_EMAIL field is used for login, not the username
+- If the containers are created anew from stratch then the browser cache will need to be cleared to remove an old JWT token
 - Multiurl is currently disabled
 - MFA is currently disabled
 - The default google recaptcha keys already present will always return "valid" as they are for development purposes

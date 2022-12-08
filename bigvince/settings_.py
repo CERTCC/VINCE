@@ -159,6 +159,7 @@ if os.environ.get('AWS_DEPLOYED'):
     AWS_DEPLOYED = True
     AWS_DEFAULT_ACL = None
     if LOCALSTACK:
+        AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL')
         LOGGER_HANDLER = 'console'
     else:
         LOGGER_HANDLER = 'watchtower'

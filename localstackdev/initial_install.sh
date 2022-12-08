@@ -37,8 +37,8 @@ filename="/opt/vince/bigvince/.env"
 for i in $to_replace;
 do
     export b=$(echo ${!i} | sed "s/\//\\\\\//g")
-    echo "s/$i.*$/$i=$b/g"
-    sed -i s/$i.*$/$i=$b/g $filename
+    echo "s/$i.*$/$i=\"$b\"/g"
+    sed -i s/$i.*$/$i=\"$b\"/g $filename
 done
 export PGPASSWORD=$POSTGRESQL_PASS
 createdb -h $POSTGRES_HOST -U postgres vince

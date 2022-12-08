@@ -325,7 +325,7 @@ urlpatterns = [
     path('manage/bounces/', views.VINCEBounceManager.as_view(), name='bouncemanager'),
 ]
 try:
-    if settings.MULTIURL_CONFIG or settings.VINCE_NAMESPACE == "vince":
+    if (settings.MULTIURL_CONFIG or settings.VINCE_NAMESPACE == "vince") and not settings.LOCALSTACK:
         urlpatterns.extend([
             path('login/', cogauth_views.COGLoginView.as_view(template_name='vince/tracklogin.html'), name="login"),
             path('login/mfa/', cogauth_views.MFAAuthRequiredView.as_view(), name='mfaauth'),
