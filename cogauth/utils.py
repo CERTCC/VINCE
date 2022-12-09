@@ -46,6 +46,8 @@ import json
 import time
 import logging
 import traceback
+import os
+from bigvince.utils import get_cognito_url, get_cognito_pool_url
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -58,12 +60,6 @@ logger.setLevel(logging.DEBUG)
 #response = urllib.request.urlopen(keys_url)
 #keys = json.loads(response.read())['keys']
 
-def get_cognito_pool_url(aws_region, aws_user_pool):
-
-    return (
-        "https://cognito-idp.{}.amazonaws.com/{}".
-        format(aws_region, aws_user_pool)
-    )
 
 
 def get_cognito(request):
@@ -109,7 +105,7 @@ def token_verify(token, expire_fail=False):
         logger.debug('Public key not found in jwks.json')
         return False
 
-    kargs = {"issuer": get_cognito_pool_url(settings.COGNITO_REGION, settings.COGNITO_USER_POOL_ID),
+    kargs = {"issuer": get_cognito_pool_url(),
              'audience': settings.COGNITO_APP_ID}
 
     try:
@@ -171,7 +167,8 @@ def get_group(token):
 
 def cognito_add_user_to_group(user, group):
     logger.debug("Sending request")
-    sns = boto3.client('sns', region_name=settings.AWS_REGION)
+    sns = boto3.client('sns',
+             endpoint_url=get_cognito_pool_url(), region_name=settings.AWS_REGION)
     response = sns.publish(
         TargetArn=settings.VINCE_ERROR_SNS_ARN,
         Subject='Please add user to cognito group',
@@ -399,14 +396,15 @@ def cognito_check_permissions(request):
 
     
 def cognito_verify_email(request):
-    client= boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+    client= boto3.client('cognito-idp',
+             endpoint_url=get_cognito_url(),  region_name=settings.COGNITO_REGION)
     code = client.get_user_attribute_verification_code(AccessToken=request.session['ACCESS_TOKEN'],
                                                        AttributeName='email')
     print(code)
 
 
 def cognito_verify_sms(request):
-    client= boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+    client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
     code = client.get_user_attribute_verification_code(AccessToken=request.session['ACCESS_TOKEN'],
                                                        AttributeName='phone_number')
 
@@ -421,7 +419,7 @@ def cognito_to_dict(attr_list,mapping):
 
 
 def password_challenge_dance(username, password, new_password):
-    client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+    client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
     aws = AWSSRP(username=username,
                  password=password,
                  pool_id=settings.COGNITO_USER_POOL_ID,
@@ -440,7 +438,7 @@ def password_challenge_dance(username, password, new_password):
 
 def mfa_challenge(request, code):
     
-    client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+    client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
     aws = AWSSRP(username=request.session['username'], password="abc",
                  pool_id=settings.COGNITO_USER_POOL_ID,
                  client_id=settings.COGNITO_APP_ID, client=client)
@@ -461,7 +459,7 @@ def mfa_challenge(request, code):
 
 
 def rm_mfa(request):
-     client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+     client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
      if request.session['MFAREQUIRED'] == "SOFTWARE_TOKEN_MFA":
          client.set_user_mfa_preference(
              SoftwareTokenMfaSettings={
@@ -494,7 +492,7 @@ def send_courtesy_email(template_name, user):
     )
 
 def get_user_details(username):
-    client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+    client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
 
     res = client.admin_get_user(
         Username=username,
@@ -521,7 +519,7 @@ def create_service_account(request):
     return True, None
 
 def create_new_user(request, old_user=None):
-    client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+    client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
     messageaction = "SUPPRESS"
     if request.POST.get('send_email'):
         #user checked the box to send an email
@@ -588,7 +586,7 @@ def create_new_user(request, old_user=None):
         
 
 def admin_change_user_details(request, old_email):
-    client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+    client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
     try:
         res = client.admin_update_user_attributes(
             UserPoolId=settings.COGNITO_USER_POOL_ID,
@@ -643,7 +641,7 @@ def admin_change_user_details(request, old_email):
 
 
 def disable_sms_mfa(username):
-    client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+    client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
     res = client.admin_set_user_mfa_preference(
         SMSMfaSettings={
             'Enabled': False,
@@ -657,7 +655,7 @@ def disable_sms_mfa(username):
 
 def disable_totp_mfa(username):
 
-    client = boto3.client('cognito-idp', region_name=settings.COGNITO_REGION)
+    client = boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
 
     res = client.admin_set_user_mfa_preference(
         SoftwareTokenMfaSettings={
