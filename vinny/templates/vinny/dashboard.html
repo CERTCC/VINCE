@@ -18,13 +18,12 @@
     </div>
   </div>
 </div>
-
-<form id="searchform" enctype="multipart/form-data" method="post" action="{% url 'vinny:dashboardfilter' %}">
+<form id="searchform" enctype="multipart/form-data" method="POST" action="{% url 'vinny:dashboardfilter' %}" class="asyncform" targetdivid="casecontainer">
   {% csrf_token %}
 <div class="row">
   <div class="large-5 medium-5 small-8 columns">
     <div class="input-group">
-      <input class="input-group-field form-control" type="text" name="keyword" placeholder="Filter active cases" id="filter_threads">
+      <input class="input-group-field form-control asyncdelaysearch" type="text" name="keyword" placeholder="Filter active cases" id="filter_threads">
       <div class="input-group-button">
 	<button type="submit" class="button"><i class="fas fa-search"></i></button>
       </div>
@@ -33,9 +32,9 @@
   <div class="large-3 columns medium-4 small-4">
     {% if user.vinceprofile.is_track %}
     <div class="dropdown-pane" id="role-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
-	<div class="row column">
+	<div class="row column select_all_group">
 	  <div class="form-check border-bottom mb-2 pb-2">
-	    <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
+	    <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input select_all_checkbox">
 	    <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
 	  </div>
 	  {% render_field form.owner class="form_check_input" %}
@@ -72,7 +71,7 @@
 {% endif %}
 <div class="row">
   <div class="large-12 columns">
-    <div id="casecontainer">
+    <div id="casecontainer" class="asyncload" method="POST" href="{% url 'vinny:dashboardfilter' %}" form="#searchform">
       {% include 'vinny/include/cases.html' %}
     </div>
   </div>

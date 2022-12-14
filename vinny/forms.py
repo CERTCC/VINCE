@@ -699,7 +699,9 @@ class InboxFilterForm(forms.Form):
     keyword = forms.CharField(
         max_length=200,
         label='Keyword(s)',
-        widget=forms.TextInput(attrs={'placeholder': 'Search by keyword'}),
+        widget=forms.TextInput(attrs={'placeholder': 'Search by keyword',
+                                      'class': 'asyncdelaysearch'
+                                      }),
         required=False)
 
     status = forms.MultipleChoiceField(
@@ -719,7 +721,8 @@ class LimitedCaseFilterForm(forms.Form):
     wordSearch = forms.CharField(
         max_length=100,
         label='Keyword(s)',
-	widget=forms.TextInput(attrs={'placeholder': 'Search by keyword'}),
+	widget=forms.TextInput(attrs={'placeholder': 'Search by keyword',
+                                      'class': 'asyncdelaysearch'}),
 	required=False)
 
     status = forms.MultipleChoiceField(
@@ -742,7 +745,8 @@ class CaseFilterForm(forms.Form):
     wordSearch = forms.CharField(
         max_length=100,
         label='Keyword(s)',
-        widget=forms.TextInput(attrs={'placeholder': 'Search by keyword'}),
+        widget=forms.TextInput(attrs={'placeholder': 'Search by keyword',
+                                      'class': 'asyncdelaysearch'}),
         required=False)
     status = forms.MultipleChoiceField(
         choices=STATUS_FILTER_CHOICES,

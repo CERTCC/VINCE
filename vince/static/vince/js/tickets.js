@@ -1,31 +1,31 @@
 /*#########################################################################
-# VINCE
-#
-# Copyright 2022 Carnegie Mellon University.
-#
-# NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
-# INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
-# UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
-# AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
-# PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
-# MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY KIND
-# WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT INFRINGEMENT.
-#
-# Released under a MIT (SEI)-style license, please see license.txt or contact
-# permission@sei.cmu.edu for full terms.
-#
-# [DISTRIBUTION STATEMENT A] This material has been approved for public
-# release and unlimited distribution.  Please see Copyright notice for non-US
-# Government use and distribution.
-#
-# Carnegie Mellon®, CERT® and CERT Coordination Center® are registered in the
-# U.S. Patent and Trademark Office by Carnegie Mellon University.
-#
-# This Software includes and/or makes use of Third-Party Software each subject
-# to its own license.
-#
-# DM21-1126
-########################################################################
+  # VINCE
+  #
+  # Copyright 2022 Carnegie Mellon University.
+  #
+  # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+  # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+  # UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+  # AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+  # PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
+  # MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY KIND
+  # WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT INFRINGEMENT.
+  #
+  # Released under a MIT (SEI)-style license, please see license.txt or contact
+  # permission@sei.cmu.edu for full terms.
+  #
+  # [DISTRIBUTION STATEMENT A] This material has been approved for public
+  # release and unlimited distribution.  Please see Copyright notice for non-US
+  # Government use and distribution.
+  #
+  # Carnegie Mellon®, CERT® and CERT Coordination Center® are registered in the
+  # U.S. Patent and Trademark Office by Carnegie Mellon University.
+  #
+  # This Software includes and/or makes use of Third-Party Software each subject
+  # to its own license.
+  #
+  # DM21-1126
+  ########################################################################
 */
 
 
@@ -85,7 +85,7 @@ function del_tag(ticketcc_taggle, tag, modal){
     $.post(url,
            {'state': 0, 'csrfmiddlewaretoken': csrftoken, 'tag': tag, 'del_tag':true}, function (data) {
 	       console.log("success removing");
-            })
+           })
         .fail(function (data) {
 	    if (data['error']) {
 		alert("An error occurred while trying to delete this tag: " + data['error']);
@@ -123,7 +123,7 @@ $(document).ready(function() {
 	var old_tags = JSON.parse(document.getElementById('old_tags').textContent);
 	var other_tags = JSON.parse(document.getElementById('other_tags').textContent);
         /*var subscribed_users = JSON.parse(document.getElementById('subscribed_users').textContent);
-	var assignable = JSON.parse(document.getElementById('assignable').textContent);*/
+	  var assignable = JSON.parse(document.getElementById('assignable').textContent);*/
         var ticketcc_taggle = new Taggle('ticketcc_taggle', {
             tags: old_tags,
 	    tagFormatter: function(li) {
@@ -149,18 +149,18 @@ $(document).ready(function() {
             },
         });
 	auto(other_tags, ticketcc_taggle, adddepmodal);
-	 /*$.getJSON(window.href, {
-             'subscribed_users': true,
-             'csrfmiddlewaretoken': csrftoken
-	 }, function (data) {
-             subscribed_users = data['subscribed_users'];
-             for (i=0; i < subscribed_users.length; i++) {
-		 console.log(subscribed_users[i]);
-                 ticketcc_taggle.add(subscribed_users[i]);
-             }
-             auto(data['assignable_users'], ticketcc_taggle);
-         });*/
-     }
+	/*$.getJSON(window.href, {
+          'subscribed_users': true,
+          'csrfmiddlewaretoken': csrftoken
+	  }, function (data) {
+          subscribed_users = data['subscribed_users'];
+          for (i=0; i < subscribed_users.length; i++) {
+	  console.log(subscribed_users[i]);
+          ticketcc_taggle.add(subscribed_users[i]);
+          }
+          auto(data['assignable_users'], ticketcc_taggle);
+          });*/
+    }
     
     
     $(document).on("click", '#reassign', function(event) {
@@ -395,7 +395,7 @@ $(document).ready(function() {
 	$(this).closest('div').prev().prev().prev('textarea').replaceWith(p);
 	$(this).closest('div').hide();
 	$(this).closest('div').prev().show();
-	    
+	
     });
 
     $(document).on("click", ".followup-cancel", function(event) {
@@ -463,7 +463,7 @@ $(document).ready(function() {
 		}
             });
 	} else { return; }
-		 
+	
     });
 
     $(document).on("click", "#quickclose", function(event) {
@@ -502,71 +502,21 @@ $(document).ready(function() {
             });
 	}
     });
-	
-    var lines = 12; //Choose how many lines you would like to initially show     
-    var buttonspacing = 0; //Choose Button Spacing                               
-    var buttonside = 'left'; //Choose the Side the Button will display on: 'right' or 'left'                                                                     
-    var animationspeed = 1000; //Choose Animation Speed (Milliseconds)
-    //Do not edit below
-    var lineheight = 0;
-    if ($('.text_content').css("line-height")) {
-	lineheight = $('.text_content').css("line-height").replace("px", "");
-    }
-    startheight = lineheight * lines;
-    var shortheight = $('.textheightshort').css('max-height');
-    // Instead take the max-height set on the textheightshort/textheightlong attributes
-    //$('.text_container').css({'max-height' : startheight });
-
-    var buttonheight =  $('.showfull').height();
-    $('div.long_text_container').css({'padding-bottom' : (buttonheight + buttonspacing ) });
-
-    if(buttonside == 'right'){
-        $('.showfull').css({'bottom' : (buttonspacing / 2), 'right' : buttonspacing });
-    } else{
-       $('.showfull').css({'bottom' : (buttonspacing / 2), 'left' : buttonspacing });
-    }
-
-    $('.moretext').on('click', function(){
-        var newheight = $(this).parent('div.long_text_container').find('div.text_content').height();
-        $(this).parent('div.long_text_container').find('div.text_container').animate({'max-height' : newheight }, animationspeed );
-        $(this).hide().siblings('.lesstext').show();
-        $(this).next().next('.scrollnext').fadeIn();
-
-    });
-
-    $('.lesstext').on('click', function(){
-	var shortelem = $(this).parent('div.long_text_container').find('div.text_container').hasClass('textheightshort');
-	var newheight = startheight;
-	if (shortelem) {
-	    newheight = shortheight;
-	}
-        var h = $(this).parent('div.long_text_container').find('div.text_content').height();
-        $(this).parent('div.long_text_container').find('div.text_container').animate({'max-height' : newheight }, animationspeed );
-        $(this).hide().siblings('.moretext').show();
-        $(this).next('.scrollnext').fadeOut();
-    });
-
-    $('div.long_text_container').each(function(){
-        if( $(this).find('div.text_content').height() > $(this).find('div.text_container').height() ){
-            $(this).find('.showfull.moretext').show();
-
-        }
-    });
 
     $('.scrollnext').click(function () {
 	var scrollnext = $(this).parent().parent().parent().next().offset();
 	if (scrollnext) {
-            $("html, body").animate({
+	    $("html, body").animate({
 		scrollTop: $(this).parent().parent().parent().next().offset().top
-            }, 600);
+	    }, 600);
 	} else {
 	    $("html, body").animate({
 		scrollTop: $(this).parent().offset().top
-            }, 600);
+	    }, 600);
 	}
         return false;
     });
-
+    
     $('.edit-btn').qtip({
 	content: 'Reply to Email',
         style: {classes: 'qtip-youtube'},
@@ -581,25 +531,24 @@ $(document).ready(function() {
 	    }
 	}
     });
-
-
+    
+    
     $('.email-detail').each(function () {
         $(this).qtip({
-            content: $(this).attr("title"),
-            style: {classes: 'qtip-youtube'},
+	    content: $(this).attr("title"),
+	    style: {classes: 'qtip-youtube'},
 	    position: {
 		corner: {
-                    target:'bottomLeft',
-                    tooltip: 'bottomLeft'
+		    target:'bottomLeft',
+		    tooltip: 'bottomLeft'
 		},
 		adjust: {
-                    x:-60,
-                    y:5
+		    x:-60,
+		    y:5
 		}
 	    }
 	});
     });
-
     $(document).keypress(function(event) {
 	var keycode = (event.keyCode ? event.keyCode : event.which);
 	if(keycode == '13'){
@@ -687,5 +636,5 @@ $(document).ready(function() {
             });
         }
     });
-    
-})
+});
+

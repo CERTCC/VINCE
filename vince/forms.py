@@ -757,6 +757,7 @@ class CaseFilterForm(forms.Form):
         choices=(),
         required=False,
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'ul_nobullet'}))
+    changes_to_publish = forms.BooleanField(required = False,label = 'changes_to_publish')
 
     def __init__(self, *args, **kwargs):
         super(CaseFilterForm, self).__init__(*args, **kwargs)

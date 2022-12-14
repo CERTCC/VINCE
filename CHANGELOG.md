@@ -1,5 +1,18 @@
 # VINCE Changelog
 
+## Version 2.0.3: 2022-12-14
+
+* Major upgrade to Django 3.2 LTS target end byt 2024. Fixes related to Django upgrade in all libraries.
+* Aded new QuerySet Paging library for performance extend chain with chainqs for QuerySet 
+* Asynchronous calls for most vinny/views via JSON through asyncLoad class
+* Provide API Views 404 with JSON generic error
+* Allow Session or API Token authentication to support API access from browser
+* Provide better HTML text on access/permission violations by User.
+* Fixes to CVE management API with CVE services 2.1 and CVEJSON5 support
+* CSAF enchancements including TLP setup. Pending Customer engagement details publishing.
+* Fix number of logging to include relevant data as part of log message
+
+
 ## Version 1.50.6: 2022-11-04
 
 * Allow Vendor Association when Ticket is associated with a Case
