@@ -5763,6 +5763,7 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         #Assume we have not vrf_url unless we get one from below methods
         context['vrf_url'] = None
         context['vincecomm_link'] = None
+        
         if hasattr(context['case'],'case_request') and context['case'].case_request:
             if hasattr(context['case'].case_request,'caserequest'):
                 context['cr'] = context['case'].case_request.caserequest

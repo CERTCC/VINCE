@@ -28,6 +28,7 @@
 ########################################################################
 */
 
+
 $(document).ready(function() {
     var deletemodal = $('#deletemodal');
     var _ = new Foundation.Reveal(deletemodal);

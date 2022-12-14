@@ -1,5 +1,6 @@
 # VINCE Changelog
 
+
 ## Version 2.0.3: 2022-12-14
 
 * Major upgrade to Django 3.2 LTS target end byt 2024. Fixes related to Django upgrade in all libraries.
@@ -11,7 +12,6 @@
 * Fixes to CVE management API with CVE services 2.1 and CVEJSON5 support
 * CSAF enchancements including TLP setup. Pending Customer engagement details publishing.
 * Fix number of logging to include relevant data as part of log message
-
 
 ## Version 1.50.6: 2022-11-04
 
