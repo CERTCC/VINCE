@@ -25,31 +25,32 @@
     </div>
     <div class="large-4 columns text-right">
       {% if ticket.case %}
-      <a href="{% url 'vince:case' ticket.case.id %}" class="button cmu"><i class="fas fa-suitcase"></i> View case</a>
-      {% elif ticket.queue.title == "Vendor" %}
+      <a href="{% url 'vince:case' ticket.case.id %}" class="button primary small"><i class="fas fa-suitcase"></i> View case</a>
+      {% if vincecomm_link %}
+      <a href="{{ vincecomm_link }}" class="button default small small-only-expanded"><i class="fas fa-eye"></i> View in VinceComm</a>
+      {% endif %}
+      {% else %}
+      <a href="{% url 'vince:newcase' ticket.id %}" class="button primary small"><i class="fas fa-suitcase"></i> Create case</a>
+      {% endif %}
+      <!-- Tickets under a Case can still be in Vendor queue requiring Association approval See VIN-588 -->
+      {% if ticket.queue.title == "Vendor" %}
       {% if ca %}
       {% if ca.complete %}
       {% if ca.restart %}
-      <a href="{% url 'vince:msgadmin' ticket.id %}" id="msgadmin" email="{{ ticket.submitter_email }}" class="button cmu">Verify Contact</a>
+      <a href="{% url 'vince:msgadmin' ticket.id %}" id="msgadmin" email="{{ ticket.submitter_email }}" class="button cmu small">Verify Contact</a>
       {% endif %}
       
-         {% elif ca.approval_requested %}
-      <a href="{% url 'vince:complete_contact' ca.id %}" class="complete button small primary">Complete Association</a>
+      {% elif ca.approval_requested %}
+      <a href="{% url 'vince:complete_contact' ca.id %}" class="complete button small cmu">Complete Association</a>
       <a href="{% url 'vince:restart_contact' ca.id %}" class="complete button small default">Restart</a>
-         {% else %}
-         <a href="{% url 'vince:contactreqauth' ca.id %}" class="approve button small primary">Request Authorization</a>
-	 <a href="{% url 'vince:restart_contact' ca.id %}" class="approve button small default">Restart</a>
-	 {% endif %}
-        {% else %}
-	 <!--<a href="{% url 'vince:initcontactverify' %}?tkt={{ticket.id}}" class="button cmu">Verify Contact</a>-->
-         <a href="{% url 'vince:msgadmin' ticket.id %}" id="msgadmin" email="{{ ticket.submitter_email }}" class="button cmu">Verify Contact</a>
-        {% endif %}
-	 {% else %}
-	 {% if vincecomm_link %}
-	 <a href="{{ vincecomm_link }}" class="button default small small-only-expanded"><i class="fas fa-eye"></i> View in VinceComm</a>
-	 {% endif %}
-
-	 <a href="{% url 'vince:newcase' ticket.id %}" class="button primary small small-only-expanded"><i class="fas fa-suitcase"></i> Create case</a>
+      {% else %}
+      <a href="{% url 'vince:contactreqauth' ca.id %}" class="approve button small primary">Request Authorization</a>
+      <a href="{% url 'vince:restart_contact' ca.id %}" class="approve button small default">Restart</a>
+      {% endif %}
+      {% else %}
+      <!--<a href="{% url 'vince:initcontactverify' %}?tkt={{ticket.id}}" class="button cmu">Verify Contact</a>-->
+      <a href="{% url 'vince:msgadmin' ticket.id %}" id="msgadmin" email="{{ ticket.submitter_email }}" class="button cmu small">Verify Contact</a>
+      {% endif %}
       {% endif %}
     </div>
   </div>
@@ -86,8 +87,8 @@
 </div>
 
 <hr>
-<div id="ticket_activity" href="{% url 'vince:ticket_activity' ticket.id %}">
-{% include 'vince/ticket_activity.html' %}
+<div id="ticket_activity" href="{% url 'vince:ticket_activity' ticket.id %}" class="asyncload autoload asyncrefresh" onmutate="update">
+<!-- Load this async -->
 </div>
 <hr>
 {% url 'vince:update' ticket.id as the_url %}

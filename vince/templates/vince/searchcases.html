@@ -16,7 +16,7 @@
       <h2>Cases</h2>
     </div>
     <div class="large-6 columns text-right">
-      <a href="{% url 'vince:newcr' %}?case=1"><button class="cmu button"><i class="fas fa-plus"></i> New Case</button></a>
+      <a href="{% url 'vince:newcr' %}?case=1"><button class="cmu button primary"><i class="fas fa-plus"></i> New Case</button></a>
     </div>
   </div>
 </div>
@@ -37,6 +37,12 @@
             <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
           </div>
           {% render_field form.status %}
+	  <hr style="margin:0px"/>
+	  <div class="form-check">
+	    <input id="changes_to_publish" name="changes_to_publish" type="checkbox" class="form-check-input">
+	    <label for="changes_to_publish" class="form-check-label">Updated
+	    </label>
+	  </div>
           <div class="filter-by-dropdown__dropdown-footer">
           </div>
         </div>

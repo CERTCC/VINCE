@@ -28,112 +28,23 @@
 ########################################################################
 */
 
-function nextPage(page) {
-    var url = $("#filterform").attr("action");
-    $("#inbox").load(url+"?page=" + page);
-}
-
-function nextThreads(page) {
-    $("#id_page").val(page);
-    var url = $("#filterform").attr("action");
-    $.ajax({
-        url : url,
-        type: "POST",
-        data: $('#filterform').serialize(),
-        success: function(data) {
-            $("#inbox").html(data);
-        }
-    });
-}
-
-
-function searchThreads(e) {
-    if (e) {
-        e.preventDefault();
-    }
-
-    $("#id_page").val("1");
-    var url = $("#filterform").attr("action");
-    $.ajax({
-	url : url,
-        type: "POST",
-	data: $('#filterform').serialize(),
-	success: function(data) {
-            $("#inbox").html(data);
-	}
-    });
-}
-
-function nextSent(page) {
-    var url = $("#filterform").attr("action") + "?page="+page;
-    $.ajax({
-        url : url,
-        type: "GET",
-        success: function(data) {
-            $("#sent").html(data);
-        }
-    });
-}
-
 
 $(document).ready(function() {
-
-
-    $(document).on("click", '.search_page', function(event) {
-        var page = $(this).attr('next');
-        nextPage(page);
-    });
-
-    $(document).on("click", '.search_notes', function(event) {
-        var page = $(this).attr('next');
-	event.preventDefault();
-        nextThreads(page);
-    });
-
-    $(document).on("click", '.searchsent', function(event) {
-        var page = $(this).attr('next');
-        event.preventDefault();
-        nextSent(page);
-    });
-
-    
-    var filter_msg = document.getElementById("id_keyword");
-    if (filter_msg) {
-	filter_msg.addEventListener("keyup", function(event) {
-            searchThreads(event);
-	});
-    }
-
-    var modal = $("#deletemodal");
-
+    var deletemodal = $('#deletemodal');
+    var _ = new Foundation.Reveal(deletemodal);
     $(document).on("click", ".delete-btn", function(event) {
         event.preventDefault();
         var url = $(this).attr("action");
-	
+	if(!url) {
+	    console.log("No URL found to submit returning");
+	    return;
+	}
         $.ajax({
             url: url,
             type: "GET",
             success: function(data) {
-                modal.html(data).foundation('open');
+                deletemodal.html(data).foundation('open');
             }
         });
-
     });
-
-    $(document).on("submit", "#filterform", function(event) {
-	event.preventDefault();
-	searchThreads();
-    });
-	
-    
-    $("input[id^='id_status_']").change(function() {
-	searchThreads();
-    });
-
-    $("#filter_by_dropdown_select_all_0").click(function(){
-	$("input[type=checkbox]").prop('checked', $(this).prop('checked'));
-        searchThreads();
-
-    });
-    
 });

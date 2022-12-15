@@ -45,7 +45,7 @@ class UserMentionExtension(md.Extension):
         md.Extension.__init__(self)
         self.user_list = users
 
-    def extendMarkdown(self, mde, md_globals):
+    def extendMarkdown(self, mde, md_globals={}):
         mde.inlinePatterns["user_mentions"] = UserMentionInlinePattern(self.UM_RE, users=self.user_list)
 
 class UserMentionInlinePattern(md.inlinepatterns.Pattern):

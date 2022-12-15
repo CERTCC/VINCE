@@ -36,17 +36,17 @@
 	  <tr><th width="200">{% trans "Status" %}</th>
 	    <td>{% if case.lotus_notes %}{% else %}<a href="{% url 'vinny:vincase' case.id %}" target="_blank"><span class="label primary">VINCEComm</span></a>  {% endif %}{% if case.status == 1 %}<span class="label success">Active</span>{% else %}<span class="label info">Inactive</span>{% endif %}  <a href="{% url 'vince:updateconfirm' case.id %}" id="changestatus"><i class="fas fa-edit"></i></a></td>
 	  </tr>
-	  <tr><th>{% trans "Public" %}</th><td>{% if case.publicdate %}<span class="label success">Public</span>  {{ case.publicdate|date:"Y-m-d" }} {% if case.publicurl %}<a class="publicurl" href="{{case.publicurl}}" target="_blank"><i class="fas fa-external-link-alt"></i> {{ case.publicurl|smarter_urlize:50 }}</a>{% endif %}{% else %}<span class="label warning">Not Public</span>{% endif %}</td>
+	  <tr><th>{% trans "Public" %}</th><td>{% if case.publicdate %}<span class="label success">Public</span>  <span class="dateprinted" title="Click toggle formats">{{ case.publicdate|date:"Y-m-d H:i:sO" }}</span> {% if case.publicurl %}<a class="publicurl" href="{{case.publicurl}}" target="_blank"><i class="fas fa-external-link-alt"></i> {{ case.publicurl|smarter_urlize:50 }}</a>{% endif %}{% else %}<span class="label warning">Not Public</span>{% endif %}</td>
 	  </tr>
-	  <tr><th>{% trans "Date Created" %}</th><td> {{ case.created|date:"Y-m-d g:i:s A" }}</td>
+	  <tr><th>{% trans "Date Created" %}</th><td> <span class="dateprinted" title="Click toggle formats">{{ case.created|date:"Y-m-d H:i:sO" }}</span></td>
 	  </tr>
 	  <tr>
 	    <th>{% trans "Estimated Date Public" %}</th>
-	    <td>{{ case.due_date|date:"Y-m-d" }} ({{ case.due_date|naturaltime }})</td>
+	    <td><span class="dateprinted" title="Click toggle formats">{{ case.due_date|date:"Y-m-d H:i:sO" }}</span> ({{ case.due_date|naturaltime }})</td>
           </tr>
 	    {% if case.published %}
 	  <tr><th width="200">{% trans "Published" %}</th>
-	    <td><span class="label badge-tag-success">Published</span>  {{ vulnote.date_published|date:"Y-m-d" }}: <a href="{% url 'vincepub:vudetail' case.vuid %}" target="_blank" rel="noopener">View Vulnerability Note</a></td>
+	    <td><span class="label badge-tag-success">Published</span>  <span class="dateprinted" title="Click toggle formats">{{ vulnote.date_published|date:"Y-m-d H:i:sO" }}</span>: <a href="{% url 'vincepub:vudetail' case.vuid %}" target="_blank" rel="noopener">View Vulnerability Note</a></td>
 	  </tr>
 	  {% endif %}
 	  <tr><th>{% trans "Case Permissions" %}</th>
@@ -87,7 +87,7 @@
 
 	    </th>
 	    <td><ul>{% for r in reminders %}
-		<li><i>{{r.alert_date|date:"Y-m-d"}}</i> "{{ r }}" <small><b>for {{r.user.usersettings.preferred_username}}</b></small><a class="rmreminder" id="{{ r.id }}" action="{% url 'vince:rmreminder' %}">   <i class="fas fa-trash"></i></a></li>
+		<li><i><span class="dateprinted" title="Click toggle formats">{{r.alert_date|date:"Y-m-d H:i:sO"}}</span></i> "{{ r }}" <small><b>for {{r.user.usersettings.preferred_username}}</b></small><a class="rmreminder" id="{{ r.id }}" action="{% url 'vince:rmreminder' %}">   <i class="fas fa-trash"></i></a></li>
 	      {% empty %}
               <p>{% trans "This case has no reminders." %}</p>
               {% endfor %}</ul>
@@ -111,7 +111,7 @@
     <div class="tabs-panel" id="cr">
       <div class="crview">
 	<div class="callout alert">
-	  <p>This case was not created from a CR. If you would like to share details about a vulnerability in VinceComm please add a CR.</p>
+	  <p>This case was not created from a CR or a ticket. If you would like to share details about a vulnerability in VinceComm please add a CR.</p>
 	</div>
 	<a href="{% url 'vince:newcrcase' case.id %}"><button class="button secondary">Add a CR</button></a>
       </div>
@@ -209,10 +209,19 @@
     </div>
     
     <div class="tabs-panel" id="vulnote">
-      <p>
+      <div>
 	{% if vulnote %}
 	<a href="{% url 'vince:edit_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vul Note</button></a>
-	<a href="{% url 'vince:download_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-download"></i> Download</button></a>
+	<ul class="dropdown menu" data-dropdown-menu="fake-dropdown-menu" role="menubar" id="download_drop">
+          <li class="is-dropdown-submenu-parent opens-right" role="menuitem" aria-haspopup="true" data-is-click="false" aria-label="Download Options"><a href="#" class="button cmu tiny download_btn">Download</a>
+	    <ul class="menu submenu is-dropdown-submenu first-sub vertical" data-submenu="" role="menu" id="download_menu">
+              <li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="{% url 'vince:download_vulnote' vulnote.id %}">JSON</a></li>
+	      <li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="javascript:void(0)" id="download_html">HTML</a></li>
+            </ul>
+	  </li>
+	</ul>
+
+	
 	<a href="{% url 'vince:changelog' vulnote.id %}"><button class="button cmu tiny"> <i class="fas fa-clock"></i> View Full History</button></a>
 	<button id="sharevulnote" class="button cmu tiny" action="{% url 'vince:sharevulnote' vulnote.id %}" {% if case.lotus_notes %}disabled{% endif %}> <i class="fas fa-share-square"></i> Share in VinceComm</button>
 	{% if vulnote.ticket_to_approve %}
@@ -233,7 +242,7 @@
 	{% else %}
 	<a href="{% url 'vince:create' case.id %}"> <button class="button cmu tiny"> <i class="fas fa-plus"></i> Start Vul Note </button></a>
 	{% endif %}
-      </p>
+      </div>
       {% include 'vince/include/changelog.html' %}
     </div>
     <div id="approvenote" class="reveal" data-reveal data-close-on-click='false'></div>

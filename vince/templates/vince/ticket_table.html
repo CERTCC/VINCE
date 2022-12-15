@@ -5,7 +5,7 @@
 
 <div class="row align">
   <div class="large-9 medium-8 small-12 columns">
-    <h3>{{ ticket.title|email_to_user }}</h3>
+    <h3>{{ ticket.title|escape|email_to_user }}</h3>
     <p>Submitted by
       {% if message %}
       <a href="{% url 'vince:vinny_redirect' %}?next={% url 'vinny:thread_detail' message.thread %}"> {{ ticket.submitter_email }}</a>
@@ -72,7 +72,7 @@
 <span class="assigned_to_name">{{ user.usersettings.preferred_username }}</span> <strong><button type="button" id="reassign" class="button default tiny assignme"><i class="far fa-hand-paper"></i>&nbsp;{% trans "Reassign" %}</button></strong>
 </div>
 
-<div class="row">
+<div class="row" id="ticketmetadata">
   <div class="large-4 columns align-middle">
     <label for="Assigned to">Assigned to</label>
     <span id="assign_block">

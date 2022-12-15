@@ -28,63 +28,7 @@
 ########################################################################
 */
 
+/*
+Moved all async works to vincecomm.js
 
-
-function searchThreads(e, newpage) {
-    var csrftoken = getCookie('csrftoken');
-
-    if (e) {
-        e.preventDefault();
-    }
-    var page = 1;
-    if (newpage) {
-	page = newpage;
-    }
-
-    var url = $("#searchform").attr("action");
-    $.ajax({
-        url : url,
-        type: "POST",
-        data: $('#searchform').serialize(),
-        success: function(data) {
-            $("#casecontainer").html(data);
-        }
-    });
-}
-
-
-$(document).ready(function() {
-
-    var filter_msg = document.getElementById("filter_threads");
-    if (filter_msg) {
-        filter_msg.addEventListener("keyup", function(event) {
-            searchThreads(event);
-        });
-    }
-
-    $("input[id^='id_owner_']").change(function() {
-        searchThreads();
-    });
-
-    $("#filter_by_dropdown_select_all_0").click(function(){
-        $("input[type=checkbox]").prop('checked', $(this).prop('checked'));
-	searchThreads();
-
-    });
-
-    var form = document.getElementById('searchform');
-    if (form) {
-        if (form.attachEvent) {
-            form.attachEvent("submit", searchThreads);
-        } else {
-            form.addEventListener("submit", searchThreads);
-        }
-    }
-    
-    $(document).on("click", '.search_notes', function(event) {
-        var page = $(this).attr('next');
-	$("#id_page").val(page);
-        searchThreads(0, page);
-    });
-
-});
+ */

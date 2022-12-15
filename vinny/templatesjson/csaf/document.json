@@ -2,12 +2,12 @@
     "acknowledgments": [
         {
             "urls": [
-                "%(publicurl)s"
+                "%(ackurl)s"
                 
             ]
         }
     ],
-    "category": "generic_csaf",
+    "category": "%(ORG_NAME)s Vulnerability Notice",
     "csaf_version": "2.0",
     "notes": [
         {
@@ -23,25 +23,25 @@
     ],
     "publisher": {
         "category": "coordinator",
-        "contact_details": "Email: %(CONTACT_EMAIL)",
-        "issuing_authority": "%(ORG_NAME)",
-        "name": "%(ORG_NAME)",
-        "namespace": "%(WEBSITE)"
+        "contact_details": "Email: %(CONTACT_EMAIL)s, Phone: %(CONTACT_PHONE)s",
+        "issuing_authority": "%(ORG_AUTHORITY)s",
+        "name": "%(ORG_NAME)s",
+        "namespace": "%(WEBSITE)s"
     },
     "references": [
         {
-            "url": "References link here",
-            "summary": "%(ORG_NAME) vulnerability disclosure policy"
+            "url": "%(ORG_POLICY_URL)s",
+            "summary": "%(ORG_NAME)s vulnerability disclosure policy"
         },
         {
-            "summary": "%(ORG_NAME) document released",
+            "summary": "%(ORG_NAME)s document released",
             "category": "self",
             "url": "%(publicurl)s"
         }
     ],
     "title": %(title)s,
     "tracking": {
-        "current_release_date": "%(due_date)s",
+        "current_release_date": "%(revision_date)s",
         "generator": {
             "engine": {
                 "name": "VINCE",
@@ -52,12 +52,12 @@
         "initial_release_date": "%(due_date)s",
         "revision_history": [
             {
-                "date": "%(due_date)s",
-                "number": "1.0.0",
-                "summary": "Public released after peer review"
+                "date": "%(revision_date)s",
+                "number": "%(revision_number)s",
+                "summary": "Released on %(revision_date)s"
             }
         ],
-        "status": "final",
-        "version": "1.0.0"
+        "status": "%(case_status)s",
+        "version": "%(case_version)s"
     }
 }

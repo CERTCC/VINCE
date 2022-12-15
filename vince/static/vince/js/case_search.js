@@ -56,32 +56,41 @@ function nextTickets(page) {
 
 }
 
-var priorSearchReq = null;
+var txhr = null;
 
 function searchTickets(e) {
     if (e) {
 	e.preventDefault();
     }
-    $("#searchresults").html("<p class=\"loading text-center\"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></p>");
-
     $("#id_page").val("1");
     var url = "/vince/case/results/";
-    if(priorSearchReq) {
-        priorSearchReq.abort();
+    if(txhr && 'abort' in txhr) {
+        txhr.abort();
     }
-    priorSearchReq = $.ajax({
+    lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
+    txhr = $.ajax({
 	url: url,
 	type: "POST",
 	data: $('#searchform').serialize(),
 	success: function(data) {
-	    $("#searchresults").html(data);
-	    priorSearchReq = null;
-	}
-    });
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+ 	    $("#searchresults").html(data);
+	},
+	error: function() {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    console.log(arguments);
+	    alert("Search failed or canceled! See console log for details.");
+	},
+	complete: function() {
+	    /* Just safety net */
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    window.txhr = null;
+ 	}
+     });
 }
 
 $(document).ready(function() {
-
+    
     $(document).on("click", '.search_page', function(event) {
 	var page = $(this).attr('next');
 	nextPage(page);
@@ -104,7 +113,15 @@ $(document).ready(function() {
 	form.attachEvent("submit", searchTickets);
     } else {
 	form.addEventListener("submit", searchTickets);
-    }
+    };
+
+    $('#changes_to_publish').on('click',function() {
+	/* If a Case is Updated (updates requiring a re-publish) it is assumed
+	   it has already been Published first. The status=2 is Published search */
+	if($('#changes_to_publish').prop('checked'))
+	    $('#id_status_2').prop('checked',true);
+	searchTickets();
+    });
 
     $("#filter_by_dropdown_select_all_0").click(function(){
         $("#id_status input[type=checkbox]").prop('checked', $(this).prop('checked'));
@@ -160,6 +177,11 @@ $(document).ready(function() {
         event.preventDefault();
         var val = $(this).attr("val");
         $("#id_team input[value="+val+"]").prop('checked', false);
+	searchTickets();
+    });
+
+    $(document).on("click",'.removechanges_to_publish', function(event) {
+	$('#changes_to_publish').prop('checked',false);
 	searchTickets();
     });
     

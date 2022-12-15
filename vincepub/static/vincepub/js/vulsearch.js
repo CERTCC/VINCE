@@ -64,13 +64,13 @@ function searchNotes(e) {
     }
     $("#id_page").val("1");
     var url = "/vuls/results/";
-
+    $("#searchresults").css({opacity: 0.5});
     $.ajax({
 	url: url,
 	type: "POST",
 	data: $('#searchform').serialize(),
 	success: function(data) {
-	    $("#searchresults").html(data);
+	    $("#searchresults").html(data).css({opacity: 1});
 	}
     });
 }
@@ -78,12 +78,22 @@ function searchNotes(e) {
 $(document).ready(function() {
 
     function vend_auto(data) {
-       var vendor_input=$('input[id="id_vendor"]');
+       var vendor_input=$('#id_vendor');
        vendor_input.autocomplete({
-        source: data,
-        minLength: 2,
-           select: function( event, ui) { $("#id_vendor").val(ui.item.value); searchNotes(); }
-
+           source: data,
+           minLength: 2,
+           select: function( event, ui) {
+	       $("#id_vendor").val(ui.item.value);
+	       searchNotes();
+	   },
+	   response: function(event, ui) {
+	       $('#noresults_vendor').remove();
+	       if (ui.content.length === 0) {
+		   console.log("No results");
+		   if($('#noresults_vendor').length == 0) 
+		       $('#id_vendor').after('<h4 id="noresults_vendor" style="color:#dc3545 "> No matches found </h4>');
+	       }
+	   }
      });
     }
 

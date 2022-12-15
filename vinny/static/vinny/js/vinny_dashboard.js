@@ -28,103 +28,13 @@
 ########################################################################
 */
 
+/*
+  See also static/vince/js/vinny_dashboard.js for Case view related
+  javascript libraries
+*/
 
+/*
 
-function searchThreads(e, newpage) {
-    var csrftoken = getCookie('csrftoken');
+  All form submits moved to vincecomm.js
 
-    if (e) {
-        e.preventDefault();
-    }
-    var page = 1;
-    if (newpage) {
-	page = newpage;
-    }
-
-    var url = $("#filter_threads").attr("href");
-    var owner = $("input[id^='id_owner_']:checked");
-    $.ajax({
-        url : url,
-        type: "POST",
-        data: {"keyword": $("#filter_threads").val(),
-	       "owner": owner,
-	       "page": page,
-               "csrfmiddlewaretoken": csrftoken
-              },
-        success: function(data) {
-            $("#casecontainer").html(data);
-        }
-    });
-}
-
-function searchReports(e, newpage) {
-    var csrftoken = getCookie('csrftoken');
-
-    if (e) {
-        e.preventDefault();
-    }
-    var page = 1;
-    if (newpage) {
-        page = newpage;
-    }
-
-    var idSelector = function() { return this.value; };
-    var url = $("#filter_reports").attr("href");
-    var status = $("#id_status input[type=checkbox]:checked").map(idSelector).get();
-    $.ajax({
-        url : url,
-        type: "POST",
-        data: {"keyword": $("#filter_reports").val(),
-               "page": page,
-	       "status": status,
-               "csrfmiddlewaretoken": csrftoken
-              },
-        success: function(data) {
-            $("#casecontainer").html(data);
-        }
-    });
-}
-
-
-$(document).ready(function() {
-
-    var filter_msg = document.getElementById("filter_threads");
-    if (filter_msg) {
-        filter_msg.addEventListener("keyup", function(event) {
-            searchThreads(event);
-        });
-    }
-
-    var filter_report = document.getElementById("filter_reports");
-    if (filter_report) {
-	filter_report.addEventListener("keyup", function(event) {
-	    searchReports(event);
-	});
-    }
-    
-    $("input[id^='id_owner_']").change(function() {
-        searchThreads();
-    });
-
-    $("#filter_by_dropdown_select_all_0").click(function(){
-        $("#id_owner input[type=checkbox]").prop('checked', $(this).prop('checked'));
-	searchThreads();
-
-    });
-
-    $("input[id^='id_status_']").change(function() {
-        searchReports();
-    });
-
-    $("#filter_by_dropdown_select_all_1").click(function(){
-        $("#id_status input[type=checkbox]").prop('checked', $(this).prop('checked'));
-        searchReports();
-    });
-    
-    $(document).on("click", '.search_notes', function(event) {
-        var page = $(this).attr('next');
-	$("#id_page").val(page);
-        searchThreads(0, page);
-    });
-
-});
+ */

@@ -27,7 +27,10 @@
 # DM21-1126
 ########################################################################
 from __future__ import print_function
-from django.shortcuts import render, get_object_or_404, render_to_response, redirect
+try:
+    from django.shortcuts import render, get_object_or_404, render_to_response, redirect
+except:
+    from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, Http404
 from django.views.generic.edit import FormView, UpdateView, CreateView, FormMixin
@@ -340,7 +343,7 @@ def va_bullhorn(value):
     if value:
         if value == "There are no additional comments at this time.":
             return False
-        elif value == "The CERT/CC has no additional comments at this time.":
+        elif value == f"The {settings.ORG_NAME} has no additional comments at this time.":
             return False
         return True
     return False
@@ -454,6 +457,30 @@ def get_vrf_id():
     vrf_id_month = str(today.month) if today.month > 9 else ('0' + str(today.month))
     vrf_id = str(today.year)[2:] + '-' + vrf_id_month + '-' + vrf_id_rnd
     return vrf_id
+
+class PublicAPIView(generics.RetrieveAPIView, generics.GenericAPIView):
+    """ All public API views will require no authentication
+    and finalize_response will provide HTTP 200 with JSON error
+    for friendly working of the JSON API clients.
+    """
+    authentication_classes = []
+    permission_classes = (AllowAny,)
+    is_empty = False
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        generic_error = {"error": "Content requested either does not exist or you do not have permissions to view it!"}
+        if hasattr(response,'status_code') and not response.status_code in [200,302]:
+            return JsonResponse(generic_error)
+        if hasattr(self,'is_empty') and self.is_empty:
+            return JsonResponse(generic_error)
+        if hasattr(response,'status_code') and response.status_code == 200 and request.headers.get('Origin') and request.headers.get('Origin').find("https://") > -1:
+            response["Access-Control-Allow-Origin"] = request.headers.get('Origin')
+        return response
+
+class PublicListAPIView(generics.ListAPIView):
+    """ All public list api views will require no authentication """
+    authentication_classes = []
+    permission_classes = (AllowAny,)    
 
 class VinceView(generic.TemplateView):
     template_name = 'vincepub/vince.html'
@@ -601,15 +628,21 @@ def escape_query(text, re_escape_chars):
 
     
 def process_query(s):
+    s = s.replace("'","")
     try:
         query = "&" .join("$${0}$$:*".format(word) for word in shlex.split(escape_query(s, RE_POSTGRES_ESCAPE_CHARS)))
-    except ValueError:
+    except Exception as e:
+        logger.debug(f"Error {e} from shlex.split when trying to escape string {s} for Postgres")
         #shlex returns a ValueError when it doesn't have closing quote
         if s.endswith('\\'):
             if not s.endswith('\\\\'):
                 s = s + '\\'
         s = s + '"'
-        query = "&" .join("$${0}$$:*".format(word) for word in shlex.split(escape_query(s, RE_POSTGRES_ESCAPE_CHARS)))
+        try:
+            query = "&" .join("$${0}$$:*".format(word) for word in shlex.split(escape_query(s, RE_POSTGRES_ESCAPE_CHARS)))
+        except Exception as f:
+            logger.debug(f"Unable to escape characters in search error {f} for string {s} returning empty search")
+            return ""        
 
     # this is for prefix searches
     query = re.sub(r'\s+', '<->', query)
@@ -640,6 +673,7 @@ class SearchResultView(generic.ListView):
         if 'years' in self.request.POST:
             yearlist = self.request.POST.getlist('years')
             for year in yearlist:
+                year = re.sub('[^\d]','',year)
                 if year != "":
                     datefilter.append(Q(datefirstpublished__year=year))
 
@@ -997,6 +1031,19 @@ class SecurityTxtView(Buildable404View):
 class VendorView(generic.ListView):
     template_name = 'vincepub/vendorinfo.html'
     model = VendorRecord
+    authentication_classes = []
+    permission_classes = (AllowAny,)    
+
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            response = super().retrieve(request, *args, **kwargs)
+        except Exception as e:
+            logger.debug(f"Error in creating ViewSet {e}")
+            generic_error = {"error": "Content requested either does not exist or you do not have permissions to view it!"}
+            return Response(generic_error)
+        return response    
+
 
     def get_template_names(self):
         report = VUReport.objects.filter(vuid=self.kwargs['vuid']).first()
@@ -1072,16 +1119,18 @@ class VUNoteViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         return "Vulnerability Note Instance Details"
 
     
-class VulViewAPI(generics.GenericAPIView, mixins.ListModelMixin):
+class VulViewAPI(PublicAPIView, mixins.ListModelMixin):
     queryset = NoteVulnerability.objects.all()
     serializer_class = serializers.VulSerializer
-    permission_classes = (AllowAny,)
 
     def get_queryset(self):
         return NoteVulnerability.objects.all()
 
     def list(self, request, *args, **kwargs):
-        vu = get_object_or_404(VUReport, idnumber=self.kwargs['pk'])
+        vu = VUReport.objects.filter(idnumber=self.kwargs['pk']).first()
+        if not vu:
+            self.is_empty = True
+            return Response({})
         if vu.vulnote:
             queryset = NoteVulnerability.objects.filter(note__vureport__idnumber = self.kwargs['pk'])
             serializer = serializers.VulSerializer(queryset, many=True)
@@ -1106,22 +1155,25 @@ class VulViewAPI(generics.GenericAPIView, mixins.ListModelMixin):
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
-class VUNoteViewByMonth(generics.ListAPIView):
+class VUNoteViewByMonth(PublicListAPIView):
     serializer_class = serializers.VUReportSerializer
+    authentication_classes = []
+    permission_classes = (AllowAny,)
 
     def get_view_name(self):
         return "Vulnerability Notes Published by Month"
     
     def get_queryset(self):
-        year = self.kwargs['year']
-        month = self.kwargs['month']
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        month = re.sub('[^\d]','',self.kwargs['month'])
         return VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month)
 
-class VUNoteViewByYear(generics.ListAPIView):
+class VUNoteViewByYear(PublicListAPIView):
     serializer_class = serializers.VUReportSerializer
 
+    
     def get_queryset(self):
-        year = self.kwargs['year']
+        year = re.sub('[^\d]','',self.kwargs['year'])
         return VUReport.objects.filter(datefirstpublished__year=year)
 
 class VUNoteViewByMonthSummary(VUNoteViewByMonth):
@@ -1160,21 +1212,23 @@ class VUNoteViewByYearSummary(VUNoteViewByYear):
     def get(self, request, *args, **kwargs):
         return self.summarize(request, *args, **kwargs)
 
-class VendorViewByMonth(generics.ListAPIView):
+class VendorViewByMonth(PublicListAPIView):
     serializer_class = serializers.NewVendorRecordSerializer
+    authentication_classes = []
+    permission_classes = (AllowAny,)
 
     def get_view_name(self):
         return "Vendors By Month"
 
     def get_queryset(self):
-        year = self.kwargs['year']
-        month = self.kwargs['month']
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        month = re.sub('[^\d]','',self.kwargs['month'])
         reports = VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month).values_list('vuid', flat=True)
         return VendorRecord.objects.filter(vuid__in=reports)
     
     def get(self, request, *args, **kwargs):
-        year = self.kwargs['year']
-        month = self.kwargs['month']
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        month = re.sub('[^\d]','',self.kwargs['month'])
         reports = VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month).values_list('idnumber', flat=True)
         oldrecs = VendorRecord.objects.filter(idnumber__in=reports)
         x = serializers.VendorRecordSerializer(oldrecs, many=True)
@@ -1182,11 +1236,11 @@ class VendorViewByMonth(generics.ListAPIView):
         y = serializers.VRSerializer(vendor, many=True)
         return Response(x.data+y.data)
 
-class VendorViewByYear(generics.ListAPIView):
+class VendorViewByYear(PublicListAPIView):
     serializer_class = serializers.VendorRecordSerializer
 
     def get_queryset(self):
-        year = self.kwargs['year']
+        year = re.sub('[^\d]','',self.kwargs['year'])
         reports = VUReport.objects.filter(datefirstpublished__year=year).values_list('vuid', flat=True)
         return VendorRecord.objects.filter(vuid__in=reports)
 
@@ -1197,8 +1251,8 @@ class VendorViewByMonthSummary(VendorViewByMonth):
     
     def	summarize(self, request, *args, **kwargs):
         # make sure the filters of the parent class get applied
-        year = self.kwargs['year']
-        month = self.kwargs['month']
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        month = re.sub('[^\d]','',self.kwargs['month'])
         reports = VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month).values_list('idnumber', flat=True)
         oldrecs = VendorRecord.objects.filter(idnumber__in=reports).distinct('vendor')
         vendor = Vendor.objects.filter(note__vuid__in=reports).distinct('vendor')
@@ -1231,7 +1285,7 @@ class VendorViewByYearSummary(VendorViewByYear):
     def get(self, request, *args, **kwargs):
         return self.summarize(request, *args, **kwargs)
 
-class VendorViewAPI(generics.GenericAPIView, mixins.ListModelMixin):
+class VendorViewAPI(PublicAPIView, mixins.ListModelMixin):
     queryset = VendorRecord.objects.all()
     serializer_class = serializers.VendorRecordSerializer
     permission_classes = (AllowAny,)
@@ -1252,7 +1306,7 @@ class VendorViewAPI(generics.GenericAPIView, mixins.ListModelMixin):
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
-class VendorVulViewAPI(generics.GenericAPIView, mixins.ListModelMixin):
+class VendorVulViewAPI(PublicAPIView, mixins.ListModelMixin):
     queryset = VendorVulStatus.objects.all()
     serializer_class = serializers.VendorVulSerializer
     permission_classes = (AllowAny,)
@@ -1274,11 +1328,15 @@ class VendorVulViewAPI(generics.GenericAPIView, mixins.ListModelMixin):
         return self.list(request, *args, **kwargs)
 
 
-class CVEVulViewAPI(generics.GenericAPIView):
+class CVEVulViewAPI(PublicAPIView):
 
     def get(self, request, *args, **kwargs):
-        cve = f"CVE-{self.kwargs['year']}-{self.kwargs['pk']}"
-        cvewo = f"{self.kwargs['year']}-{self.kwargs['pk']}"
+        #Be safe and remove all alpha character if this view
+        #is accessed some other way than URL regex map
+        year = re.sub('[^\d]','',self.kwargs['year'])
+        pk = re.sub('[^\d]','',self.kwargs['pk'])
+        cve = f"CVE-{year}-{pk}"
+        cvewo = f"{year}-{pk}"
         report = None
         old_report = VUReport.objects.raw(f"SELECT * from vincepub_vureport where cveids::text like '%%{cve}%%'")
         for x in old_report:
@@ -1345,3 +1403,17 @@ def autocomplete_vendor(request):
 def error_404(request):
     data = {}
     return render(request, 'vincepub/404.html', data, status=404)
+
+class CaseCSAFAPIView(PublicAPIView):
+    serializer_class = serializers.CSAFSerializer
+
+    def get_view_name(self):
+        return "Public Vulnerability Advisory in CSAF format"
+
+    def get_object(self):
+        svuid = re.sub('[^\d]','',self.kwargs['vuid'])
+        vr = VUReport.objects.filter(idnumber=svuid).first()
+        if not vr:
+            self.is_empty = True        
+        return vr
+

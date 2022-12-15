@@ -5714,3 +5714,31 @@ span.label a {
     margin: -10px;
 	
 }
+.dateprinted:hover {
+    text-decoration: underline;
+}
+#download_drop {
+    display: inline;
+}
+#download_drop a.download_btn {
+    padding: 0.5rem 1.5rem 0.6rem 0.5rem;
+    margin-bottom: -0.16rem;
+}
+#download_menu {
+    min-width: 100%;
+    border-radius: 2px;
+    background-color: #b00;
+}
+#download_drop:hover #download_menu {
+    display:block;
+}
+#download_menu > li > a {
+    padding: 0.3rem 0rem 0.3rem 0.6rem;
+    color: white;
+    font-size: 0.6rem;
+    font-weight: bold;
+}
+#download_menu > li > a:hover {
+    text-decoration: none;
+    background-color: #f06060;
+}

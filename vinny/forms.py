@@ -674,7 +674,7 @@ class StatementForm(forms.Form):
         disabled=True,
         widget = forms.Textarea(),
         label = _('Coordinator Addendum'),
-        help_text=_('Coordination team may add additional text about the vendor statements and status.'),
+        help_text=_('The coordination team may add additional text about the vendor statements and status.'),
         required=False
     )
 
@@ -699,7 +699,9 @@ class InboxFilterForm(forms.Form):
     keyword = forms.CharField(
         max_length=200,
         label='Keyword(s)',
-        widget=forms.TextInput(attrs={'placeholder': 'Search by keyword'}),
+        widget=forms.TextInput(attrs={'placeholder': 'Search by keyword',
+                                      'class': 'asyncdelaysearch'
+                                      }),
         required=False)
 
     status = forms.MultipleChoiceField(
@@ -719,7 +721,8 @@ class LimitedCaseFilterForm(forms.Form):
     wordSearch = forms.CharField(
         max_length=100,
         label='Keyword(s)',
-	widget=forms.TextInput(attrs={'placeholder': 'Search by keyword'}),
+	widget=forms.TextInput(attrs={'placeholder': 'Search by keyword',
+                                      'class': 'asyncdelaysearch'}),
 	required=False)
 
     status = forms.MultipleChoiceField(
@@ -742,7 +745,8 @@ class CaseFilterForm(forms.Form):
     wordSearch = forms.CharField(
         max_length=100,
         label='Keyword(s)',
-        widget=forms.TextInput(attrs={'placeholder': 'Search by keyword'}),
+        widget=forms.TextInput(attrs={'placeholder': 'Search by keyword',
+                                      'class': 'asyncdelaysearch'}),
         required=False)
     status = forms.MultipleChoiceField(
         choices=STATUS_FILTER_CHOICES,
@@ -934,7 +938,7 @@ class PreferencesForm(forms.Form):
         super(PreferencesForm, self).__init__(*args, **kwargs)
         #if setting is not set for this user, set to default
         for x,y in DEFAULT_USER_SETTINGS.items():
-            if self.initial.get(x) is None:
+            if self.initial.get(x) is None and x in self.fields:
                 self.fields[x].initial=y
 
 

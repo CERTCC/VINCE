@@ -30,3 +30,65 @@
 
 $(document).foundation();
 
+$(function() {
+    $('.dateprinted').on('click',function(event) {
+	event.preventDefault();
+	let mdate = new Date();
+	let unit = $(this);
+	let formats = ["defaultISO","toLocaleString","toString"]
+	let format = unit.attr("format");
+	if(!format) {
+	    try {
+		mdate = new Date(Date.parse(unit.html()));
+	    } catch(error) {
+		console.log("Error parsing date field "+String(error));
+		return;
+	    }
+	    unit.attr(formats[0],unit.html());	    
+	    for(let i=1; i < formats.length; i++) {
+		unit.attr(formats[i],mdate[formats[i]]());
+	    }
+	    unit.html(unit.attr(formats[1]));
+	    unit.attr("format",formats[1]);
+	    return;
+	} 
+	let findex = formats.findIndex(function(u) { return u == format});
+	findex = (findex + 1) %3;
+	if(unit.attr(formats[findex])) {
+	    unit.html(unit.attr(formats[findex]));
+	    unit.attr("format",formats[findex]);
+	}
+
+    });
+    function put_unread(ucount,update) {
+	if(ucount > 0) {
+	    $('.unread_msg_count').html(String(ucount)).addClass("badge success");
+	    if(update)
+		sessionStorage.setItem('unread_msg_count',String(ucount));
+	} else {
+	    $('.unread_msg_count').html("").removeClass("badge success");
+	    sessionStorage.removeItem('unread_msg_count');
+	}
+    }
+    function update_unread() {
+	let count = 0;
+	if(sessionStorage.getItem('unread_msg_count')) {
+	    /* On page load show current unread count and wait for Ajax data*/
+	    count = parseInt(sessionStorage.getItem('unread_msg_count'));
+	    if(count > 0)
+		put_unread(count,false);
+	}
+	    
+	if($('#unread_msg_count').length > 0 &&
+	   $('#unread_msg_count').data('url')) {
+	    $.getJSON($('#unread_msg_count').data('url'),function(d) {
+		if(('unread' in d) && (d.unread != count))
+		    put_unread(d.unread,true);
+	    });
+	}
+    }
+    update_unread();
+    /* Every 5 minutes updates Inbox unread count */
+    setTimeout(update_unread,300000);
+});
+

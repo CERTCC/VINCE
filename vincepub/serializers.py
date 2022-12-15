@@ -29,6 +29,15 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from vincepub.models import *
+from django.core.validators import URLValidator
+import os
+import json
+import uuid
+import re
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class VUReportSerializer(serializers.ModelSerializer):
     public = serializers.SerializerMethodField()
@@ -136,3 +145,167 @@ class VVSerializer(serializers.ModelSerializer):
         exclude = ["id"]
         
 
+class CSAFSerializer(serializers.ModelSerializer):
+    """
+    This serializer starts with a Case and then builds out using both
+    OriginalReport and CaseVulnerability(s) to create the CSAF document
+    list(VUReport.objects.filter(vuid="VU#865429"))
+    """
+    document = serializers.SerializerMethodField('get_csafdocument')
+    vulnerabilities = serializers.SerializerMethodField('get_csafvuls')
+    product_tree = serializers.SerializerMethodField('get_csafprods')
+    mproduct_tree = {"branches": []}
+    template_json_dir = os.path.join(os.path.dirname(__file__),
+                                     '..','vinny','templatesjson', 'csaf')
+    validurl = URLValidator()
+
+    class Meta:
+        model = VUReport
+        fields = ["document","vulnerabilities","product_tree"]
+
+    def to_representation(self, case):
+        ret = super().to_representation(case)
+        if not ret['vulnerabilities']:
+            del ret['product_tree']
+            if hasattr(settings,'CSAF_VUL_EMPTY'):
+                ret['vulnerabilities'] = settings.CSAF_VUL_EMPTY
+            else:
+                ret['vulnerabilities'] = [{"notes": [{"category": "general","text": "No vulnerabilities have been defined at this time for this report"}]}]
+        return ret
+
+    def isvalid_reference(self,ref):
+        if not ref:
+            return False
+        try:
+            self.validurl(ref)
+            return True
+        except Exception as e:
+            logger.debug("CSAF Parser encountered invalid URI for reference ignoring %s due to error %s" %(ref,str(e)))
+            return False
+
+
+    def get_csafdocument(self,vr):
+        tfile = os.path.join(self.template_json_dir,"document.json")
+        if not os.path.exists(tfile):
+            return {"error": "Template file for csaf missing"}
+        csafdocument_template = open(tfile,"r").read()
+        vulnote = reverse("vincepub:vudetail", args=[vr.idnumber])
+        publicurl = f"{settings.KB_SERVER_NAME}{vulnote}"
+        ackurl = f"{settings.KB_SERVER_NAME}{vulnote}#acknowledgements"
+        case_status = "final"
+
+        if vr.dateupdated:
+            revision_date = vr.dateupdated
+            revision_number = vr.dateupdated.strftime("1.%Y%m%d%H%M%S")
+        else:
+            revision_date = datetime.datetime.now()
+            revision_number = revision_date.strftime("1.%Y%m%d%H%M%S")
+        if vr.revision:
+            revision_number = revision_number + "." + str(vr.revision)
+        else:
+            revision_number = revision_number + ".0"
+        case_version = revision_number
+        csafdocument = csafdocument_template % {
+            "publicurl": publicurl,
+            "ackurl": ackurl,
+            "summary": json.dumps(vr.overview),
+            "LEGAL_DISCLAIMER": settings.LEGAL_DISCLAIMER,
+            "title": json.dumps(vr.name),
+            "due_date": vr.publicdate,
+            "VINCE_VERSION": settings.VERSION,
+            "ORG_NAME": settings.ORG_NAME,
+            "ORG_POLICY_URL": settings.ORG_POLICY_URL,
+            "ORG_AUTHORITY": settings.ORG_AUTHORITY,
+            "CONTACT_EMAIL": settings.CONTACT_EMAIL,
+            "CONTACT_PHONE": settings.CONTACT_PHONE,
+            "WEBSITE": settings.KB_SERVER_NAME,
+            "vu_vuid": vr.vuid,
+            "revision_date": revision_date,
+            "revision_number": revision_number,
+            "case_status": case_status,
+            "case_version": case_version
+        }
+        csafdoc = json.loads(csafdocument, strict=False)
+        if vr.vulnote.references and vr.vulnote.references != '' and vr.vulnote.references != 'None':
+            refs = filter(self.isvalid_reference,re.split('\r?\n',vr.vulnote.references))
+            csafdoc["references"] += list(map(lambda x: {"url": x, "summary": x},refs))
+        vens = list(Vendor.objects.filter(note=vr.vulnote))
+        for ven in vens:
+            if ven.statement:
+                veninfo = {"category": "other",
+                           "text": ven.statement,
+                           "title": f"Vendor statment from {ven.vendor}"}
+                csafdoc["notes"] += [veninfo]
+            if ven.references :
+                refs = filter(self.isvalid_reference,re.split('\r?\n',ven.references))
+                csafdoc["references"] += list(map(lambda x: {"url": x, "summary": f"Reference(s) from vendor \"{ven.vendor}\""},refs))
+            if ven.addendum:
+                addinfo = {"category": "other",
+                           "text": ven.addendum,
+                           "title": f"{settings.ORG_NAME} comment on {ven.vendor} notes"}
+                csafdoc["notes"] += [addinfo]
+        return csafdoc
+
+    def get_csafvuls(self, vr):
+        self.mproduct_tree = {"branches": []}
+        casevuls = list(NoteVulnerability.objects.filter(note__vuid=vr.idnumber))
+        if not len(casevuls):
+            return None
+        csafvuls = []
+        tfile = os.path.join(self.template_json_dir,"vulnerability.json")
+        csafvul_template = open(tfile,"r").read()
+        tfile = os.path.join(self.template_json_dir,"product_tree.json")
+        if not os.path.exists(tfile):
+            return [{"error": "Template file for csaf missing"}]
+        csafproduct_template = open(tfile,"r").read()
+        for casevul in casevuls:
+            known_affected = []
+            known_not_affected = []
+            if casevul.cve:
+                cve = casevul.cve.upper()
+                if cve.find("CVE-") < 0:
+                    cve = f"CVE-{cve}"
+            else:
+                cve = None
+            csafvul = csafvul_template % {
+                "vuid":  vr.vuid,
+                "cve":  cve,
+                "ORG_NAME": settings.ORG_NAME,
+                "title": json.dumps(casevul.description.split(".")[0]+"."),
+                "description": json.dumps(casevul.description) }
+            csafvulj = json.loads(csafvul,strict=False)
+            if cve is None:
+                del csafvulj['cve']
+            casems = list(VendorVulStatus.objects.filter(vul=casevul))
+            for casem in casems:
+                csaf_productid = "CSAFPID-"+str(uuid.uuid1())
+                vendor = casem.vendor.vendor
+                if casem.status == 1:
+                    known_affected.append(csaf_productid)
+                elif casem.status == 2:
+                    known_not_affected.append(csaf_productid)
+                if casem.references:
+                    if not "references" in csafvulj:
+                        csafvulj["references"] = []
+                    crfs = filter(self.isvalid_reference,re.split('\r?\n',casem.references))
+                    csafvulj["references"] += list(map(lambda x: {"url": x, "summary": x, "category": "external"},crfs))
+                    if casem.statement:
+                        for crf in csafvulj["references"]:
+                            crf["summary"] = casem.statement
+                csafproduct = csafproduct_template % {
+                    "vendor_name": vendor,
+                    "csaf_productid": csaf_productid }
+                self.mproduct_tree["branches"].append(json.loads(csafproduct,strict=False))
+            #Add vendor statement and any reference URLS
+            if len(known_affected) > 0:
+                if not 'product_status' in csafvulj:
+                    csafvulj['product_status'] = {}
+                csafvulj['product_status']['known_affected'] = known_affected
+            if len(known_not_affected) > 0:
+                if not 'product_status' in csafvulj:
+                    csafvulj['product_status'] = {}                
+                csafvulj['product_status']['known_not_affected'] = known_not_affected
+            csafvuls.append(csafvulj)
+        return csafvuls
+    def get_csafprods(self,vr):
+        return self.mproduct_tree

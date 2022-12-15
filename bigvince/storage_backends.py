@@ -39,11 +39,12 @@ class PrivateMediaStorage(S3Boto3Storage):
     #region_name = "us-east-1"
     custom_domain=False
     acl='private'
+    bucket_name = getattr(settings, 'PRIVATE_BUCKET_NAME')
     
     def __init__(self, *args, **kwargs):
-        kwargs['bucket'] = getattr(settings, 'PRIVATE_BUCKET_NAME')
-        kwargs['default_acl']='private'
-        kwargs['acl'] = 'private'
+        #kwargs['bucket'] = getattr(settings, 'PRIVATE_BUCKET_NAME')
+        #kwargs['default_acl']='private'
+        #kwargs['acl'] = 'private'
         #if hasattr(settings, 'ATTACHMENT_URL'):
         #    kwargs['custom_domain'] = settings.ATTACHMENT_URL
         #else:
@@ -59,11 +60,12 @@ class SharedMediaStorage(S3Boto3Storage):
     #region_name = "us-east-1"
     acl = 'private'
     custom_domain = False
+    bucket_name = getattr(settings, 'VINCE_SHARED_BUCKET')
 
     def __init__(self, *args, **kwargs):
-        kwargs['bucket'] = getattr(settings, 'VINCE_SHARED_BUCKET')
-        kwargs['default_acl']='private'
-        kwargs['acl'] = 'private'
+        #kwargs['bucket'] = getattr(settings, 'VINCE_SHARED_BUCKET')
+        #kwargs['default_acl']='private'
+        #kwargs['acl'] = 'private'
         #if hasattr(settings, 'VC_ATTACHMENT_URL'):
         #    kwargs['custom_domain'] = settings.VC_ATTACHMENT_URL
         #else:
@@ -77,9 +79,10 @@ class VRFReportsStorage(S3Boto3Storage):
     custom_domain=False
     region_name = settings.AWS_REGION
     acl = 'private'
+    bucket_name = getattr(settings, 'S3_INCOMING_REPORTS')
 
     def __init__(self, *args, **kwargs):
-        kwargs['bucket'] = getattr(settings, 'S3_INCOMING_REPORTS')
-        kwargs['default_acl']='private'
-        kwargs['acl'] = 'private'
+        #kwargs['bucket'] = getattr(settings, 'S3_INCOMING_REPORTS')
+        #kwargs['default_acl']='private'
+        #kwargs['acl'] = 'private'
         super(VRFReportsStorage, self).__init__(*args, **kwargs)

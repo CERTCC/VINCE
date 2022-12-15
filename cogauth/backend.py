@@ -33,7 +33,10 @@ from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
-from django.utils.six import iteritems
+try:
+    from django.utils.six import iteritems
+except:
+    from six import iteritems
 from django.contrib.auth.models import User
 from lib.warrant import Cognito
 from lib.warrant.exceptions import ForceChangePasswordException, SoftwareTokenException, SMSMFAException
@@ -69,7 +72,7 @@ class CognitoUser(Cognito):
     def get_user_obj(self, username=None, attribute_list=[], metadata={}, attr_map={}):
         user_attrs = cognito_to_dict(attribute_list,CognitoUser.COGNITO_ATTRS)
         django_fields = [f.name for f in CognitoUser.user_class._meta.get_fields()]
-        logger.debug(user_attrs)
+        logger.debug(f"User attributes in Cognito is {user_attrs}")
         extra_attrs = {}
         # need to iterate over a copy
         for k, v in user_attrs.copy().items():
@@ -86,16 +89,15 @@ class CognitoUser(Cognito):
                             setattr(user.vinceprofile, k, v)
                             #logger.debug(f"{k}:{v}")
                         user.vinceprofile.save()
-                    except:
-                        logger.debug(traceback.format_exc())
-                        logger.debug("vinceprofile probably doesn't exist")
+                    except Exception as e:
+                        logger.debug(f"Vinceprofile probably doesn't exist for user {username}, error returned {e}")
                 elif settings.VINCE_NAMESPACE == "vince":
                     try:
                         for k, v in extra_attrs.items():
                             setattr(user.usersettings, k, v)
                         user.usersettings.save()
                     except:
-                        logger.debug("usersettings probably doesn't exist")
+                        logger.debug(f"usersettings for {username} probably doesn't exist")
         else:
             try:
                 user = CognitoUser.user_class.objects.get(username=username)
@@ -103,22 +105,21 @@ class CognitoUser(Cognito):
                     setattr(user, k, v)
                 user.save()
             except CognitoUser.user_class.DoesNotExist:
-                logger.debug("USER DOES NOT EXIST")
+                logger.debug(f"USER {username} DOES NOT EXIST")
                 user = None
             if user:
                 try:
                     for k, v in extra_attrs.items():
                         setattr(user.vinceprofile, k, v)
                     user.vinceprofile.save()
-                except:
-                    logger.debug("vinceprofile probably does not exist")
-                    logger.debug(traceback.format_exc())
+                except Exception as e:
+                    logger.debug(f"vinceprofile probably does not exist for {username}, returned error is {e}")
                 try:
                     for	k, v in	extra_attrs.items():
                         setattr(user.usersettings, k, v)
                     user.usersettings.save()
                 except:
-                    logger.debug("usersettings probably doesn't exist")
+                    logger.debug(f"usersettings probably doesn't exist for {username}")
         return user
 
 class CognitoAuthenticate(ModelBackend):
@@ -133,10 +134,8 @@ class CognitoAuthenticate(ModelBackend):
                 username=username)
 
             try:
-                logger.debug("trying to authenticate %s" % username)
+                logger.debug(f"trying to authenticate {username}")
                 cognito_user.authenticate(password)
-                logger.debug(cognito_user)
-                
             except ForceChangePasswordException:
                 request.session['FORCEPASSWORD']=True
                 request.session['username']=username
@@ -156,16 +155,14 @@ class CognitoAuthenticate(ModelBackend):
                 return None
             except (Boto3Error, ClientError) as e:
                 error_code = e.response['Error']['Code']
-                logger.debug("error: {}".format(e))
-                logger.debug(error_code)
-                logger.debug("ERROR AUTHENTICATING")
+                logger.debug(f"error authenticating user {username} error: {e} {error_code}")
                 if error_code == "PasswordResetRequiredException":
-                    logger.debug("reset password")
+                    logger.debug(f"reset password needed for {username}")
                     request.session['RESETPASSWORD']=True
                     request.session['username']=username
                     return None
                 if error_code == "UserNotConfirmedException":
-                    logger.debug("this user did not confirm their account")
+                    logger.debug(f"User {username} did not confirm their account")
                     #get user
                     user = User.objects.filter(username=username).first()
                     if user:
@@ -242,10 +239,9 @@ class CognitoAuthenticate(ModelBackend):
         # now we have a cognito user - set session variables and return
         if cognito_user:
             user = cognito_user.get_user()
-            logger.debug("USER IS...")
-            logger.debug(user)
+            logger.debug(f"USER IS {user}")
         else:
-            logger.debug("RETURNING NONE")
+            logger.debug("No user found for Cognito auth returning None")
             return None
 
         if user:
@@ -254,8 +250,31 @@ class CognitoAuthenticate(ModelBackend):
             request.session['REFRESH_TOKEN'] = cognito_user.refresh_token
             #request.session.save()
             
-        logger.debug("USER IS AUTHENTICATED!")
+        logger.info(f"USER {user} IS AUTHENTICATED!")
         return user
+
+
+class CognitoAuthenticateAPI(ModelBackend):
+
+    def authenticate(self, request):
+        """For rest_framework if successfully authenticated using CognitoAuth
+        the response wil include a tuple (request.user,request.auth)
+        In case of Session based authentications 
+        request.user will be a Django User instance.
+        request.auth will be None.
+        https://www.django-rest-framework.org/api-guide/authentication/        
+        """
+        try:
+            user = CognitoAuthenticate().authenticate(request)
+            if user:
+                logger.info(f"API authentication using session for User {user} success")
+                return user, None
+            else:
+                logger.warn(f"Failed API authentication using session for User {user} ")
+                raise exceptions.AuthenticationFailed(_('Invalid API session attempted'))
+        except Exception as e:
+            logger.warn(f"Failed API authentication for session error is {e}")
+            raise exceptions.AuthenticationFailed(_('Invalid API no session or token header was provided'))
 
 
 
@@ -287,11 +306,17 @@ class HashedTokenAuthentication(TokenAuthentication):
         try:
             token = model.objects.select_related('user').get(key=hashed_key)
         except model.DoesNotExist:
+            logger.warn(f"Failed API auth for token that does not exist {key}")
             raise exceptions.AuthenticationFailed(_('Invalid token.'))
-
+        except Exception as e:
+            logger.warn(f"Failed API auth for token Error {e}")
+            raise exceptions.AuthenticationFailed(_('Unknown Token error.'))
+            
         if not token.user.is_active:
+            logger.warn(f"Failed API auth for {token.user} user is inactive or deleted")
             raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
 
+        logger.info(f"Success user {token.user} is authenticated using API Token ")
         return (token.user, token)
 
     
@@ -301,7 +326,7 @@ class JSONWebTokenAuthentication(BaseAuthentication):
     def authenticate(self, request):
         """Entrypoint for Django Rest Framework"""
         jwt_token = self.get_jwt_token(request)
-        logger.debug(jwt_token)
+        logger.debug(f"JSOWEb token ookup for {jwt_token}")
         if jwt_token is None:
             return None
 
@@ -311,13 +336,13 @@ class JSONWebTokenAuthentication(BaseAuthentication):
             jwt_payload = token_validator.validate(jwt_token)
         except TokenError:
             raise exceptions.AuthenticationFailed()
-        logger.debug(jwt_payload)
+        logger.debug(f"JSONWeb returned payload is {jwt_payload}")
         username=jwt_payload['email']
         user = User.objects.get(username=username)
         return (user, jwt_token)
 
     def get_jwt_token(self, request):
-        logger.debug(request.headers)
+        logger.debug(f"Collected headers for JSONWwebToken as {request.headers}")
         auth = get_authorization_header(request).split()
         if not auth or smart_text(auth[0].lower()) != "bearer":
             return None

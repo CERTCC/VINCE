@@ -3,7 +3,22 @@
 {% load ticket_to_link %}
 <div class="row">
   <div class="large-12 columns">
-    <h3 class="section-title">{% trans "Activity" %}</h3>
+    <h3 class="section-title">
+      {% trans "Activity" %}
+      <small>
+	{% if more %}
+	[Showing {{ ticket.MAX_ACTIVITY }} of
+	{{ ticket.followup_set.count }}]
+	<button class="button primary small asyncclick" id="show_all"
+		style="margin: 0px" data-qparams="all=true"
+		data-divid="ticket_activity">
+	  Show All
+	</button>
+	{% else %}
+	[{{ ticket.followup_set.count }}]
+	{% endif %}
+      </small>
+    </h3>
   </div>
 </div>
 <div class="row">
@@ -12,7 +27,7 @@
       <div class="article-row-section-inner">
 	{% for followup in ticket.get_actions %}
 	<div class="article-row">
-	
+	  
 	  <div class="article-row-img">
 	    {% autoescape off %}
 	    {% if followup.user %}
@@ -23,7 +38,7 @@
 	    {% endautoescape %}
 	  </div>
 	  <div class="article-row-content">
-            <p class="article-row-content-description">{{ followup.title|email_to_user }} {% if followup.title in "Comment,Closed" and followup.user == user %} <small><a href="{% url 'vince:followup_edit' followup.id %}" class='followup-edit'><i class="fas fa-edit" title="Edit this comment"></i></a></small>{% elif "Email" in followup.title %}{% if followup.email_id %}<span class="email-detail" title="{{ followup.email_id }} in {{ followup.email_bucket }}"><i class="fas fa-envelope-open-text"></i></span>{% endif %}{% endif %}</p>
+            <p class="article-row-content-description trescaped">{{ followup.title|escape|email_to_user }} {% if followup.title in "Comment,Closed" and followup.user == user %} <small><a href="{% url 'vince:followup_edit' followup.id %}" class='followup-edit'><i class="fas fa-edit" title="Edit this comment"></i></a></small>{% elif "Email" in followup.title %}{% if followup.email_id %}<span class="email-detail" title="{{ followup.email_id }} in {{ followup.email_bucket }}"><i class="fas fa-envelope-open-text"></i></span>{% endif %}{% endif %}</p>
 	    <p class="article-row-content-detail">
 	      {% if followup.comment|is_json %}
 	      <div class="long_text_container">

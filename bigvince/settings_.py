@@ -56,7 +56,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "1.50.2"
+VERSION = "2.0.3"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -206,7 +206,7 @@ else:
     LOGGER_HANDLER = 'console'
 #    EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
     EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.vince.org')
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.vince.example')
     EMAIL_PORT = os.environ.get('EMAIL_PORT', 25)
 
     #BELOW IS FOR A LOCAL (DEBUG) setup - use the local static directory
@@ -493,12 +493,6 @@ COGNITO_VINCETRACK_GROUPS = os.environ.get("AWS_COGNITO_VINCETRACK_GROUPS", defa
 # VINCETrack group
 COGNITO_SUPERUSER_GROUP = os.environ.get('AWS_COGNITO_SUPERUSER_GROUP', COGNITO_ADMIN_GROUP)
 
-# the following 2 vars can be comma separated string if more than 1 group
-# anyone in the COGNITO_VINCETRACK_GROUPS will be put in a "vincetrack" local group
-COGNITO_VINCETRACK_GROUPS = os.environ.get("AWS_COGNITO_VINCETRACK_GROUPS", default="Coordinator")
-
-COGNITO_SUPERUSER_GROUP = os.environ.get('AWS_COGNITO_SUPERUSER_GROUP', "ADMIN")
-
 #COGNITO_LIMITED_ACCESS_GROUPS can be used to give special permission to views
 # in VINCECOMM
 
@@ -565,9 +559,9 @@ DEFAULT_USER_SETTINGS = {
 }
 
 #from emails on auto-notifications
-DEFAULT_FROM_EMAIL = os.environ.get('NO_REPLY_EMAIL', "vuls+donotreply@vince.org")
+DEFAULT_FROM_EMAIL = os.environ.get('NO_REPLY_EMAIL', "vuls+donotreply@vince.example")
 #from for emails sent from VINCE
-DEFAULT_REPLY_EMAIL = os.environ.get('REPLY_EMAIL', "vuls@vince.org")
+DEFAULT_REPLY_EMAIL = os.environ.get('REPLY_EMAIL', "vuls@vince.example")
 
 #EMAIL_BUCKET = os.environ.get('S3_EMAIL_BUCKET', 'vince-email')
 
@@ -585,7 +579,7 @@ DEFAULT_EMAIL_HEADERS = {'X-VINCE': 'auto-notify'}
 
 VINCE_MAX_EMAIL_LENGTH = 300000
 
-IGNORE_EMAILS_TO = ['vuls+donotreply@vince.org']
+IGNORE_EMAILS_TO = ['vuls+donotreply@vince.example']
 
 LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
 DJANGO_LOGLEVEL = os.environ.get('DJANGO_LOGLEVEL', 'info').upper()
@@ -744,7 +738,10 @@ FAVICON = "vincepub/images/favicon.ico"
 
 WEB_TITLE = "Vulnerability Notes Database"
 ORG_NAME = "Your Organization Name"
-CONTACT_EMAIL = "vuls@vince.org"
+CONTACT_EMAIL = "vuls@vince.example"
+CONTACT_PHONE = "+12021115555"
+ORG_POLICY_URL = "https://vuls.vince.example/terms"
+ORG_AUTHORITY =  f"{ORG_NAME} "
 VINCEPUB_BASE_TEMPLATE = "vincepub/base_public.html"
 VINCECOMM_BASE_TEMPLATE = "vinny/base_public.html"
 VINCETRACK_BASE_TEMPLATE = "vince/base_public.html"
@@ -759,3 +756,51 @@ LEGAL_DISCLAIMER = """THIS DOCUMENT IS PROVIDED ON AN 'AS IS' BASIS AND DOES NOT
 
 #allowed options: "prod", "test", "dev"
 CVE_SERVICES_API = os.environ.get("CVE_SERVICES_API", "test")
+
+#Django 3 and 4 upgrade
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+#TLP related statements Note TLP2.0 says WHITE is replaced by CLEAR BUT CSAF2.0 is in TLP1.0
+#https://github.com/oasis-tcs/csaf/issues/591
+CSAF_DISTRIBUTION_OPTIONS = {
+    "RED": {
+        "distribution": {
+            "text": "For the eyes and ears of individual recipients only, no further disclosure.",
+            "tlp": {
+                "label": "RED",
+                "url": "https://www.first.org/tlp/"
+            }
+        }
+    },
+    "AMBER": {
+        "distribution": {
+            "text": "Limited disclosure, recipients can only spread this on a need-to-know basis within their organization and its clients.",
+            "tlp": {
+                "label": "AMBER",
+                "url": "https://www.first.org/tlp/"
+            }
+        }
+    },
+    "GREEN": {
+        "distribution": {
+            "text": "Limited disclosure, recipients can spread this within their community.",
+            "tlp": {
+                "label": "GREEN",
+                "url": "https://www.first.org/tlp/"
+            }
+        }
+    },
+    "WHITE": {
+        "distribution": {
+            "text": "Recipients can spread this to the world, there is no limit on disclosure. ",
+            "tlp": {
+                "label": "WHITE",
+                "url": "https://www.first.org/tlp/"
+            }
+        }
+    }
+}
+#Choose how VINCE's private and public CSAF documents are mapped with TLP
+#If you choose to disable TLP statements in CSAF comment out the MAP dictionary below
+CSAF_TLP_MAP = { "PUBLIC": "WHITE", "PRIVATE": "AMBER" }
+
