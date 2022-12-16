@@ -37,11 +37,18 @@ from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVectorField
 from bigvince.storage_backends import VRFReportsStorage
 from django.conf import settings
+#Django 3 and up
+from django.db.models import JSONField
 
-class OldJSONField(fields.JSONField):
+class OldJSONField(JSONField):
+    """ This was due to legacy support in Django 2.2. from_db_value
+    should be explicitily sepcified when extending JSONField """
+
     def db_type(self, connection):
         return 'json'
 
+    def from_db_value(self, value, expression, connection):
+        return value
 
 class VUReportManager(models.Manager):
 

@@ -153,6 +153,7 @@ urlpatterns = [
     re_path('api/vuls/cve/(?P<year>\d+)-(?P<pk>\d+)/$', views.CVEVulAPIView.as_view(), name='cve_lookup_api'),
     re_path('api/case/(?P<vuid>\d+)/csaf/$', views.CaseCSAFAPIView.as_view(), name='case_csaf_api'),
     re_path('api/case/csaf/(?P<vuid>\d+)/$', views.CaseCSAFAPIView.as_view(), name='case_csaf_api'),
+    re_path('api/unread_msg_count/$', views.UnreadCountAjax.as_view(), name='unread_msg_count'),
 ]
 
 if settings.DEBUG:

@@ -30,7 +30,10 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import EmailMultiAlternatives
-from django.utils import six
+try:
+    from django.utils import six
+except:
+    import six
 from django.utils.safestring import mark_safe
 import mimetypes
 import os

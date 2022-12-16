@@ -27,7 +27,10 @@
 # DM21-1126
 ########################################################################
 import logging
-from django.shortcuts import render, redirect, get_object_or_404, render_to_response
+try:
+    from django.shortcuts import render, redirect, get_object_or_404, render_to_response
+except:
+    from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views import generic, View
 from django.views.generic.edit import FormView, UpdateView, FormMixin, CreateView
@@ -80,14 +83,18 @@ import traceback
 import html
 import re
 from itertools import chain
+from lib.vince.chainqueryset import chainqs
 from django.db.models import Q, OuterRef, Subquery, Max
 from botocore.exceptions import ClientError
 from botocore.client import Config
 from lib.vince.m2crypto_encrypt_decrypt import ED
+
 # Create your views here.
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
 
 class EST(tzinfo):
     def utcoffset(self, dt):
@@ -109,7 +116,7 @@ def _user_allowed(member, user):
         elif user_has_access(member, user):
             return True
     except GroupContact.DoesNotExist:
-        #this is a participant/reporter                                         
+        #this is a participant/reporter
         return True
     return False
     
@@ -142,7 +149,7 @@ def _is_my_report(user, report):
 
 def _user_in_contact(user, contact):
     gc = GroupContact.objects.filter(contact=contact).first()
-    logger.debug(gc.contact.uuid)
+    logger.debug(f"User in group contact check for User {user} in Group {gc.contact.uuid}")
     return user.groups.filter(name=gc.contact.uuid).exists()
         
 def _my_group_name(user):
@@ -254,7 +261,6 @@ def _cases_for_group(group):
 
 def _users_in_my_group(user):
     groups = user.groups.exclude(groupcontact__isnull=True)
-    logger.debug("IN USERS IN MY GROUP")
     if groups:
         return User.objects.filter(groups__in=groups).exclude(vinceprofile__service=True).distinct()
     return []
@@ -267,7 +273,8 @@ def _users_in_group(contact):
         return []
 
 def _unread_msg_count(user):
-    return len(Thread.ordered(Thread.unread(user)))
+    """ Prepare the query of unread message for a user and get just the count """
+    return Thread.unread(user).count()
 
 def _groupchat_case_participants(case):
     participants = CaseMember.objects.filter(case=case)
@@ -321,8 +328,8 @@ def _show_status_vul(user, vuls, case):
     else:
         if group:
             showstatus = True
-            # else this is a participant/coordinator                                                                                  
         else:
+            # else this is a participant/coordinator
             showstatus = False
 
     members = _my_groups_for_case(user, case)
@@ -344,11 +351,11 @@ def _remove_case_pinned_posts(case):
         
 
 def object_to_json_response(obj, status=200):
-    """                                                                                                          
+    """
     Given an object, returns an HttpResponse object with a JSON serialized
     version of that object
     """
-    logger.debug(obj)
+
     return JsonResponse(
         data=obj, status=status, safe=False, json_dumps_params={'ensure_ascii': False},
     )
@@ -373,9 +380,10 @@ def autocomplete_vendor(request):
 def autocomplete_coordinators(request, pk):
     case = get_object_or_404(Case, id=pk)
     if _is_my_case(request.user, pk):
-        clist = list(CaseMember.objects.filter(case=case, coordinator=True).exclude(group__groupcontact__vincetrack=False).values_list('group__groupcontact__contact__vendor_name', flat=True))
-        
-        data = json.dumps(", ".join(clist))
+        clist = CaseMember.objects.filter(case=case, coordinator=True).exclude(group__groupcontact__vincetrack=False).values_list('group__groupcontact__contact__vendor_name', flat=True)
+        #Remove any None or nulls in coordinator vendor name lookup. If coordinator is
+        # an individual and not a group like a User
+        data = json.dumps(", ".join(list(filter(lambda x: x,clist))))
         mimetype = 'application/json'
         return HttpResponse(data, mimetype)
         
@@ -407,7 +415,6 @@ def random_number(length=3):
 def vulstatus(qs, vul):
     status = qs.filter(vulnerability=vul).values_list('status', flat=True)
     if status:
-        logger.debug(status[0])
         return status[0]
     else:
         return None
@@ -481,20 +488,22 @@ class TokenLogin(GetUserMixin, generic.TemplateView):
     template_name = 'vinny/index.html'
 
     def post(self, request, *args, **kwargs):
-        if (token_verify(self.request.POST['access_token'])):
+        if self.request.POST.get('access_token',None) and self.request.POST.get('refresh_token',None) and token_verify(self.request.POST['access_token']):
             request.session['ACCESS_TOKEN'] = self.request.POST['access_token']
             request.session['REFRESH_TOKEN'] = self.request.POST['refresh_token']
             user = self.get_user()
-            logger.debug(user)
             user = authenticate(self.request, username=user.email)
-            logger.debug("get local user")
-            logger.debug(user)
             if user:
                 auth_login(request, user)
                 request.session['timezone'] = user.vinceprofile.timezone
-                logger.debug("after auth_login")
+                logger.debug(f"Token Login attempt for {user}")
                 return JsonResponse({'response': 'success'}, status=200)
-        logger.debug("unauthorized access")
+        try:
+            url = request.build_absolute_uri()
+            logger.debug(f"unauthorized access for User {user} to {url}")
+        except Exception as e:
+            logger.debug(f"unauthorized access for User {user} to resources. Error when building URI {e}")
+            
         return JsonResponse({'response': 'Unauthorized', 'error': 'Unauthorized access'}, status=401)
 
 class RedirectVince(LoginRequiredMixin, generic.TemplateView):
@@ -522,7 +531,7 @@ class FAQView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.Template
 
     def get_context_data(self, **kwargs):
         context = super(FAQView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         return context
 
 class VinceAttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
@@ -561,7 +570,6 @@ class VinceAttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         raise Http404
 
     def get(self, request, *args, **kwargs):
-        logger.debug(self.kwargs['path'])
         attachment = VinceAttachment.objects.filter(uuid=self.kwargs['path']).first()
         if attachment:
             mime_type = attachment.mime_type
@@ -612,7 +620,7 @@ class DashboardView(LoginRequiredMixin, TokenMixin, PendingTestMixin,  generic.T
     
     def get_context_data(self, **kwargs):
         context = super(DashboardView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['dashboard'] = 'yes'
         if settings.DEBUG:
             context['devmode'] = True
@@ -625,7 +633,8 @@ class DashboardView(LoginRequiredMixin, TokenMixin, PendingTestMixin,  generic.T
             messages.error(
                 self.request,
 		_(f"VINCE is not correctly configured. ADMIN GROUP {settings.COGNITO_ADMIN_GROUP} does not exist."))
-        
+
+        page = self.request.GET.get('casepage',1)
         if is_in_group_vincetrack(self.request.user):
             assignable_users = _users_in_my_group(self.request.user)
             if assignable_users:
@@ -638,7 +647,10 @@ class DashboardView(LoginRequiredMixin, TokenMixin, PendingTestMixin,  generic.T
             my_cases = _my_active_cases(self.request.user)
             cases = my_cases.annotate(last_post_date=Max('post__created')).exclude(last_post_date__isnull=True).order_by('-last_post_date')
             cases_no_posts = my_cases.exclude(id__in=cases).order_by('-modified')
-            context['cases'] = chain(cases, cases_no_posts)
+            res = chainqs(cases, cases_no_posts)
+            paginator = Paginator(res, 10)
+            context['cases'] = paginator.page(1)
+            context['total'] = res.count()
             context['pending'] =  VTCaseRequest.objects.filter(user=self.request.user, status=0).order_by('-date_submitted')
             return context
 
@@ -656,7 +668,6 @@ class DashboardView(LoginRequiredMixin, TokenMixin, PendingTestMixin,  generic.T
         context['num_new_cases'] = 0
         
         for case in my_cases:
-            logger.debug(case)
             last_post = Post.objects.filter(case=case).order_by('-modified')
             last_viewed = CaseViewed.objects.filter(user=self.request.user, case=case).first()
             if last_post and last_viewed:
@@ -692,7 +703,7 @@ class SingleVulDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
 
     def get_context_data(self, **kwargs):
         context = super(SingleVulDetailView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         vul = get_object_or_404(CaseVulnerability, id=self.kwargs['pk'])
         context['exploits'] = CaseVulExploit.objects.filter(vul=vul)
         context['vul'] = vul
@@ -715,7 +726,7 @@ class VulnerabilityDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
 
     def get_context_data(self, **kwargs):
         context = super(VulnerabilityDetailView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         case = get_object_or_404(Case, id=self.kwargs['pk'])
         vuls = CaseVulnerability.objects.filter(case=case)
         context['vuls'] = vuls
@@ -818,7 +829,7 @@ class VinceCommReportView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
     def get_context_data(self, **kwargs):
         context = super(VinceCommReportView, self).get_context_data(**kwargs)
         context['limitedaccess'] = 1
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['reportspage'] = 1
         year = int(self.request.GET.get('year', datetime.now().year))
         month = int(self.request.GET.get('month', datetime.now().month))
@@ -866,7 +877,7 @@ class CaseSummaryView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
     def get_context_data(self, **kwargs):
         context = super(CaseSummaryView, self).get_context_data(**kwargs)
         context['limitedaccess'] = 1
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['vendors'] = CaseMember.objects.filter(case__id=self.kwargs['pk'], coordinator=False).order_by("group__name")
         context['participants'] = CaseMember.objects.filter(case__id=self.kwargs['pk'], participant__isnull=False, coordinator=False)
         context['coordinators'] = CaseMember.objects.filter(case__id=self.kwargs['pk'], coordinator=True)
@@ -887,7 +898,7 @@ class RequestAccessView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return context
     
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         case = get_object_or_404(Case, id=self.kwargs['pk'])
         new_track_ticket("Case", "Case access requested", "User has requested access to this case", case, self.request.user.username)
         #add a model to keep track of requests
@@ -911,7 +922,7 @@ class LimitedAccessView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
     def get_context_data(self, **kwargs):
         context = super(LimitedAccessView, self).get_context_data(**kwargs)
         context['limitedaccess'] = 1
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         initial = {'status': [Case.ACTIVE_STATUS]}
         form = LimitedCaseFilterForm(initial=initial)
         context['form'] = form
@@ -932,7 +943,7 @@ class ChangeDefaultCaseAccess(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
         return False
     
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         gc = get_object_or_404(GroupContact, id=self.kwargs.get('vendor_id'))
         default_access = self.request.POST.get('accessSwitch', default=False)
         if default_access == "on":
@@ -996,13 +1007,11 @@ class CaseAccessView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
         context['cases'] = _cases_for_group(Group.objects.filter(groupcontact__contact__id=vendor_id).first())
         cases = context['cases'].values_list('id', flat=True)
         context['access'] = list(CaseMemberUserAccess.objects.filter(user=context['u'], casemember__case__id__in=cases).values_list('casemember__case__vuid', flat=True))
-        logger.debug(context['access'])
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         cases = self.request.POST.getlist('access', [])
-        logger.debug(cases)
         vendor_id = self.kwargs.get('vendor_id')
         user_id = get_object_or_404(User, id=self.kwargs.get('user_id'))
         group = Group.objects.filter(groupcontact__contact__id=vendor_id).first()
@@ -1040,10 +1049,8 @@ class PromoteUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
     def test_func(self):
         if is_in_group_vincegroupadmin(self.request.user):
             gc = get_object_or_404(GroupContact, id=self.kwargs.get('vendor_id'))
-            logger.debug(gc)
             admin = VinceCommGroupAdmin.objects.filter(contact__id=gc.contact.id, email__email=self.request.user.email).first()
             if admin:
-                logger.debug(admin)
                 return PendingTestMixin.test_func(self)
         return False
 
@@ -1062,7 +1069,6 @@ class PromoteUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         return context
     
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
         gc = get_object_or_404(GroupContact, id=self.kwargs.get('vendor_id'))
         user = get_object_or_404(User, id=self.kwargs.get('uid'))
         admin = VinceCommGroupAdmin.objects.filter(contact__id=gc.contact.id, email__email=user.email).first()
@@ -1142,7 +1148,7 @@ class AdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Tem
         context = super(AdminView, self).get_context_data(**kwargs)
         #which group are they groupadmin of?
         context['adminview']=1
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         if self.kwargs.get('vendor_id') :
             admin = VinceCommGroupAdmin.objects.filter(contact__id=self.kwargs.get('vendor_id'), email__email=self.request.user.email).first()
             if admin:
@@ -1220,7 +1226,6 @@ class AdminRemoveUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         return context
     
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
         user_type = self.kwargs.get("type", None)
         my_group = get_object_or_404(VinceCommContact, id=self.kwargs.get('vendor_id'))
         rmuser = self.kwargs.get('uid')
@@ -1233,13 +1238,10 @@ class AdminRemoveUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                 if emuser:
                     contact_update.remove_email_contact(my_group, emuser, self.request.user)
                     # is this user a groupadmin
-                    logger.debug(emuser.email)
-                    logger.debug(emuser.contact.vendor_name)
-                    logger.debug(my_group.vendor_name)
+                    logger.debug(f"Checking if {emuser.email} is group admin for {emuser.contact.vendor_name} or {my_group.vendor_name}")
                     admin = VinceCommGroupAdmin.objects.filter(email=emuser, contact=my_group).first()
-                    logger.debug(admin)
                     if admin:
-                        logger.warning("REMOVING GROUP ADMIN")
+                        logger.warning(f"Removing Group admin privileges for {emuser.email} from {emuser.contact.vendor_name}")
                         admin.delete()
                     admins = VinceCommGroupAdmin.objects.filter(contact=my_group)
                     for admin in admins:
@@ -1292,7 +1294,7 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         my_group = get_object_or_404(VinceCommContact, id=self.kwargs.get('vendor_id'))
         # This doesn't use the email form used in other places in the app, so we have to strip() fields here
         users = request.POST.get('adduser')
@@ -1341,7 +1343,7 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                     # actually send the invitation email to a user
                     send_templated_mail("vincecomm_add_user", context, [users])
                 old_email.invited=True
-                create_action("f{self.request.user.vinceprofile.vince_username} invited new user {users}", self.request.user)
+                create_action(f"{self.request.user.vinceprofile.vince_username} invited new user {users}", self.request.user)
                 return JsonResponse({'response': 'success'}, status=200)
 
         new_email = VinceCommEmail(email=users,
@@ -1356,7 +1358,7 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         
         contact_update.add_email_contact(my_group, new_contact, self.request.user)
 
-        logger.debug("SENDING MAIL")
+        logger.debug(f"SENDING MAIL to {users} on Group changes for {my_group}")
         if old_user:
             send_templated_mail("vincecomm_add_existing_user", context, [users])
         else:
@@ -1378,7 +1380,7 @@ class ModifyEmailNotifications(LoginRequiredMixin, TokenMixin, UserPassesTestMix
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         email = get_object_or_404(VinceCommEmail, id=self.kwargs.get('uid'))
         if email.email_function in ["TO", "CC"]:
             email.email_function = "EMAIL"
@@ -1398,15 +1400,18 @@ class ModifyEmailNotifications(LoginRequiredMixin, TokenMixin, UserPassesTestMix
 
     def get_context_data(self, **kwargs):
         context = super(ModifyEmailNotifications, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
-        context['adminpage']=1
+        context['unread_msg_count'] = 0
+        context['adminpage'] = 1
         context['type'] = self.kwargs.get('type')
         if self.kwargs.get('type') == "user":
             context['user'] = get_object_or_404(User, id=self.kwargs.get('uid'))
             context['email'] = VinceCommEmail.objects.filter(email=context['user'].email, contact=self.kwargs.get('vendor_id')).first()
+            if not context['email']:
+                context['error'] = "This User does not have Email Contact information"
+                return context
         elif self.kwargs.get('type') == 'email':
             context['email'] = get_object_or_404(VinceCommEmail, id=self.kwargs.get('uid'))
-
+        
         if context['email'].email_function in ["TO", "CC"]:
             context['disable'] = 1
         else:
@@ -1433,7 +1438,7 @@ class MultipleStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
     
     def get_context_data(self, **kwargs):
         context = super(MultipleStatusView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         case = get_object_or_404(Case, id=self.kwargs['pk'])
         context['case'] = case
         context['groups'] = _my_groups_for_case(self.request.user, case)
@@ -1454,7 +1459,7 @@ class MultipleContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
 
     def get_context_data(self, **kwargs):
         context = super(MultipleContactView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['contacts'] = _my_contact_group(self.request.user)
         context['contactpage']=1
         return context
@@ -1473,7 +1478,7 @@ class MultipleGroupAdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
         
     def get_context_data(self, **kwargs):
         context = super(MultipleGroupAdminView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['groups'] = VinceCommGroupAdmin.objects.filter(email__email=self.request.user, contact__vendor_type__in=["Coordinator", "Vendor"], contact__active=True)
         
         context['adminview']=1
@@ -1508,7 +1513,7 @@ class ContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
         
     def get_context_data(self, **kwargs):
         context = super(ContactView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         if self.kwargs.get('vendor_id'):
             context['object'] = VinceCommContact.objects.filter(id=self.kwargs.get('vendor_id')).first()
             context['vince_users'] = _users_in_group(context['object'])
@@ -1531,9 +1536,12 @@ class InboxView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.Templa
 
     def get_context_data(self, **kwargs):
         context = super(InboxView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
-        sentthreads = Thread.ordered(Thread.deleted(self.request.user))
-        threads = Thread.ordered(Thread.inbox(self.request.user))
+        #None of these is needed for this view
+        #sentthreads = Thread.ordered(Thread.deleted(self.request.user))
+        #threads = Thread.ordered(Thread.inbox(self.request.user))
+        context['unread_msg_count'] = 0
+        sentthreads = []
+        threads = []
         folder = "inbox"
         page = 1
         paginator = Paginator(threads, 10)
@@ -1547,14 +1555,6 @@ class InboxView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.Templa
         #"threads_unread": Thread.ordered(Thread.unread(self.request.user))
         context['form'] = InboxFilterForm()
         context['inboxpage'] = 'yes'
-       	#check config
-        admin_group_name = settings.COGNITO_ADMIN_GROUP
-        #Does this group exist
-        admin_group = Group.objects.using('vincecomm').filter(groupcontact__contact__vendor_name=settings.COGNITO_ADMIN_GROUP).first()
-        if admin_group == None:
-            messages.error(
-		self.request,
-                _(f"VINCE is not correctly configured. ADMIN GROUP {settings.COGNITO_ADMIN_GROUP} does not exist."))
         return context
 
 class SearchThreadsView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.ListView):
@@ -1570,7 +1570,7 @@ class SearchThreadsView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
         page = self.request.GET.get('page', 1)
         sent_paginator = Paginator(sentthreads, 10)
         context['threads'] = sent_paginator.page(page)
-        context['page_class'] = "searchsent"
+        context['page_class'] = "searchsent asyncpage"
         return context
     
     def post(self, request, *args, **kwargs):
@@ -1578,7 +1578,7 @@ class SearchThreadsView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
 
         page = self.request.POST.get('page', 1)
         
-        status = self.request.POST.getlist('status')
+        status = self.request.POST.getlist('status',[])
 
         res = Thread.none()
         if len(status) == 3:
@@ -1589,23 +1589,23 @@ class SearchThreadsView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
             # note: ordering here is specific: If user selects read and unread, we need unread to be True at filter
             status = sorted(status)
             if '1' in status:
-                res = res.union(Thread.read(self.request.user))
+                res = res | Thread.read(self.request.user)
             if '2' in status:
-                res = res.union(Thread.unread(self.request.user))
+                res = res | Thread.unread(self.request.user)
             if '3' in status:
-                res = res.union(Thread.deleted(self.request.user))
+                res = res | Thread.deleted(self.request.user)
         else:
             # nothing selected, give them the inbox view
             res = Thread.inbox(self.request.user)
 
-        keyword = self.request.POST.get('keyword')
+        keyword = self.request.POST.get('keyword',None)
         if keyword:
             res = res.filter(Q(messages__content__icontains=self.request.POST['keyword']) | Q(subject__icontains=self.request.POST['keyword'])).distinct()
 
         res = Thread.ordered(res)
         paginator = Paginator(res, 10)
         
-        return render(request, self.template_name, {'threads': paginator.page(page), 'empty_msg': "No threads match that filter", 'page_class':"search_notes"})
+        return render(request, self.template_name, {'threads': paginator.page(page), 'empty_msg': "No threads match that filter", 'page_class':"search_notes asyncpage"})
 
 
 class MyReportsFilterView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.ListView):
@@ -1619,19 +1619,17 @@ class MyReportsFilterView(LoginRequiredMixin, TokenMixin, PendingTestMixin, gene
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         page = self.request.POST.get('page', 1)
         res = self.get_queryset()
-        status_list = self.request.POST.getlist('status[]')
+        status_list = self.request.POST.getlist('status',[])
         if status_list:
-            logger.debug(status_list)
             res = res.filter(status__in=status_list)
             
-        if self.request.POST['keyword'] != '':
+        if self.request.POST.get('keyword',None):
             wordSearch = process_query(self.request.POST['keyword'])
             res = res.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],params=[wordSearch])
-        logger.debug(res)
         res = res.order_by('-date_submitted')
         paginator = Paginator(res, 10)
 
-        return render(request, self.template_name, {'object_list': paginator.page(page), 'total': len(res) })            
+        return render(request, self.template_name, {'object_list': paginator.page(page), 'total': res.count() })
 
 class LimitedAccessSearch(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.ListView):
     login_url = "vinny:login"
@@ -1658,14 +1656,13 @@ class LimitedAccessSearch(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
             if statuslist:
                 res = res.filter(status__in=statuslist)
 
-        if 'wordSearch' in self.request.POST:
-            if self.request.POST['wordSearch']:
+        if self.request.POST.get('wordSearch',None):
                 wordSearch = process_query(self.request.POST['wordSearch'])
                 res = res.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],params=[wordSearch])
 
         paginator = Paginator(res, 10)
 
-        return render(request, self.template_name, {'cases': paginator.page(page), 'total': len(res), 'limitedaccess':1 })
+        return render(request, self.template_name, {'cases': paginator.page(page), 'total': res.count(), 'limitedaccess':1 })
     
 class DashboardCaseView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.ListView):
     login_url = "vinny:login"
@@ -1682,24 +1679,23 @@ class DashboardCaseView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
         page = self.request.POST.get('page', 1)
         my_cases = self.get_queryset()
         owner_list = self.request.POST.getlist('owner')
-        logger.debug(owner_list)
         res = my_cases
-        if owner_list:
+        #Remove vulnerability of injected POST owner value
+        if is_in_group_vincetrack(self.request.user) and owner_list:
             coordinators = CaseCoordinator.objects.filter(assigned__id__in=owner_list).values_list('case', flat=True)
             res = res.filter(id__in=coordinators)
         
-        if self.request.POST.get('keyword'):
-            if self.request.POST['keyword'] != "":
-                wordSearch = process_query(self.request.POST['keyword'])
-                res = res.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],params=[wordSearch])
-                #search posts
-                post_result = PostRevision.objects.filter(post__case__in=my_cases).extra(where=["search_vector @@ (to_tsquery('english', %s))=true"], params=[wordSearch]).values_list('post__case', flat=True)
-                if post_result:
-                    extra_cases = Case.objects.filter(id__in=post_result).exclude(id__in=res)
-                    res = list(chain(res, extra_cases))
+        if self.request.POST.get('keyword',None):
+            wordSearch = process_query(self.request.POST['keyword'])
+            res = res.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],params=[wordSearch])
+            #search posts
+            post_result = PostRevision.objects.filter(post__case__in=my_cases).extra(where=["search_vector @@ (to_tsquery('english', %s))=true"], params=[wordSearch]).values_list('post__case', flat=True)
+            if post_result:
+                extra_cases = Case.objects.filter(id__in=post_result).exclude(id__in=res)
+                res = chainqs(res, extra_cases)
 
         paginator = Paginator(res, 10)
-        return render(request, self.template_name, {'cases': paginator.page(page), 'total': len(res)})
+        return render(request, self.template_name, {'cases': paginator.page(page), 'total': res.count()})
         
     
 class MessageView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.RedirectView):
@@ -1753,7 +1749,6 @@ class ThreadView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.Updat
 
     def form_valid(self, form):
         files = [self.request.FILES.get('attachment[%d]' % i) for i in range (0, len(self.request.FILES))]
-        logger.debug(files)
         self.object = form.save(files=files)
         return redirect(self.get_success_url())
 
@@ -1767,7 +1762,7 @@ class ThreadView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.Updat
 
     def get_context_data(self, **kwargs):
         context = super(ThreadView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['inboxpage'] = 'yes'
         return context
     
@@ -1809,7 +1804,7 @@ class GroupChatView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic
         return response
     
     def form_valid(self, form):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         form.cleaned_data['to_group'] = self.request.POST.getlist("taggles_group[]")
         files = [self.request.FILES.get('attachment[%d]' % i) for i in range (0, len(self.request.FILES))]
         ticket = form.save(files)
@@ -1820,7 +1815,7 @@ class GroupChatView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic
 
     def get_context_data(self, **kwargs):
         context = super(GroupChatView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['inbox'] = 'yes'
         context['title'] = "Start Private Group Thread"
         if self.kwargs.get("case_id"):
@@ -1858,11 +1853,11 @@ class SendMessageAllView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         return is_in_group_vincetrack(self.request.user) and self.request.user.is_superuser
 
     def form_invalid(self, form):
-        logger.debug(form.errors)
+        logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
         return JsonResponse({'response': 'invalid'}, status=400)
 
     def form_valid(self, form):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST} is valid")
         ticket = form.save(self.request.user)
         messages.success(
             self.request,
@@ -1875,7 +1870,7 @@ class SendMessageAllView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
     
     def get_context_data(self, **kwargs):
         context = super(SendMessageAllView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['inbox'] = 'yes'
         context['action'] = reverse("vinny:sendmsgall")
         return context
@@ -1889,7 +1884,7 @@ class SendMessageUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         return is_in_group_vincetrack(self.request.user)
 
     def form_invalid(self, form):
-        logger.debug(form.errors)
+        logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
         return JsonResponse({'response': 'invalid'}, status=400)
     
     def form_valid(self, form):
@@ -1902,7 +1897,7 @@ class SendMessageUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
 
     def get_context_data(self, **kwargs):
         context = super(SendMessageUserView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['inbox'] = 'yes'
         if self.kwargs.get("user_id"):
             context['action'] = reverse("vinny:sendmsgus", args=[self.kwargs.get("user_id")])
@@ -1961,12 +1956,10 @@ class SendMessageView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.
     form_class = SendMessageForm
     
     def form_valid(self, form):
-        logger.debug("IN FORM VALID")
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST} is valid")        
         files = [self.request.FILES.get('attachment[%d]' % i) for i in range (0, len(self.request.FILES))]
         logger.debug(files)
         ticket = form.save(files)
-        
-        logger.debug(self.request.POST)
         messages.success(
             self.request,
             _("Your message has been sent."))
@@ -1975,9 +1968,10 @@ class SendMessageView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.
     def get_context_data(self, **kwargs):
         context = super(SendMessageView, self).get_context_data(**kwargs)
         context['group_admin'] = _my_group_admin(self.request.user)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['msgtype'] = self.kwargs.get('type', 1)
-        logger.debug(CaseMember.objects.filter(case__id=self.kwargs.get('case'), coordinator=True).exclude(group__groupcontact__vincetrack=False).values_list('group__groupcontact__contact__vendor_name', flat=True))
+        csmembers = CaseMember.objects.filter(case__id=self.kwargs.get('case'), coordinator=True).exclude(group__groupcontact__vincetrack=False).values_list('group__groupcontact__contact__vendor_name', flat=True)
+        logger.debug(f"Case membership of {self.request.user} is {csmembers}")
         try:
             if self.kwargs.get('case'):
                 members = list(CaseMember.objects.filter(case__id=self.kwargs.get('case'), coordinator=True).exclude(group__groupcontact__vincetrack=False).values_list('group__groupcontact__contact__vendor_name', flat=True))
@@ -1985,15 +1979,6 @@ class SendMessageView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.
                 context['coord'] = ", ".join(members)
         except:
             pass
-
-        #check config
-        admin_group_name = settings.COGNITO_ADMIN_GROUP
-        #Does this group exist
-        admin_group = Group.objects.using('vincecomm').filter(groupcontact__contact__vendor_name=settings.COGNITO_ADMIN_GROUP).first()
-        if admin_group == None:
-            messages.error(
-		self.request,
-                _(f"VINCE is not correctly configured for sending direct messages. ADMIN group {settings.COGNITO_ADMIN_GROUP} does not exist."))
         return context
     
     def get_initial(self):
@@ -2057,7 +2042,7 @@ class ContactAddLogoView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Fo
     def test_func(self):
         if self.kwargs.get('vendor_id'):
             self.contact = VinceCommContact.objects.filter(id=self.kwargs.get('vendor_id')).first()
-            logger.debug(self.contact)
+            logger.debug(f"Adding contact logo to Contact: {self.contact}")
             return _user_in_contact(self.request.user, self.contact) and PendingTestMixin.test_func(self)
         else:
             # this user does not belong to a group with contact info 
@@ -2228,7 +2213,7 @@ class UserCardView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.Det
         if self.request.GET.get('quick'):
             context['template'] = 'vince/card.html'
         else:
-            context['template'] = settings.VINCECOMM_BASE_TEMPLATE
+            context['template'] = 'vinny/base.html'
             context['full'] = 1
         return context
 
@@ -2262,7 +2247,7 @@ class GroupCardView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.De
         if self.request.GET.get('quick'):
             context['template'] = 'vince/card.html'
         else:
-            context['template'] = settings.VINCECOMM_BASE_TEMPLATE
+            context['template'] = 'vinny/base.html'
             context['full'] = 1
         return context
     
@@ -2290,7 +2275,7 @@ class VulNoteView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.D
     
     def get_context_data(self, **kwargs):
         context = super(VulNoteView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['draft'] = True
         return context
 
@@ -2306,11 +2291,14 @@ class LoadVendorsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
     def get_context_data(self, **kwargs):
         context = super(LoadVendorsView, self).get_context_data(**kwargs)
         case = get_object_or_404(Case, id=self.kwargs['pk'])
+        start = 5
+        if self.request.GET.get("start","").isdigit():
+            start = int(self.request.GET.get("start"))
         try:
-            context['vendors'] = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).order_by("group__groupcontact__contact__vendor_name")[5:]
-        except:
-            logger.debug("GOT EXCEPTION ON VENDOR NAME ORDERING")
-            context['vendors'] = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).order_by("group__name")[5:]
+            context['vendors'] = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).order_by("group__groupcontact__contact__vendor_name")[start:]
+        except Exception as e:
+            logger.debug("Vendor name ordering failed error: {e}")
+            context['vendors'] = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).order_by("group__name")[start:]
         context['case'] = case
         return context
     
@@ -2340,10 +2328,26 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
             cm = get_object_or_404(CaseMember, id=self.kwargs['vendor'])
             return _is_my_case(self.request.user, self.kwargs['pk']) and PendingTestMixin.test_func(self) and self.request.user.is_staff
         return _is_my_case(self.request.user, self.kwargs['pk']) and PendingTestMixin.test_func(self)
+
+    def handle_no_permission(self):
+        """ If test_func fails call this for a friendly response. Use
+        404.html which has generci error to avoid Case enumeration. """
+        
+        ctx = {"VINCECOMM_BASE_TEMPLATE": settings.VINCECOMM_BASE_TEMPLATE,
+               "user": self.request.user}
+        try:
+             if 'render_to_response' in globals():
+                 return render_to_response("vinny/404.html",ctx)
+             else:
+                 return render(None,"vinny/404.html",ctx)
+        except Exception as e:
+            logger.debug(f"Could not create template for CaseView 403 error is {e}")
+            return HttpResponse("<h2>This content is either unavailable or you are not authorized to view it!</h2>")
+
     
     def get_context_data(self, **kwargs):
         context = super(CaseView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         case = get_object_or_404(Case, id=self.kwargs['pk'])
         #content = VendorNotificationContent.objects.filter(case=case).first()
         context['case'] = case
@@ -2359,7 +2363,7 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         try:
             context['vendors'] = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).order_by("group__groupcontact__contact__vendor_name")
         except:
-            logger.debug("GOT EXCEPTION ON VENDOR NAME ORDERING")
+            logger.debug("Vendor name ordering failed error: {e}")
             context['vendors'] = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).order_by("group__name")
         context['num_vendors'] = context['vendors'].count()
 
@@ -2593,7 +2597,6 @@ class UpdateStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             for k,v in self.request.POST.items():
                 if k.startswith('status'):
                     vul_id = int(k.split('_')[1])
-                    logger.debug(vul_id)
                     if v == "affected":
                         affected.append(vul_id)
                     elif v == "unaffected":
@@ -2621,19 +2624,15 @@ class MuteCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
         user = self.request.user
         unmute = False
         settings = user.vinceprofile.settings
-        logger.debug(user.vinceprofile.settings)
         if user.vinceprofile.settings.get('muted_cases'):
             muted_cases = user.vinceprofile.settings['muted_cases']
-            logger.debug(muted_cases)
+            logger.debug(f"User {user} has muted cases {muted_cases}")
             if case.id in muted_cases:
                 #this case has already been muted, unmute this case:
                 muted_cases.remove(case.id)
-                logger.debug(muted_cases)
                 settings.update({'muted_cases': muted_cases})
                 user.vinceprofile.settings = settings
                 user.vinceprofile.save()
-                logger.debug(user.vinceprofile.settings)
-                                
                 unmute = True
             else:
                 muted_cases.append(case.id)
@@ -2645,7 +2644,6 @@ class MuteCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
             settings.update({'muted_cases': [case.id]})
             user.vinceprofile.settings = settings
             user.vinceprofile.save()
-            logger.debug(user.vinceprofile.settings)
 
         if unmute:
             button = "<i class=\"fas fa-volume-mute\"></i> Mute Case"
@@ -2703,8 +2701,8 @@ class ViewStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
                         unaffected.append(vul_id)
                     else:
                         unknown.append(vul_id)
-        except:
-            logger.debug(traceback.format_exc())
+        except Exception as e:
+            logger.debug(f"Error in {self.__class__.__name__} for form processing error: {e}")
             pass
         
         update_status(member, self.request, affected=affected, unaffected=unaffected, unknown=unknown)
@@ -2747,7 +2745,7 @@ class ViewStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
     
     def get_context_data(self, **kwargs):
         context = super(ViewStatusView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         case = get_object_or_404(Case, id=self.kwargs['pk'])
         context['case'] = case
         context['casepage'] = 1
@@ -2770,7 +2768,6 @@ class ViewStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
             initial={'statement':stmt.statement, 'references':stmt.references, 'share': stmt.share, 'addendum':stmt.addendum}
         else:
             initial={}
-        logger.debug(initial)
         
         contact_users = _users_in_group(member.group.groupcontact.contact)
         if contact_users:
@@ -2843,7 +2840,7 @@ class AddStatement(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView
 
     def get_context_data(self, **kwargs):
         context = super(AddStatement, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         vul = get_object_or_404(CaseVulnerability, id=self.kwargs['pk'])
         if self.kwargs.get('vendor_id'):
             member = CaseMember.objects.filter(id=self.kwargs.get('vendor_id')).first()
@@ -2895,7 +2892,7 @@ class PostView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         return _is_my_case(self.request.user, self.kwargs['pk']) and PendingTestMixin.test_func(self)
     
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         case = get_object_or_404(Case, id=self.kwargs['pk'])
         form = PostForm(self.request.POST)
         find_post = None
@@ -2907,7 +2904,7 @@ class PostView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
                 else:
                     find_post = Post.objects.filter(id=int(self.request.POST.get('reply_to'))).first()
                 if find_post:
-                    logger.debug("THIS IS A THREADED POST!")
+                    logger.debug(f"Threaded post foung for {find_post} as User {self.request.user}")
                     post = ThreadedPost(case=case,
                                         parent=find_post,
                                         author=self.request.user)
@@ -2923,7 +2920,7 @@ class PostView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
 
             my_group = _my_group_id_for_case(self.request.user, case)
             if my_group:
-                logger.debug(f"POST GROUP is {my_group.groupcontact.contact.vendor_name}")
+                logger.debug(f"Post Group for user {self.request.user} is {my_group.groupcontact.contact.vendor_name}")
                 post.group = my_group
                 post.save()
             post.add_revision(PostRevision(content=form.cleaned_data['content']), save=True)
@@ -2954,7 +2951,7 @@ class PostView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
     
     def get_context_data(self, **kwargs):
         context = super(PostView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['auto_members'] = _case_participants(self.case)
         posts = self.get_queryset()
         context['num_posts'] = posts.count()
@@ -3027,7 +3024,7 @@ class EditPostView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
         return JsonResponse({'response': 'success'}, status=200)
     
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         post = get_object_or_404(Post, id=self.kwargs['pk'])
         if self.request.POST.get('pin'):
             if self.request.user.is_staff:
@@ -3059,7 +3056,7 @@ class EditPostView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
     def get_context_data(self, **kwargs):
         context = super(EditPostView, self).get_context_data(**kwargs)
         context['post'] = get_object_or_404(Post, id=self.kwargs['pk'])
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['form'] = EditPostForm(initial={'post':context['post'].current_revision.content})
         return context
 
@@ -3106,17 +3103,21 @@ class CaseFilter(LoginRequiredMixin, TokenMixin, PendingTestMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super(CaseFilter, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['casepage']=1
         date_from = self.request.GET.get('date_from')
         initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
-        else:
-            initial['dateend'] = timezone.now
+        try:
+            if date_from:
+                initial['datestart'] = DateField().clean(date_from)
+            date_to = self.request.GET.get('date_to')
+            if date_to:
+                initial['dateend'] = DateField().clean(date_to)
+            else:
+                initial['dateend'] = timezone.now
+        except Exception as e:
+            logger.warning("Date parsing errors ignoring date fields {e}")
+            pass
         owner = self.request.GET.get('owner')
         if owner:
             initial['owner'] = int(owner)
@@ -3145,7 +3146,7 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
     
     def get_context_data(self, **kwargs):
         context = super(CaseFilterResults, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['casepage']=1
         return context
 
@@ -3157,7 +3158,7 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
         # sort by posts/no posts                                            
         cp = my_cases.exclude(last_post_date__isnull=True)
         cnop= my_cases.exclude(last_post_date__isnull=False)
-        res = list(chain(cp, cnop))
+        res = chainqs(cp, cnop)
         return res
                                  
     
@@ -3180,36 +3181,35 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
             if statuslist:
                 res = res.filter(status__in=statuslist)
 
-        if 'datestart' in self.request.POST:
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(created__range=(DateTimeField().clean(self.request.POST['datestart']),enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(created__range=(DateTimeField().clean('1970-01-01'), enddate))
-        if 'wordSearch' in self.request.POST:
-            if self.request.POST['wordSearch']:
-                wordSearch = process_query(self.request.POST['wordSearch'])
-                res = res.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],params=[wordSearch])
-                #search posts
-                post_result = PostRevision.objects.filter(post__case__in=my_cases).extra(where=["search_vector @@ (to_tsquery('english', %s))=true"], params=[wordSearch]).values_list('post__case', flat=True)
-                if post_result:
-                    extra_cases = Case.objects.filter(id__in=post_result).exclude(id__in=res)
-                    res = list(chain(res, extra_cases))
-            else:
-                # sort by posts/no posts
-                cp = res.exclude(last_post_date__isnull=True)
-                cnop=res.exclude(last_post_date__isnull=False)
-                res = list(chain(cp, cnop))
+        startdate = DateTimeField().clean('1970-01-01')
+        if self.request.POST.get('dateend',None):
+            try:
+                #Assume date parsing errors
+                enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
+                if self.request.POST.get('datestart',None):
+                    #update the startdate field if provided
+                    startdate = DateTimeField().clean(self.request.POST['datestart'])
+                res = res.filter(created__range=(startdate,enddate))
+            except Exception as e:
+                logger.warning(f"Date fields were not valid {e}")
+                pass
+        if self.request.POST.get('wordSearch',None):
+            wordSearch = process_query(self.request.POST['wordSearch'])
+            res = res.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],params=[wordSearch])
+            #search posts
+            post_result = PostRevision.objects.filter(post__case__in=my_cases).extra(where=["search_vector @@ (to_tsquery('english', %s))=true"], params=[wordSearch]).values_list('post__case', flat=True)
+            if post_result:
+                extra_cases = Case.objects.filter(id__in=post_result).exclude(id__in=res)
+                res = chainqs(res, extra_cases)
         else:
             # sort by posts/no posts
             cp = res.exclude(last_post_date__isnull=True)
-            cnop=res.exclude(last_post_date__isnull=False)            
-            res = list(chain(cp, cnop))
+            cnop=res.exclude(last_post_date__isnull=False)
+            res = chainqs(cp, cnop)
 
         paginator = Paginator(res, 10)
 
-        return render(request, self.template_name, {'object_list': paginator.page(page), 'total': len(res) })
+        return render(request, self.template_name, {'object_list': paginator.page(page), 'total': res.count() })
     
 class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     model = VinceCommContact
@@ -3222,9 +3222,7 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
     EmailFormSet = inlineformset_factory(VinceCommContact, VinceCommEmail, form=VCEmailForm,  max_num=30, min_num=1, can_delete=True, extra=0)
 
     def test_func(self):
-        logger.debug("TESTING TESTING 1 2 3")
         self.contacts = _my_contact_group(self.request.user)
-        logger.debug("IN TEST FUNC")
         if len(self.contacts) > 0:
             vendor_id = self.kwargs.get('vendor_id')
             self.contact = VinceCommContact.objects.filter(id=vendor_id).first()
@@ -3249,7 +3247,7 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
 
     def get_context_data(self, **kwargs):
         context = super(EditContactView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         phones = VinceCommPhone.objects.filter(contact=self.contact)
         postal = VinceCommPostal.objects.filter(contact=self.contact)
         website = VinceCommWebsite.objects.filter(contact=self.contact)
@@ -3262,17 +3260,14 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                  'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp, instance=self.contact),
                  'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=self.contact)}
         context['contact'] = self.contact
-        logger.debug(self.contact)
-        logger.debug(self.contact.id)
-        logger.debug(self.contact.vendor_id)
+        logger.debug(f" {self.__class__.__name__} context data Contact: {self.contact} and Contact id: {self.contact.id} and Vendor id: {self.contact.vendor_id}")
         context.update(forms)
         context['gc'] = GroupContact.objects.filter(contact=self.contact).first()
         context['form'] = UploadLogoForm(contact=self.contact.id, user=self.request.user)
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
-
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         phones = VinceCommPhone.objects.filter(contact=self.contact)
         postal = VinceCommPostal.objects.filter(contact=self.contact)
         website = VinceCommWebsite.objects.filter(contact=self.contact)
@@ -3284,10 +3279,14 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         webformset = self.WebFormSet(self.request.POST, prefix='web', queryset=website, instance=self.contact)
         pgpformset = self.PgPFormSet(self.request.POST, prefix='pgp', queryset=pgp, instance=self.contact)
         emailformset = self.EmailFormSet(self.request.POST, prefix='email', queryset=email, instance=self.contact)
-        logger.debug(self.contact.version)
-        logger.debug(self.request.POST['version'])
-
-        if self.contact.version != int(self.request.POST['version']):
+        logger.debug("Checking Version of os Contact " + self.request.POST.get('version',"Version not in POST"))
+        sversion = self.contact.version
+        try:
+            sversion = int(self.request.POST.get('version',self.contact.version))
+        except Exception as e:
+            logger.warning(f"Parsing error of version provided in {self.__class__.__name__} form POST, error is: {e}")
+        
+        if self.contact.version != sversion:
             error_str = "Someone beat you to editing your contact information. \
             View the most recent details and retry editing this contact."
             forms = {'collision': error_str,
@@ -3341,7 +3340,7 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                 f.save()
 
             else:
-                logger.debug(f.errors)
+                logger.debug(f"Error in {self.__class__.__name__} for email formset, Error is {f.errors}")
 
         for f in postalformset:
             if f.is_valid():
@@ -3372,7 +3371,8 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
 
                 f.save()
             else:
-                logger.debug(f.errors)
+                logger.debug(f"Error in {self.__class__.__name__} for postal formset, Error is {f.errors}")
+                
 
         for f in phoneformset:
             if f.is_valid():
@@ -3402,7 +3402,7 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                         if 'This field is required.' not in v:
                             messages.error(self.request,
                                            f"Phone Number Validation Error: {k}: {v}")
-                logger.debug(f.errors)
+                logger.debug(f"Error in {self.__class__.__name__} for phone formset, Error is {f.errors}")
 
         for f in pgpformset:
             if f.is_valid():
@@ -3464,7 +3464,8 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
 
                             messages.error(self.request,
                                            f"PGP Key Validation Error: {v}")
-                logger.debug(f.errors)
+                logger.debug(f"Error in {self.__class__.__name__} for phone formset, Error is {f.errors}")
+
 
         for f in webformset:
             if f.is_valid():
@@ -3487,7 +3488,7 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
 
                 f.save()
             else:
-                logger.debug(f.errors)
+                logger.debug(f"Error in {self.__class__.__name__} for phone formset, Error is {f.errors}")                
                                      
 
         if changes:
@@ -3548,7 +3549,7 @@ class UnderConstruction(LoginRequiredMixin, TokenMixin, PendingTestMixin, generi
     
     def get_context_data(self, **kwargs):
         context = super(UnderConstruction, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         return context
 
 class CRView(LoginRequiredMixin, TokenMixin, PendingTestMixin, UserPassesTestMixin, generic.TemplateView):
@@ -3561,7 +3562,7 @@ class CRView(LoginRequiredMixin, TokenMixin, PendingTestMixin, UserPassesTestMix
     
     def get_context_data(self, **kwargs):
         context = super(CRView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['crpage'] = 1
         context['report'] = VTCaseRequest.objects.filter(id=self.kwargs['pk']).first()
         context['attachments'] = ReportAttachment.objects.filter(action__cr=context['report'])
@@ -3583,7 +3584,7 @@ class UpdateReportView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         cr = CRFollowUp(cr = self.report,
                         title = "commented on report",
                         user = self.request.user,
-                        comment = self.request.POST['comment'])
+                        comment = self.request.POST.get('comment',"No message"))
         cr.save()
         messages.success(
             self.request,
@@ -3602,7 +3603,7 @@ class AdminReportsView(LoginRequiredMixin, TokenMixin, PendingTestMixin, UserPas
     
     def get_context_data(self, **kwargs):
         context = super(AdminReportsView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['crpage'] = 1
         auth_reports =  VTCaseRequest.objects.all()
         unauth_reports = VulCoordRequest.objects.using('vincecomm').all()
@@ -3622,7 +3623,7 @@ class ReportsView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.List
     
     def get_context_data(self, **kwargs):
         context = super(ReportsView, self).get_context_data(**kwargs)
-        context['unread_msg_count'] = _unread_msg_count(self.request.user)
+        context['unread_msg_count'] = 0
         context['crpage'] = 1
         form = ReportStatusForm()
         context['form'] = form
@@ -3662,9 +3663,7 @@ class ReportView(LoginRequiredMixin, TokenMixin, generic.FormView):
         return context
 
     def form_valid(self, form):
-        #Begin reCAPTCHA validation                                                                         
         recaptcha_response = self.request.POST.get('g-recaptcha-response')
-        logger.debug(recaptcha_response)
         data = {
             'secret' : settings.GOOGLE_RECAPTCHA_SECRET_KEY,
             'response': recaptcha_response
@@ -3672,9 +3671,9 @@ class ReportView(LoginRequiredMixin, TokenMixin, generic.FormView):
         r = requests.post(GOOGLE_VERIFY_URL, data=data)
         result = r.json()
         if result['success']:
-            logger.debug("successful recaptcha validation")
+            logger.debug(f"successful recaptcha validation for user {self.request.user}")
         else:
-            logger.debug("invalid recaptcha validation")
+            logger.debug(f"invalid recaptcha validation for user {self.request.user}")
             form._errors[forms.forms.NON_FIELD_ERRORS] = ErrorList([
                 u'Invalid reCAPTCHA.  Please try again'
 		])
@@ -3718,9 +3717,7 @@ class ReportView(LoginRequiredMixin, TokenMixin, generic.FormView):
         s3Client = boto3.client('s3', region_name=settings.AWS_REGION, config=Config(signature_version='s3v4'))
         attachment = context.get('user_file')
         if attachment:
-            logger.debug(attachment)
             context['s3_file_name'] = newrequest.user_file.name
-            logger.debug(newrequest.user_file.name)
             try:
                 # tag object with vrf id
                 # copy from private to incoming reports directory
@@ -3728,8 +3725,7 @@ class ReportView(LoginRequiredMixin, TokenMixin, generic.FormView):
                                           Bucket=settings.VP_PRIVATE_BUCKET_NAME,
                                           Key=settings.VRF_PRIVATE_MEDIA_LOCATION+'/'+newrequest.user_file.name,
                                           Tagging=f'ID={vrf_id}')
-                logger.debug(rd)
-                logger.debug(f"trying to put file in {settings.VRF_PRIVATE_MEDIA_LOCATION}") 
+                logger.debug(f"trying to put file in {settings.VRF_PRIVATE_MEDIA_LOCATION} result is {rd}") 
             except:
                 send_sns(vrf_id, "tagging uploaded file", traceback.format_exc())
 
@@ -3743,7 +3739,7 @@ class ReportView(LoginRequiredMixin, TokenMixin, generic.FormView):
                                 Bucket=settings.VP_PRIVATE_BUCKET_NAME, Key=f'{settings.VRF_REPORT_DIR}/{vrf_id}.txt')
         except:
             send_sns(vrf_id, "writing report to s3 bucket", traceback.format_exc())
-            logger.debug(report_template.render(context=context))
+            report_template.render(context=context)
 
         context.pop('user_file')
         send_sns_json("vul", subject, json.dumps(context))
@@ -3759,7 +3755,7 @@ class ReportView(LoginRequiredMixin, TokenMixin, generic.FormView):
         # if reporter provided an email, send an ack email 
         reporter_email = context.get('contact_email')
         if reporter_email:
-            autoack_email_template = get_template("vincepub/email-general.txt")
+            autoack_email_template = get_template("vincepub/email-autoack.txt")
             sesclient = boto3.client('ses', 'us-east-1')
             try:
                 response = sesclient.send_email(
@@ -3781,22 +3777,17 @@ class ReportView(LoginRequiredMixin, TokenMixin, generic.FormView):
                     Source= f'{settings.DEFAULT_VISIBLE_NAME} DONOTREPLY <{settings.DEFAULT_FROM_EMAIL}>'
                 )
             except ClientError as e:
-                logger.debug("ERROR SENDING EMAIL")
+                logger.debug(f"Error sending email to {reporter_email} in {self.__class__.__name__}, Error is {e.response['Error']['Message']}")
                 send_sns(vrf_id, "Sending ack email for vul reporting form", e.response['Error']['Message'])
-                logger.debug(e.response['Error']['Message'])
-            except:
-                logger.debug("ERROR SENDING EMAIL - Not a ClientError")
+            except Exception as e:
+                logger.debug(f"Error sending email to {reporter_email} in {self.__class__.__name__} not ClientError, error is {e}")                
                 send_sns(vrf_id, "Sending ack email for vul reporting form", "something")
-                logger.debug(traceback.format_exc())
             else:
-                logger.debug("Email Sent! Message ID: "),
-                logger.debug(response['MessageId'])
-
-            # redirect to a new URL                                                                             
+                logger.debug(f"Email Sent! Message ID: {response['MessageId']}")
         return render(self.request, 'vincepub/success.html', context)
 
     def form_invalid(self, form):
-        logger.debug(form.errors)
+        logger.debug(f" For errors in {self.__class__.__name__} error is {form.errors}")
         return render(self.request, self.template_name, {'form': form, 'reportpage': 3})
     #return super().form_invalid(form)
 
@@ -3844,7 +3835,6 @@ class CasesAPIView(generics.ListAPIView):
         
 
 class CaseAPIView(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-#    authentication_classes = (JSONWebTokenAuthentication,)
     serializer_class = CaseSerializer
     permission_classes = (IsAuthenticated,PendingUserPermission,LimitedCaseAccessPermission,)
     lookup_field = "vuid"
@@ -3860,7 +3850,6 @@ class CaseAPIView(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         return my_cases.order_by('-modified')
 
 class CasePostAPIView(generics.ListAPIView):
-#    authentication_classes = (JSONWebTokenAuthentication,)
     serializer_class = PostSerializer
     permission_classes = (IsAuthenticated,CaseAccessPermission,PendingUserPermission)
 
@@ -3872,7 +3861,6 @@ class CasePostAPIView(generics.ListAPIView):
         return Post.objects.filter(case=case, current_revision__isnull=False).order_by('-created')
 
 class CaseReportAPIView(generics.RetrieveAPIView):
-#    authentication_classes = (JSONWebTokenAuthentication,)
     serializer_class = OrigReportSerializer
     permission_classes = (IsAuthenticated,LimitedCaseAccessPermission,PendingUserPermission)
     lookup_field = "vuid"
@@ -3886,7 +3874,6 @@ class CaseReportAPIView(generics.RetrieveAPIView):
     
     
 class CaseVulAPIView(generics.ListAPIView):
-#    authentication_classes = (JSONWebTokenAuthentication,)
     serializer_class = VulSerializer
     permission_classes = (IsAuthenticated,LimitedCaseAccessPermission,PendingUserPermission)
 
@@ -3899,7 +3886,6 @@ class CaseVulAPIView(generics.ListAPIView):
 
 
 class CaseVendorVulStatusAPIView(generics.ListAPIView):
-#    authentication_classes = (JSONWebTokenAuthentication,)
     serializer_class = VendorStatusSerializer
     permission_classes = (IsAuthenticated,CaseAccessPermission,PendingUserPermission)
 
@@ -3911,7 +3897,6 @@ class CaseVendorVulStatusAPIView(generics.ListAPIView):
         return CaseMemberStatus.objects.filter(member__case=case)
     
 class CaseVendorStatusAPIView(generics.ListAPIView):
-#    authentication_classes = (JSONWebTokenAuthentication,)
     serializer_class = VendorSerializer
     permission_classes = (IsAuthenticated,LimitedCaseAccessPermission,PendingUserPermission)
 
@@ -4199,7 +4184,7 @@ class CreateServiceAccountView(LoginRequiredMixin,TokenMixin,UserPassesTestMixin
         return reverse_lazy("vince:admin")
     
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         #does a service account already exist for this group?
         gc = get_object_or_404(GroupContact, id=self.kwargs.get('vendor_id'))
@@ -4275,29 +4260,49 @@ class CreateServiceAccountView(LoginRequiredMixin,TokenMixin,UserPassesTestMixin
         
         return JsonResponse({'response': 'Invalid Form Entry. Please try again.'}, status=200)
 
+class UnreadCountAjax(LoginRequiredMixin, TokenMixin, generic.TemplateView):
+    login_url = "vinny:login"
+    template_name = "test.html"
     
+    def get_view_name(self):
+        return "Get current User's unread messages count"
+    
+    def get(self, request, format=None):
+        return JsonResponse({'unread': _unread_msg_count(self.request.user),
+                             'timestamp': datetime.now().timestamp()})
     
 def csrf_failure_view(request, reason=""):
     ctx = {'message': 'Error'}
-    return render_to_response("vinny/csrf_fail.html", ctx)
+    if 'render_to_response' in globals():
+        return render_to_response("vinny/csrf_fail.html", ctx)
+    else:
+        return render(None,"vinny/csrf_fail.html", ctx)
 
 
 class CaseCSAFAPIView(generics.RetrieveAPIView):
     serializer_class = CSAFSerializer
     permission_classes = (IsAuthenticated,CaseAccessPermission,PendingUserPermission)
-
      
     def get_view_name(self):
         return "Vulnerability Advisory in CSAF format"
 
-#Removed the redirect so authenticated user can still get additional
-#CSAF elements not available in the public unauthenticated view
     def get_object(self):
         svuid = self.kwargs['vuid']
-        case = get_object_or_404(Case, vuid=svuid)
-        casevuls = CaseVulnerability.objects.filter(case=case, deleted=False)
-        #For cases without vulnerabilities we cannot send CSAF!
-        if casevuls:
-            return case
-        return {"error": "Case is invalid or has no vulnerabilities defined"}
+        return Case.objects.filter(vuid=svuid).first()
 
+    def handle_no_permission(self):
+        caseid = self.kwargs['vuid']
+        logger.info(f"Case permissions denied for user {self.request.user} for {caseid}")
+        return JsonResponse({"error": "Report/Case identified either does not exist or you do not have permissions to view it"})
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        """ If permissions fails or 404 we do the same provide
+        the same error message """
+        
+        response = super().finalize_response(request, response, *args, **kwargs)
+        if not response.status_code in [200,302]:
+            return JsonResponse({"error": "Report/Case identified either does not exist or you do not have permissions to view it"})
+        if response.status_code == 200 and request.headers.get('Origin') and request.headers.get('Origin').find("https://") > -1:
+            response["Access-Control-Allow-Origin"] = request.headers.get('Origin')
+        return response
+    

@@ -1,0 +1,50 @@
+.login #container {
+    position: absolute;
+    top: 50%;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+.login #container input:not([type=button]):not([type=submit]) {
+    background-color: transparent;
+    color: #333;
+}
+/* Add darkmode */
+.blackbody #container {
+
+}
+
+@media only screen and (max-width: 600px) {
+    /* Force headernav to top of screen on mobile*/
+    .headernav {
+	top: 0px !important;
+    }
+    /* Let scroll out menu cover all the screen*/
+    #offCanvas.off-canvas.is-open {
+	height: auto !important;
+    }
+    #offCanvas ul.vertical.menu > li.menu-close {
+	  position: fixed;
+	  right: 15%;
+	  top: 0px;
+	  border: none;
+	  padding-top: 0px;
+    }
+    #header {
+	height: auto !important;
+    }
+    #header .topbar-redbar .h2.subtitle {
+	display: none !important;
+    }
+    .mainbody .app-top-panel {
+	padding: 2px !important;
+    }
+    h2 {
+	font-size: 1.5em;
+	font-weight: bold;
+    }
+
+    .login #container {
+	top: 0%;
+    }
+}

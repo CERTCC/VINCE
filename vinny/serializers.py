@@ -265,21 +265,37 @@ class CSAFSerializer(serializers.ModelSerializer):
         model = Case
         fields = ["document","vulnerabilities","product_tree"]
 
+
+    def to_representation(self, case):
+        ret = super().to_representation(case)
+        if not ret['vulnerabilities']:        
+            del ret['product_tree']
+            if hasattr(settings,'CSAF_VUL_EMPTY'):
+                ret['vulnerabilities'] = settings.CSAF_VUL_EMPTY
+            else:
+                ret['vulnerabilities'] = [{"notes": [{"category": "general","text": "No vulnerabilities have been defined at this time for this report"}]}]
+        return ret
+
+        
     def get_csafdocument(self,case):
         tfile = os.path.join(self.template_json_dir,"document.json")
+        add_document = {}
         if not os.path.exists(tfile):
             return {"error": "Template file for csaf missing"}
         csafdocument_template = open(tfile,"r").read()
         vulnote = reverse("vincepub:vudetail", args=[case.vuid])
-        if case.publicurl:
+        # Either one of this is the way to know l.publicdate or l.published
+        if case.publicdate or case.published:
             publicurl = f"{settings.KB_SERVER_NAME}{vulnote}"
-        else:
-            publicurl = f"{settings.KB_SERVER_NAME}{vulnote}#PendingRelease"
-        ackurl = f"{settings.KB_SERVER_NAME}{vulnote}#acknowledgments"
-        if case.published:
             case_status = "final"
         else:
+            publicurl = f"{settings.KB_SERVER_NAME}{vulnote}#PendingRelease"
             case_status = "interim"
+            if hasattr(settings,"CSAF_TLP_MAP") and settings.CSAF_TLP_MAP.get("PRIVATE"):
+                tlp_type = settings.CSAF_TLP_MAP.get("PRIVATE")
+                if hasattr(settings,"CSAF_DISTRIBUTION_OPTIONS") and settings.CSAF_DISTRIBUTION_OPTIONS.get(tlp_type):
+                    add_document.update(settings.CSAF_DISTRIBUTION_OPTIONS.get(tlp_type))
+        ackurl = f"{settings.KB_SERVER_NAME}{vulnote}#acknowledgments"
 
         if case.modified:
             revision_date = case.modified
@@ -309,13 +325,15 @@ class CSAFSerializer(serializers.ModelSerializer):
             "case_status": case_status,
             "case_version": case_version
         }
-        logger.debug(csafdocument)
-        return json.loads(csafdocument, strict=False)
+        csafd = json.loads(csafdocument,strict=False)
+        csafd.update(add_document)
+        return csafd
 
     def get_csafvuls(self, case):
         self.mproduct_tree = {"branches": []}
         casevuls = list(CaseVulnerability.objects.filter(case=case, deleted=False))
-        logger.debug(casevuls)
+        if not len(casevuls):
+            return None
         csafvuls = []
         tfile = os.path.join(self.template_json_dir,"vulnerability.json")
         csafvul_template = open(tfile,"r").read()

@@ -3,7 +3,22 @@
 {% load ticket_to_link %}
 <div class="row">
   <div class="large-12 columns">
-    <h3 class="section-title">{% trans "Activity" %}</h3>
+    <h3 class="section-title">
+      {% trans "Activity" %}
+      <small>
+	{% if more %}
+	[Showing {{ ticket.MAX_ACTIVITY }} of
+	{{ ticket.followup_set.count }}]
+	<button class="button primary small asyncclick" id="show_all"
+		style="margin: 0px" data-qparams="all=true"
+		data-divid="ticket_activity">
+	  Show All
+	</button>
+	{% else %}
+	[{{ ticket.followup_set.count }}]
+	{% endif %}
+      </small>
+    </h3>
   </div>
 </div>
 <div class="row">
@@ -12,7 +27,7 @@
       <div class="article-row-section-inner">
 	{% for followup in ticket.get_actions %}
 	<div class="article-row">
-	
+	  
 	  <div class="article-row-img">
 	    {% autoescape off %}
 	    {% if followup.user %}
