@@ -29,7 +29,7 @@
       <h2><i class="fas fa-skull"></i> {{ vul.vul }} <a href="{{ vul.case.get_absolute_url }}">({{ vul.case.get_vuid }})</a></h2>
     </div>
     <div class="large-4 columns text-right">
-      <a href="{% url 'vince:editvul' vul.id %}" class="openeditmodal"><button class="button cmu"><i class="fas fa-pen"></i> Edit Vulnerability</button></a>
+      <!-- Removed link to Edit Vulnerability -->
     </div>
   </div>
 </div>
@@ -96,14 +96,20 @@
     {% if vul.cveallocation %}
     <a title="edit cve json file" class="button default small" href="{% url 'vince:cve' vul.cveallocation.id %}"><i class="fas fa-pen"></i> Edit CVE Record</a>
     {% if vul|cve_complete %}
-    <a class="downloadcvefile button default small" href="{% url 'vince:download_cve' vul.cveallocation.id %}" title="download json file"><i class="fas fa-file-download"></i>  Download CVE JSON</a>{% endif %}
+    <a class="downloadcvefile button default small" href="{% url 'vince:download_cve' vul.cveallocation.id %}" title="download json file">
+      CVE(4) JSON <i class="fas fa-file-download"></i>
+    </a>
+    <a class="downloadcvefile button default small" id="cve5json" title="download"  href="{% url 'vince:download_cve5' vul.cveallocation.id %}" download="VINCE-CVE-{{ vul.cve }}.json">
+      CVE(5) JSON <i class="fas fa-file-download"></i>
+    </a>
+    {% endif %}
     {% else %}
     <a title="Create New CVE" href="{% url 'vince:newcve' vul.id %}" class="button default small">Create CVE JSON</a>
     {% endif %}
   </div>
 </div>
 <div class="row">
-  <div class="large-12 columns">
+  <div class="large-6 columns">
     {% if vul.cveallocation.cvereservation and vul.cve %}
     {% if vul.cveallocation.cvereservation.cve_id != vul.vul %}
     <div class="callout alert">The CVE ID reserved for this vulnerability ({{ vul.cveallocation.cvereservation.cve_id }}) does not match the CVE ID provided for this vulnerability.</div>
@@ -111,7 +117,10 @@
     {% endif %}
     <b>CVE:</b><span id="exportId">{% if vul.cve %} CVE-{{ vul.cve }} {% else %} Unspecified {% endif %}</span>
     <br/>
-    <b>Status:</b> {% if vul.cveallocation.cvereservation %}<span class="goodtext">RESERVED by {{ vul.cveallocation.cvereservation.user_reserved.usersettings.preferred_username }} on {{ vul.cveallocation.cvereservation.time_reserved|date:"Y-m-d" }} </span>{% elif vul.cve %}CVE not obtained through VINCE{% else %}CVE not obtained{% endif %}
+    <b>Status:</b> {% if vul.cveallocation.cvereservation %}<span class="cvestatus goodtext">RESERVED by {{ vul.cveallocation.cvereservation.user_reserved.usersettings.preferred_username }} on {{ vul.cveallocation.cvereservation.time_reserved|date:"Y-m-d" }} </span>{% elif vul.cve %}CVE not obtained through VINCE{% else %}CVE not obtained{% endif %}
+    {% if cve_status %}
+    <span class="cve_status" data-origin="{{ cve_status }}"></span>
+    {% endif %}
     <br/>
     <b>Date Public</b>: {{ vul.cveallocation.date_public|date:"Y-m-d" }}
     <br/>
@@ -141,13 +150,45 @@
     {% if vul.cveallocation.cveaffectedproduct_set.all|length > 0 %}
     <b>Products:</b><br/>
     {% for product in vul.cveallocation.cveaffectedproduct_set.all %}
-    {{ product.name }}, {{ product.organization }}, {% if product.version_name %}{{ product.version_name }}{% endif %} {% if product.version_affected %}{{ product.version_affected }}{% endif %} {{ product.version_value }}<br/>
+    <ol type="1">
+        <li>&nbsp; {{ product.organization }} - {{ product.name }}
+            <ol type="a">
+              <li>
+		{% if product.version_name and product.version_affected %}
+		Range 
+		{% endif %}
+		{{ product.version_value }}
+		{% if product.version_affected %}
+		{{ product.version_affected }}
+		{% endif %} 
+		{% if product.version_name %}
+		{{ product.version_name }}
+		{% endif %}
+                </li>
+            </ol>
+        </li>
+    </ol>
     {% endfor %}
     {% else %}
     <b class="required">No products</b>
     {% endif %}
   </div>
+  <div class="large-6 columns text-right">
+    <!--
+    <a title="Reject this CVE"
+       id="rejectcve5" class="button small cmu">
+      <i class="fas fa-ban"></i> Reject CVE5
+    </a>
+    -->
+    {% if vul|cve_complete %}
+    <a title="Publish/Update CVE via CVE services API"
+       id="publishcve5" class="button small primary">
+      <i class="fas fa-upload"></i> Publish CVE5
+    </a>
+    {% endif %}
+  </div>
 </div>
+
 
 <hr>
 <div class="row">

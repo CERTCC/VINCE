@@ -88,6 +88,7 @@ from django.db.models import Q, OuterRef, Subquery, Max
 from botocore.exceptions import ClientError
 from botocore.client import Config
 from lib.vince.m2crypto_encrypt_decrypt import ED
+from lib.vince import utils as vinceutils
 
 # Create your views here.
 
@@ -570,11 +571,13 @@ class VinceAttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         raise Http404
 
     def get(self, request, *args, **kwargs):
-        attachment = VinceAttachment.objects.filter(uuid=self.kwargs['path']).first()
+        file_uuid = self.kwargs['path']
+        attachment = VinceAttachment.objects.filter(uuid=file_uuid).first()
         if attachment:
             mime_type = attachment.mime_type
             response = HttpResponseRedirect(attachment.access_url, content_type = mime_type)
-            response['Content-Disposition'] = f"attachment; filename=\"{attachment.filename}\""
+            filename = vinceutils.safe_filename(attachment.filename,file_uuid,mime_type)
+            response['Content-Disposition'] = f"attachment; filename=\"{filename}\""
             response["Content-type"] = mime_type
             response["Cache-Control"] = "must-revalidate"
             response["Pragma"] = "must-revalidate"
@@ -595,7 +598,8 @@ class VinceVRFAttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
             if not(mime_type):
                 mime_type = 'application/octet-stream'
             response = HttpResponseRedirect(report.user_file.url, content_type = mime_type)
-            response['ResponseContentDisposition'] = f"attachment; filename=\"{report.user_file.name}\""
+            filename = vinceutils.safe_filename(report.user_file.name,file_uuid,mime_type)
+            response['ResponseContentDisposition'] = f"attachment; filename=\"{filename}\""
             response["Content-type"] = mime_type
             response["Cache-Control"] = "must-revalidate"
             response["Pragma"] = "must-revalidate"
@@ -2295,10 +2299,17 @@ class LoadVendorsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         if self.request.GET.get("start","").isdigit():
             start = int(self.request.GET.get("start"))
         try:
-            context['vendors'] = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).order_by("group__groupcontact__contact__vendor_name")[start:]
+            #There is one additional group that is created in
+            #casemember that has group__name as vuid. This happens
+            #to be the reporter.
+            vendors = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).exclude(group__name=case.vuid).order_by("group__groupcontact__contact__vendor_name") 
         except Exception as e:
             logger.debug("Vendor name ordering failed error: {e}")
-            context['vendors'] = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).order_by("group__name")[start:]
+            vendors = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).exclude(group__name=case.vuid).order_by("group__name")
+        end = vendors.count()
+        if self.request.GET.get("end","").isdigit():
+            end = int(self.request.GET.get("end"))
+        context['vendors'] = vendors[start:end]
         context['case'] = case
         return context
     
@@ -2323,18 +2334,25 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
     login_url="vinny:login"
 
     def test_func(self):
-        case = get_object_or_404(Case, id=self.kwargs['pk'])
-        if self.kwargs.get('vendor'):
-            cm = get_object_or_404(CaseMember, id=self.kwargs['vendor'])
-            return _is_my_case(self.request.user, self.kwargs['pk']) and PendingTestMixin.test_func(self) and self.request.user.is_staff
-        return _is_my_case(self.request.user, self.kwargs['pk']) and PendingTestMixin.test_func(self)
+        if Case.objects.filter(id=self.kwargs['pk']):
+            if self.kwargs.get('vendor'):
+                if CaseMember.objects.filter(id=self.kwargs['vendor']):
+                    return _is_my_case(self.request.user, self.kwargs['pk']) and PendingTestMixin.test_func(self) and self.request.user.is_staff
+            return _is_my_case(self.request.user, self.kwargs['pk']) and PendingTestMixin.test_func(self)
 
     def handle_no_permission(self):
         """ If test_func fails call this for a friendly response. Use
-        404.html which has generci error to avoid Case enumeration. """
-        
+        404.html which has generic error to avoid Case enumeration. """
+
+        if (not self.request.user.is_authenticated) or self.request.user.is_anonymous:
+            url = self.request.build_absolute_uri()
+            ip = vinceutils.get_ip(self.request)
+            logger.debug(f"Unauthenticated user from {ip} requesting {url} redirect to login")
+            return super(CaseView, self).handle_no_permission()
+
         ctx = {"VINCECOMM_BASE_TEMPLATE": settings.VINCECOMM_BASE_TEMPLATE,
                "user": self.request.user}
+
         try:
              if 'render_to_response' in globals():
                  return render_to_response("vinny/404.html",ctx)
@@ -2348,10 +2366,11 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
     def get_context_data(self, **kwargs):
         context = super(CaseView, self).get_context_data(**kwargs)
         context['unread_msg_count'] = 0
-        case = get_object_or_404(Case, id=self.kwargs['pk'])
+        #Already checked in test_func if Case exists 
+        case = Case.objects.get(id=self.kwargs['pk'])
         #content = VendorNotificationContent.objects.filter(case=case).first()
         context['case'] = case
-        context['casepage']=1
+        context['casepage'] = 1
         context['today'] = timezone.now
         #context['content'] = content
         vuls = []
@@ -4293,6 +4312,8 @@ class CaseCSAFAPIView(generics.RetrieveAPIView):
     def handle_no_permission(self):
         caseid = self.kwargs['vuid']
         logger.info(f"Case permissions denied for user {self.request.user} for {caseid}")
+        if (not self.request.user.is_authenticated) or self.request.user.is_anonymous:
+            return JsonResponse({"error": "Authentication not provided or missing"})
         return JsonResponse({"error": "Report/Case identified either does not exist or you do not have permissions to view it"})
 
     def finalize_response(self, request, response, *args, **kwargs):

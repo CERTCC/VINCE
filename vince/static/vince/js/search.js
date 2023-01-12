@@ -57,44 +57,94 @@ function nextTickets(page) {
 }
 function searchTickets(e) {
     if (e) {
-        e.preventDefault();
+	e.preventDefault();
     }
     $("#id_page").val("1");
     var url = "/vince/ticket/results/";
     lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
     window.txhr = $.ajax({
-        url: url,
-        type: "POST",
-        data: $('#searchform').serialize(),
-        success: function(data) {
-            lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
-            $("#searchresults").html(data);
-        },
-        error: function() {
-            lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
-            console.log(arguments);
-            alert("Search failed or canceled! See console log for details.");
-        },
-        complete: function() {
-            /* Just safety net */
-            lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
-            window.txhr = null;
-        }
+	url: url,
+	type: "POST",
+	data: $('#searchform').serialize(),
+	success: function(data) {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    $("#searchresults").html(data);
+	},
+	error: function() {
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    console.log(arguments);
+	    alert("Search failed or canceled! See console log for details.");
+	},
+	complete: function() {
+	    /* Just safety net */
+	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+	    window.txhr = null;
+	}
     });
 }
+async function close_tickets(search) {
+    if(!search)
+	search = "Email Bounce";
+    let morepages = 1;
+    let csrf = getCookie('csrftoken');
+    let enddate = new Date().toISOString();
+    enddate = enddate.replace(/T.*/,'');
+    let pbody = "csrfmiddlewaretoken=" + csrf + "&new_status=4";
+    let hm = get_modal();
+    let postbody = "csrfmiddlewaretoken="+csrf+"&new_status="+4
+    let hdr = {'Content-type': 'application/x-www-form-urlencoded'};
+    hm.append("<h4> Do not close this window </h4>");
+    hm.append("<p> See Javascript console log for any failures</p>");
+    hm.append("<ul class='tempul'><li><h5>Starting Tickets</h5></li></ul>");
+    let ul = hm.find('.tempul');
+    ul.find("li > h5").append(" for <i>"+search+"</i> ");
+    while(morepages > 0) {
+	await $.post('/vince/ticket/results/',
+	       {csrfmiddlewaretoken: csrf,
+		owner: 5,
+		tag:"",
+		page: 1,
+		datestart:"2000-01-01",
+		status:    1, dateend: enddate,
+		wordSearch:    search},
+	       function(d) {
+		   let reader = $($.parseHTML(d));
+		   let total = parseInt(reader.find('#resultTotal').html())
+		   let els = reader.find('.vulnerability-list a');
+		   morepages = total - els.length;
+		   if(els.length < 1) {
+		       ul.append("<li><h5>Nothing found to close!</h5></li>");
+		       morepages = 0;
+		       return;
+		   }
+		   ul.append("<li>Closing tickets <span class='mc'></span> "+
+			     "of total ["+total+"] </li>");
+                   els.each(
+		       async function(i,x) {
+			   let si = String(i+1);
+			   ul.append($("<li>").addClass("sm " + si ).
+				     html("Closing " + si + " Ticket </li>"));
+			   let csrf = getCookie('csrftoken');
+			   let req = new Request(x.href+"update/",
+						 {redirect: 'manual'});
+			   await fetch(req,
+				 { method:"POST",
+				   headers: hdr,
+				   body: pbody })
+			       .then(function(b) {
+				   hm.find('li.sm'+si).html("Complete " +
+							     b.text()) 
+			       });
+			   
+                       });
+	       });
+    }
+    finish_modal(hm);
+}
+
 
 $(document).ready(function() {
 
-    $(document).keyup(function(e) {
-	if (e.key === "Escape") { 
-	    if('txhr' in window && 'abort' in window.txhr) {
-		console.log("Aborting search because user hit Escape");
-		window.txhr.abort();
-		delete window.txhr;
-	    }
-	}
-    });
-    
     $(document).on("click", '.search_page', function(event) {
 	var page = $(this).attr('next');
 	nextPage(page);

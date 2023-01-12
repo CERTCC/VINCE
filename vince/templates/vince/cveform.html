@@ -30,7 +30,7 @@
     <ul class="breadcrumbs">
       <li><a href="{% url 'vince:case' vul.case.id %}#vuls">Case</a></li>
       <li><a href="{% url 'vince:vul' vul.id %}">Vulnerability</a></li>
-      <li><span class="show-for-sr">Current: </span> Edit CVE</li>
+      <li><span class="show-for-sr">Current: </span> Edit CVE (JSON5)</li>
     </ul>
   </nav>
   </div>
@@ -137,16 +137,16 @@
 		{% render_field subform.name class="form-control" %}
 	      </td>
 	      <td>
-		<label for="cve_version_num">Version Number: <span class='required'>*</span></label>
+		<label for="cve_version_num">Version (or Starts): <span class='required'>*</span></label>
 		{% render_field subform.version_value class="form-control" %}
 	      </td>
 	      <td>
-		<label for="cve_version_num">Version Affected: </label>
+		<label for="cve_version_num">Range Type: </label>
 		{% render_field subform.version_affected class="form-control" %}
 	      </td>
 	      
 	      <td> 
-		<label for="cve_version_name">Version Name:</label>
+		<label for="cve_version_name">Range End:</label>
 		{% render_field subform.version_name class="form-control" %}
 	      </td>
 	      <td></td>

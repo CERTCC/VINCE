@@ -48,6 +48,7 @@ import traceback
 #Django 3 and up
 from django.db.models import JSONField
 import io
+from lib.vince import utils as vinceutils
 
 logger = logging.getLogger(__name__)
 
@@ -1268,7 +1269,8 @@ class Attachment(models.Model):
         return '%s' % self.filename
 
     def _get_access_url(self):
-        url = self.file.storage.url(self.file.name, parameters={'ResponseContentDisposition': f'attachment; filename="{self.filename}"'})
+        filename = vinceutils.safe_filename(self.filename,str(self.uuid),self.mime_type)
+        url = self.file.storage.url(self.file.name, parameters={'ResponseContentDisposition': f'attachment; filename="{filename}"'})
         return url
 
     access_url = property(_get_access_url)
@@ -1680,8 +1682,6 @@ class VulNoteRevision(BaseRevisionMixin,  models.Model):
     search_vector = SearchVectorField(null=True)
     
     def __str__(self):
-        logger.debug("in revision")
-        logger.debug(self.content)
         if self.revision_number:
             return "%s (%d)" % (self.title, self.revision_number)
         else:
@@ -3821,7 +3821,6 @@ class CVEAllocation(models.Model):
         else:
             return False
         if self.cve_name and self.date_public and len(refs) and len(cwes):
-            logger.debug(len(self.references))
             return True
         else:
             return False
@@ -3836,19 +3835,19 @@ class CVEAffectedProduct(models.Model):
         max_length=200)
 
     version_name = models.CharField(
-        _('Affected Version'),
+        _('Version Range End'),
         blank=True,
         null=True,
         max_length=100)
 
     version_affected = models.CharField(
-        _('Version Affected'),
+        _('Version Range Type'),
         blank=True,
         null=True,
         max_length=10)
     
     version_value = models.CharField(
-        _('Affected Version Value'),
+        _('Affected Version or Start'),
         max_length=100)
 
     organization = models.CharField(

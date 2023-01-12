@@ -148,6 +148,7 @@ class SendMessageUserForm(forms.ModelForm):
     subject = forms.CharField(
         required = True,
         label=_('Subject'),
+        max_length=Thread._meta.get_field('subject').max_length,
     )
 
     case = forms.ChoiceField(
