@@ -253,5 +253,123 @@ $(function () {
 	    .find('input[type="checkbox"]')
 	    .prop('checked',$(e.target).prop('checked'));
     });
+    function filter_navli(e) {
+	let li = $(e.target || e.srcElement);
+	li.parent().find('.fa-check').css('opacity',0);
+	li.find('.fa-check').css('opacity',1);
+	let partdiv = li.closest('.participant_type');
+	let all = partdiv.find('.participant').not('.pheader');
+	let moreless = partdiv.find(".moreless");
+	let data = moreless.data();
+	if('asyncdivid' in data)
+	    $('#' + data.asyncdivid).show()
+	if(li.hasClass('all')) {
+	    all.show();
+	    moreless.show();
+            let all_count = all.length
+	    li.find('.count').html(all_count);
+	} else {
+	    all.hide();
+	    moreless.hide();
+	    let aclass = $(li).data('class');
+	    all.find('.'+aclass).closest('.participant').show()
+	}
+    }
+    function activate_navli(nav) {
+	let partdiv = $(nav).closest('.participant_type');
+	let all = partdiv.find('.participant').not('.pheader');
+	let all_count = all.length;
+	
+	$(nav).find('li li').each(function(_,li) {
+	    $(li).off('click');
+	    $(li).on('click',filter_navli);
+	    if($(li).hasClass('all')) {
+		$(li).find('.count').html(all_count);
+		$(li).find('.fa-check').css('opacity',1);
+	    } else {
+		let aclass = $(li).data('class');
+		if(aclass) {
+		    let count = partdiv.find('.'+aclass).length;
+		    $(li).find('.count').html(count);
+		}
+		$(li).find('.fa-check').css('opacity',0);		
+	    }
+	})
+    }
+    $('nav.cdown').each(function(_,nav) {
+	activate_navli(nav);
+    });
 
+    async function asyncshowall(adiv,clicked) {
+	let dad = $(adiv).parent();
+	if(clicked) {
+	    $(adiv).hide();	    
+	    dad.find('.asyncshowless').show();
+	}
+	let data = dad.data(); 
+	if('asyncdivid' in data) {
+	    let asyncdiv = $('#' + data.asyncdivid);
+	    if(clicked)
+		asyncdiv.show();
+	    let href = data.href;
+	    let rowdiv = data.rowdivclass;
+	    let pdiv = data.parentdivclass;
+	    let total = parseInt(dad.find('.showallcount').html());
+	    let batch = parseInt(data.batchcount);
+	    if(isNaN(batch))
+		batch = 20;
+	    let count = $('.'+data.parentdivclass + ' .' +
+			  data.rowdivclass).length;
+	    let maxloop = 1000;
+	    let loop = 0;
+	    let nav = $('.'+pdiv).find("nav.cdown");
+	    /* Hide the filter till all the rows are loaded */
+	    if(count < total)
+		$(nav).hide();
+	    while ( count < total) {
+		if(loop > maxloop) {
+		    console.log("Breaking due to too many loops");
+		    break;
+		}
+		loop++;
+		let hurl = href + "?start=" + String(count-1) + 
+		    "&end=" + String(count + batch); 
+	        
+		await $.get(hurl).done(function(w) {
+		    asyncdiv.append(w);
+		    count = $('.'+data.parentdivclass +
+			      ' .' + data.rowdivclass).length;
+		});
+	    }
+	    if(count >= total) {
+		console.log("Activate the filter button");
+		if(nav)
+		    activate_navli(nav[0]);
+		$(nav).show();
+	    }
+	}
+    }
+    
+    $('.asyncshowall').each(function(_,adiv) {
+	$(adiv).on('click',function(e) {
+	    asyncshowall(adiv,true);
+            e.preventDefault();
+	    e.stopPropagation();
+	});
+	asyncshowall(adiv,false);
+    });
+
+    $('.asyncshowless').on('click',function(e) {
+	$(this).hide();
+	let dad = $(this).parent();	
+	dad.find('.asyncshowall').show()
+	let data = dad.data();
+        if('asyncdivid' in data) {
+            let asyncdiv = $('#' + data.asyncdivid);
+	    asyncdiv.hide();
+	}
+        e.preventDefault();
+	e.stopPropagation();
+    });
+    
 });

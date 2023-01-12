@@ -76,6 +76,20 @@ function delaySearch(callfun,wait) {
 	    }, wait);
     };
 }
+function deepGet(obj,idir) {
+  let x= obj;
+  let y = idir.split(".");
+  y.every(function(d) { 
+    if (typeof(x) == "object" && d in x) {
+	x = x[d];
+	return true;
+    } else {
+	x = null;
+	return false;
+    }});
+    return x;
+}
+
 
 function asyncLoad(fdiv,furl,fmethod,pdiv,formpost,silent) {
     /* asyncload from furl(URL) to fdiv(Content div identifier) whose
@@ -188,6 +202,44 @@ function pageAsyncLoad(e) {
 	}
 	asyncLoad(fdiv,furl,fmethod);
     }
+}
+
+function get_modal() {
+    let hm = $('#txmodal');
+    if(hm.length != 1) {
+	$('body').append($('<div>').addClass("reveal").
+	    attr({"id": "xmodal",
+		  "role": "dialog",
+		  "aria-hidden": "true",
+		  "data-close-on-click": "false",
+		  "data-close-on-esc": "false",
+		  "data-yeti": "modal",
+		  "data-resize": "modal"}).
+	    css({"border": "2px solid #007dac",
+		 "border-radius": "12px"}));
+        let _ = new Foundation.Reveal($('#xmodal'));
+        _.open();
+	$('#xmodal').append($('<div>').attr({"id": "txmodal"}).
+			    css({"padding": "12px"}))
+        hm = $('#txmodal');
+    }
+    hm.html("<button class='button small primary tempbutton showli' " +
+	    " style='display:none'>" +
+	    "Show All Results</button>&nbsp; &nbsp;");
+    hm.append("<button class='close-button tempbutton closem'" +
+	      " style='display:none'> X </button>")
+    hm.find('.showli').on('click', function() {
+	$('#txmodal li').show();
+    });
+    hm.find('.closem').on('click', function() {
+	$('#xmodal').foundation('close');
+    });    
+    $('#xmodal').foundation('open');
+    return hm;
+}
+function finish_modal(hm) {
+    hm.find('.tempbutton').show();
+    hm.append("<p>Operation complete, you may close this window</p>");
 }
 
 $(function () {
@@ -380,6 +432,148 @@ $(function () {
 	    .find('input[type="checkbox"]')
 	    .prop('checked',$(e.target).prop('checked'));
     });
-    
+    function json_pretty(d) {
+	return JSON.stringify(d,null,'\t')
+    }
+    function msg_card(el,msg,level) {
+	$(el).html(msg).removeClass('hide').addClass('card-'+level);
+	if(level == "bad") {
+	    $(el).on('click',function() { $('#xmodal').foundation('close'); })
+	}
+    }
+    function load_cvedata(cvetype) {
+	$('a.cvetab').attr("aria-selected","false");
+	$('a.cvetab.'+cvetype).attr("aria-selected","true");
+	let cvenew = $('#cve5data').data(cvetype);
+	if(cvenew && deepGet(cvenew,'containers.cna')) {
+	    $('#cve5data').val(json_pretty(cvenew.containers.cna));
+	}
+    }
+    $('#rejectcve5').on('click', function() {
+	if(confirm("Reject this CVE and remove any public reference "+
+		   " in the CVE Program?")) {
+	    let href = $('#cve5json').attr('href');
+	}
+	    
+    });
+    $('.cve_status').each(function(_,el) {
+	if($(el).data("origin")) {
+	    $.getJSON($(el).data("origin")).done(function(d) {
+		if(('state' in d) && (d.state != "PUBLISHED"))
+		    return;
+		if(('dateUpdated' in d) && d.dateUpdated) {
+		    try {
+			let depoch = Date.parse(d.dateUpdated);
+			let dtext = new Date(depoch).toLocaleString();
+			$(el).html("<br>&nbsp;")
+			    .append($('<span>')
+				    .html("PUBLISHED on " + dtext)
+				    .addClass("goodtext"));
+		    } catch(err) {
+			console.log("Ignore error on published data "+err)
+		    }
+		}
+	    });
+	}
+    });
+    $('#publishcve5').on('click',function() {
+	let hm = get_modal();
+	hm.append("<h4><u>Submit CVE5 JSON To CVE Program</u></h4>");
+	hm.append($('<small>')
+		  .html("If needed edit and update JSON before submission. " +
+		       "Use the Tabs to compare CVE data in VINCE and " +
+			"in the CVE Services API")); 
+	hm.append($('<a>').addClass("dashboard-nav-card hide"));
+	hm.append($('<ul>').addClass("tabs hide")
+		  .append($('<li>').addClass("tabs-title")
+			  .append($('<a>').html("CVE VINCE")
+				  .addClass('cvevince cvetab')
+				  .attr("aria-selected","true"))
+			  .on('click', function(e) {
+			      load_cvedata('cvevince');
+			  }))
+		  .append($('<li>').addClass("tabs-title")
+			  .append($('<a>').html("CVE Program")
+				  .addClass('cveservices cvetab'))
+			  .on('click', function(e) {
+                              load_cvedata('cveservices');
+                          }
+			     ))); 
+	hm.append($('<textarea>')
+		  .attr({id:"cve5data",
+			 autocomplete:"off",
+			 autocorrect:"off",
+			 autocapitalize:"off",
+			 spellcheck: "false"})
+		  .css({height: "20em",
+			width: "100%",
+			border: "1px solid grey"})); 
+	let href = $('#cve5json').attr('href');
+	let el = hm.find(".dashboard-nav-card");
+	if(! href) {
+	    msg_card(el,"Missing CVE reference","bad");
+	    return;
+	}
+	$.getJSON(href,function(d) {
+	    if(deepGet(d,'containers.cna')) {
+		let cvedata = d.containers.cna;
+		/* Store full data both local vince version and
+		   remote cveservice version 
+		*/
+		$('#cve5data').val(json_pretty(cvedata))
+		    .data("cvevince",d);
+		if(deepGet(cvedata,"x_generator.origin")) {
+		    $.getJSON(deepGet(cvedata,"x_generator.origin"))
+			.done(function(d) {
+			    $('#cve5data').data("cveservices",d);
+			    hm.find('ul.tabs').removeClass('hide');
+			});
+		}
+		let btnSubmit = $('<button>').addClass('button primary')
+		    .html("Publish");
+		btnSubmit.on('click',function() {
+		    let msg = "This CVE will go fully public immediately! "+
+			"\nAre you Sure?";
+		    el.addClass('hide');
+		    if(confirm(msg))
+			$.ajax({'type':"POST",
+				'url': href + "submit/",
+				'data': $('#cve5data').val(),
+				contentType: 'application/json',
+				dataType: 'json'})
+			.done(function(ret) {
+			    let m = [{output: ret},{input:cvedata}];
+			    $('#cve5data').val(json_pretty(m));
+			    if("error" in ret) {
+				msg_card(el,"Error: "+ret.error,"bad");
+				$('#cve5data').addClass('is-invalid-input');
+			    } else if("message" in ret) {
+				msg_card(el,"Result: "+ret.message,"good");
+				$('#cve5data').removeClass('is-invalid-input');
+				if('updated' in ret) {
+				    $('#cve5data')
+					.data('cveservices',ret.updated);
+				    load_cvedata('cveservices');
+				}
+				
+			    } else {
+				/* the card-cr class looks like warning*/
+				msg_card(el,"Result: "+ret.message,"cr")
+			    }
+			});
+		});
+		let btnCancel = $('<button>').addClass('close-button')
+		    .html("X")
+		    .on('click',function() {
+			$('#xmodal').foundation('close');
+		    });
+		let l = $('<div>').addClass('row')
+		    .append($('<div>').addClass("columns large6 text-right")
+			    .append(btnSubmit)
+			    .append(btnCancel));
+		hm.append(l);
+	    }
+	});
+    });
 
 });

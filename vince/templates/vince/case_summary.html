@@ -175,13 +175,14 @@
 	<div class="large-9 medium-12 small-12 columns">
 	  <button class="button cmu tiny" id="addnewvendor" href="{% url 'vince:addvendor' %}"> <i class="fas fa-plus"></i> Add Vendor </button>
 	  <!--<a href="{% url 'vince:editvendorlist' case.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vendor</button></a>-->
-	  <button class="button cmu tiny" id="select-all-vendors"> Select All </button>
-	  <button class="button cmu tiny" id="deselect-all-vendors"> Deselect All </button>
+	  <button class="button cmu tiny" id="select-all-vendors" title="Select all" alt="Select all"> <i class="fas fa-check"></i> &nbsp; All </button>
+	  <button class="button cmu tiny" title="Unselect all" alt="Unselect all" id="deselect-all-vendors"> <i class="fas fa-square"></i>&nbsp; All </button>
 	  <button class="button cmu tiny" id="remove-vendor"> <i class="fas fa-trash"></i> Remove Vendor </button>
-	  <a href="{% url 'vince:approveall' case.id %}" id="approveall" class="button cmu tiny"><i class="fas fa-check"></i> Approve all</a>
+	  <a href="#" data-href="{% url 'vince:approveall' case.id %}" id="approveall" class="button cmu tiny"><i class="fas fa-thumbs-up"></i> Approve all</a>
 	  {% if case.lotus_notes %}
 	  {% else %}
 	  <a href="#" class="button cmu tiny" id="notifyvendors"><i class="fas fa-paper-plane"></i> Send Notifications</a>
+	  <a href="#" class="button cmu tiny" id="notifyall"><i class="fas fa-paper-plane"></i> Notify All</a>	  
 	  {% endif %}
 	  {% if case.lotus_notes %}{% else %}
 	  <a class="button cmu tiny" href="{% url 'vinny:groupchatcase' vc_case.id %}">Start Group Thread</a>

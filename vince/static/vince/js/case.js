@@ -1,38 +1,43 @@
 /*#########################################################################
-# VINCE
-#
-# Copyright 2022 Carnegie Mellon University.
-#
-# NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
-# INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
-# UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
-# AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
-# PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
-# MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY KIND
-# WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT INFRINGEMENT.
-#
-# Released under a MIT (SEI)-style license, please see license.txt or contact
-# permission@sei.cmu.edu for full terms.
-#
-# [DISTRIBUTION STATEMENT A] This material has been approved for public
-# release and unlimited distribution.  Please see Copyright notice for non-US
-# Government use and distribution.
-#
-# Carnegie Mellon®, CERT® and CERT Coordination Center® are registered in the
-# U.S. Patent and Trademark Office by Carnegie Mellon University.
-#
-# This Software includes and/or makes use of Third-Party Software each subject
-# to its own license.
-#
-# DM21-1126
-########################################################################
+  # VINCE
+  #
+  # Copyright 2022 Carnegie Mellon University.
+  #
+  # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+  # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+  # UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+  # AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+  # PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
+  # MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY KIND
+  # WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT INFRINGEMENT.
+  #
+  # Released under a MIT (SEI)-style license, please see license.txt or contact
+  # permission@sei.cmu.edu for full terms.
+  #
+  # [DISTRIBUTION STATEMENT A] This material has been approved for public
+  # release and unlimited distribution.  Please see Copyright notice for non-US
+  # Government use and distribution.
+  #
+  # Carnegie Mellon®, CERT® and CERT Coordination Center® are registered in the
+  # U.S. Patent and Trademark Office by Carnegie Mellon University.
+  #
+  # This Software includes and/or makes use of Third-Party Software each subject
+  # to its own license.
+  #
+  # DM21-1126
+  ########################################################################
 */
 
+function alertmodal(modal,msg) {
+    modal.html("<div class\"fullmodal\"><div class=\"modal-body\"><p> " +
+	       msg + "</p> <div class=\"modal-footer text-right\">" +
+	       "<a href=\"#\" class=\"hollow button cancel_confirm\" " +
+	       "data-close type=\"cancel\">Ok</a></div></div></div>")
+	.foundation('open');
+}
 
 function permissionDenied(modal) {
-
-    modal.html("<div class\"fullmodal\"><div class=\"modal-body\"><p>Error: You are not permitted to perform this action</p> <div class=\"modal-footer text-right\"><a href=\"#\" class=\"hollow button cancel_confirm\" data-close type=\"cancel\">Ok</a></div></div></div>").foundation('open');
-
+    alertmodal(modal,"Error: You are not permitted to perform this action");
 }
 
 function init_modal_markdown() {
@@ -85,10 +90,10 @@ function reloadVendorStats(case_id) {
 function reloadVendors(case_id, tablet) {
     tablet.replaceData();
     /*$.ajax({
-	url: "/vince/ajax_calls/case/vendors/"+case_id+"/",
-	success: function(data) {
+      url: "/vince/ajax_calls/case/vendors/"+case_id+"/",
+      success: function(data) {
 
-	}});*/
+      }});*/
 
     reloadVendorStats(case_id);
 }
@@ -161,7 +166,7 @@ function searchComms(e) {
 	error: function() {
             lockunlock(false,'div.mainbody,div.vtmainbody','#timeline');
             console.log(arguments);
-           alert("Search failed or canceled! See console log for details.");
+            alert("Search failed or canceled! See console log for details.");
         },
         complete: function() {
             /* Just safety net */
@@ -200,7 +205,7 @@ function searchTasks(e, tablet) {
         error: function() {
             console.log(arguments);
 	    lockunlock(false,'div.mainbody,div.vtmainbody','#case_tasks');
-           alert("Search failed or canceled! See console log for details.");
+            alert("Search failed or canceled! See console log for details.");
         },
         complete: function() {
             /* Just safety net */
@@ -247,12 +252,12 @@ function auto(data, taggle, tag_url, modal) {
 }
 
 $(document).ready(function() {
-     $('a').each(function () {
+    $('a').each(function () {
         $(this).qtip({
             content: $(this).attr("title"),
 	    style: {classes: 'qtip-youtube'}
 	})
-     });
+    });
     
     var input = document.getElementById("id_keyword");
     if (input) {
@@ -458,6 +463,7 @@ $(document).ready(function() {
     var largemodal = $("#largemodal");
     
     $(document).on("submit", '#addvendorform', function(event) {
+	/* the jquery autocomplete should use UUID or PKIDs*/
 	event.preventDefault();
 	var reload = $(this).attr("reload");
 	var vendors = [];
@@ -494,7 +500,7 @@ $(document).ready(function() {
 	    })
             .done(function() {
 		addmodal.foundation('close');
-        });
+            });
     });
 
 
@@ -645,20 +651,141 @@ $(document).ready(function() {
             }
 	});
     });
+    async function notify_all() {
+	let i = 1;
+	let hm = get_modal();
+	hm.append("<h2>Start all-vendor Notifications</h2>")
+	hm.append("<h4>Do not hit Escape or click outside this window!</h4>");
+	hm.append("<p> See Javascript console log for any failures</p>");
+	let caseid = $('.addvulmodal').attr('caseid');
+	if(!caseid) {
+	    hm.append("<strong style='color:red'>Error no CaseID found");
+	    return false;
+	}
+	
+	window.allvendors = [];
+	var max = 2;
+	hm.append("<h5> Fetching vendors list by Page " +
+		  "[<span class='cpage'>0</span>] of " +
+		  "<span class='tpage'>2</span> </h5>");
+	while (i <= max) {
+	    url = 'https://vince.cert.org/vince/ajax_calls/case/vendors/'+
+		caseid+'/?page='+String(i);
+	    hm.find('.cpage').html(String(i));
+            await $.get(url,function(d) {
+		if(d.last_page)
+		    max = parseInt(d.last_page);
+		hm.find('.tpage').html(max);
+		if(d.data)
+		    window.allvendors = window.allvendors.concat(d.data);
+            });
+	    i++;
+	}
+	hm.append("<h4> Initiating contact for vendor # " +
+		  "[<span class='mdcounter'>0</span>]  of " +
+		  window.allvendors.length + " Vendors in " +
+		  "this Case, please wait </h4>");
+	hm.append("<div><ul><li><h5>Starting Contact</h5></li>");
+	for( let i = 0; i < window.allvendors.length; i++) {
+	    hm.find("li:last-child").fadeOut('10000');
+	    let si = String(i+1);
+	    hm.find('.mdcounter').html(si);
+	    let v = window.allvendors[i];
+	    let csrf = getCookie('csrftoken');
+	    let vuid = "VU#Private";
+	    if($('#vuid').val())
+		vuid = $('#vuid').val();
+	    let fsubmit = { subject : vuid+": New Vulnerability Report",
+			    email_template: "",
+			    email_body: "We have new information about a " +
+			    "vulnerability that may affect your products. " +
+			    "Please login to the CERT/CC VINCE portal for " +
+			    "more information about this vulnerability." }
+	    fsubmit['csrfmiddlewaretoken'] = csrf;
+	    if(v.contact_date) {
+		console.log("Already Contacted vendor : " + v.vendor);
+		hm.append("<li> " + si + " Already Contacted vendor : " +
+			  v.vendor + " on " + v.contact_date + "</li>");
+		continue;
+	    } else {
+		console.log("Contacting vendor :  " + v.vendor);
+		hm.append("<li> " + si + " Attempting to contact : " + v.vendor +
+			  " result is <span class='vendor'" + si +
+			  "'></span></li>");  
+		var url = 'https://vince.cert.org/vince/editcasevendors/' +
+		    caseid+'/';
+		fsubmit['vendors'] = v.contact_id;
+		await $.post(url,fsubmit).done(function(r) {
+		    console.log("Contact result is ");
+		    console.log(r);
+		    console.log(si);
+		    hm.find(".vendor " + si).html(JSON.stringify(r));
+		    //hm.append(JSON.stringify(r));
+		});
+	    }
+	}
+	hm.append("</ul></div>");
+	finish_modal(hm);
+    }
 
-    $(document).on("click", '#approveall', function(event) {
-        event.preventDefault();
-        $.ajax({
-            url: $(this).attr("href"),
-            type: "GET",
-            success: function(data) {
-		addmodal.html(data).foundation('open');
-            },
-	    error: function(xhr, status) {
-                permissionDenied(addmodal);
-            }
-        });
-    });
+
+    async function approve_all_vendors() {
+	let hm = get_modal();
+	hm.append("<h2>Start all-vendor Approval</h2>");
+	hm.append("<h4> Do not close this window </h4>");
+	hm.append("<p> See Javascript console log for any failures</p>");
+	let caseid = $('.addvulmodal').attr('caseid');
+	if(!caseid) {
+            hm.append("<strong style='color:red'>Error no CaseID found");
+	    finish_modal(hm);
+            return false;
+	}
+	window.allvendors = [];
+	var max = 2;
+	let url = "https://vince.cert.org/vince/ajax_calls/case/vendors/"+
+	    caseid + "/?page=1&filters%5B0%5D%5Bfield%5D=reqapproval" +
+	    "&filters%5B0%5D%5Btype%5D=%3D&filters%5B0%5D%5Bvalue%5D=true";
+	hm.append("<div><ul><li><h5>Starting Contact</h5></li>");
+	await $.getJSON(url,async function(d) {
+	    if(d.data) {
+		hm.append("<h4> Initiating contact for vendor # " +
+			  "[<span class='mdcounter'>0</span>]  of " +
+			  d.data.length + " Vendors in " +
+			  "this Case, please wait </h4>");
+		hm.append("<div><ul><li><h5>Starting Contact</h5></li>");
+		for(let i=0; i<d.data.length; i++) {
+		    
+		    let si = String(i+1);
+		    hm.find("li:last-child").fadeOut('10000');
+		    hm.find('.mdcounter').html(si);
+		    let v = d.data[i];
+		    if(v.approved) {
+			hm.append("<li> " + si + " Already Approved vendor : " +
+				  v.vendor +"</li>");
+			continue;
+		    }
+		    let vurl =  'https://vince.cert.org/vince/vendor/approve/'+
+			v.id + '/';
+		    hm.append("<li> " + si + " Attempting to contact : " +
+			      v.vendor + " result is <span class='vendor" +
+			      si + "'></span></li>");
+		    await $.post(vurl,
+				 { csrfmiddlewaretoken: getCookie('csrftoken'),
+				   vendor: v.id
+				 },
+				 function(y) {
+				     
+				     hm.find(".vendor" + si).html(JSON.stringify(y));
+				 });
+		}
+	    }
+	    
+	});
+	finish_modal(hm);
+    }
+    
+    $(document).on("click", '#approveall', approve_all_vendors);
+    $(document).on("click", '#notifyall', notify_all);
 
     //Don't submit the form twice
     $(document).on('submit', '#editvulform', function (e) {
@@ -728,7 +855,7 @@ $(document).ready(function() {
 	var vulid = $(this).attr('vulid');
 	window.location = "/vince/cve/"+vulid+"/download/";
     });
-	      
+    
     
     $.widget("custom.tablecomplete", $.ui.autocomplete, {
 	_create: function() {
@@ -798,17 +925,17 @@ $(document).ready(function() {
     }
 
     function vend_auto(data) {
-    var autocomplete = $("#vendor").tablecomplete({
-	minLength: 1,
-	source: data,
-	focus: _doFocusStuff,
-	select: _doSelectStuff
+	var autocomplete = $("#vendor").tablecomplete({
+	    minLength: 1,
+	    source: data,
+	    focus: _doFocusStuff,
+	    select: _doSelectStuff
+	    
+	});
+	// create the autocomplete
 	
-    });
-    // create the autocomplete
-    
-    // get a handle on it's UI view
-    var autocomplete_handle = autocomplete.data("ui-autocomplete");
+	// get a handle on it's UI view
+	var autocomplete_handle = autocomplete.data("ui-autocomplete");
     }
 
 
@@ -870,12 +997,12 @@ $(document).ready(function() {
     }
 
     /*
-    $(window).keydown(function(event){
-	if(event.keyCode == 13) {
-	    event.preventDefault();
-	    return false;
-	}
-    });
+      $(window).keydown(function(event){
+      if(event.keyCode == 13) {
+      event.preventDefault();
+      return false;
+      }
+      });
     */
     var vendorinput = document.getElementById("vendor");
     if (vendorinput) {
@@ -903,12 +1030,12 @@ $(document).ready(function() {
     }
     
     /*$.getJSON("/vince/api/vendors/", function(data) {
-        vend_auto(data);
-	});*/
+      vend_auto(data);
+      });*/
     
-     $.getJSON("/vince/api/users/", function(data) {
+    $.getJSON("/vince/api/users/", function(data) {
 	user_auto(data);
-     });
+    });
 
     $.getJSON("/vince/api/contacts/", function(data) {
 	contact_auto(data);
@@ -1094,39 +1221,39 @@ $(document).ready(function() {
 
     });
     /*
-     //in vulmodal.js
+    //in vulmodal.js
     var cwe_formset = $('.cwe_formset').length;
     if (cwe_formset) {
-	$('.cwe_formset').formset({
-	    prefix: 'cwe',
-	    deleteText: '',
-	    addText: '<i class=\'fas fa-plus\'></i> add cwe',
-	    addCssClass: 'button tiny primary',
-	    deleteCssClass: 'remove-formset right'
-	});
+    $('.cwe_formset').formset({
+    prefix: 'cwe',
+    deleteText: '',
+    addText: '<i class=\'fas fa-plus\'></i> add cwe',
+    addCssClass: 'button tiny primary',
+    deleteCssClass: 'remove-formset right'
+    });
     }
 
 
     var ref_formset = $('.ref_formset').length;
     if (ref_formset) {
-        $('.ref_formset').formset({
-            prefix: 'ref',
-            deleteText: '',
-            addText: '<i class=\'fas fa-plus\'></i> add reference',
-            addCssClass: 'button tiny primary',
-            deleteCssClass: 'remove-formset right'
-        });
+    $('.ref_formset').formset({
+    prefix: 'ref',
+    deleteText: '',
+    addText: '<i class=\'fas fa-plus\'></i> add reference',
+    addCssClass: 'button tiny primary',
+    deleteCssClass: 'remove-formset right'
+    });
     }
     
     var exploit_formset = $('.exploit_formset').length;
     if (exploit_formset) {
-	$('.exploit_formset').formset({
-            prefix: 'exploit',
-            deleteText: '',
-            addText: '<i class=\'fas fa-plus\'></i> add exploit',
-            addCssClass: 'button tiny primary',
-          deleteCssClass: 'remove-formset right'
-        });
+    $('.exploit_formset').formset({
+    prefix: 'exploit',
+    deleteText: '',
+    addText: '<i class=\'fas fa-plus\'></i> add exploit',
+    addCssClass: 'button tiny primary',
+    deleteCssClass: 'remove-formset right'
+    });
     }*/
 
     $('#moreVendor').click(function(e) {
@@ -1136,7 +1263,7 @@ $(document).ready(function() {
         e.preventDefault();
     });
 
-     $('#lessVendor').click(function(e) {
+    $('#lessVendor').click(function(e) {
         $("#hidevendors").toggle();
         $("#moreVendors").toggle();
         $("#lessVendors").toggle();
@@ -1145,10 +1272,10 @@ $(document).ready(function() {
     });
     
 
-     if (document.getElementById('vuls_data')) {
-         var data = JSON.parse(document.getElementById('vuls_data').textContent);
-	 console.log(data);
-     }
+    if (document.getElementById('vuls_data')) {
+        var data = JSON.parse(document.getElementById('vuls_data').textContent);
+	console.log(data);
+    }
 
 
     var cellClickFunction = function(e, cell) {
@@ -1163,10 +1290,10 @@ $(document).ready(function() {
     var buttonFormatter = function(cell,  formatterParams, onRendered) {
         var rv = "<a vulid="+cell.getValue()+" href=\"#\" title=\"edit this vulnerability\" class=\"openeditmodal btn-link\"><i class=\"fas fa-pencil-alt\"></i></a><button title=\"clone this vulnerability\" class=\"clonevul btn-link\" obj="+cell.getValue()+"><i class=\"far fa-clone\"></i></button><button title=\"delete this vulnerability\" class=\"deletevul btn-link\" href=\""+cell.getRow().getData().remove_link+"\"><i class=\"fas fa-trash-alt\"></i></button>";
 	/*if (cell.getRow().getData().ask_vendor_status) {
-	    rv = rv + "<a vulid="+cell.getValue()+" href=\"#\" title=\"do not ask for status\" class=\"nosharevul btn-link\"><i class=\"fas fa-unlink\"></i></button>";
-	} else {
-	    rv = rv + "<a vulid="+cell.getValue()+" href=\"#\" title=\"ask for status\" class=\"sharevul btn-link\"><i class=\"fas fa-link\"></i></button>";
-	}*/
+	  rv = rv + "<a vulid="+cell.getValue()+" href=\"#\" title=\"do not ask for status\" class=\"nosharevul btn-link\"><i class=\"fas fa-unlink\"></i></button>";
+	  } else {
+	  rv = rv + "<a vulid="+cell.getValue()+" href=\"#\" title=\"ask for status\" class=\"sharevul btn-link\"><i class=\"fas fa-link\"></i></button>";
+	  }*/
 	return rv
     }
 
@@ -1286,7 +1413,7 @@ $(document).ready(function() {
 	if (cell.getRow().getData().alert_tags.length) {
 	    val = "<i class=\"fas fa-bell warning\"></i>  " + val
 	}
-	    
+	
         var url_mask = cell.getRow().getData().contact_link;
 	return "<a href=\""+url_mask+"\">"+ val + "</a>";
     }
@@ -1544,26 +1671,52 @@ $(document).ready(function() {
 	    }
 	}
     });
-
-
+    function alertmodal(modal,msg) {
+    modal.html("<div class\"fullmodal\"><div class=\"modal-body\"><p> " +
+               msg + "</p> <div class=\"modal-footer text-right\">" +
+               "<a href=\"#\" class=\"hollow button cancel_confirm\" " +
+	       "data-close type=\"cancel\">Ok</a></div></div></div>")
+        .foundation('open');
+    }
+    vendors_table = Tabulator.prototype.findTable("#vendors-table")[0]
+    approvemodal = $("#approvenote");
+    $(document).off("click", '#notifyvendors')
     $(document).on("click", '#notifyvendors', function(event) {
 	event.preventDefault();
 	var vendors = [];
         var selectedRows = vendors_table.getSelectedRows();
 	var url = $("#vendor_notify").attr("action");
 	var csrftoken = getCookie('csrftoken');
-		
+	var exceptions = "";
 	if (selectedRows.length > 0) {
 	    for (i=0; i < selectedRows.length; i++) {
-		vendors.push(selectedRows[i].getData().id)
+		var v = selectedRows[i].getData();
+		if(v.contact_date) {
+		    exceptions += "<h5>Skipping Vendor <u>"+ v.vendor +
+			"</u> Already notified on <i>"+ v.contact_date +
+			"</i></h5>";
+		    continue;
+		}
+		vendors.push(v.id)
 	    }
 
-	} 
+	}
+	if (vendors.length < 1) {
+	    alertmodal(approvemodal, "<h4><strong>No valid vendors to " +
+		       "notify!</strong></h4><h5>All vendors have been " +
+		       "notified or none were selected that can be "+
+		       "notified.</h5>");
+	    return;
+	}
+	if(exceptions != "") {
+	    exceptions = '<div style="background: rgb(244, 68, 68); ' +
+		'color: white;">' + exceptions + '</div>';
+	}
 	var formdata = {'vendors': vendors, 'csrfmiddlewaretoken': csrftoken};
 
 	$.post(url, formdata,
                function(data) {
-		   approvemodal.html(data).foundation('open');
+		   approvemodal.html(data+exceptions).foundation('open');
                })
 	    .fail(function(d) {
                 permissionDenied(addmodal);
@@ -1609,7 +1762,7 @@ $(document).ready(function() {
             });
 	approvemodal.foundation('close');
     });
-	       
+    
     
     $(document).on("submit", "#changedateform", function(event) {
 	event.preventDefault();
@@ -1633,8 +1786,8 @@ $(document).ready(function() {
 	$.post($(this).attr("action"), $(this).serializeArray(),
 	       function(data) {})
 	    .done(function() {
-		   reloadVendors($(".addvulmodal").attr('caseid'), vendors_table);
-	       })
+		reloadVendors($(".addvulmodal").attr('caseid'), vendors_table);
+	    })
 	    .fail(function(d) {
                 permissionDenied(addmodal);
             });
@@ -1687,7 +1840,7 @@ $(document).ready(function() {
 	    tooltipsHeader:true,
             selectable:true,
 	    dataEdited:function(data) {
-				    
+		
 		var csrftoken=getCookie('csrftoken');
 		for (i=0; i < data.length; i++) {
 		    var url = data[i].changetype;
@@ -1847,8 +2000,8 @@ $(document).ready(function() {
         var href = $(this).parent().parent().attr("href");
         var csrftoken = getCookie('csrftoken');
         $.post(href,
-            {'csrfmiddlewaretoken': csrftoken, 'new_status':$(this).attr("val")},
-            function(data) {})
+               {'csrfmiddlewaretoken': csrftoken, 'new_status':$(this).attr("val")},
+               function(data) {})
             .done(function(data, textStatus, jqXHR) {
                 console.log("post succeeded (textStatus: " + textStatus + ")");
                 window.location.reload(true);
@@ -1906,14 +2059,14 @@ $(document).ready(function() {
         });
     });
 
-     $(document).on("submit", "#publishsubmit", function(event) {
-	 $("#publishbtn").prop("disabled", true);
-	 return true;
-     });
+    $(document).on("submit", "#publishsubmit", function(event) {
+	$("#publishbtn").prop("disabled", true);
+	return true;
+    });
 
 
     $(document).on("click", "#askapproval", function(event) {
-    var csrftoken = getCookie('csrftoken');
+	var csrftoken = getCookie('csrftoken');
 	$.post($(this).attr("href"), {
             "csrfmiddlewaretoken": csrftoken,
 	},
@@ -1960,5 +2113,5 @@ $(document).ready(function() {
         // Keep chainability
 	return this;
     });
-        
+    
 });
