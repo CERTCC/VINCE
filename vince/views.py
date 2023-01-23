@@ -10272,8 +10272,8 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
             if getattr(contact,pvar) != self.request.POST.get(pvar,getattr(contact,pvar)):
                 _add_activity(self.request.user, 3, contact, f"modified {pvar}")
                 some_changes=True
-        new_comment = self.request.POST.get('comment',"")
-        if contact.comment != new_comment:
+        newcomment = self.request.POST.get('comment',"")
+        if contact.comment != newcomment:
             if not((contact.comment == None) and (newcomment == '')):
                 if newcomment == "":
                     _add_activity(self.request.user, 3, contact, f"removed comment: {contact.comment}")

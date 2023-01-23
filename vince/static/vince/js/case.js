@@ -463,7 +463,6 @@ $(document).ready(function() {
     var largemodal = $("#largemodal");
     
     $(document).on("submit", '#addvendorform', function(event) {
-	/* the jquery autocomplete should use UUID or PKIDs*/
 	event.preventDefault();
 	var reload = $(this).attr("reload");
 	var vendors = [];
@@ -1680,8 +1679,7 @@ $(document).ready(function() {
     }
     vendors_table = Tabulator.prototype.findTable("#vendors-table")[0]
     approvemodal = $("#approvenote");
-    $(document).off("click", '#notifyvendors')
-    $(document).on("click", '#notifyvendors', function(event) {
+    function notify_vendors(event,bypass) {
 	event.preventDefault();
 	var vendors = [];
         var selectedRows = vendors_table.getSelectedRows();
@@ -1691,7 +1689,7 @@ $(document).ready(function() {
 	if (selectedRows.length > 0) {
 	    for (i=0; i < selectedRows.length; i++) {
 		var v = selectedRows[i].getData();
-		if(v.contact_date) {
+		if(v.contact_date && (!bypass)) {
 		    exceptions += "<h5>Skipping Vendor <u>"+ v.vendor +
 			"</u> Already notified on <i>"+ v.contact_date +
 			"</i></h5>";
@@ -1699,13 +1697,23 @@ $(document).ready(function() {
 		}
 		vendors.push(v.id)
 	    }
-
-	}
-	if (vendors.length < 1) {
-	    alertmodal(approvemodal, "<h4><strong>No valid vendors to " +
-		       "notify!</strong></h4><h5>All vendors have been " +
-		       "notified or none were selected that can be "+
-		       "notified.</h5>");
+	    if (vendors.length < 1) {
+		alertmodal(approvemodal, "<h4><strong>No valid vendors to " +
+			   "notify!</strong></h4><h5>All vendors have been " +
+			   "notified or none were selected that can be "+
+			   "notified.</h5>");
+		approvemodal.find(".modal-footer")
+		    .prepend("&nbsp;")
+		    .prepend($("<button>").addClass("button cmu")
+			    .html("Notify anyway!")
+			    .on("click",function(e) {
+				notify_vendors(e,true);
+			    }));
+		return;
+	    }
+	} else {
+	    alertmodal(approvemodal, "<h4><strong>Select a vendor to be " +
+		       "notified!");
 	    return;
 	}
 	if(exceptions != "") {
@@ -1722,6 +1730,10 @@ $(document).ready(function() {
                 permissionDenied(addmodal);
             });
 	
+    }
+    $(document).off("click", '#notifyvendors');
+    $(document).on("click", '#notifyvendors', function(event) {
+	notify_vendors(event,false);
     });
 
     $(document).on("click", "#submit_vendors", function(event) {

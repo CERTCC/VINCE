@@ -3844,7 +3844,7 @@ class CVEAffectedProduct(models.Model):
         _('Version Range Type'),
         blank=True,
         null=True,
-        max_length=10)
+        max_length=25)
     
     version_value = models.CharField(
         _('Affected Version or Start'),
