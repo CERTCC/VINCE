@@ -1,5 +1,12 @@
 # VINCE Changelog
 
+Version 2.0.6  2023-01-23
+
+* Removed Edit Vulnerability button superfluous GHIssue #77
+* Updates to CVE publish buttons and automatic close of CVE modal on error
+* Modify CVEAffectedProduct.version_affected vince models.py for CVE5JSON
+* Bug fix newcomment not new_comment in vince/views.py
+* Add "Notify anyway" button routine for already notified vendor.
 
 ## Version 2.0.5  2023-01-04
 

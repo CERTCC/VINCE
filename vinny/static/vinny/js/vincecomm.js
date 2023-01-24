@@ -8,9 +8,10 @@
   # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
   # UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
   # AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
-  # PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
-  # MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY KIND
-  # WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT INFRINGEMENT.
+  # PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF 
+  # THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY
+  # KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+  # INFRINGEMENT.
   #
   # Released under a MIT (SEI)-style license, please see license.txt or contact
   # permission@sei.cmu.edu for full terms.
@@ -22,8 +23,8 @@
   # Carnegie Mellon®, CERT® and CERT Coordination Center® are registered in the
   # U.S. Patent and Trademark Office by Carnegie Mellon University.
   #
-  # This Software includes and/or makes use of Third-Party Software each subject
-  # to its own license.
+  # This Software includes and/or makes use of Third-Party Software each 
+  # subject to its own license.
   #
   # DM21-1126
   ########################################################################
@@ -34,10 +35,10 @@ function getCookie(name) {
         var cookies = document.cookie.split(';');
         for (var i = 0; i < cookies.length; i++) {
             var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?                                                                \
-            
+            // Does this cookie string begin with the name we want?
             if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                cookieValue = decodeURIComponent(cookie
+						 .substring(name.length + 1));
                 break;
             }
         }
@@ -254,9 +255,17 @@ $(function () {
 	    .prop('checked',$(e.target).prop('checked'));
     });
     function filter_navli(e) {
-	let li = $(e.target || e.srcElement);
+	let li = $(e.currentTarget || e.target || e.srcElement);
 	li.parent().find('.fa-check').css('opacity',0);
 	li.find('.fa-check').css('opacity',1);
+	let rowdiv = li.closest('div.row');
+	let statusd = "[" + li.html() + "]";
+	if(rowdiv.find('.statusd_view').length) {
+	    rowdiv.find('.statusd_view').html(statusd);
+	} else {
+	    rowdiv.append($('<div>').addClass('statusd_view').html(statusd));
+	}
+	rowdiv.find('.statusd_view i').addClass('fa-filter');
 	let partdiv = li.closest('.participant_type');
 	let all = partdiv.find('.participant').not('.pheader');
 	let moreless = partdiv.find(".moreless");
