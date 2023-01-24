@@ -2011,6 +2011,18 @@ class EmailContactForm(forms.ModelForm):
         fields = ['id', 'email', 'email_type', 'name', 'email_function', 'status', 'version', 'email_list', 'email_type']
         widgets = {'version':forms.HiddenInput() }
 
+class ProductContactForm(forms.ModelForm):
+    sector = forms.ModelMultipleChoiceField(queryset=Sector.objects.all().values_list('name', flat=True), widget=forms.CheckboxSelectMultiple(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(ProductContactForm, self).__init__(*args, **kwargs)
+        self.fields['name'].required = True
+        self.fields['sector'].required=False
+
+    class Meta:
+        model = Product
+        exclude = ('cve', 'cve_affected_product', 'case', 'version_affected', 'version_name')
+
 class WebsiteForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(WebsiteForm,self).__init__(*args, **kwargs)
@@ -2336,6 +2348,25 @@ class CVEAllocationForm(forms.ModelForm):
             else:
                 raise forms.ValidationError("Invalid CVE identifier, must start with CVE-")
             
+
+class ProductForm(forms.ModelForm):
+
+    version_affected = forms.ChoiceField(
+        widget = forms.Select(attrs={'class': 'form-control'}),
+        label=_('Version Affected'),
+        required=False,
+        choices=([('None', None), ('<', '< (affects X versions prior to n)'), ('<=', '<= (affects X versions up to n)'), ('=', '= (affects n)'), ('>', '> (affects X versions above n)'), ('>=', '>= (affects X versions n and above)')])
+        )  
+    class Meta:
+        model = Product
+        exclude = ('cve','cve_affected_product', 'case','sector')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['organization'].queryset = Contact.objects.filter(vendor_type="Vendor")
+        # self.fields['name'].queryset = Product.objects.values_list('name', flat=True).none()
+        self.fields['name'].queryset = Product.objects.none()
+        #values_list('name', flat=True).none()
 
 class CVEAffectedProductForm(forms.ModelForm):
 

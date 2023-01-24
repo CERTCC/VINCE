@@ -129,7 +129,8 @@
 	    {% for subform in prod_formset %}
 	    <tr class="prod_formset">
 	      <td>
-		<label for="cve_prod">Organization: <span class='required'>*</span></label>
+		<!-- <label for="cve_prod">Organization: <span class='required'>*</span></label> -->
+		<label for="cve_prod_org">Organization: <span class='required'>*</span></label>
 		{% render_field subform.organization class="form-control" %}
 	      </td>
 	      <td>

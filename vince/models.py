@@ -41,6 +41,7 @@ from bigvince.storage_backends import PrivateMediaStorage, SharedMediaStorage
 from django.db.models import Q
 from datetime import timedelta, date, datetime
 from django.urls import reverse
+# from multiselectfield import MultiSelectField
 import json
 import uuid
 import re
@@ -3821,6 +3822,63 @@ class CVEAffectedProduct(models.Model):
         blank=True,
         null=True)
 
+class Sector(models.Model):
+
+    name = models.CharField(
+        max_length=75,
+        blank=True,
+        null=True)
+
+class Product(models.Model):
+
+    cve = models.ManyToManyField(
+        CVEAllocation)
+
+    name = models.CharField(
+        _('Product Name'),
+        max_length=200)
+
+    version_name = models.CharField(
+        _('Version'),
+        blank=True,
+        null=True,
+        max_length=100)
+
+    version_affected = models.CharField(
+        _('Version Affected'),
+        blank=True,
+        null=True,
+        max_length=10)
+
+    version_value = models.CharField(
+        _('Version Value'),
+        blank=True,
+        null=True,
+        max_length=100)
+
+    organization = models.ForeignKey(
+        Contact,
+        # on_delete=models.SET_NULL,
+        # blank=True,
+        # null=True)
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+
+    case = models.ForeignKey(
+        VulnerabilityCase,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+
+    cve_affected_product = models.ForeignKey(
+        CVEAffectedProduct,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+
+    sector = models.ManyToManyField(
+        Sector)
 
 class CVEReservation(models.Model):
 

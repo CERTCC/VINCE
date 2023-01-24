@@ -138,11 +138,22 @@
     <b class="required">No references</b>
     {% endif %}
     <br/>
-    {% if vul.cveallocation.cveaffectedproduct_set.all|length > 0 %}
+    {% if vul.cveallocation.product_set.all|length > 0 %}
     <b>Products:</b><br/>
-    {% for product in vul.cveallocation.cveaffectedproduct_set.all %}
-    {{ product.name }}, {{ product.organization }}, {% if product.version_name %}{{ product.version_name }}{% endif %} {% if product.version_affected %}{{ product.version_affected }}{% endif %} {{ product.version_value }}<br/>
-    {% endfor %}
+    <table>
+      <tr>
+        <th>Product Name</th>
+        <th>Vendor</th>
+        <th>Version Name</th>
+        <th>Version Affected</th>
+        <th>Version Value</th>
+      </tr>
+      {% for product in vul.cveallocation.product_set.all %}
+      <tr>
+        <td>{{ product.name }}</td> <td>{{ product.organization }}</td> <td>{% if product.version_name %}{{ product.version_name }}{% endif %}</td> <td>{% if product.version_affected %}{{ product.version_affected }}{% endif %}</td> <td>{{ product.version_value }}</td><br/>
+      </tr>
+      {% endfor %}
+    </table>
     {% else %}
     <b class="required">No products</b>
     {% endif %}

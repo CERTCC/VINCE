@@ -78,6 +78,7 @@
     <div class="case-container">
       <ul class="tabs" data-tabs id="case-tabs" data-deep-link="true" data-update-history="true">
 	<li class="tabs-title is-active"><a href="#details" aria-selected="true"> <i class="fas fa-mobile-alt"></i> Contact Info</a></li>
+	{% if object.vendor_type == "Vendor" %}<li class="tabs-title"><a data-tabs-target="products" href="#products"><i class="fas fa-list-alt"></i> Products</a></li>{% endif %}
 	<li class="tabs-title"><a data-tabs-target="tickets" href="#tickets"><i class="fas fa-list-alt"></i> Tickets</a></li>
 	<li class="tabs-title"><a data-tabs-target="cases" href="#cases"><i class="fas fa-briefcase"></i> VINCE Cases</a></li>
 	<li class="tabs-title"><a data-tabs-target="cases" href="#oldcases"><i class="fas fa-history"></i> Old Cases</a></li>
@@ -283,6 +284,44 @@
               </tr>
 	  </table>
     	</div>
+	<div class="tabs-panel" id="products">
+		<div class="row">
+			<div class="large-8 medium-8 small-6 columns">
+			{% if object.active %}
+			<h4>{{ object.vendor_name }} (Active)</h4>
+			{% else %}
+			<h4>{{ object.vendor_name }} (Inactive)</h4>
+			{% endif %}
+			</div>
+		</div>
+		<hr/>
+		<div class="row">
+			<div class="large-6 columns">
+			<h4>Products</h4>
+			</div>
+			<div class="large-6 columns text-right">
+			<a href="{% url 'vince:addproduct' object.id %}" class="small button default" id="addproduct"><i class="fas fa-plus"></i> Add Product</a>
+			</div>
+		</div>
+		<div class="row">
+			<table class="unstriped">
+			<thead> 
+			<th>Name</th>
+			<th>Sectors</th>
+			<th></th>
+			</thead>
+			{% for prod in product_list %}
+			<tr>
+				<td>{{ prod.name }}</td>
+				<td>{% for sec in prod.sector.all %}{{ sec.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+				<td class="large-6 columns text-right"><a href="{% url 'vince:editproduct' prod.id %}" class="small button default text-right" id="editproduct">{% trans "Edit" %}</a>
+				<a href="{% url 'vince:rmproduct' object.id prod.id %}" class="small button default" id="rmproduct"><i class="fas fa-trash-alt"></i>{% trans "Delete" %}</a></td>
+			</tr>
+			{% endfor %}
+			</table>
+	
+		</div>
+		</div>	
 	<div class="tabs-panel" id="tickets">
 	  <div class="row">
             <div class="large-3 columns">

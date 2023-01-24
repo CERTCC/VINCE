@@ -378,32 +378,69 @@ $(document).ready(function() {
 	});
     });
 
-    $(document).on("submit", "#addemailform", function(event) {
-	event.preventDefault();
-	var url = $("#addemailform").attr("action");
-	$.ajax({
+    $(document).on("click", "#addproduct", function(event) {
+    event.preventDefault();
+    var url = $(this).attr("href");
+    $.ajax({
             url: url,
-            type: "POST",
-	    data: $("#addemailform").serialize(),
+            type: "GET",
             success: function(data) {
-		console.log(data);
-		if (data['ticket']) {
-		    location.href = data['ticket'];
-		}
-		else if (data['refresh']) {
-		    window.location.reload(true);
-		} else if (data['msg_body']){
-		    $("#vendor-results").html("<p><b>" + data['text'] + " Or <a href=\""+ data['email_link'] + "\">Request Authorization via Email</a></b></p>")
-                    $("#id_msg").val(data['msg_body']);
-                    $("#msgvendor").removeClass("hidden");
-		} else {
-		    $("#vendor-results").html("<p><b><span class=\"error\">" + data['text'] +"</span></b></p>");
-		    if (data['bypass']) {
-			$("#vendor-results").append("<p><a href=\"" + data['bypass'] + "\">Request Internal Validation for this Email</a></p>");
-		    }
-		}
+        $modal.html(data).foundation('open');
             }
-	});
     });
+    });
+
+    $(document).on("click", "#rmproduct", function(event) {
+    event.preventDefault();
+    var url = $(this).attr("href");
+    $.ajax({
+            url: url,
+            type: "GET",
+            success: function(data) {
+        $modal.html(data).foundation('open');
+            }
+    });
+    });
+
+    $(document).on("click", "#editproduct", function(event) {
+    event.preventDefault();
+    var url = $(this).attr("href");
+    $.ajax({
+            url: url,
+            type: "GET",
+            success: function(data) {
+        $modal.html(data).foundation('open');
+            }
+    });
+    });
+        
+    // TODO: Check
+    // $(document).on("submit", "#addemailform", function(event) {
+	// event.preventDefault();
+	// var url = $("#addemailform").attr("action");
+	// $.ajax({
+    //         url: url,
+    //         type: "POST",
+	//     data: $("#addemailform").serialize(),
+    //         success: function(data) {
+	// 	console.log(data);
+	// 	if (data['ticket']) {
+	// 	    location.href = data['ticket'];
+	// 	}
+	// 	else if (data['refresh']) {
+	// 	    window.location.reload(true);
+	// 	} else if (data['msg_body']){
+	// 	    $("#vendor-results").html("<p><b>" + data['text'] + " Or <a href=\""+ data['email_link'] + "\">Request Authorization via Email</a></b></p>")
+    //                 $("#id_msg").val(data['msg_body']);
+    //                 $("#msgvendor").removeClass("hidden");
+	// 	} else {
+	// 	    $("#vendor-results").html("<p><b><span class=\"error\">" + data['text'] +"</span></b></p>");
+	// 	    if (data['bypass']) {
+	// 		$("#vendor-results").append("<p><a href=\"" + data['bypass'] + "\">Request Internal Validation for this Email</a></p>");
+	// 	    }
+	// 	}
+    //         }
+	// });
+    // });
 
 });

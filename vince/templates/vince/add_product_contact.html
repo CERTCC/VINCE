@@ -1,0 +1,41 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <form method="post" action="{% url 'vince:addproduct' contact.id %}" id="addproductform" lookup="{% url 'vince:userlookup' %}">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Add Product</h3>
+    </div>
+
+    <div class="modal-body">
+      {% csrf_token %}
+      <p>
+      <div class="form-group">
+        <label for='id_{{ form.product.name }}'>{% trans form.name.label %}<span class='required'>*</span></label>
+        {% if form.product.help_text %}<small class='form-text text-muted'>{% trans form.name.help_text %}</small>{% endif %}
+        {{ form.name }}
+        {% if form.name.errors %}<dd class='error'>{{ form.name.errors }}</dd>{% endif %}
+      </div>
+      <div class="form-group">
+        <!-- <label for='id_{{ form.product.version_value }}'>{% trans form.version_value.label %}<span class='required'></span></label>
+        {% if form.version_value.help_text %}<small class='form-text text-muted'>{% trans form.version_value.help_text %}</small>{% endif %}
+        {{ form.version_value }}
+        {% if form.version_value.errors %}<dd class='error'>{{ form.version_value.errors }}</dd>{% endif %}
+      </div>
+      <div class="form-group">
+        <label for='id_{{ form.sector.name }}'>{% trans form.sector.label %}<span class='required'></span></label> -->
+        <label for='id_{{ form.product.sector }}'>Critical Infrastructure Sectors<span class='required'></span></label>
+        {% if form.sector.help_text %}<small class='form-text text-muted'>{% trans form.sector.help_text %}</small>{% endif %}
+        {{ form.sector }}
+        {% if form.sector.errors %}<dd class='error'>{{ form.sector.errors }}</dd>{% endif %}
+      </div>
+      </p>
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button alert" type='submit' value='{% trans "Add" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

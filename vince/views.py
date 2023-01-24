@@ -368,6 +368,29 @@ def autocomplete_cwe(request):
 
 @login_required(login_url="vince:login")
 @user_passes_test(is_in_group_vincetrack, login_url='vince:login')
+def autocomplete_org(request):
+    vendors = list(Contact.objects.filter(vendor_type="Vendor"))
+    if request.GET.get('term'):
+        org = list(vendors.filter(vendor_name__icontains=request.GET.get('term')).values_list('vendor_name', flat=True))
+    else:
+        org = list(vendors.objects.all().values_list('vendor_name', flat=True))
+    data = json.dumps(org)
+    mimetype = 'application/json'
+    return HttpResponse(data, mimetype)
+
+@login_required(login_url="vince:login")
+@user_passes_test(is_in_group_vincetrack, login_url='vince:login')
+def load_product_names(request):
+    vendor_id = request.GET.get('organization')
+    vendors = Contact.objects.filter(vendor_type="Vendor").values_list('name', flat=true)
+
+    data = json.dumps()
+    mimetype = 'application/json'
+    return HttpResponse(data, mimetype)
+
+
+@login_required(login_url="vince:login")
+@user_passes_test(is_in_group_vincetrack, login_url='vince:login')
 def autocomplete_vendor(request, groups=False):
     vendorlist = list(Contact.objects.filter(active=True).values_list('vendor_name', flat=True).distinct())
     if not(groups):
@@ -9538,6 +9561,30 @@ class RemoveEmailFromContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
         update_srmail_file()
         return redirect("vince:contact", contact.id)
 
+class RemoveProductFromContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/confirm_rm_product.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super(RemoveProductFromContact, self).get_context_data(**kwargs)
+        context['contact'] = get_object_or_404(Contact, id=self.kwargs['pk'])
+        context['product'] = get_object_or_404(Product, id=self.kwargs['product'])
+        #context['vcuser'] = User.objects.using('vincecomm').filter(email=context['email'].email).first()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        contact = get_object_or_404(Contact, id=self.kwargs['pk'])
+        product = get_object_or_404(Product, id=self.kwargs['product'])
+
+        #remove product      
+        product.delete()
+
+        update_srmail_file()
+        return redirect("vince:contact", contact.id)
+
 class AddEmailToContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
     login_url = "vince:login"
     template_name = "vince/add_email_contact.html"
@@ -9713,7 +9760,45 @@ class AddEmailToContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             
             return JsonResponse({'refresh':1}, status=200)
 
-        
+class AddProductToContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
+    login_url = "vince:login"
+    template_name = "vince/add_product_contact.html"
+    form_class = ProductContactForm
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super(AddProductToContact, self).get_context_data(**kwargs)
+        context['contact'] = get_object_or_404(Contact, id=self.kwargs['pk'])
+        return context
+
+    def post(self, request, *args, **kwargs):
+        logger.debug(self.request.POST)
+        contact = get_object_or_404(Contact, id=self.kwargs['pk'])
+        name = self.request.POST.get('name')
+        # version = self.request.POST.get('version_value')
+        sectors = self.request.POST.getlist('sector')
+
+        #make sure product doesn't already exist
+
+        #duplicate_product = Product.objects.filter(organization=contact, name=name, version_value=version).first()
+        #if duplicate_product:
+        #return JsonResponse({'text':"This product already exists."}, status=200)   
+
+        product = Product(name=name,
+                          organization=contact)
+        product.save()
+
+        for sec in sectors:
+            product.sector.add(get_object_or_404(Sector, name=sec))
+
+        messages.success(
+            self.request,
+            _(f"Product added to vendor."))
+
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/#products'))
+    
     
 class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.DetailView):
     model = Contact
@@ -9731,6 +9816,8 @@ class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         
         context['activity_list'] = Activity.objects.filter(contact=self.kwargs['pk']).order_by('-action_ts')
         context['cases'] = VulnerableVendor.objects.filter(contact=self.kwargs['pk'], case__lotus_notes=True).order_by('-date_modified')[:20]
+        context['product_list'] = Product.objects.filter(organization=self.kwargs['pk']).order_by('name')
+        #context['sector_list'] = sector.name for sector in Product.objects.filter(organization=self.kwargs['pk'])
         tkt_list = TicketContact.objects.filter(contact=self.kwargs['pk']).values_list('ticket', flat=True)
         context['ticket_list'] = Ticket.objects.filter(pk__in=tkt_list).order_by('-modified')[:50]
         context['assignable_users'] = EmailContact.objects.filter(contact=self.kwargs['pk'], email_list=False, status=True)
@@ -10416,6 +10503,38 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
 
         context.update(forms)
 
+        return context
+
+class EditProduct(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView, FormMixin):
+    login_url = "vince:login"
+    template_name = 'vince/edit_product_contact.html'
+    fields = ['name', 'sectors']
+    form_class = ProductContactForm
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def form_invalid(self, form):
+        logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
+        return JsonResponse({'error': form.errors}, status=400)
+
+    def form_valid(self, form):
+        product = get_object_or_404(Product, id=self.kwargs['pk'])
+        form = ProductContactForm(self.request.POST, instance=product)
+        tmpl = form.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        product = get_object_or_404(Product, id=self.kwargs['pk'])
+        return reverse_lazy('vince:contact', args=[product.organization.id])
+
+    def get_context_data(self, **kwargs):
+        context = super(EditProduct, self).get_context_data(**kwargs)
+        product = get_object_or_404(Product, id=self.kwargs['pk'])
+        form = ProductContactForm(instance=product)
+        context['form'] = form
+        context['title'] = "Edit Product"
+        context['action'] = reverse('vince:editproduct', args=[self.kwargs['pk']])
         return context
 
 #### ADMIN / Template / Reports stuff ####
@@ -11658,7 +11777,9 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
     form_class = CVEAllocationForm
     model = CVEAllocation
     template_name = 'vince/cveform.html'
-    CVEProductFormSet = formset_factory(CVEAffectedProductForm, max_num=10, min_num=1, can_delete=True,
+    # CVEProductFormSet = formset_factory(CVEAffectedProductForm, max_num=10, min_num=1, can_delete=True,
+    #                                     extra=0)
+    CVEProductFormSet = formset_factory(ProductForm, max_num=20, min_num=1, can_delete=True,
                                         extra=0)
     CVEReferenceFormSet = formset_factory(CVEReferencesForm, max_num=10, min_num=1, can_delete=True,
                                           extra=0)
@@ -11677,7 +11798,8 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
     def get_context_data(self, **kwargs):
         context = super(EditCVEView, self).get_context_data(**kwargs)
         cve = get_object_or_404(CVEAllocation, id=self.kwargs['pk'])
-        products = CVEAffectedProduct.objects.filter(cve = cve)
+        # products = CVEAffectedProduct.objects.filter(cve = cve)
+        products = Product.objects.filter(cve = cve)
         context['title'] = f"Edit {cve}"
         context['vul'] = cve.vul
         cve_refs = []
@@ -11747,7 +11869,7 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
             if cveprodformset.is_valid():
                 return self.form_valid(form)
             else:
-                form.add_error(None, "At least one Product is required")
+                form.add_error(None, "At least one Product is required 33")
                 logger.debug(cveprodformset.errors)
                 return self.form_invalid(form)
         else:
@@ -11812,18 +11934,26 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
         if cveprodformset.is_valid():
             for f in cveprodformset:
                 cd = f.cleaned_data
-                prods.append(CVEAffectedProduct(cve = cve,
-                                                name=cd['name'],
-                                                version_affected=cd['version_affected'],
-                                                version_name=cd['version_name'],
-                                                version_value=cd['version_value'],
-                                                organization=cd['organization']))
+                    
+                prods.append(Product(name=cd['name'],
+                                version_affected=cd['version_affected'],
+                                version_name=cd['version_name'],
+                                version_value=cd['version_value'],
+                                organization=cd['organization']))
+
             try:
                 with transaction.atomic():
-                    CVEAffectedProduct.objects.filter(cve=cve).delete()
-                    CVEAffectedProduct.objects.bulk_create(prods)
+                    # CVEAffectedProduct.objects.filter(cve=cve).delete()
+                    # CVEAffectedProduct.objects.bulk_create(prods)
+                    Product.objects.filter(cve=cve).delete()
+                    Product.objects.bulk_create(prods)
+
+                    for prod in prods:
+                        prod.cve.add(cve)
+
             except:
                 return HttpResponseServerError()
+
         if self.request.META.get('HTTP_REFERER') and (self.request.path not in self.request.META.get('HTTP_REFERER')) and is_safe_url(self.request.META.get('HTTP_REFERER'),set(settings.ALLOWED_HOSTS),True):
             return HttpResponseRedirect(self.request.META.get('HTTP_REFERER') + "#vuls")
         else:
