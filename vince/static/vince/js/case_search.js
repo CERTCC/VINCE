@@ -113,7 +113,15 @@ $(document).ready(function() {
 	form.attachEvent("submit", searchTickets);
     } else {
 	form.addEventListener("submit", searchTickets);
-    }
+    };
+
+    $('#changes_to_publish').on('click',function() {
+	/* If a Case is Updated (updates requiring a re-publish) it is assumed
+	   it has already been Published first. The status=2 is Published search */
+	if($('#changes_to_publish').prop('checked'))
+	    $('#id_status_2').prop('checked',true);
+	searchTickets();
+    });
 
     $("#filter_by_dropdown_select_all_0").click(function(){
         $("#id_status input[type=checkbox]").prop('checked', $(this).prop('checked'));
@@ -169,6 +177,11 @@ $(document).ready(function() {
         event.preventDefault();
         var val = $(this).attr("val");
         $("#id_team input[value="+val+"]").prop('checked', false);
+	searchTickets();
+    });
+
+    $(document).on("click",'.removechanges_to_publish', function(event) {
+	$('#changes_to_publish').prop('checked',false);
 	searchTickets();
     });
     

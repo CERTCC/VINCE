@@ -28,73 +28,7 @@
 ########################################################################
 */
 
+/*
+Moved all async works to vincecomm.js
 
-function searchThreads(e, newpage) {
-    var csrftoken = getCookie('csrftoken');
-
-    if (e) {
-        e.preventDefault();
-    }
-    var page = 1;
-    if (newpage) {
-	page = newpage;
-    }
-
-    var url = $("#searchform").attr("action");
-    lockunlock(true,'div.mainbody,div.vtmainbody','#casecontainer');
-    window.txhr = $.ajax({
-        url : url,
-        type: "POST",
-        data: $('#searchform').serialize(),
-        success: function(data) {
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#casecontainer');
-            $("#casecontainer").html(data);
-        },
-	error: function() {
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#casecontainer');
-	    console.log(arguments);
-	    alert("Search failed or canceled! See console log for details.");
-	},
-	complete: function() {
-	    /* Just safety net */
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#casecontainer');
-	    window.txhr = null;
- 	}
-     });
-}
-
-
-$(document).ready(function() {
-    var filter_msg = document.getElementById("filter_threads");
-    if (filter_msg) {
-        filter_msg.addEventListener("keyup",delaySearch(function(event) {
-             searchThreads(event);
-        },1000));
-    }
-
-    $("input[id^='id_owner_']").change(function() {
-        searchThreads();
-    });
-
-    $("#filter_by_dropdown_select_all_0").click(function(){
-        $("input[type=checkbox]").prop('checked', $(this).prop('checked'));
-	searchThreads();
-
-    });
-
-    var form = document.getElementById('searchform');
-    if (form) {
-        if (form.attachEvent) {
-            form.attachEvent("submit", searchThreads);
-        } else {
-            form.addEventListener("submit", searchThreads);
-        }
-    }
-    
-    $(document).on("click", '.search_notes', function(event) {
-        var page = $(this).attr('next');
-	$("#id_page").val(page);
-        searchThreads(0, page);
-    });
-
-});
+ */

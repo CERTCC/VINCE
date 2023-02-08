@@ -204,7 +204,6 @@ class AssociateSMSView(LoginRequiredMixin, TokenMixin, GetUserMixin, FormView):
             return render(request, 'cogauth/sms.html', {'form': form})
 
     def form_valid(self, form):
-        logger.debug("in form valid")
         coguser = self.get_user()
         client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         u = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID,
@@ -222,7 +221,7 @@ class AssociateSMSView(LoginRequiredMixin, TokenMixin, GetUserMixin, FormView):
         try:                         
             u.send_verification(attribute='phone_number')
         except (Boto3Error, ClientError) as e:
-            logger.debug(traceback.format_exc())
+            logger.debug(f"Error returned in cogauth as {e}")
             return redirect("cogauth:limitexceeded") 
         return redirect("cogauth:verify_phone")
         
@@ -240,14 +239,12 @@ class AssociateTOTPView(LoginRequiredMixin,TokenMixin,GetUserMixin,FormView):
         client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         response = client.associate_software_token(
             AccessToken=coguser.access_token)
-        logger.debug(response)
         context['secretcode'] = response['SecretCode']
         context['form'] = TOTPForm()
         context['qrtext'] = f"otpauth://totp/VINCE:{self.request.user.username}?secret={context['secretcode']}&issuer=VINCE"
         return context
 
     def form_valid(self, form):
-        logger.debug("in form valid")
         coguser = self.get_user()
         client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         try:
@@ -330,9 +327,8 @@ class RemoveMFAView(LoginRequiredMixin,TokenMixin,GetUserMixin,PendingTestMixin,
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         password = self.request.POST.get('password', None)
         if password:
-            logger.debug("trying to auth...")
+            logger.debug(f"Trying to authenticate {self.request.user.username}")
             user = authenticate(request, username=self.request.user.username, password=password)
-            logger.debug(user)
             if (user is None) and request.session.get('MFAREQUIRED'):
                 request.session['CHANGEMFA'] = True
                 request.session.save()
@@ -428,7 +424,7 @@ class EnableMFAView(LoginRequiredMixin,TokenMixin,GetUserMixin,TemplateView):
     def dispatch(self, request, *args, **kwargs):
         self.cognito_user = self.get_user()
         if self.cognito_user.mfa:
-            logger.debug("MFA already enabled")
+            logger.debug("MFA already enabled for self.request.user")
             self.request.user.vinceprofile.multifactor = True
             self.request.user.vinceprofile.save()
             return redirect("vinny:dashboard")
@@ -458,7 +454,6 @@ class IndexView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
         code = self.request.GET.get('code', False)
-        logger.debug(code)
         if code:
             headers={'Content-Type': 'application/x-www-form-urlencoded'}
             data = {
@@ -500,7 +495,6 @@ class COGLoginView(FormView):
     
     def get_context_data(self, **kwargs):
         context = super(COGLoginView, self).get_context_data(**kwargs)
-        logger.debug("IN COGLOGIN")
         if settings.DEBUG:
             context['token_login'] = True
             
@@ -524,18 +518,16 @@ class COGLoginView(FormView):
                 else:
                     self.request.session['LAST_LOGIN'] = "New"
                 auth_login(request, user)
-                logger.debug("Checking permissions")
-                logger.debug(self.request.user.username)
-                logger.debug(self.request.user.is_authenticated)
+                logger.debug(f"Checking permissions for user {self.request.user.username} - is authenticated ? {self.request.user.is_authenticated} ")
                 cognito_check_permissions(self.request)
                 return super().form_valid(form)
                 #return redirect("vinny:dashboard")
             else:
                 if request.session.get('FORCEPASSWORD', False):
-                    logger.debug("REDIRECT")
+                    logger.debug(f"Redirecting due to force password change for {self.request.user}")
                     return redirect('cogauth:password_register')
                 if request.session.get('MFAREQUIRED', False):
-                    logger.debug("REDIRECT")
+                    logger.debug(f"Redirecing for MFA, user is {self.request.user}")
                     if next_url:
                         url = reverse(settings.MFA_REDIRECT_URL) + f"?next={next_url}"
                         return redirect(url)
@@ -649,7 +641,7 @@ class VerifyPhoneView(LoginRequiredMixin, TokenMixin, FormView):
                     u"Your code has expired. Try again."
                 ]))
             else:
-                logger.debug(traceback.format_exc())
+                logger.debug(f"Error in cognito-idp validation {e}")
                 form._errors.setdefault("code", ErrorList([
                     u"Your code is incorrect.."
 		]))
@@ -702,7 +694,7 @@ class VerifyEmailView(LoginRequiredMixin, TokenMixin, FormView):
                 messages.error(self.request, e.response['Error']['Message'])
                 return redirect("cogauth:login")
             else:
-                logger.debug(traceback.format_exc())
+                logger.debug(f"Error in cognito-idp access token validation {e}")
                 messages.error(self.request, e.response['Error']['Message'])
                 form._errors.setdefault("code", ErrorList([
                     u"An error occurred when verifying your code."
@@ -768,7 +760,7 @@ class MFAAuthRequiredView(FormView, AccessMixin):
                 messages.error(self.request, e.response['Error']['Message'])
                 return redirect("cogauth:login")
             else:
-                logger.debug(traceback.format_exc())
+                logger.debug(f"Error in MFA validation validation {e}")
                 messages.error(self.request, e.response['Error']['Message'])
                 form._errors.setdefault("code", ErrorList([
                     u"An error occurred when verifying your code."
@@ -802,18 +794,19 @@ class MFAAuthRequiredView(FormView, AccessMixin):
 
                 next_url = self.request.GET.get('next')
                 if next_url:
-                    logger.debug(next_url)
+                    logger.debug(f"NEXT URL provided by GET request {next_url}")
                     try:
                         if is_safe_url(next_url,set(settings.ALLOWED_HOSTS),True):
                             return redirect(next_url)
                         else:
                             return redirect(settings.LOGIN_REDIRECT_URL)
-                    except:
+                    except Exception as e:
+                        logger.debug(f"Error in redirection validator {e}")
                         pass
-                logger.debug("redirecting...")
+                logger.debug(f"Redirecting to default LOGIN_URL {settings.LOGIN_REDIRECT_URL}")
                 return redirect(settings.LOGIN_REDIRECT_URL)
         else:
-            logger.debug(traceback.format_exc())
+            logger.debug(f"Login redirection error no tokens provided, error is {e}")
             form._errors.setdefault("code", ErrorList([
                 u"Your code is incorrect."
             ]))
@@ -871,14 +864,10 @@ class ConfirmRegister(FormView):
         if self.request.session.get('CONFIRM_ID'):
             username = User.objects.using('vincecomm').filter(id=self.request.session.get('CONFIRM_ID')).first()
             try:
-                logger.debug(form.cleaned_data['code'])
-                logger.debug(username.username)
                 c.confirm_sign_up(form.cleaned_data['code'], username=username.username)
                 username.vinceprofile.email_verified=True
                 username.vinceprofile.save()
             except ClientError as e:
-                logger.debug(e.response['Error']['Code'])
-                logger.debug(e.response['Error']['Message'])
                 return render(self.request, 'cogauth/account_error.html', {'error_msg':e.response['Error']['Message']})
             del(self.request.session['CONFIRM_ID'])
             if self.request.session.get('SERVICE'):
@@ -1002,7 +991,7 @@ class ChangePasswordandRegisterView(FormView, AccessMixin):
                 return redirect('cogauth:password_change')
             else:
                 form._errors.setdefault("username", ErrorList([
-                    u"Error Occurred. Please contact System Administrator."
+                    u"Error Occurred. Please contact cert@cert.org"
                 ]))
                 return super().form_invalid(form)        
 
@@ -1056,7 +1045,7 @@ class RegisterView(FormView):
         r = requests.post(GOOGLE_VERIFY_URL, data=data)
         result = r.json()
         if result['success']:
-            logger.debug("successful recaptcha validation")
+            logger.debug("Successful recaptcha validation")
         else:
             logger.debug(result)
             logger.debug("invalid recaptcha validation")
@@ -1067,8 +1056,9 @@ class RegisterView(FormView):
         
         dup = User.objects.using('vincecomm').filter(email__iexact = form.cleaned_data['email'])
         if dup:
+            reset_url = reverse('cogauth:init_password_reset')
             form._errors.setdefault("email", ErrorList([
-                u'Email already exists. Usernames are <b>CASE SENSITIVE</b>. Or did you forget your password? <a href="/comm/auth/init/resetpassword/">Reset your password</a>.'
+                f'Email already exists. Usernames are <b>CASE SENSITIVE</b>. Or did you forget your password? <a href="{reset_url}">Reset your password</a>.'
             ]))
             return super().form_invalid(form)
 
@@ -1086,8 +1076,9 @@ class RegisterView(FormView):
                     f"Password not accepted: {e.response['Error']['Message']}"]))
                 return super().form_invalid(form)
             elif e.response['Error']['Code'] == 'UsernameExistsException':
+                reset_url = reverse('cogauth:init_password_reset')
                 form._errors.setdefault("email", ErrorList([
-                    u'Email already exists. Did you forget your password? <a href="/comm/auth/init/resetpassword/">Reset your password</a>.'
+                    f'Email already exists. Did you forget your password? <a href="{reset_url}">Reset your password</a>.'
             ]))
                 return super().form_invalid(form)
             else:
@@ -1146,7 +1137,6 @@ class UpdateProfileView(LoginRequiredMixin,TokenMixin,GetUserMixin,FormView):
         
     def form_valid(self, form):
         c = get_cognito(self.request)
-        logger.debug(form.cleaned_data)
         self.request.user.first_name = form.cleaned_data['first_name']
         self.request.user.last_name = form.cleaned_data['last_name']
         self.request.user.vinceprofile.preferred_username=form.cleaned_data['preferred_username']
@@ -1160,9 +1150,7 @@ class UpdateProfileView(LoginRequiredMixin,TokenMixin,GetUserMixin,FormView):
 
         #set new timezone
         self.request.session['timezone'] = self.request.user.vinceprofile.timezone  
-        logger.debug(user_attrs)
         c.update_profile(user_attrs)
-        logger.debug(form.cleaned_data)
         messages.success(self.request,'You have successfully updated your profile.')
         return super(UpdateProfileView, self).form_valid(form)
 

@@ -39,6 +39,7 @@ class PrivateMediaStorage(S3Boto3Storage):
     #region_name = "us-east-1"
     custom_domain=False
     acl='private'
+    bucket_name = getattr(settings, 'PRIVATE_BUCKET_NAME')
     
     def __init__(self, *args, **kwargs):
         if not settings.LOCALSTACK:
@@ -60,6 +61,7 @@ class SharedMediaStorage(S3Boto3Storage):
     #region_name = "us-east-1"
     acl = 'private'
     custom_domain = False
+    bucket_name = getattr(settings, 'VINCE_SHARED_BUCKET')
 
     def __init__(self, *args, **kwargs):
         if not settings.LOCALSTACK:
@@ -79,6 +81,7 @@ class VRFReportsStorage(S3Boto3Storage):
     custom_domain=False
     region_name = settings.AWS_REGION
     acl = 'private'
+    bucket_name = getattr(settings, 'S3_INCOMING_REPORTS')
 
     def __init__(self, *args, **kwargs):
         if not settings.LOCALSTACK:

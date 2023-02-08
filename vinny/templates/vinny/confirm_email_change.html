@@ -6,7 +6,9 @@
       <h5 class="modal-title">Modify Email</h5>
     </div>
     <div class="modal-body">
-      <p>{% if enable %}
+      <p> {% if error %}
+	Error: <span style="color:red">{{ error }} </span> Please contact support.
+	{% elif enable %}
 	Are you sure you want to enable email notifications?  By enabling, this email will receive all new case notifications and other important VINCE information.
 	{% elif disable %}
 	Are you sure you want to disable email notifications? By disabling email notifications, this user will not be notified of new cases and VINCE will automatically mute case notifications. You can unmute specific case notifications in each individual case discussion.

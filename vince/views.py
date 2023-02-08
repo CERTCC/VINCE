@@ -94,10 +94,41 @@ from bigvince.storage_backends import PrivateMediaStorage
 from vince.settings import VULNOTE_TEMPLATE
 from collections import OrderedDict
 from django.utils.http import is_safe_url
+from lib.vince import utils as vinceutils
+from rest_framework.views import APIView
+import pathlib
+import mimetypes
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+def json_error(msg):
+    return JsonResponse({"error":msg})
+
+def get_cve_info(context,acc):
+    context['cve_service'] = acc
+    if not acc.active:
+        context['account_error'] = "Account has been deactivated either manually, or due to authentication failures"
+        return context
+    cve_lib = cvelib.CveApi(acc.email, acc.org_name, acc.api_key, env=settings.CVE_SERVICES_API)
+    if cve_lib.ping() is None:
+        try:
+            context['account'] = cve_lib.show_user(acc.email)
+            context['org'] = cve_lib.show_org()
+            context['quota'] = cve_lib.quota()
+            context['cve_users'] = list(cve_lib.list_users())
+        except Exception as e:
+            context['account_error'] = str(e)
+            if hasattr(e, 'response') and e.response:
+                r = e.response
+                if hasattr('status_code',r) and r.status_code == 401:
+                    logger.warning(f"Authorization failed for {acc.email}, disabling this CVE API account to avoid further errors")
+                    acc.active = False
+                    acc.save()
+    else:
+        context['service_down'] = 1
+    return context
+    
 def object_to_json_response(obj, status=200):
     """
     Given an object, returns an HttpResponse object with a JSON serialized
@@ -106,6 +137,48 @@ def object_to_json_response(obj, status=200):
     return JsonResponse(
         data=obj, status=status, safe=False, json_dumps_params={'ensure_ascii': False},
     )
+
+
+def filterDateFields(GET,initial={}):
+    date_from = GET.get('date_from')
+    if date_from:
+        try:
+            initial['datestart'] = DateField().clean(date_from)
+        except Exception as e:
+            logger.info(f"Error while parsing date {e}")
+    date_to = GET.get('date_to')
+    if date_to:
+        try:
+            initial['dateend'] = DateField().clean(date_to)
+        except Exception as e:
+            logger.info(f"Error while parsing date {e}")
+    return initial
+
+
+def filterDateTimeFields(POST,res,crit='created__range'):
+    enddate = DateTimeField().clean(datetime.now()) + timedelta(days=1)
+    startdate = DateTimeField().clean('1970-01-01')
+    doFilter = False
+    if 'dateend' in POST:
+        v = POST['dateend']
+        try:
+            enddate = DateTimeField().clean(v) + timedelta(days=1)
+            doFilter = True
+        except Exception as e:
+            logger.info(f"Error when parsing date field error {e} for {v}")
+    if 'datestart' in POST:
+        v = POST['datestart']
+        try:
+            startdate = DateTimeField().clean(v)
+            doFilter = True
+        except Exception as e:
+            logger.info(f"Error when parsing date field error {e} for {v}")
+    if doFilter:
+        try:
+            res = res.filter(**{crit :(startdate,enddate)})
+        except Exception as e:
+            logger.info(f"Filtering failed for DateTimeField error {e}")
+    return res
 
 @register.filter(name='leading_zeros')
 def leading_zeros(value, desired_digits):
@@ -345,7 +418,7 @@ def autocomplete_contact(request, name):
         emails = ",".join(emails)
         pgp_keys = list(ContactPgP.objects.filter(contact=contact, revoked=False).exclude(pgp_key_data__isnull=True).exclude(pgp_key_data__exact='').values_list('pgp_key_id', flat=True))
         pgp_key_info = list(ContactPgP.objects.filter(contact=contact, revoked=False).values_list('pgp_key_id', 'pgp_email', 'pgp_key_data','startdate', 'enddate'))
-        logger.debug(pgp_key_info)
+        logger.debug(f"PGP information sent for {contact} is {pgp_key_info}")
         pgp_key_data = ""
         if len(pgp_keys) == 1:
             pgp_key_data = ContactPgP.objects.filter(contact=contact, revoked=False).exclude(pgp_key_data__isnull=True).exclude(pgp_key_data__exact='').first()
@@ -505,7 +578,6 @@ def autocomplete_case_references(request, pk):
                     if r["url"] not in references:
                         references.append(r["url"])
         data = json.dumps(references)
-        logger.debug(data)
         return HttpResponse(data, 'application/json')
     else:
         raise PermissionDenied()
@@ -691,7 +763,7 @@ def _add_group_permissions(email, vince_user):
                 user.vinceprofile.pending = False
                 user.vinceprofile.save()
         else:
-            logger.debug("No VINCE user with this email address")
+            logger.debug(f"No VINCE user with this email address {email}")
 
 def _remove_group_permissions(email, vinny_contact, vince_user):
     # now do we have a current VINCE user with this email?
@@ -858,7 +930,7 @@ def process_query_for_tags(s):
 def process_query(s, live=True):
     query = re.sub(r'[!\'()|&<>]', ' ', s).strip()
     # get rid of empty quotes
-    query = re.sub(r'""', '', s)
+    query = re.sub(r'""', '', query)
     if query == '"':
         return None
     if query.startswith(settings.CASE_IDENTIFIER):
@@ -906,7 +978,7 @@ class RemoveReminderView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         return is_in_group_vincetrack(self.request.user)
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         reminder = get_object_or_404(VinceReminder, id=self.request.POST.get('id'))
         if self.request.POST.get('later'):
             reminder.alert_date = timezone.now() + timedelta(days=1)
@@ -957,7 +1029,7 @@ class NewReminderView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
         return JsonResponse({'errors':form.errors}, status=401)
 
     def post(self, request, *args, **kwargs):
-        logger.debug(f"NewReminder Post: {self.request.POST}")
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         form = ReminderForm(request.POST)
         assignable_users = User.objects.filter(is_active=True, groups__name='vince').exclude(id=self.request.user.id).order_by(User.USERNAME_FIELD)
         form.fields['user'].choices = [(self.request.user.id, 'Myself')] + [(u.id, u.get_full_name()) for u in assignable_users]
@@ -1012,7 +1084,7 @@ class PreferenceView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
             return self.form_invalid(form)
 
     def form_valid(self, form):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         newtickets = self.request.POST.getlist('new_tickets[]')
         newtix = []
         uptix = []
@@ -1266,20 +1338,18 @@ class AttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
         return False
 
     def get(self, request, *args, **kwargs):
-        logger.debug(self.kwargs['path'])
         try:
-            attachment = Attachment.objects.filter(uuid=self.kwargs['path']).first()
+            file_uuid = self.kwargs['path']
+            attachment = Attachment.objects.filter(uuid=file_uuid).first()
             # if the UUID is not valid, this will throw a ValidationError
         except:
             raise Http404
 
         if attachment:
             filename = attachment.filename
-            # do this for old files
-            filename = filename.replace("\r", "")
-            filename = filename.replace("\n", "")
-            filename = filename.strip()
             mime_type = attachment.mime_type
+            filename = vinceutils.safe_filename(filename,file_uuid,mime_type)
+                    
             response = HttpResponseRedirect(attachment.access_url, content_type = mime_type)
 
             #test URL
@@ -1288,7 +1358,7 @@ class AttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
                 if not(attachment.file.storage.exists(str(attachment.uuid))):
                     raise Http404
                 else:
-                    url = attachment.file.storage.url(str(attachment.uuid), parameters={'ResponseContentDisposition': f'attachment; filename="{attachment.filename}"'})
+                    url = attachment.file.storage.url(str(attachment.uuid), parameters={'ResponseContentDisposition': f'attachment; filename="{filename}"'})
                     response = HttpResponseRedirect(url)
 
             response['ResponseContentDisposition'] = f"attachment; filename=\"{filename}\""
@@ -1338,10 +1408,8 @@ class UnattachVinceFile(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return context
 
     def post(self, request, *args, **kwargs):
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         file = get_object_or_404(VinceFile, id=self.kwargs['pk'])
-
-        logger.debug("IN UNATTACH FILE!!!!")
-
         post = file.post
         vulnote = file.vulnote
         #getattachment
@@ -1351,7 +1419,7 @@ class UnattachVinceFile(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
                 file.to_remove = True
                 file.save()
             else:
-                logger.debug("REMOVE FILE!!!")
+                logger.debug(f"Removing File {vt.file}")
                 vt.file.file.delete(save=False)
                 vt.file.delete()
 
@@ -1592,16 +1660,8 @@ class TicketFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
             statuslist = self.request.POST.getlist('status')
             res = res.filter(status__in=statuslist)
 
-        if 'datestart' in self.request.POST:
-            # add a day to dateend since it translates to 0AM
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(created__range=(DateTimeField().clean(self.request.POST['datestart']),
-                                                 enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(created__range=(DateTimeField().clean('1970-01-01'),
-                                                     enddate))
+        res = filterDateTimeFields(self.request.POST,res,'created__range')
+
         if 'queue' in self.request.POST:
             queuelist = self.request.POST.getlist('queue')
             res = res.filter(queue__id__in=queuelist)
@@ -1735,14 +1795,7 @@ class ActivityFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
 
         page = self.request.POST.get('page', 1)
 
-        if 'datestart' in self.request.POST:
-            # add a day to dateend since it translates to 0AM
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(date__range=(DateTimeField().clean(self.request.POST['datestart']),enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(date__range=(DateTimeField().clean('1970-01-01'), enddate))
+        res = filterDateTimeFields(self.request.POST,res,'date__range')
 
         if 'user' in self.request.POST:
             userlist = self.request.POST.getlist('user')
@@ -1773,13 +1826,7 @@ class ActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
         context['triage_user'] = get_triage_users(self.request.user)
         assignable_users = User.objects.filter(is_active=True, groups__name='vince').order_by(User.USERNAME_FIELD)
 
-        date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        initial = filterDateFields(self.request.GET,{})
         if self.request.GET.get('user'):
             initial['user'] = int(self.request.GET.get('user'))
         form = ActivityFilterForm(initial=initial)
@@ -1804,13 +1851,8 @@ class TicketFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView
 
         readable_queues = TicketQueue.objects.filter(queuepermissions__group__in=self.request.user.groups.all(), queuepermissions__group_read=True).distinct()
 
-        date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        initial = filterDateFields(self.request.GET,{})
+
         if self.request.GET.get('owner'):
             initial['owner'] = int(self.request.GET.get('owner'))
         queue = self.request.GET.get('queue')
@@ -1821,7 +1863,6 @@ class TicketFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView
         if unassigned:
             initial['owner'] = ['0']
         status = self.request.GET.getlist('status')
-        logger.debug(status)
         tag = self.request.GET.get('tag')
         if tag:
             initial['tag'] = tag
@@ -1926,7 +1967,6 @@ class AddTicketArtifactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         return context
 
     def form_valid(self, form):
-        #logger.debug("IN FORM AVALID")
         ticket = get_object_or_404(Ticket, id=self.kwargs['pk'])
         artifact = form.save(ticket=ticket, user=self.request.user)
         tags = self.request.POST.getlist('taggles[]')
@@ -2062,14 +2102,9 @@ class CommunicationsFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTest
                 vt_results = vt_results.filter(caseaction__vendor__in=vendorlist)
             if participantlist:
                 vt_results = vt_results.filter(caseaction__title__icontains="Participant")
-            if 'datestart' in self.request.POST:
-                enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-                if self.request.POST['datestart']:
-                    vt_results = vt_results.filter(date__range=(DateTimeField().clean(self.request.POST['datestart']), enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    vt_results=vt_results.filter(date__range=(DateTimeField().clean('1970-01-01'),
-                                                     enddate))
+
+            vt_results = filterDateTimeFields(self.request.POST,vt_results,'dat__range')
+
             if keyword:
                 vt_results = vt_results.filter((Q(title__icontains=keyword) | Q(comment__icontains=keyword)))
                 print("AFTER KEYWORDS SEARCH")
@@ -2095,8 +2130,7 @@ class CommunicationsFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTest
                           reverse=True)
 
         paginator = Paginator(activity, 10)
-        print(paginator.page(1))
-        return render(request, self.template_name, {'activity': activity, 'total': activity.count(), 'case': case, 'allow_edit': True})
+        return render(request, self.template_name, {'activity': activity, 'total': len(activity), 'case': case, 'allow_edit': True})
 
 
 class CaseFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.ListView):
@@ -2135,15 +2169,7 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
                 res = res.filter(status__in=statuslist)
 
 
-        if 'datestart' in self.request.POST:
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(created__range=(DateTimeField().clean(self.request.POST['datestart']),
-                                                 enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(created__range=(DateTimeField().clean('1970-01-01'),
-                                                     enddate))
+        res = filterDateTimeFields(self.request.POST,res,'created__range')
 
         if 'owner' in self.request.POST:
             ownerlist = self.request.POST.getlist('owner')
@@ -2161,6 +2187,9 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             groups = Group.objects.filter(id__in=teamlist)
             cases = list(CaseAssignment.objects.filter(assigned__groups__in=groups).values_list('case', flat=True))
             res = res.filter(id__in=cases)
+
+        if 'changes_to_publish' in self.request.POST:
+            res = res.filter(vulnote__date_published__isnull=False,changes_to_publish=True)
 
         if self.request.POST.get('tag'):
             tags = process_query_for_tags(self.request.POST['tag'])
@@ -2208,14 +2237,8 @@ class CaseFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
         context = super(CaseFilter, self).get_context_data(**kwargs)
 
         assignable_users = User.objects.filter(is_active=True, groups__name='vince').order_by(User.USERNAME_FIELD)
-        context['casepage']=1
-        date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        context['casepage'] = 1
+        initial = filterDateFields(self.request.GET,{})
         owner = self.request.GET.get('owner')
         if self.request.GET.get('owner'):
             initial['owner'] = int(owner)
@@ -2339,7 +2362,7 @@ class AssignTicketNewTeam(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, F
             if ticket.case:
                 # does the new group have access to this case?
                 if CasePermissions.objects.filter(case=ticket.case, group=new_group, group_read=True, group_write=True).exists():
-                    logger.debug("new_group has access to case")
+                    logger.debug(f"new_group {new_group} has access to case {ticket.case}")
                     # this case can be read/write by the group - so change it to appropriate case queue
                     new_queue = QueuePermissions.objects.filter(queue__queue_type=2, group__in=[new_group], group_read=True, group_write=True).first()
                     if new_queue:
@@ -2407,7 +2430,7 @@ class AssignTicketNewTeam(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, F
                     self.request,
                     _(f"Ticket has been reassigned to {new_group.name}"))
                 return redirect("vince:dashboard")
-        logger.debug(form.errors)
+        logger.debug(f"Errors in {self.__class__.__name__} is {form.errors}")
         if error:
             messages.error(
                 self.request,
@@ -2433,7 +2456,6 @@ class EditTicketResolutionView(LoginRequiredMixin, TokenMixin, UserPassesTestMix
         return False
 
     def form_valid(self, form):
-        logger.debug("IN TICKET VALID")
         ticket = get_object_or_404(Ticket, id=self.kwargs['pk'])
         ticket.resolution = form.cleaned_data['resolution']
         ticket.save()
@@ -2466,7 +2488,6 @@ class EditTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
         return False
 
     def form_valid(self, form):
-        logger.debug("IN TICKET VALID")
         ticket = form.save()
         #if form.cleaned_data['case']:
         #    queue = get_case_case_queue(form.cleaned_data['case'])
@@ -2482,8 +2503,8 @@ class EditTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
         if contactformset.is_valid():
             try:
                 contactformset.save()
-            except:
-                logger.debug("this was probably unchanged, I don't know why this fails")
+            except Exception as e:
+                logger.debug(f"This was probably unchanged, I don't know why this fails, Error returned is {e}")
                 pass
 
         return HttpResponseRedirect(ticket.get_absolute_url())
@@ -2652,9 +2673,9 @@ class CreateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Form
                 context['team'] = user_groups[0].name
                 context['other_teams'] = user_groups.exclude(id=user_groups[0].id)
                 user_groups=[user_groups[0]]
-            logger.debug(user_groups)
+            logger.debug(f"User {self.request.user} is in {user_groups}")
         assignable_users = User.objects.filter(is_active=True, groups__in=user_groups).order_by(User.USERNAME_FIELD).distinct()
-        logger.debug(assignable_users)
+        logger.debug(f"User {self.request.user} can be assigned to {assignable_users}")
         readable_queues = TicketQueue.objects.filter(queuepermissions__group__in=user_groups, queuepermissions__group_write=True).distinct()
 
         if self.request.POST:
@@ -2759,7 +2780,6 @@ class CreateNewCaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMix
             return context
         
         form = None
-        logger.debug(queue)
 
         if self.request.POST:
             form = CreateCaseRequestForm(self.request.POST)
@@ -2775,8 +2795,8 @@ class CreateNewCaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMix
 
             if "ticket_id" in self.kwargs:
                 ticket = get_object_or_404(Ticket, id=self.kwargs['ticket_id'])
-                description = ticket.description
-                cr = CaseRequest(product_name=description)
+                cr = {}
+                cr['description'] = ticket.description
                 if ticket.case:
                     cr['product_name'] = ticket.case.product_name
                     cr['product_version'] = ticket.case.product_version
@@ -2862,18 +2882,15 @@ class MuteCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
         user = self.request.user
         unmute = False
         settings = user.usersettings.settings
-        logger.debug(user.usersettings.settings)
         if user.usersettings.settings.get('muted_cases'):
             muted_cases = user.usersettings.settings['muted_cases']
-            logger.debug(muted_cases)
+            logger.debug(f"User {user} has muted cases {muted_cases}")
             if case.id in muted_cases:
                 #this case has already been muted, unmute this case:
                 muted_cases.remove(case.id)
-                logger.debug(muted_cases)
                 settings.update({'muted_cases': muted_cases})
                 user.usersettings.settings = settings
                 user.usersettings.save()
-                logger.debug(user.usersettings.settings)
                 unmute = True
             else:
                 muted_cases.append(case.id)
@@ -2885,7 +2902,7 @@ class MuteCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
             settings.update({'muted_cases': [case.id]})
             user.usersettings.settings = settings
             user.usersettings.save()
-            logger.debug(user.usersettings.settings)
+
 
         if unmute:
             button = "<i class=\"fas fa-volume-mute\"></i> Mute Reminders"
@@ -3093,7 +3110,7 @@ class ShareVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
         vc_vulnote = share_vulnote(vulnote)
         ca = CaseAction(case=vulnote.case, title="Shared Vulnerability Note in VinceComm",
                         user=self.request.user, vulnote=vulnote.current_revision,
-                        action_type=1)
+                        action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         vc_case = Case.objects.filter(vince_id=vulnote.case.id).first()
         vc_case.note = vc_vulnote
@@ -3180,8 +3197,8 @@ class PublishVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
                     bucket.copy(copy_source, vulnote.case.vuid + "_" + vt_file.file.filename)
                     vt_file.shared = True
                     vt_file.save()
-            except:
-                logger.debug(traceback.format_exc())
+            except Exception as e:
+                logger.debug(f"Error in {self.__class__.__name__} error is {e}")
                 messages.error(
                     self.request,
                     _(f"Error copying file {vt_file.file.filename}. Publish failed."))
@@ -3224,8 +3241,8 @@ class PublishVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
 
         try:
             publish_vul_note(vu_info, f"vu_{vulnote.case.vuid}.json")
-        except:
-            logger.debug(traceback.format_exc())
+        except Exception as e:
+            logger.debug(f"Error in {self.__class__.__name__} error is {e}")
             send_error_sns(vulnote.case.vu_vuid, "Publishing vul note", traceback.format_exc())
             messages.error(
                 self.request,
@@ -3238,7 +3255,7 @@ class PublishVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
 
         ca = CaseAction(case=vulnote.case, title="Published Vulnerability Note",
                         user=self.request.user, vulnote=vulnote.current_revision,
-                        action_type=9)
+                        action_type=CaseAction.lookup("Publish Vul Note"))
         ca.save()
 
         #mark published in vincecomm - this will run through and copy the note and status
@@ -3366,7 +3383,7 @@ def copy_vulnote(vulnote, database):
             if vul.deleted:
                 vp_vul = NoteVulnerability.objects.using(database).filter(case_increment=vul.case_increment, note=vpnote.vulnote).first()
                 if vp_vul:
-                    logger.debug("DELETE VULNERABILITY!!!")
+                    logger.debug(f"Deleting Vul Note {vp_vul}")
                     vp_vul.delete()
                 continue
             # only copy over vulnerabilities that have a CVE
@@ -3392,7 +3409,7 @@ def copy_vulnote(vulnote, database):
                         (vtvendor.statement_date != vp_vendor.statement_date) or
                         (vtvendor.addendum != vp_vendor.addendum)):
                         updated = True
-                        logger.debug("VENDOR CHANGED STATEMENT")
+                        logger.debug(f"Vendor has changed Statement Vendor: {vp_vendor} with {vtvendor.statement}")
 
                 vp_vendor, created = Vendor.objects.using(database).update_or_create(
                     note=vpnote.vulnote,
@@ -3439,7 +3456,7 @@ def copy_vulnote(vulnote, database):
                 # need to update the date for this vendor
                 vp_vendor.dateupdated = timezone.now()
                 vp_vendor.save(using=database)
-                logger.debug("UPDATED VENDOR STATEMENT FOR NEW TIME %s" % vp_vendor.vendor)
+                logger.debug(f"Updated vendor statement for Vendor: {vp_vendor.vendor}")
 
     else:
         vpnote = VulnerabilityNote(content = vulnote.current_revision.content,
@@ -3497,7 +3514,7 @@ def copy_vulnote(vulnote, database):
                         vp_vulstatus.statement = status.statement
                     vp_vulstatus.save(using=database)
                 else:
-                    logger.debug("why is the NoteVulnerability not there?")
+                    logger.debug(f"Strange error: NoteVulnerability not found for {vpnote}")
                 # now make it public
         vpnote.published = True
         vpnote.save(using=database)
@@ -3545,7 +3562,6 @@ class VulNoteReviewView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         context['review'] = reviews.first()
         if reviews.count() > 1:
             context['next'] = reviews[1]
-            logger.debug(context['next'])
             context['reviews'] = reviews.exclude(id=context['review'].id)
 
         return context
@@ -3568,9 +3584,7 @@ class VulNoteReviewDetail(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         context['review'] = review
         #get reviews for this ticket:
         if review.ticket:
-            logger.debug("HERE")
             context['reviews'] = VulNoteReview.objects.filter(ticket=review.ticket, complete=True, date_complete__lte=review.date_complete).exclude(id=review.id).order_by('-date_complete')
-            logger.debug(context['reviews'])
             if context['reviews']:
                 context['next'] = context['reviews'].first()
         return context
@@ -3646,13 +3660,10 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
 
     def post(self, request, *args, **kwargs):
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
-
         form = VulNoteReviewForm(self.request.POST)
-        logger.debug(form)
         vulnote = get_object_or_404(VulNote, id=self.kwargs['pk'])
         rev = VulNoteReview()
         if form.is_valid():
-            logger.debug("FORM IS VALID")
             #is this an edit?
             check = VulNoteReview.objects.filter(vulnote=vulnote.current_revision.id,
                                                  reviewer=self.request.user,
@@ -3678,7 +3689,7 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
                                         assigned_to=self.request.user,
                                         title__icontains="vulnerability note for publishing").first()
             if tkt:
-                logger.debug("WE HAVE A REVIEW TICKET")
+                logger.debug(f"Review Ticket found for {tkt}")
                 rev.ticket = tkt
                 rev.save()
                 if rev.complete:
@@ -3729,8 +3740,7 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
 
             return JsonResponse({'redirect':reverse('vince:case', args=[vulnote.case.id]) + '#vulnote'}, status=200)
         else:
-            logger.debug("FORM IS INVALID")
-            logger.debug(form.errors)
+            logger.debug(f"Form in {self.__class__.__name__} is invalid error is {form.errors}")
             return JsonResponse({'error':form.errors}, status=401)
 
 
@@ -3939,7 +3949,6 @@ class EditVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
         rev.user_message = form.cleaned_data['summary']
         rev.references = form.cleaned_data['references']
         rev.deleted = False
-        logger.debug(rev)
         rev.set_from_request(self.request)
         vulnote.add_revision(rev)
 
@@ -3948,14 +3957,13 @@ class EditVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                             date = timezone.now(),
                             user=self.request.user,
                             comment=form.cleaned_data['summary'],
-                            action_type = 1)
+                            action_type = CaseAction.lookup('VinceTrack'))
         action.save()
 
         vulnote.case.changes_to_publish = True
         vulnote.case.save()
 
         artifacts = list(map(int, self.request.POST.getlist('artifacts[]')))
-        logger.debug(artifacts)
         # record the artifacts that have been added to the vulnote
         arts =  get_all_artifacts(vulnote.case)
 
@@ -3967,7 +3975,6 @@ class EditVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
             artifact.save()
 
         formvuls = list(map(int, self.request.POST.getlist('vuls[]')))
-        logger.debug(formvuls)
         vuls = Vulnerability.casevuls(vulnote.case)
         for vul in vuls:
             if vul.id in formvuls:
@@ -4055,11 +4062,10 @@ class CreateVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
                             date = timezone.now(),
                             user=self.request.user,
                             comment=self.request.POST['summary'],
-                            action_type = 1)
+                            action_type = CaseAction.lookup('VinceTrack'))
         action.save()
 
         artifacts = list(map(int, self.request.POST.getlist('artifacts[]')))
-        logger.debug(artifacts)
         # record the artifacts that have been added to the vulnote
         arts =  get_all_artifacts(vulnote.case)
 
@@ -4071,7 +4077,6 @@ class CreateVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
             artifact.save()
 
         formvuls = list(map(int, self.request.POST.getlist('vuls[]')))
-        logger.debug(formvuls)
         vuls = Vulnerability.casevuls(vulnote.case)
         for vul in vuls:
             if vul.id in formvuls:
@@ -4197,7 +4202,6 @@ class CaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                 'comment': ''
                 }
             kwargs['ticket_id']=self.kwargs['pk']
-            logger.debug("REDIRECT!!!")
             return update_ticket(request, self.kwargs['pk'])
         if 'assign' in request.GET:
             if not(has_queue_write_access(self.request.user, ticket.queue)):
@@ -4208,9 +4212,7 @@ class CaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                 'title': ticket.title,
                 'comment': ''
                 }
-            logger.debug(request.GET['assign'])
             kwargs['ticket_id']=self.kwargs['pk']
-            logger.debug("REDIRECT!!!")
             return update_ticket(request, self.kwargs['pk'])
         elif 'close' in request.GET and ticket.status == Ticket.RESOLVED_STATUS:
             if not(has_queue_write_access(self.request.user, ticket.queue)):
@@ -4291,8 +4293,14 @@ class TicketActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
 
     def get_context_data(self, **kwargs):
         context = super(TicketActivityView, self).get_context_data(**kwargs)
-        context['ticketpage']=1
+        context['ticketpage'] = 1
         context['ticket'] = get_object_or_404(Ticket, id=self.kwargs['pk'])
+        context['more'] = False
+        if context['ticket'].followup_set.count() > Ticket.MAX_ACTIVITY:
+            if self.request.GET.get('all',None):
+                context['ticket'].MAX_ACTIVITY = 0
+            else:
+                context['more'] = True
         return context
 
 class TicketAutoAssign(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
@@ -4335,8 +4343,7 @@ class TicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
     def get_subscribers(ticket_id):
         ticket = get_object_or_404(Ticket, id=ticket_id)
         users = [ticketcc.user.usersettings.preferred_username for ticketcc in ticket.ticketcc_set.all()]
-        logger.debug("subscribed_users")
-        logger.debug(ticket.ticketcc_set.all())
+        logger.debug(f"Subscribed_users for {ticket_id} are {str(ticket.ticketcc_set.all())}")
         allusers = [ user.usersettings.preferred_username for user in User.objects.filter(is_active=True, groups__name='vince').exclude(usersettings__preferred_username__isnull=True)]
         return JsonResponse({'subscribed_users': users, 'assignable_users':allusers}, status=200)
 
@@ -4379,7 +4386,6 @@ class TicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
         if 'take' in request.GET:
             if not(has_queue_write_access(self.request.user, ticket.queue)):
                 raise PermissionDenied()
-            logger.debug("UPDATE TICKET!")
             request.POST = {
                 'owner': request.user.id,
                 'title': ticket.title,
@@ -4391,7 +4397,6 @@ class TicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
             if not(has_queue_write_access(self.request.user, ticket.queue)):
                 raise PermissionDenied()
 
-            logger.debug("ASSIGN TICKET!")
             if request.GET['assign']:
                 request.POST = {
                     'owner': request.GET['assign'],
@@ -4430,7 +4435,7 @@ class TicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        logger.debug(f"{self.__class__} post!")
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         ticket = get_object_or_404(Ticket, id=self.kwargs['pk'])
         kwargs['ticket_id']=self.kwargs['pk']
 
@@ -4500,7 +4505,6 @@ class TicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
 
         #context['ticketcc_list'] = [ ticketcc.user.username for ticketcc in context['ticket'].ticketcc_set.all() ]
         context['old_tags'] = [tag.tag for tag in context['ticket'].tickettag_set.all()]
-        logger.debug(context['old_tags'])
         context['other_tags'] = [tag.tag for tag in TagManager.objects.filter(tag_type=1).filter(Q(team__in=user_groups)|Q(team__isnull=True)).exclude(tag__in=context['old_tags']).order_by('tag').distinct('tag')]
         #context['other_tags'] = [tag.tag for tag in TicketTag.objects.exclude(ticket=context['ticket']).order_by('tag').distinct('tag')]
         context['form'] = AddArtifactForm()
@@ -4571,8 +4575,8 @@ class UpdateCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
                 if not title:
                     # no change happened
                     return HttpResponseRedirect(case.get_absolute_url())
-            logger.debug("create case action")
-            ca = CaseAction(case=case, user=self.request.user, comment=comment, title=title, action_type=1)
+            logger.debug(f"Create Case action for {case} from user {request.user.username}")
+            ca = CaseAction(case=case, user=self.request.user, comment=comment, title=title, action_type=CaseAction.lookup('VinceTrack'))
             ca.save()
             return HttpResponseRedirect(case.get_absolute_url())
 
@@ -4599,7 +4603,7 @@ class UpdateCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
 	                           user=user)
                     fup.save()
             else:
-                logger.debug("invalid tag - tag doesn't exist in tag manager")
+                logger.debug(f"Invalid tag - tag {tag} doesn't exist in tag manager")
                 return JsonResponse({'tag': tag, 'case': case.id, 'error': "Invalid Tag."}, status=401)
         else:
             return JsonResponse({'tag': tag, 'case': case.id, 'error': "Tag is too long. Max 50 characters."}, status=401)
@@ -4627,7 +4631,7 @@ class UpdateCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
         comment = comment.replace('X-HELPDESK-COMMENT-VERBATIM', '{% verbatim %}{%').replace(
             'X-HELPDESK-COMMENT-ENDVERBATIM', '%}{% endverbatim %}')
 
-        ca = CaseAction(case_id=case_id, user=user, comment=comment, title=f"{user.usersettings.vince_username} added a comment", action_type=1)
+        ca = CaseAction(case_id=case_id, user=user, comment=comment, title=f"{user.usersettings.vince_username} added a comment", action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
 
 class CloseTicketandTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
@@ -4652,8 +4656,8 @@ class CloseTicketandTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         context['ticket'] = get_object_or_404(Ticket, id=self.kwargs['ticket_id'])
         cr = CaseRequest.objects.filter(ticket_ptr_id=self.kwargs['ticket_id']).first()
 
-        referer = self.request.META.get('HTTP_REFERER')
-        logger.debug(f"REFERER IS {referer}") 
+        referer = self.request.META.get('HTTP_REFERER',"")
+        logger.debug(f"HTTP Referrer is {referer}") 
         
         #is this ticket from a VINCE user?
         if context['ticket'].submitter_email:
@@ -4695,8 +4699,8 @@ class CloseTicketandTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         ticket.close_reason = form.cleaned_data['close_choice']
         ticket.save()
         # look up cr in vincecomm
-        referer = self.request.META.get('HTTP_REFERER')
-        logger.debug(f"REFERER IS {referer}")
+        referer = self.request.META.get('HTTP_REFERER',"")
+        logger.debug(f"HTTP_Referrer header is {referer}")
         cr = CaseRequest.objects.filter(id=ticket.id).first()
         vtcr = None
         if cr:
@@ -4753,7 +4757,7 @@ class CloseTicketandTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
                 crfup.save()
 
         elif int(form.cleaned_data['send_email']) == 3:
-            logger.debug("send message to VINCE User")
+            logger.debug(f"send message to VINCE User {vc_user}")
             user_lookup = User.objects.using('vincecomm').filter(email=ticket.submitter_email).first()
             sender = User.objects.using('vincecomm').filter(email=self.request.user.email).first()
             subject = f"[{ticket.ticket_for_url}] {email_template.subject} {ticket.title}"
@@ -4794,13 +4798,11 @@ class UpdateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             return has_queue_write_access(self.request.user, ticket.queue)
 
     def post(self, request, *args, **kwargs):
-        logger.debug("IN UPDATE TICKET VIEW")
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         if request.POST.get('add_subscriber'):
             return UpdateTicketView.add_subscriber(request.POST.get('user'),kwargs['ticket_id'])
         elif request.POST.get('del_subscriber'):
-            logger.debug(kwargs['ticket_id'])
-            logger.debug(request.POST.get('user'))
+            logger.debug(f"Request to delete subscriber {request.POST.get('del_subscriber')}")
             return UpdateTicketView.del_subscriber(request.POST.get('user'), kwargs['ticket_id'])
         elif request.POST.get('add_tag'):
             return UpdateTicketView.add_tag(request.POST.get('tag').lower(), kwargs['ticket_id'], self.request.user)
@@ -4813,7 +4815,7 @@ class UpdateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
     @staticmethod
     def add_subscriber(username, ticket_id):
         """ Add a subscriber to a ticket """
-        logger.debug("IN ADD SUBSCRIBER")
+        logger.debug(f"Adding Subsciber {username} to Ticket ID: {ticket_id}")
         user = get_object_or_404(User, usersettings__preferred_username__iexact=username)
         ticket = get_object_or_404(Ticket, id=ticket_id)
         if TicketCC.objects.filter(ticket=ticket, user=user):
@@ -4853,7 +4855,7 @@ class UpdateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                                    user=user)
                     fup.save()
             else:
-                logger.debug("invalid tag - tag doesn't exist in tag manager")
+                logger.debug(f"invalid tag - tag {tag} doesn't exist in tag manager")
                 return JsonResponse({'tag': tag, 'ticket': ticket.id, 'error': "Invalid Tag."}, status=401)
         else:
             return JsonResponse({'tag': tag, 'ticket': ticket.id, 'error': "Tag is too long. Max 50 characters."}, status=401)
@@ -4909,8 +4911,7 @@ class FollowupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
 
 
     def post(self, request, *args, **kwargs):
-        logger.debug("IN UPDATE Followup VIEW")
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         comment = request.POST['comment']
 
         action = get_object_or_404(Action, id=self.kwargs['pk'])
@@ -5092,7 +5093,7 @@ class EditCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
                case.owner = self.request.user
                case.save()
         
-        ca = CaseAction(case=case, user=self.request.user, title=title, action_type=1)
+        ca = CaseAction(case=case, user=self.request.user, title=title, action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         return HttpResponseRedirect(reverse("vince:case", args=[case.id])+"#details")
 
@@ -5311,7 +5312,7 @@ class VendorViewDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         context = super(VendorViewDetailView, self).get_context_data(**kwargs)
         vendor = get_object_or_404(VulnerableVendor, id=self.kwargs['pk'])
         if vendor.seen:
-            context['timeseen'] = CaseAction.objects.filter(case=vendor.case, vendor=vendor, action_type=7).first()
+            context['timeseen'] = CaseAction.objects.filter(case=vendor.case, vendor=vendor, action_type=CaseAction.lookup('Vendor Viewed')).first()
 
         vc_case = Case.objects.using('vincecomm').filter(vuid=vendor.case.vuid).first()
         #get users in group
@@ -5355,12 +5356,12 @@ class CompleteCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMix
                 if context['case'].team_owner:
                     if (self.request.user.groups.filter(id=context['case'].team_owner.id).exists()):
                         # present form
-                        logger.debug("This user is a member of the current owner group")
+                        logger.debug(f"This user {self.request.user} is a member of the current owner group.")
                         context['form'] = True
                     else:
                         context['group_to_approve'] = context['case'].team_owner
                 elif has_case_write_access(self.request.user, context['case']):
-                    logger.debug("This case doesn't have an owner but this user has write access")
+                    logger.debug(f"This case doesn't have an owner but this user {self.request.user} has write access")
                     context['form'] = True
                 else:
                     context['group_to_approve'] = context['case'].team_owner
@@ -5369,7 +5370,7 @@ class CompleteCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMix
                 # Lead Suggested means that the new group must approve transfer
                 group = Group.objects.filter(groupsettings__contact__vendor_name=cr.user_name).first()
                 if (self.request.user.groups.filter(id=group.id).exists()):
-                    logger.debug("This user is a member of the group proposed owner team")
+                    logger.debug(f"This user {self.request.user} is a member of the group proposed owner team")
                     # present form
                     context['form'] = True
                 else:
@@ -5407,7 +5408,7 @@ class CompleteCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMix
             _transfer_case(case, new_group)
 
             ca = CaseAction(case=case, title=f"Case ownership transferred to {new_group.name}",
-                            user=self.request.user, action_type=1)
+                            user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
             ca.save()
 
             #add this user to the case assignment so at least SOMEBODY is assigned
@@ -5424,7 +5425,7 @@ class CompleteCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMix
             for c in ca:
                 if not(c.assigned.groups.filter(id=new_group.id).exists()):
                     #if the assignee isn't in the group - remove them
-                    act = CaseAction(case=case, title=f"Removing {c.assigned.usersettings.preferred_username} from case assignment due to team transfer", action_type=1, user=self.request.user)
+                    act = CaseAction(case=case, title=f"Removing {c.assigned.usersettings.preferred_username} from case assignment due to team transfer", action_type=CaseAction.lookup('VinceTrack'), user=self.request.user)
                     c.delete()
                     act.save()
 
@@ -5486,7 +5487,7 @@ class RejectCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
         
         ca = CaseAction(case=case, title=f"Case ownership transfer to {new_group.name} rejected.",
                         comment=self.request.POST.get('reason'),
-                        user=self.request.user, action_type=1)
+                        user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
 
         # get ticket 
@@ -5584,16 +5585,16 @@ class RequestCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
             new_group = Group.objects.filter(id=form.cleaned_data['team']).first()
             # does this group already have write access?
             if CasePermissions.objects.filter(group_write=True, group=new_group, case=case).exists():
-                logger.debug("New group already has write access")
+                logger.debug(f"New group {new_group} already has write access to {case}")
                 if has_case_write_access(self.request.user, case):
-                    logger.debug("User has write access")
+                    logger.debug(f"User {self.request.user} has write access to Case {case}")
                     # just change owner
                     case.team_owner=new_group
                     case.owner = self.request.user
                     case.save()
                     #create log
                     ca = CaseAction(case=case, title=f"Case ownership transferred to {new_group.name}",
-                                    user=self.request.user, action_type=1)
+                                    user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                     ca.save()
 
                     _transfer_case(case, new_group)
@@ -5652,16 +5653,16 @@ class RequestCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                 #this new group doesn't have write access
                 #does this user belong in the proposed owner's group
                 if self.request.user.groups.filter(id=new_group.id).exists():
-                    logger.debug(f"User already belongs in proposed group {new_group.name}")
+                    logger.debug(f"User {self.request.user} already belongs in proposed group {new_group.name}")
                     #is this person already in the current owner's group?
                     if has_case_write_access(self.request.user, case):
-                        logger.debug("User has write access so just do it")
+                        logger.debug(f"User {self.request.user} has write access so fair to proceed")
                         case.team_owner=new_group
                         case.owner = self.request.user
                         case.save()
                         #create log 
                         ca = CaseAction(case=case, title=f"Case ownership transferred to {new_group.name}",
-                                        user=self.request.user, action_type=1)
+                                        user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                         ca.save()
                         
                         _transfer_case(case, new_group)
@@ -5764,7 +5765,7 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         #Assume we have not vrf_url unless we get one from below methods
         context['vrf_url'] = None
         context['vincecomm_link'] = None
-        if hasattr(context['case'],'caserequest'):
+        if hasattr(context['case'],'case_request') and context['case'].case_request:
             if hasattr(context['case'].case_request,'caserequest'):
                 context['cr'] = context['case'].case_request.caserequest
                 if hasattr(context['cr'],'vrf_id') and context['cr'].vrf_id:
@@ -5772,7 +5773,7 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
                     vc_cr = VTCaseRequest.objects.filter(vrf_id=context['cr'].vrf_id).first()
                     if vc_cr:
                         context['vincecomm_link'] = reverse("vinny:cr_report", args=[vc_cr.id])
-        elif hasattr(context['case'],'case_request'):
+        else:
             context['ticket'] = context['case'].case_request
             if hasattr(context['ticket'],'vrf_id') and context['ticket'].vrf_id:
                 context['vrf_url'] = download_vrf(context['ticket'].vrf_id)
@@ -5794,7 +5795,7 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         # need this for task reassignment
         context['assignable_users'] = User.objects.filter(is_active=True, groups__name='vince')
         context['assignable_usersjs'] = [{0: 'Unassigned'}] + [{obj.id:obj.usersettings.preferred_username} for obj in context['assignable_users']]
-        ca = Action.objects.select_related('caseaction').filter(caseaction__case=context['case'], caseaction__action_type__in=[0,1,9])
+        ca = Action.objects.select_related('caseaction').filter(caseaction__case=context['case'], caseaction__action_type__in=CaseAction.ASSIGN_ACTIONS)
 
         ta = Action.objects.select_related('followup').filter(followup__ticket__case=context['case'])
         activity = ca | ta
@@ -5824,7 +5825,6 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         context['vulsjs'] = [obj.as_dict() for obj in context['vuls']]
         context['vendors'] = VulnerableVendor.casevendors(context['case']).order_by('contact__vendor_name')
         context['vendorgroups'] = VulnerableVendor.casevendors(context['case']).exclude(from_group__isnull=True).distinct('from_group')
-        logger.debug(context['vendorgroups'])
         context['participants'] = CaseParticipant.objects.filter(case=context['case']).order_by('user_name')
         context['participantsjs'] = [obj.as_dict() for obj in context['participants']]
 
@@ -5845,7 +5845,6 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         form = CaseCommunicationsFilterForm()
         form.fields['vendor'].choices = [
             (u.id, u.contact.vendor_name) for u in context['vendors']]
-        logger.debug(form.fields['vendor'].choices)
         form.fields['participants'].choices = [
             (u.id, u.participant.vinceprofile.vince_username) for u in vc_case_participants]
         context['form'] = form
@@ -5936,14 +5935,14 @@ class ApproveAllStatements(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
                             date = timezone.now(),
                             user = self.request.user,
                             comment = comment,
-                            action_type=1)
+                            action_type=CaseAction.lookup('VinceTrack'))
         action.save()
         messages.success(
             self.request,
             _("All statements have been successfully approved."))
 
         if send_email:
-            logger.warning("This would send vendor approval emails")
+            logger.warning("This would send vendor approval emails. Currently disabled")
             #send_vendor_approval_emails(send_email, case)
 
         if change_made:
@@ -5971,8 +5970,12 @@ class RedirectVinny(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic
     def get_context_data(self, **kwargs):
         context = super(RedirectVinny, self).get_context_data(**kwargs)
         next_url = self.request.GET.get('next')
-        context['action'] = next_url
-        logger.debug("redirecting to: " + next_url)
+        if is_safe_url(next_url,set(settings.ALLOWED_HOSTS),True): 
+            context['action'] = next_url
+            logger.debug(f"redirecting to: {next_url}")
+        else:
+            context['action'] = reverse("vinny:dashboard")
+            logger.info(f"The next_url {next_url} is not valid, replacing the next_url field with default VinceComm Dashboard page")
         return context
 
 class VinnyTokens(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
@@ -5989,16 +5992,15 @@ class TokenLogin(GetUserMixin, generic.TemplateView):
     template_name = 'vince/index.html'
 
     def post(self, request, *args, **kwargs):
-        logger.debug("in tokenlogin")
         if (token_verify(self.request.POST['access_token'])):
             request.session['ACCESS_TOKEN'] = self.request.POST['access_token']
             request.session['REFRESH_TOKEN'] = self.request.POST['refresh_token']
             #request.session.save()
             groups = self.get_token_groups()
-            logger.debug(f"token has groups {groups}")
+            user = self.get_user()
+            logger.debug(f"Token login for has {user} who has groups {groups}")
             if groups:
                 if settings.COGNITO_ADMIN_GROUP in groups:
-                    user = self.get_user()
                     request.session['timezone'] = user.timezone
                     user = authenticate(self.request, username=user.email)
                     if user:
@@ -6115,7 +6117,6 @@ class WritePost(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
             return False
 
     def form_valid(self, form):
-        logger.debug("IN FORM AVALID")
         case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
         if 'notify_id' in self.kwargs:
             notification = VendorNotificationContent.objects.filter(id=self.kwargs['notify_id']).first()
@@ -6147,7 +6148,7 @@ class WritePost(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
                             user = self.request.user,
                             date = timezone.now(),
                             comment="",
-                            action_type=1)
+                            action_type=CaseAction.lookup('VinceTrack'))
         action.save()
 
         artifacts = list(map(int, self.request.POST.getlist('artifacts[]')))
@@ -6168,7 +6169,6 @@ class WritePost(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
                 vf.save()
                 
         formvuls = list(map(int, self.request.POST.getlist('vuls[]')))
-        logger.debug(formvuls)
         vuls = Vulnerability.casevuls(case)
         for vul in vuls:
             if vul.id in formvuls:
@@ -6229,7 +6229,6 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
         for u in users:
             assignments.append(u.assigned.usersettings.vince_username)
         assignable_users = [ u.usersettings.preferred_username for u in User.objects.filter(is_active=True, groups__name='vince')]
-        logger.debug(assignable_users);
         return JsonResponse({'response': 'success', 'case_assigned_to': assignments, 'assignable_users': assignable_users}, status=200)
 
     def post(self, request, *args, **kwargs):
@@ -6241,7 +6240,7 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
             if user:
                 ca = CaseAction(case=case,
                                 title=f"User {user.usersettings.preferred_username} assigned to case",
-                                user=self.request.user, action_type=1)
+                                user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                 ca.save()
                 #do this after the case action, so the assignee doesn't get 2 emails
                 assignment = CaseAssignment(assigned=user,
@@ -6253,8 +6252,7 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
             #is this user a part of one of the caseparticipants - otherwise add them
             contacts = user.groups.exclude(groupsettings__contact__isnull=True).values_list('groupsettings__contact__id', flat=True)
             cps = CaseParticipant.objects.filter(case=case).filter(Q(user_name=user.email)|Q(contact__in=contacts))
-            logger.debug("CHECK CASE PARTICIPANTS")
-            logger.debug(cps)
+            logger.debug(f"Checking Case participants for {case} which is {cps}")
             if not cps:
                 #this user isn't a part of any of the CaseParticipants, so add them now
                 cp, created = CaseParticipant.objects.update_or_create(case=case,
@@ -6274,7 +6272,7 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
             if user:
                 ca = CaseAction(case=case,
                                 title=f"User {user.usersettings.preferred_username} removed from case assignment",
-                                user=self.request.user, action_type=1)
+                                user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                 ca.save()
                 assignment = CaseAssignment.objects.filter(assigned=user, case=case)
                 if assignment:
@@ -6302,7 +6300,7 @@ class ChangeParticipantType(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         participant = get_object_or_404(CaseParticipant, id=self.kwargs['pk'])
         participant.coordinator = self.request.POST.get('coordinator')
         cm = CaseMember.objects.filter(vince_id = participant.id).first()
@@ -6335,14 +6333,13 @@ class AddParticipantToCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         case = get_object_or_404(VulnerabilityCase, id=request.POST['case_id'])
         users = request.POST.getlist('users[]')
 
         for user in users:
             if user.startswith('Group:'):
                 groupname = user[7:]
-                logger.debug(groupname)
                 group = ContactGroup.objects.filter(name=groupname).first()
                 members = GroupMember.objects.filter(group__name=groupname)
                 for member in members:
@@ -6353,7 +6350,7 @@ class AddParticipantToCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
                                                                       user_name=member.contact.vendor_name,
                                                                       defaults = {'added_by': self.request.user})
                 ca = CaseAction(case=case, title=f"Added Group {groupname} to Case",
-                                user=self.request.user, action_type=1)
+                                user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                 ca.save()
                 groupdups = GroupMember.objects.filter(group=group).values_list('group_member', flat=True)
                 duplicates = GroupDuplicate.objects.filter(group__in=groupdups).values_list('group', flat=True)
@@ -6369,7 +6366,7 @@ class AddParticipantToCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
                                                                           user_name=member.contact.vendor_name,
                                                                           defaults = {'added_by': self.request.user})
                     ca = CaseAction(case=case, title=f"Added Group {subgroup.name} to Case",
-                                    user=self.request.user, action_type=1)
+                                    user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                     ca.save()
 
 
@@ -6382,7 +6379,7 @@ class AddParticipantToCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
                                                                   defaults = {
                                                                       'added_by':self.request.user})
                     ca = CaseAction(case=case, title=f"Added Participant {vc_user.username} to Case",
-                                    user=self.request.user, action_type=1)
+                                    user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                     ca.save()
                 else:
                     #search contacts
@@ -6395,7 +6392,7 @@ class AddParticipantToCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
                                                                           'group':True,
                                                                           'added_by':self.request.user})
                         ca = CaseAction(case=case, title=f"Added Participant Group {user} to Case",
-                                        user=self.request.user, action_type=1)
+                                        user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                         ca.save()
                     else:
                         # this is a new user we are inviting
@@ -6404,7 +6401,7 @@ class AddParticipantToCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
                                                                       defaults= {
                                                                           'added_by':self.request.user})
                         ca = CaseAction(case=case, title=f"Invited New Participant {user} to Case",
-                                        user=self.request.user, action_type=1)
+                                        user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                         ca.save()
 
 
@@ -6438,7 +6435,7 @@ class ChangeVendorNotifyDate(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
 
     def post(self, request, *args, **kwargs):
         vendor = get_object_or_404(VulnerableVendor, id=self.kwargs['pk'])
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         new_date = self.request.POST.get('new_date')
         if new_date:
             vendor.contact_date = new_date
@@ -6457,13 +6454,12 @@ class ConfirmVendorNotifyDate(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         vendor = get_object_or_404(VulnerableVendor, id=self.kwargs['pk'])
         context = {}
         context['vendor'] = vendor
         context['new_date'] = self.request.POST.get("new_date")
         first_notify_date = VendorNotification.objects.filter(vendor=vendor).order_by('notify_date')
-        logger.debug(first_notify_date)
         if first_notify_date:
             context['first_notify_date'] = first_notify_date[0]
 
@@ -6513,9 +6509,7 @@ def add_vendor_to_case(case, contact, user, group=None):
             old_vendor.save()
             # is this vendor tagged?
             if contact.contacttag_set.count() > 0:
-                logger.debug(old_vendor.tagged)
                 if old_vendor.tagged:
-                    logger.debug("JUST SETTING THIS TICKET TO OPEN!")
                     # this vendor was already tagged, just repopen it
                     old_vendor.tagged.status=Ticket.OPEN_STATUS
                     old_vendor.tagged.save()
@@ -6573,27 +6567,21 @@ class CaseVendors(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
     def get_context_data(self, **kwargs):
         context = super(CaseVendors, self).get_context_data(**kwargs)
         case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
-        context['vendors'] = VulnerableVendor.casevendors(case).order_by('vendor')
-        context['vendorsjs'] = [obj.as_dict() for obj in context['vendors']]
-
-        zero_user_vendors = 0
-        #update dictionary to show which vendor group has active users
-        for vjs in context['vendorsjs']:
-            cid = vjs['contact_id']
-            vc_contact = VinceCommContact.objects.using('vincecomm').filter(vendor_id=cid).first()
-            if vc_contact:
-                groupcontact = GroupContact.objects.using('vincecomm').filter(contact=vc_contact).first()
-                if groupcontact:
-                    count = User.objects.using('vincecomm').filter(groups=groupcontact.group).count()
-                    if count == 0:
-                        zero_user_vendors += 1
-                    vjs.update({'users':count})
-                    continue
-            vjs.update({'users': 0})
-            zero_user_vendors += 1
-
-        context['zero_user_vendors'] = zero_user_vendors
-
+        summary = VulnerableVendor.casevendors(case).aggregate(
+            total=Count('id'),
+            is_notified=Count('id',filter=Q(contact_date__isnull=False)),
+            has_seen=Count('id',filter=Q(seen=True)),
+            has_responded=Count('id',filter=Q(statement_date__isnull=False)),
+            is_approved=Count('id',filter=Q(approved=True)),
+            needs_approval=Count('id',filter=Q(statement_date__isnull=False,
+                                               approved=False)))
+        for x in summary:
+            context[x] = summary[x]
+        vcase = Case.objects.using("vincecomm").filter(vuid=case.vuid).first()
+        if vcase:
+            context['zero_user_vendors'] = CaseMember.objects.using("vincecomm").filter(case=vcase,group__user__isnull=True).count()
+        else:
+            context['zero_user_vendors'] = 0
         context['case'] = case
         return context
 
@@ -6610,7 +6598,7 @@ class AddVendorToCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         case = get_object_or_404(VulnerabilityCase, id=request.POST['case_id'])
         vendors = request.POST.getlist('vendors[]')
         error = False
@@ -6619,7 +6607,6 @@ class AddVendorToCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         for vendor in vendors:
             if vendor.startswith('Group:'):
                 groupname = vendor[7:]
-                logger.debug(groupname)
                 group = ContactGroup.objects.filter(name=groupname).first()
                 members = GroupMember.objects.filter(group__name=groupname)
                 for member in members:
@@ -6649,7 +6636,7 @@ class AddVendorToCase(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         ca = CaseAction(case=case, title=f"Added {len(contacts_added)} Vendors to Case",
                         comment = f"{contactsstr}",
                         user=self.request.user,
-                        action_type=1)
+                        action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         if error:
             return JsonResponse({'status':'false', 'message': f'Could not find matching vendor name {error}.'}, status=400)
@@ -6683,8 +6670,6 @@ class VendorVulStatement(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Fo
         return super().form_invalid(form)
 
     def form_valid(self, form):
-        logger.debug("IN VENDOR VUL STMT")
-        logger.debug(self.request.POST)
         vendor = get_object_or_404(VulnerableVendor, id=self.kwargs['vendor_id'])
         vul = get_object_or_404(Vulnerability, id=self.kwargs['pk'])
         status = VendorStatus.objects.filter(vul=vul, vendor=vendor).first()
@@ -6723,8 +6708,6 @@ class VendorVulStatement(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Fo
 
     def get_context_data(self, **kwargs):
         context = super(VendorVulStatement, self).get_context_data(**kwargs)
-        logger.debug("IN HERE")
-        logger.debug(self.kwargs)
         vul = get_object_or_404(Vulnerability, id=self.kwargs['pk'])
         status = VendorStatus.objects.filter(vul=vul, vendor=self.kwargs['vendor_id']).first()
         if status:
@@ -6740,7 +6723,6 @@ class VendorVulStatement(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Fo
 
 
 def update_status(vendor, request):
-    logger.debug(request.POST)
     affected = request.POST.getlist('affected')
     unknown = request.POST.getlist('unknown')
     unaffected = request.POST.getlist('unaffected')
@@ -6748,14 +6730,12 @@ def update_status(vendor, request):
     vcuser = User.objects.using('vincecomm').filter(username=request.user.username).first()
     if affected:
         for vul in affected:
-            logger.debug(int(vul))
             vul_obj = Vulnerability.objects.filter(id=int(vul)).first()
             status = VendorStatus.objects.update_or_create(vendor=vendor, vul=vul_obj,
                                                            defaults={'status':1, 'user_approved':request.user, 'approved':True,
                                                                      'user':request.user.username})
             cv = CaseVulnerability.objects.filter(vince_id=int(vul)).first()
             member = get_casemember_from_vc(vendor, vul_obj.case)
-            logger.debug(cv)
             if member:
                 status = CaseMemberStatus.objects.update_or_create(member=member, vulnerability=cv,
                                                                    defaults={'status':1, 'user':vcuser})
@@ -6800,7 +6780,6 @@ class EditVendorStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         return super().form_invalid(form)
 
     def form_valid(self, form):
-        logger.debug(self.request.POST)
         vendor = get_object_or_404(VulnerableVendor, id=self.kwargs['pk'])
         update_status(vendor, self.request)
         change = True
@@ -7022,7 +7001,7 @@ class ConfirmRemoveParticipant(LoginRequiredMixin, TokenMixin, UserPassesTestMix
         self.case = cp.case.id
         ca = CaseAction(case=cp.case, title="Removed Participant from Case",
                         comment="Participant %s removed from case" % cp.user_name,
-                        user=self.request.user, action_type=1)
+                        user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         remove_participant_vinny_case(cp.case, cp)
         cp.delete()
@@ -7044,12 +7023,11 @@ class RemoveParticipantFromCase(LoginRequiredMixin, TokenMixin, UserPassesTestMi
 
     def get(self, request, *args, **kwargs):
         cp = get_object_or_404(CaseParticipant, id=self.kwargs['cp'])
-        logger.debug("HEREEEEEEEE")
 
         self.case = cp.case.id
         ca = CaseAction(case=cp.case, title="Removed Participant from Case",
                         comment="Participant %s removed from case" % cp.user_name,
-                        user=self.request.user, action_type=1)
+                        user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         remove_participant_vinny_case(cp.case, cp)
 
@@ -7072,7 +7050,7 @@ class NotifyParticipant(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         case = get_object_or_404(CaseParticipant, id=self.kwargs['pk'])
         form = NotificationForm(self.request.POST)
         templates = EmailTemplate.objects.filter(body_only=True)
@@ -7081,8 +7059,8 @@ class NotifyParticipant(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
         if form.is_valid():
             try:
                 form.save(cp=case)
-            except:
-                logger.debug(traceback.format_exc())
+            except Exception as e:
+                logger.debug(f"Error when saving form om {self.__class__.__name__} with error {e}")
                 messages.error(
                     request,
                     _(f"Invalid Email address: SMTP Recipients Refused {case.user_name}"))
@@ -7150,7 +7128,7 @@ class ConfirmRemoveAllVendorsFromCase(LoginRequiredMixin, TokenMixin, UserPasses
             remove_vendor_vinny_case(case, vendor.contact, self.request.user)
         ca = CaseAction(case=case, title=f"All vendors removed from case",
                         user=self.request.user,
-                        action_type=1)
+                        action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         messages.success(
 	    self.request,
@@ -7190,7 +7168,7 @@ class ConfirmRemoveVendorFromCase(LoginRequiredMixin, TokenMixin, UserPassesTest
             
         ca = CaseAction(case=case, title=f"Removed Vendor {vendor_name} from Case",
                         user=self.request.user,
-                        action_type=1)
+                        action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         remove_vendor_vinny_case(case, vendor.contact, self.request.user)
         #messages.success(
@@ -7235,10 +7213,9 @@ class NotifyVendorFormView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
         vendors = self.request.POST.getlist('vendors[]')
-        logger.debug(vendors)
         vendors = VulnerableVendor.objects.filter(id__in=vendors).order_by('vendor')
         initial = {'subject': f"{case.vu_vuid}: New Vulnerability Report"}
         if case.template:
@@ -7266,18 +7243,14 @@ class EditVendorCaseList(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Fo
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
-        logger.debug("IN EDITVENDORCASELIST")
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
         form = VendorNotificationForm(self.request.POST)
         templates = EmailTemplate.objects.filter(body_only=True)
         form.fields['email_template'].choices = [('', '--------')] + [(q.id, q.template_name) for q in templates]
         if form.is_valid():
-            logger.debug("form is valid")
             vendors = self.request.POST.get('vendors')
-            logger.debug(vendors)
             vendors = vendors.split(',')
-            logger.debug(vendors)
             context = {'case': case.vuid, 'user': self.request.user.get_username() }
             email = form.save(user=self.request.user)
 
@@ -7306,7 +7279,7 @@ class EditVendorCaseList(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Fo
             comment = "Notified the following vendors of the case: " + "\n ".join(contact_names)
             ca = CaseAction(case=case, title=f"Notified Vendors of Case",
                             user=self.request.user,
-                            action_type=1, comment=comment)
+                            action_type=CaseAction.lookup('VinceTrack'), comment=comment)
             ca.save()
 
             return JsonResponse({'response': 'success'}, status=200)
@@ -7378,7 +7351,7 @@ class RemoveCaseArtifact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         ca = CaseAction(case=artifact.get_related_case(),
                         user=self.request.user,
                         title=f"deleted artifact {artifact.title}",
-                        action_type=1)
+                        action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         if attachment:
             if attachment.public:
@@ -7440,7 +7413,7 @@ class MakeTicketArtifactPublic(LoginRequiredMixin, TokenMixin, UserPassesTestMix
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         artifact = get_object_or_404(Artifact, id=self.kwargs['pk'])
         case = artifact.get_related_case()
         return make_artifact_public(request, artifact, case)
@@ -7468,7 +7441,7 @@ class MakeArtifactPublic(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
             return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         artifact = get_object_or_404(CaseArtifact, id=self.kwargs['pk'])
         case = artifact.case
         return make_artifact_public(request, artifact, case)
@@ -7517,7 +7490,7 @@ def make_artifact_public(request, artifact, case):
                             comment="Removed artifact",
                             user = request.user,
                             artifact=artifact,
-                            action_type=1)
+                            action_type=CaseAction.lookup('VinceTrack'))
             ca.save()
         if len(vcattach) == 0:
             attachment.public = False
@@ -7543,7 +7516,6 @@ def make_artifact_public(request, artifact, case):
                 bucket.copy(copy_source, settings.AWS_PRIVATE_MEDIA_LOCATION + "/" + str(attachment.uuid))
             except ClientError as e:
                 error_code = e.response['Error']['Code']
-                logger.debug(error_code)
                 if error_code == "InvalidRequest":
                     #This file already exists in VinceComm. just ignore
                     pass
@@ -7585,7 +7557,7 @@ def make_artifact_public(request, artifact, case):
                                 comment=f"{request.user.usersettings.preferred_username} added artifact to VINCEComm Case",
                                 user = request.user,
                                 artifact=artifact,
-                                action_type=1)
+                                action_type=CaseAction.lookup('VinceTrack'))
                 ca.save()
 
             attachment.public = True
@@ -7695,10 +7667,9 @@ class EditArtifactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Form
                             comment=title,
                             user = self.request.user,
                             artifact=artifact,
-                            action_type=1)
+                            action_type=CaseAction.lookup('VinceTrack'))
             ca.save()
             artifacts = get_all_artifacts(case.case)
-            logger.debug(artifacts)
             artifactsjs = [ obj.as_dict() for obj in artifacts ]
             return JsonResponse({'success': True, 'artifacts': artifactsjs}, status=200)
 
@@ -7752,7 +7723,7 @@ class AddCaseDependency(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             if casedependency.case != casedependency.depends_on:
                 casedependency.save()
             ca = CaseAction(case=case, title="Added Dependency",
-                            user=self.request.user, action_type=1)
+                            user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
             ca.save()
             return HttpResponseRedirect(reverse('vince:case', args=[case.id]))
 
@@ -7805,7 +7776,7 @@ class DeleteCaseDependency(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         dep.delete()
         case= VulnerabilityCase.objects.filter(id = self.kwargs['case_id']).first()
         ca = CaseAction(case=case, title="Removed Dependency",
-                        user=self.request.user, action_type=1)
+                        user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         return HttpResponseRedirect(reverse('vince:case', args=[self.kwargs['case_id']]))
 
@@ -7814,7 +7785,6 @@ class DeleteCaseDependency(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         dep = get_object_or_404(CaseDependency, case_id=self.kwargs['case_id'], id=self.kwargs['dep_id'])
         context['dependency'] = dep
         context['case'] = VulnerabilityCase.objects.filter(id = self.kwargs['case_id']).first()
-        logger.debug("return context")
         return context
 
 
@@ -7868,8 +7838,8 @@ class RestartContactAssociation(LoginRequiredMixin, TokenMixin, UserPassesTestMi
         return context
 
     def post(self, request, *args, **kwargs):
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         req = get_object_or_404(ContactAssociation, id=self.kwargs['pk'])
-        logger.debug(self.request.POST)
         ticket=req.ticket
         fup = FollowUp(title="Contact association failed. Restarting contact association process.",
                        user = self.request.user,
@@ -7903,8 +7873,8 @@ class CompleteContactAssociation(LoginRequiredMixin, TokenMixin, UserPassesTestM
         return context
 
     def post(self, request, *args, **kwargs):
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         req = get_object_or_404(ContactAssociation, id=self.kwargs['pk'])
-        logger.debug(self.request.POST)
         ticket = req.ticket
         if self.request.POST.get('remove'):
             #this user couldn't be verified
@@ -8087,7 +8057,7 @@ class MessageAdminAddUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         return context
 
     def post(self,request,*args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         contact = get_object_or_404(Contact, id=self.kwargs['pk'])
         sender = User.objects.using('vincecomm').filter(email=self.request.user.email).first()
         #get emails                                                                                                                                                                                 
@@ -8143,7 +8113,7 @@ class ContactAdminLookup(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(f"InitContactForm Post: {self.request.POST}")
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         ticket = get_object_or_404(Ticket, id=self.kwargs['pk'])
         #search for Contact:
         if self.request.POST.get('msg'):
@@ -8249,7 +8219,6 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
         if tmpl:
             team_sig = get_team_sig(self.request.user)
             initial['email_body'] = tmpl.plain_text.replace('[team_signature]', team_sig)
-            logger.debug(team_sig)
             initial['subject'] = tmpl.subject
             if context.get('ca'):
                 context['form'] = InitContactForm(initial=initial, instance=context['ca'])
@@ -8258,7 +8227,7 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(f"InitContactForm Post: {self.request.POST}")
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         if self.request.POST.get('ca'):
             ca = get_object_or_404(ContactAssociation, id=self.request.POST.get('ca'))
@@ -8293,7 +8262,6 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
 
             #make sure all emails are legit
             emails = self.request.POST.getlist('email')
-            logger.debug(emails)
             for email in emails:
                 email = email.strip()
                 if EmailContact.objects.filter(contact=contact,
@@ -8312,7 +8280,7 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             
             return self.form_valid(form)
         else:
-            logger.debug(form.errors)
+            logger.debug(f"Error in {self.__class__.__name__} form processing : {form.errors}")
             return self.form_invalid(form)
 
     def form_invalid(self, form):
@@ -8449,11 +8417,9 @@ class ContactsResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
             if facet == "All":
                 vince_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
                 user_contacts = list(vince_results.values_list('user__email', flat=True))
-                logger.debug(user_contacts)
                 email_contacts = EmailContact.objects.filter(contact__vendor_type="Contact", email__in=user_contacts).values_list('contact__id', flat=True)
                 email_results = EmailContact.objects.filter(Q(email__icontains=search_term) | Q(name__icontains=search_term)).exclude(contact__id__in=email_contacts).values_list('contact', flat=True)
                 emails = Contact.objects.filter(id__in=email_results)
-                logger.debug(email_contacts)
                 contact_results = Contact.objects.search(search_query).exclude(id__in=email_contacts)
                 ctags = ContactTag.objects.filter(tag__in=search_tags).values_list('contact__id', flat=True)
                 if ctags:
@@ -8547,7 +8513,6 @@ class CreateGroupView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
             return self.form_invalid(form)
 
     def form_valid(self, form):
-        logger.debug("VALID FORM")
         if group_name_exists(self.request.POST['name']):
             return render(self.request, 'vince/newgroup.html',
                           {'form': form,
@@ -8585,11 +8550,7 @@ class CreateGroupView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
         dupgroup.save()
 
         added=0
-        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
-        logger.debug(self.request.POST['group_select[]'])
-
         for group in contactlist:
-            logger.debug(group)
             contact = Contact.objects.filter(vendor_name=group).first()
             if contact:
                 newmember=GroupMember(group=newgroup,
@@ -8602,9 +8563,9 @@ class CreateGroupView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
                     text = "Added %s to group %s" % (contact.vendor_name, newgroup.name)
                     _add_activity(self.request.user, 4, contact, text)
                 else:
-                    logger.debug("NOT ADDED")
+                    logger.debug("New member not added already has id {newmember}")
             else:
-                logger.debug("this is a group")
+                logger.debug(f"This request is for a group {group}")
                 contact = ContactGroup.objects.filter(name=group).first()
                 if contact:
                     groupdup = GroupDuplicate.objects.filter(group=contact).first()
@@ -8618,7 +8579,7 @@ class CreateGroupView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
                         _add_group_activity(self.request.user, 2, groupdup.group, text)
                         added=added+1
 
-        logger.debug("added %d members" % added)
+        logger.debug(f"Added new members {added} members")
 
         update_srmail_file()
         messages.warning(
@@ -8639,7 +8600,7 @@ class AddContactToGroupView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         contact = get_object_or_404(Contact, id=self.kwargs.get('pk'))
         group = get_object_or_404(ContactGroup, name=self.request.POST.get('group'))
         if self.request.POST.get('rm'):
@@ -8750,9 +8711,7 @@ class CreateContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
         return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
 
     def form_invalid(self, form):
-        logger.debug("INVALID FORM")
         logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
-
         return render(self.request, 'vince/newcontact.html',
                       {'form': form,
                        })
@@ -8768,7 +8727,6 @@ class CreateContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             return self.form_invalid(form)
 
     def form_valid(self, form):
-        logger.debug("VALID FORM")
         vendor_name = self.request.POST['vendor_name'].strip()
         group = False
         vendor_type = self.request.POST['vtype']
@@ -8919,8 +8877,6 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
 
     def form_invalid(self, form):
         logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
-        logger.debug("INVALID FORM!!!")
-
         group = ContactGroup.objects.filter(id=self.kwargs['pk'])
         members = GroupMember.objects.filter(group=group[0]).exclude(contact__isnull=True).values_list('contact', flat=True)
         # the groups in the group - give the list of groupduplicates
@@ -8949,7 +8905,6 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
             return self.form_invalid(form)
 
     def form_valid(self, form):
-        logger.debug("VALID FORM")
         current_group = ContactGroup.objects.filter(id=self.kwargs['pk']).first()
         if current_group.version != int(self.request.POST['version']):
             error_str = "Someone beat you to editing this group. View the most recent details and retry editing this group."
@@ -8995,7 +8950,6 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
         duplicates = GroupDuplicate.objects.filter(group__in=groupdups).values_list('group', flat=True)
         groupmembers = ContactGroup.objects.filter(id__in=duplicates).values_list('name', flat=True)
         allmembers = list(contacts)+list(groupmembers)
-        logger.debug(allmembers)
         added=0
         contactlist = self.request.POST.getlist('group_select[]')
         for group in contactlist:
@@ -9013,9 +8967,9 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
                     text = "added %s to %s group" % (contact.vendor_name, current_group.name)
                     _add_activity(self.request.user, 4, contact, text)
                 else:
-                    logger.debug("NOT ADDED")
+                    logger.debug(f"Not added {newmember} to {contact}")
             else:
-                logger.debug("this is a group")
+                logger.debug(f"This {newmember} is a group Contact")
                 contact = ContactGroup.objects.filter(name=group).first()
                 if contact:
                     groupdup = GroupDuplicate.objects.filter(group=contact).first()
@@ -9031,7 +8985,7 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
             text = "Added %s to group" % group
             _add_group_activity(self.request.user, 2, current_group, text)
 
-        logger.debug("added %d members" % added)
+        logger.debug(f"Added new members {new_member} to Group")
         removed = 0
         for group in allmembers:
             if group not in contactlist:
@@ -9069,7 +9023,7 @@ class GroupEditView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVie
                 current_group.status="Active"
                 current_group.save()
 
-        logger.debug("Removed %d members" % removed)
+        logger.debug(f"Removed {removed} members from Group")
         current_group.version = current_group.version + 1
         current_group.save()
         return redirect("vince:group", current_group.id)
@@ -9142,7 +9096,6 @@ class ViewAndApproveChangesView(LoginRequiredMixin, TokenMixin, UserPassesTestMi
         error = False
         if emaildiff:
             groupadmin = list(GroupAdmin.objects.filter(contact=contact).values_list('email__email', flat=True))
-            logger.debug(groupadmin)
             email_list = []
             vc_emails = VinceCommEmail.objects.filter(contact=vccontact)
             for email in vc_emails:
@@ -9165,12 +9118,10 @@ class ViewAndApproveChangesView(LoginRequiredMixin, TokenMixin, UserPassesTestMi
                 error = True
 
             if groupadmin:
-                logger.debug(groupadmin)
                 for ga in groupadmin:
                     logger.debug(f"looking for {ga}")
                     ec = EmailContact.objects.filter(contact=contact, email=ga).first()
                     if ec:
-                        logger.debug("adding new groupadmin")
                         new_group_admin = GroupAdmin.objects.update_or_create(contact=contact, email=ec)
                     else:
                         # remove this email's groupadmin privs
@@ -9249,7 +9200,6 @@ class ViewAndApproveChangesView(LoginRequiredMixin, TokenMixin, UserPassesTestMi
         vcphones = list(VinceCommPgP.objects.filter(contact=vccontact).values_list(*fields))
         phones = list(ContactPgP.objects.filter(contact=contact).values_list(*fields))
         pgpdiff = diff(phones, vcphones)
-        logger.debug(pgpdiff)
         if pgpdiff:
             vcpgp = VinceCommPgP.objects.filter(contact=vccontact)
             pgp_list = []
@@ -9260,7 +9210,6 @@ class ViewAndApproveChangesView(LoginRequiredMixin, TokenMixin, UserPassesTestMi
                     comment = comment[0]
                 else:
                     comment = ""
-                logger.debug(comment)
                 pgp_list.append(ContactPgP(contact=contact,
                                            pgp_key_id=pgp.pgp_key_id,
                                            pgp_protocol=pgp.pgp_protocol,
@@ -9271,13 +9220,12 @@ class ViewAndApproveChangesView(LoginRequiredMixin, TokenMixin, UserPassesTestMi
                                            revoked=pgp.revoked,
                                            pgp_email=pgp.pgp_email,
                                            user=self.request.user))
-                logger.debug(pgp_list)
             try:
                 with transaction.atomic():
                     ContactPgP.objects.filter(contact=contact.id).delete()
                     ContactPgP.objects.bulk_create(pgp_list)
-            except:
-                logger.debug(traceback.format_exc())
+            except Exception as e:
+                logger.debug(f"Exception in PGP information found {e}")
                 messages.error(self.request,
                                _(f"Error saving PGP information"))
                 error = True
@@ -9552,7 +9500,7 @@ class AddEmailToContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         contact = get_object_or_404(Contact, id=self.kwargs['pk'])
         vinny_contact = VinceCommContact.objects.filter(vendor_id=self.kwargs['pk']).first()
         email_type = self.request.POST.get('email_type')
@@ -9726,7 +9674,6 @@ class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
     def get_context_data(self, **kwargs):
         context = super(ContactDetailView, self).get_context_data(**kwargs)
         context['contactpage']=1
-        logger.debug("IN CONTACT PAGE")
         context['groups'] = [group.group.name for group in GroupMember.objects.filter(contact=self.kwargs['pk'])]
         
         context['activity_list'] = Activity.objects.filter(contact=self.kwargs['pk']).order_by('-action_ts')
@@ -9743,12 +9690,10 @@ class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         context['groupadmins'] = [admin.email.email for admin in GroupAdmin.objects.filter(contact=self.kwargs['pk'])]
         vc_contact = VinceCommContact.objects.using('vincecomm').filter(vendor_id=self.kwargs['pk']).first()
         if vc_contact:
-            logger.debug("VINCE COMM CONTACT")
             gc = GroupContact.objects.using('vincecomm').filter(contact=vc_contact).first()
             context['vc_contact'] = vc_contact
             if vc_contact.vendor_type != 'Contact' and gc:
                 context['participants'] = CaseMember.objects.filter(group=gc.group).order_by('-case__modified')[:20]
-                logger.debug(context['participants'])
                 context['vince_users'] = list(User.objects.using('vincecomm').filter(groups=gc.group).values_list('username', flat=True))
             elif vc_contact.vendor_type in ['Contact', 'User']:
                 #this is prob a contact
@@ -9786,7 +9731,7 @@ class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
                 _add_groupadmin(cga.email, contact)
                 _add_activity(self.request.user, 3, contact, f"added {user} as VinceComm group administrator")
             else:
-                logger.warning("NO EmailContact with this username")
+                logger.warning(f"No EmailContact with this username {user}")
                 return JsonResponse({'error': "This user is not listed in the Emails above.  Please add user's email to this contact."}, status=500)
         elif request.POST.get('add_tag'):
             user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
@@ -9798,7 +9743,7 @@ class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
                     if created:
                         _add_activity(self.request.user, 6, contact, f" tagged contact with {new_tag}")
                 else:
-                    logger.debug("invalid tag - tag doesn't exist in tag manager")
+                    logger.debug(f"invalid tag - tag {new_tag} doesn't exist in tag manager")
                     return JsonResponse({'tag': new_tag, 'contact': contact.id, 'error': "Invalid Tag."}, status=401)
             else:
                 return JsonResponse({'tag': new_tag, 'error': "Tag is too long. Max 50 characters."}, status=401)
@@ -9925,7 +9870,6 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
             return self.form_invalid(form)
 
     def form_valid(self, form):
-        logger.debug("VALID FORM")
         contact = Contact.objects.filter(id=self.kwargs['pk']).first()
         vinny_contact = VinceCommContact.objects.filter(vendor_id=self.kwargs['pk']).first()
 
@@ -9943,12 +9887,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
         pgpformset = self.PgPFormSet(self.request.POST, prefix='pgp', queryset=pgp, instance=contact)
         #emailformset = self.EmailFormSet(self.request.POST, prefix='email', queryset=email, instance=contact)
 
-        logger.debug(vinny_contact)
-
-        logger.debug(contact.version)
-        logger.debug(self.request.POST['version'])
-
-        if contact.version != int(self.request.POST['version']):
+        if self.request.POST.get('version') and self.request.POST.get('version').isdigit() and  contact.version != int(self.request.POST['version']):
             error_str = "Someone beat you to editing this contact. View the most recent details and retry editing this contact."
             forms = {'form': self.form_class(initial=Contact.objects.filter(id=self.kwargs['pk']).values()[0]), 'collision': error_str,
                      'postal_formset': self.PostalFormSet(prefix='postal', queryset=postal),
@@ -10027,7 +9966,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                 some_changes=True
 
             else:
-                logger.debug(f.errors)
+                logger.debug(f"Error in form submission for {self.__class__.__name__} error: {f.errors}")
 
         try:
             with transaction.atomic():
@@ -10071,7 +10010,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                 some_changes=True
                 
             else:
-                logger.debug(f.errors)
+                logger.debug(f"Error in form submission for {self.__class__.__name__} error: {f.errors}")
 
         try:
             with transaction.atomic():
@@ -10108,7 +10047,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                                                    description=cd['description']))
                 some_changes=True
             else:
-                logger.debug(f.errors)
+                logger.debug(f"Error in form submission for {self.__class__.__name__} error: {f.errors}")                
 
         try:
             with transaction.atomic():
@@ -10256,7 +10195,6 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                             messages.error(self.request,
                                                f"There was an error in parsing the PGP Key")
                             continue
-                    logger.debug(cd)
                     _add_activity(self.request.user, 3, contact, f"added pgp key {cd['pgp_key_id']}")
                 instance = f.save()
                 # set values from the extraction
@@ -10330,25 +10268,20 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
             srmail_peer = srmail_peer.translate({ord(i):None for i in '"@+.,;'})
             contact.srmail_peer = srmail_peer
 
-        if contact.countrycode != self.request.POST['countrycode']:
-            _add_activity(self.request.user, 3, contact, "modified country code")
-            contact.countrycode = self.request.POST['countrycode']
-            some_changes=True
-        if contact.location != self.request.POST['location']:
-            logger.debug(contact.location)
-            logger.debug(self.request.POST['location'])
-            _add_activity(self.request.user, 3, contact, f"changed location from {contact.location} to {self.request.POST['location']}")
-            contact.location = self.request.POST['location']
-            some_changes=True
-        if contact.comment != self.request.POST['comment']:
-            if not((contact.comment == None) and (self.request.POST['comment'] == '')):
-                if self.request.POST['comment'] == "":
+        for pvar in ['countrycode','location']:
+            if getattr(contact,pvar) != self.request.POST.get(pvar,getattr(contact,pvar)):
+                _add_activity(self.request.user, 3, contact, f"modified {pvar}")
+                some_changes=True
+        newcomment = self.request.POST.get('comment',"")
+        if contact.comment != newcomment:
+            if not((contact.comment == None) and (newcomment == '')):
+                if newcomment == "":
                     _add_activity(self.request.user, 3, contact, f"removed comment: {contact.comment}")
                 elif contact.comment:
-                    _add_activity(self.request.user, 3, contact, f"modified comment from {contact.comment} to {self.request.POST['comment']}")
+                    _add_activity(self.request.user, 3, contact, f"modified comment from {contact.comment} to {newcomment}")
                 else:
-                    _add_activity(self.request.user, 3, contact, f"added comment: {self.request.POST['comment']}")
-            contact.comment = self.request.POST['comment']
+                    _add_activity(self.request.user, 3, contact, f"added comment: {newcomment}")
+            contact.comment = newcomment
             some_changes=True
 
         if pgp_updates: #or email_changes
@@ -10470,7 +10403,6 @@ class EmailTemplateFilterView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         res = EmailTemplate.objects.filter(locale='en', body_only=True)
         owner_list = self.request.POST.getlist('owner')
-        logger.debug(owner_list)
         if owner_list:
             res = res.filter(user__usersettings__preferred_username__in=owner_list)
 
@@ -10492,7 +10424,6 @@ class CaseTemplateFilterView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         res = CaseTemplate.objects.all()
         owner_list = self.request.POST.getlist('owner')
-        logger.debug(owner_list)
         if owner_list:
             res = res.filter(user__usersettings__preferred_username__in=owner_list)
 
@@ -10523,7 +10454,6 @@ class EditCaseTemplateTask(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         task = task.save()
         tasks = CaseTask.objects.filter(template = task.template)
         tasksjs = [ obj.as_dict() for obj in tasks]
-        logger.debug(tasksjs)
         return JsonResponse({'success': True, 'tasks': tasksjs}, status=200)
 
     def get_context_data(self, **kwargs):
@@ -10558,7 +10488,6 @@ class AddCaseTemplateTask(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, F
         task = form.save()
         tasks = CaseTask.objects.filter(template = self.kwargs['pk'])
         tasksjs = [ obj.as_dict() for obj in tasks]
-        logger.debug(tasksjs)
         return JsonResponse({'success': True, 'tasks': tasksjs}, status=200)
 
     def get_context_data(self, **kwargs):
@@ -10651,8 +10580,6 @@ class NewCaseTemplate(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         return super().form_invalid(form)
 
     def form_valid(self, form):
-        logger.debug("IN FORM AVALID")
-
         casetemplate = form.save()
         casetemplate.user = self.request.user
         casetemplate.save()
@@ -10828,8 +10755,6 @@ class EditCaseTemplate(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         return super().form_invalid(form)
 
     def form_valid(self, form):
-        logger.debug("IN FORM AVALID")
-
         casetemplate = form.save()
         casetemplate.user = self.request.user
         casetemplate.save()
@@ -10926,7 +10851,7 @@ class ShareArtifactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug("IN SHARE ARTIFACT")
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         artifact = get_object_or_404(Artifact, id=self.kwargs['pk'])
         if artifact.get_related_attachment():
             vtattach = artifact.get_related_attachment()
@@ -10942,7 +10867,7 @@ class ShareArtifactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
                 bucket.copy(copy_source, settings.AWS_PRIVATE_MEDIA_LOCATION + "/" + str(vtattach.uuid))
             except ClientError as e:
                 error_code = e.response['Error']['Code']
-                logger.debug(error_code)
+                logger.debug(f"ClientError in S3 bucket copy {error_code}")
                 if error_code == "InvalidRequest":
                     #This file already exists most likely in VinceComm. just ignore
                     pass
@@ -10995,7 +10920,7 @@ class ShareArtifactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             
             attach.save(using='vincecomm')
 
-            logger.debug(f"uuid is {att.uuid}")
+            logger.debug(f"File storage uuid is {att.uuid}")
 
             vf = VinceFile(user=self.request.user,
                            case = case,
@@ -11084,7 +11009,6 @@ class VulNoteRevisionPreview(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
         kwargs['references'] = self.references
         kwargs['preview'] = self.preview
         kwargs['case'] = self.vul_note.case
-        logger.debug(f"test {self.vul_note.case.vulnerablevendor_set.all()}")
         kwargs['pubnote'] = VUReport.objects.filter(idnumber=self.vul_note.case.vuid).first()
         return super(VulNoteRevisionPreview, self).get_context_data(**kwargs)
 
@@ -11210,7 +11134,6 @@ class AddExploitView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
             return False
 
     def form_valid(self, form):
-        logger.debug("IN FORM VALID !!!")
         vul = get_object_or_404(Vulnerability, id=self.kwargs['pk'])
 
         cd = form.cleaned_data
@@ -11324,7 +11247,7 @@ class ShareExploitView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                         date=timezone.now(),
                         comment=f"{request.user.usersettings.preferred_username} changed exploit shared status",
                         user = request.user,
-                        action_type=1)
+                        action_type=CaseAction.lookup('VinceTrack'))
         ca.save()
         
 
@@ -11355,14 +11278,12 @@ class EditVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
             return False
 
     def form_valid(self, form):
-        logger.debug("IN FORM VALID !!!")
         vul = get_object_or_404(Vulnerability, id=self.kwargs['pk'])
 
         vul.description = form.cleaned_data['description']
         vul.ask_vendor_status = True
         old_cve = vul.cve
         vul.cve = form.cleaned_data['cve']
-        logger.debug(vul)
         vul.save()
         errors = []
         #get all tags:
@@ -11427,7 +11348,7 @@ class EditVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
             if f.is_valid():
                 refs.append({'refsource': f.cleaned_data['ref_source'], 'url': f.cleaned_data['reference']})
             else:
-                logger.debug(f.errors)
+                logger.debug(f"Form errors in {self.__class__.__name__} si {f.errors}")
                 sterrors = str(f.errors)
                 if sterrors.find("valid URL") != -1:
                     errors.append(f"Problem adding reference {len(refs)+1} - not a valid URL")
@@ -11442,7 +11363,7 @@ class EditVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
             cve.cwe = json.dumps(cwes)
             if vul.cve:
                 cve.cve_name = vul.vul
-            logger.debug(f"saving {cve.cwe}")
+            logger.debug(f"Saving a new CWE {cve.cwe}")
             cve.save()
         else:
             if vul.cve:
@@ -11519,7 +11440,7 @@ class EditVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
                             date = timezone.now(),
                             user = self.request.user,
                             comment=vul.vul,
-                            action_type=1)
+                            action_type=CaseAction.lookup('VinceTrack'))
         action.save()
 
         if errors:
@@ -11539,7 +11460,6 @@ class EditVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
         return super().form_invalid(form)
 
     def post(self, request, *args, **kwargs):
-        logger.debug("IN THIS POST")
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         if request.POST.get('add_tag'):
             vul = get_object_or_404(Vulnerability, id=kwargs['pk'])
@@ -11555,7 +11475,7 @@ class EditVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
                                          user=self.request.user)
                         fup.save()
                 else:
-                    logger.debug("invalid tag - tag doesn't exist in tag manager")
+                    logger.debug(f"invalid tag - tag {tag} doesn't exist in tag manager")
                     return JsonResponse({'tag': tag, 'vul': vul.id, 'error': "Invalid Tag."}, status=401)
             else:
                 return JsonResponse({'tag': tag, 'vul': vul.id, 'error': "Tag is too long. Max 50 characters."}, status=401)
@@ -11748,10 +11668,9 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
                 return self.form_valid(form)
             else:
                 form.add_error(None, "At least one Product is required")
-                logger.debug(cveprodformset.errors)
                 return self.form_invalid(form)
         else:
-            logger.debug(form.errors)
+            logger.debug(f"Form errors in {self.__class__.__name__} is {form.errors}")
             return self.form_invalid(form)
 
     def form_valid(self, form):
@@ -11846,8 +11765,6 @@ class CVEFormView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView)
         return is_in_group_vincetrack(self.request.user)
 
     def form_valid(self, form):
-        logger.debug("IN FORM VALID")
-        
         cveprodformset = self.CVEProductFormSet(self.request.POST, prefix='product')
         cverefformset = self.CVEReferenceFormSet(self.request.POST, prefix='ref')
         #cvewaformset = self.CVEWorkaroundFormSet(self.request.POST, prefix='wa')
@@ -11899,7 +11816,7 @@ class CVEFormView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView)
                 #connect any new reservations
                 cve_res = CVEReservation.objects.filter(cve_id=cve.cve_name).first()
                 if cve_res:
-                    logger.debug(f"FOUND RESERVATION for {x}")
+                    logger.debug(f"FOUND CVE RESERVATION for {x}")
                     cve_res.cve_info = cve
                     cve_res.save()
         
@@ -11924,7 +11841,6 @@ class CVEFormView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView)
             return redirect("vince:vul", cve.vul.id)
 
     def form_invalid(self, form):
-        logger.debug("FORM INVALID")
         vul = get_object_or_404(Vulnerability, id=self.kwargs['vul'])
         return render(self.request, 'vince/cveform.html',
                       {'form': form,
@@ -11946,10 +11862,8 @@ class CVEFormView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView)
                 return self.form_valid(form)
             else:
                 form.add_error(None, "At least one Product is required")
-                logger.debug(cveprodformset.errors)
                 return self.form_invalid(form)
         else:
-            logger.debug(form.errors)
             return self.form_invalid(form)
 
     def get_context_data(self, **kwargs):
@@ -11957,7 +11871,6 @@ class CVEFormView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView)
         initial = {}
         oldcwes = []
         vulnote = []
-        logger.debug(self.kwargs)
         if "vul" in self.kwargs:
             initial['vul'] = self.kwargs['vul']
             vul = get_object_or_404(Vulnerability, id=self.kwargs['vul'])
@@ -12021,7 +11934,6 @@ class AddVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
                             case_increment = vulno,
                             ask_vendor_status = True,
                             user=self.request.user)
-        logger.debug(vul)
         vul.save()
         case.vul_incrementer = vulno
         case.changes_to_publish = True
@@ -12112,7 +12024,7 @@ class AddVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
                             date = timezone.now(),
                             user = self.request.user,
                             comment=vul.vul,
-                            action_type=1)
+                            action_type=CaseAction.lookup('VinceTrack'))
         action.save()
 
         if errors:
@@ -12193,17 +12105,16 @@ class ApproveVendor(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic
                             date = timezone.now(),
                             user = self.request.user,
                             comment = comment,
-                            action_type=1)
+                            action_type=CaseAction.lookup('VinceTrack'))
         action.save()
         if vendor.approve_ticket:
-            logger.debug("there is a ticket on this vendor statement")
             comment = f"{self.request.user.usersettings.preferred_username} has {comment}"
             f = FollowUp(title="Statements approved and ticket closed.", ticket=vendor.approve_ticket, date=timezone.now(), comment=comment, user=self.request.user)
             f.save()
             vendor.approve_ticket.status = Ticket.CLOSED_STATUS
             vendor.approve_ticket.save()
         if send_email:
-            logger.warning("THIS WOULD SEND VENDOR APPROVAL EMAILS.")
+            logger.debug(f"Currently disabled to send approval email {vendor.contact} for {vendor.case}")
             #send_approval_email(vendor.contact, vendor.case)
         return JsonResponse({'success': True, 'link': reverse('vince:case', args=[vendor.case.id]) + '#vendors'}, status=200)
 
@@ -12231,7 +12142,7 @@ class ApproveVendorStmt(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
                                 date = timezone.now(),
                                 user = self.request.user,
                                 comment = comment,
-                                action_type=1)
+                                action_type=CaseAction.lookup('VinceTrack'))
             if vul.vendor.approve_ticket:
                 comment = f"{self.request.user.usersettings.preferred_username} has {comment}"
                 f = FollowUp(title="Approved vul-specific statement.", ticket=vul.vendor.approve_ticket, date=timezone.now(), comment=comment, user=self.request.user)
@@ -12284,7 +12195,7 @@ class RemoveVulnerability(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
                             date = timezone.now(),
                             user = self.request.user,
                             comment=vul.description,
-                            action_type=1)
+                            action_type=CaseAction.lookup('VinceTrack'))
         action.save()
         try:
             if case.vulnote.date_published or case.publicdate:
@@ -12327,8 +12238,7 @@ class VulCVSSView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
-        logger.debug(self.kwargs['pk'])
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         if int(self.kwargs['pk']) != int(self.request.POST.get('vul')):
             #this was messed with
             raise Http404
@@ -12347,7 +12257,8 @@ class VulCVSSView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
             
             vulcvss.save()
         else:
-            logger.debug(form.errors)
+            logger.debug(f"Form in {self.__class__.__name__} has errors {form.errors}")
+            return JsonResponse({'success': False}, status=200)
         
         return JsonResponse({'success': True}, status=200)
 
@@ -12373,7 +12284,7 @@ class RemoveVulSSVCView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         ssvc = get_object_or_404(VulSSVC, vul__id=self.kwargs['pk'])
 
         ssvc.delete()
@@ -12403,7 +12314,7 @@ class RemoveVulCVSSView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         ssvc = get_object_or_404(VulCVSS, vul__id=self.kwargs['pk'])
 
         ssvc.delete()
@@ -12435,7 +12346,7 @@ class VulSSVCView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         exploit = self.request.POST.get('data[choices][0][Exploitation]')
         if exploit == 'none':
@@ -12497,13 +12408,21 @@ class VulnerabilityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
 
         context['vendor_list'] = VendorStatus.objects.filter(vul=context['vul']).order_by('vendor__contact__vendor_name')
         vlist = context['vendor_list'].values_list('vendor__id', flat=True)
-        logger.debug(vlist)
         context['vendor_unknown_list'] = VulnerableVendor.objects.filter(case=context['vul'].case, deleted=False).exclude(id__in=vlist).order_by('contact__vendor_name')
         context['cveallocation'] = CVEAllocation.objects.filter(vul=context['vul']).first()
         context['exploits'] = VulExploit.objects.filter(vul=context['vul'])
         user_groups= self.request.user.groups.exclude(groupsettings__contact__isnull=True)
         context['vul_tags'] = [tag.tag for tag in context['vul'].vulnerabilitytag_set.all()]
         context['allowed_tags'] = [tag.tag for tag in TagManager.objects.filter(tag_type=4).filter(Q(team__in=user_groups)|Q(team__isnull=True)).order_by('tag').distinct('tag')]
+        if hasattr(context['vul'],'cve') and context['vul'].cve:
+            cve = context['vul'].cve.upper()
+            if cve.find("CVE-") < 0:
+                cve = f"CVE-{cve}"
+            if cvelib.CveApi.ENVS.get(settings.CVE_SERVICES_API):
+                cve_url = cvelib.CveApi.ENVS.get(settings.CVE_SERVICES_API)
+                if cve_url[-1] != '/':
+                    cve_url = cve_url + '/'
+                context['cve_status'] = f"{cve_url}cve-id/{cve}"
         return context
 
 class VendorStatusListView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
@@ -12538,14 +12457,14 @@ class AddUserToContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
     form_class=AddUserToContactForm
 
     def post(self, request, *args, **kwargs):
-        logger.debug(request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         vendors = request.POST.getlist('vendors[]')
         newuser = User.objects.using('vincecomm').filter(id=self.kwargs['pk']).first()
         for vendor in vendors:
             contact = Contact.objects.filter(vendor_name=vendor).first()
             if contact:
                 #add this user to contact
-                logger.debug("Adding user to contact %s" % contact.vendor_name)
+                logger.debug(f"Adding user {newuser} to contact {contact.vendor_name}")
                 email, created = EmailContact.objects.update_or_create(contact=contact,
                                                               email=newuser.username,
                                                               defaults={'name': newuser.get_full_name(),
@@ -12712,14 +12631,14 @@ class ResetUserMFAView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                     self.request,
                     _("Error with resetting this user's TOTP"))
                 error = True
-                logger.debug(e)
+                logger.debug(f"Error in TOTP for {user} error is {e}")
         else:
             logger.debug(f"{user.username} is using sms mfa")
             totp = "SMS"
             try:
                 disable_sms_mfa(user.username)
             except Exception as e:
-                logger.debug(e)
+                logger.debug(f"Error in 2FA for {user} error is {e}")
                 error = True
                 messages.error(
                     self.request,
@@ -12925,9 +12844,7 @@ class ReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
 
         read_queues = get_r_queues(self.request.user)
         context['tickettags'] = TicketTag.objects.filter(ticket__queue__in=my_queues).values('tag').order_by('tag').annotate(count=Count('tag')).annotate(month_count=Count('tag', filter=Q(ticket__created__year=year, ticket__created__month=month))).order_by('-tag')
-        logger.debug(context['tickettags'])
         #context['tickettags'] = TicketTag.objects.filter(ticket__queue__in=my_queues).values('tag').order_by('tag').annotate(count=Count('tag')).order_by('-count')
-        logger.debug(context['tickettags'])
         context['casetags'] = CaseTag.objects.filter(case__team_owner=context['my_team']).values('tag').order_by('tag').annotate(count=Count('tag')).annotate(count=Count('tag')).annotate(month_count=Count('tag', filter=Q(created__year=year, created__month=month))).order_by('-count')
 
         context['vultags'] = VulnerabilityTag.objects.filter(vulnerability__case__team_owner=context['my_team']).values('tag').order_by('tag').annotate(count=Count('tag')).annotate(count=Count('tag')).annotate(month_count=Count('tag', filter=Q(vulnerability__date_added__year=year, vulnerability__date_added__month=month))).order_by('-count')
@@ -12945,10 +12862,9 @@ class UserGraphReport(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
 
 
     def post(self, request, *args, **kwargs):
-        logger.debug(f"UserGraphReport Post: {self.request.POST}")
-        month = self.request.POST['month']
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
+        month = self.request.POST.get('month',datetime.datetime.now().strftime('%b-%y'))
         dt = datetime.strptime(month, '%b-%y')
-        logger.debug(dt)
         users = User.objects.using('vincecomm').filter(date_joined__month=dt.month,
                                                        date_joined__year=dt.year) \
                     .annotate(day=TruncDay("date_joined")) \
@@ -13003,7 +12919,7 @@ class UserGraphReport(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                 monthly.append(datetime(y, m+1, 1).strftime("%b-%y"))
 
             if not(monthly):
-                logger.debug("ONLY 1 month")
+                logger.debug(f"Report requested for one month by {self.request.user}")
                 monthly = [users[0]["month"].strftime("%b-%y")]
             
         for x in monthly:
@@ -13075,20 +12991,13 @@ class TriageView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Li
         return Ticket.objects.filter(queue__in=my_queues, status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS]).exclude(assigned_to__isnull=False).order_by('-modified')
 
     def post(self, request, *args, **kwargs):
-        logger.debug(f"TicketFilterResult Post: {self.request.POST}")
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         res = self.get_queryset()
 
         page = self.request.POST.get('page', 1)
 
-        if 'datestart' in self.request.POST:
-            # add a day to dateend since it translates to 0AM
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(created__range=(DateTimeField().clean(self.request.POST['datestart']), enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(created__range=(DateTimeField().clean('1970-01-01'), enddate))
+        res = filterDateTimeFields(self.request.POST,res,'created__range')
 
         if 'queue' in self.request.POST:
             queuelist = self.request.POST.getlist('queue')
@@ -13121,12 +13030,7 @@ class TriageView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Li
         bounces = FollowUp.objects.filter(title__istartswith="Email Bounce Notification", ticket__status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS])
         context['pbounces'] = BounceEmailNotification.objects.filter(bounce_type=BounceEmailNotification.PERMANENT, action_taken=False)
         date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        initial = filterDateFields(self.request.GET,{})
         queue = self.request.GET.get('queue')
         if queue:
             queue = TicketQueue.objects.filter(title=queue).first()
@@ -13257,7 +13161,7 @@ class VinceCommRemoveUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
             for cp in cps:
                 ca = CaseAction(case=cp.case, title="Removed Participant from Case",
                                 comment="Participant %s removed from case" % cp.user_name,
-                                user=self.request.user, action_type=1)
+                                user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
                 ca.save()
                 remove_participant_vinny_case(cp.case, cp)
                 cp.delete()
@@ -13299,7 +13203,7 @@ class TriageAddEvent(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
         return is_in_group_vincetrack(self.request.user)
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         if self.request.POST.get('arg'):
             initial = {}
@@ -13351,7 +13255,7 @@ class TriageRemoveEvent(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return is_in_group_vincetrack(self.request.user)
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         if self.request.POST.get('arg'):
             event = get_object_or_404(CalendarEvent, id=self.request.POST['arg'])
@@ -13482,7 +13386,6 @@ class VinceTagManagerView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
                 context['team'] = user_groups[0].name
                 context['other_teams'] = user_groups.exclude(id=user_groups[0].id)
                 user_groups=[user_groups[0]]
-            logger.debug(user_groups)
         context['tags'] = TagManager.objects.filter(Q(team__in=user_groups)|Q(team__isnull=True))
         context['group'] = user_groups[0]
         context['activity'] = context['tags'].order_by('-created')
@@ -13501,13 +13404,12 @@ class VinceNewTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         context = super(VinceNewTagView, self).get_context_data(**kwargs)
         context['tag_type_id'] = self.kwargs['pk']
         types = dict(TagManager.TAG_TYPE_CHOICES)
-        logger.debug(types)
         context['form'] = AddNewTagForm(initial={'tag_type':int(self.kwargs['pk'])})
         context['tag_type'] = types[int(self.kwargs['pk'])]
         return context
     
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         #make sure tag doesn't already exist
         form = AddNewTagForm(self.request.POST)
         user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
@@ -13516,7 +13418,7 @@ class VinceNewTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                 user_groups = self.request.user.groups.filter(id=self.kwargs.get('group'))
             else:
                 user_groups=[user_groups[0]]
-            logger.debug(user_groups)
+
 
         if self.request.POST.get('id'):
             tag = get_object_or_404(TagManager, id=self.request.POST.get('id'))
@@ -13555,7 +13457,8 @@ class VinceNewTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                     t.team = user_groups[0]
                     t.save()
             else:
-                logger.debug(form.errors)
+                logger.debug(f"Form error in {self.__class__.__name__} post: {form.errors}")
+
             
         return redirect("vince:tags")
         
@@ -13787,16 +13690,7 @@ class EmailFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
             ownerlist = self.request.POST.getlist('user')
             res = res.filter(user__id__in=ownerlist)
 
-        if 'datestart' in self.request.POST:
-            # add a day to dateend since it translates to 0AM
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(created__range=(DateTimeField().clean(self.request.POST['datestart']),
-                                                 enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(created__range=(DateTimeField().clean('1970-01-01'),
-                                                     enddate))
+        res = filterDateTimeFields(self.request.POST,res,'created__range')
 
         if 'wordSearch' in self.request.POST:
             if self.request.POST['wordSearch']:
@@ -13824,13 +13718,7 @@ class EmailFilterView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
     def get_context_data(self, **kwargs):
         context = super(EmailFilterView, self).get_context_data(**kwargs)
         context['emailpage'] = 1
-        date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        initial = filterDateFields(self.request.GET,{})
         if self.request.GET.get('user'):
             initial['user'] = int(self.request.GET.get('user'))
         if self.request.GET.get('method'):
@@ -14358,6 +14246,164 @@ def DownloadCVEJson(request, pk):
         response["Pragma"] = "must-revalidate"
         return response
 
+@login_required(login_url="vince:login")
+@user_passes_test(is_in_group_vincetrack, login_url='vince:login')
+def CreateCVE5Json(request, pk):
+    if is_in_group_vincetrack(request.user):
+        cve = CVEAllocation.objects.filter(id=pk).first()
+        cvss = VulCVSS.objects.filter(vul = cve.vul).first()
+        if not cve:
+            return JsonResponse({})
+
+        cvss = VulCVSS.objects.filter(vul = cve.vul).first()
+        cna = {}
+        if cve.title:
+            title = cve.title
+        else:
+            title = cve.cve_name
+        
+        cna["title"] = title
+        cna["descriptions"] = [{"lang": "en","value": cve.vul.description }]
+        cna["source"] = {"discovery": cve.source if cve.source else "UNKNOWN"}
+        affected = []
+        products = cve.cveaffectedproduct_set.all()
+        for p in products:
+            affect = {"vendor": p.organization,
+                      "product": p.name,
+                      "versions": [{
+                          "status": "affected",
+                          "version": p.version_value
+                          }]
+                      }
+            if p.version_affected and p.version_name:
+                affect["versions"][0][p.version_affected] = p.version_name
+                affect["versions"][0]["versionType"] = "custom"
+            affected.append(affect)
+        cna["affected"] = affected
+        problems = []
+        if cve.cwe:
+            for cwe in json.loads(cve.cwe):
+                problems.append({"descriptions": [
+                    {
+                        "lang": "en",
+                        "description": cwe
+                    }
+                ]})
+        if problems:
+            cna["problemTypes"] = problems
+        refs = []
+        if cve.references:
+            for ref in json.loads(cve.references):
+                if type(ref) is dict and "url" in ref:
+                    refs.append({"url": ref["url"]})
+        if refs:
+            cna["references"] = refs
+        metrics = []
+        if cvss:
+            if cvss.score:
+                cvss_score = float(cvss.score)
+            else:
+                cvss_score = 0            
+            metrics.append({
+                "format": "CVSS",
+                "scenarios": [
+                    {
+                        "lang": "en",
+                        "value": "GENERAL"
+                    }
+                ],
+                "cvssV3_1": {
+                    "version": "3.1",
+                    "attackVector":cvss_translator(cvss.AV, "AV"),
+                    "attackComplexity":cvss_translator(cvss.AC, "AC"),
+                    "privilegesRequired":cvss_translator(cvss.PR, "PR"),
+                    "userInteraction":cvss_translator(cvss.UI, "UI"),
+                    "scope":cvss_translator(cvss.S, "S"),
+                    "confidentialityImpact": cvss_translator(cvss.C, "C"),
+                    "integrityImpact":cvss_translator(cvss.I, "I"),
+                    "availabilityImpact":cvss_translator(cvss.A, "A"),
+                    "vectorString":cvss.vector,
+                    "baseScore":cvss_score,
+                    "baseSeverity":cvss.severity.upper()
+                }})
+        if metrics:
+            cna["metrics"] = metrics
+        cve_id = cve.cve_name.upper()
+        if cve_id.find("CVE-") < 0:
+            cve_id = f"CVE-{cve_id}"
+        cna["x_generator"] = {"engine": "VINCE "+settings.VERSION}
+        if cvelib.CveApi.ENVS.get(settings.CVE_SERVICES_API):
+            cve_url = cvelib.CveApi.ENVS.get(settings.CVE_SERVICES_API)
+            if cve_url[-1] != '/':
+                cve_url = cve_url + '/'
+            cna["x_generator"]["env"] = settings.CVE_SERVICES_API
+            cna["x_generator"]["origin"] = f"{cve_url}cve/{cve}"
+
+        cve5 = {"dataType": "CVE_RECORD",
+                "dataVersion": "5.0",
+                "cveMetadata": {
+                    "cveId": cve_id,
+                    "assignerOrgId": "00000000-0000-0000-0000-000000000000",
+                    "state": "PUBLISHED"
+                },
+                "containers": {
+                    "cna": cna
+                }
+                }            
+        return JsonResponse(cve5)
+
+class submitCVE5JSON(LoginRequiredMixin, UserPassesTestMixin, APIView):
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    
+    def post(self, request, *args, **kwargs):
+        
+        my_teams = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
+        cve = CVEAllocation.objects.filter(id=self.kwargs.get('pk',"")).first()
+        
+        account = CVEServicesAccount.objects.filter(team__in=my_teams).first()
+
+        if not account:
+            return json_error("No CVE Services Account available")
+        if not cve:
+            return json_error("No Matching CVE data found")
+        if not cve.cve_name:
+            return json_error("This CVE does not have a CVE Number allocated")
+        
+        cve_lib = cvelib.CveApi(account.email, account.org_name,
+                                account.api_key, env=settings.CVE_SERVICES_API)
+        if not cve_lib.ping() is None:
+            return json_error("CVE services down")
+        try:
+            cve_json = json.loads(request.body)
+        except Exception as e:
+            logger.info(f"No JSON body found for {self.__class__.__name__} {request.body} Error is {e}")
+            return json_error(f"Error No JSON body or an incorrect JSON body submitted")
+        try:
+            cve_id = cve.cve_name.upper()
+            if cve_id.find("CVE-") < 0:
+                cve_id = f"CVE-{cve_id}"
+            cve = cve_lib.show_cve_id(cve_id)
+            if 'state' in cve and cve['state'] == "PUBLISHED":
+                ret = cve_lib.update_published(cve_id,cve_json)
+            else:
+                ret = cve_lib.publish(cve_id,cve_json)
+            return JsonResponse(ret)
+        except Exception as e:
+            #25299 cross reference number
+            logger.info(f"CVE5 25299 JSON submitted error {e}")
+            if hasattr(e,"errors"):
+                return json_error(str(e.errors))
+            elif hasattr(e,'response') and hasattr(e.response,'content'):
+                if type(e.response.content) == bytes:
+                    return json_error(e.response.content.decode())
+                return json_error(str(e.response.content))
+            return json_error("Error 25299 CVE JSON Submission failed")
+            
+            
+    
 class ReadEmailAdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
     login_url = "vince:login"
     template_name = "vince/process_email.html"
@@ -14540,7 +14586,7 @@ class CognitoChangeUserAttributes(LoginRequiredMixin, TokenMixin, UserPassesTest
                     _(f"User {self.request.POST['email']} successfully updated"))
                 return render(request, 'vince/user_search.html', {'form': UserSearchForm()})
         else:
-            logger.debug(form.errors)
+            logger.debug(f"Form error in {self.__class__.__name__} post: {form.errors}")
             return super().form_invalid(form)
 
 
@@ -14582,7 +14628,7 @@ class ManageRoleAddUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         if self.request.POST.get('id'):
             assignment = get_object_or_404(UserAssignmentWeight, id=self.request.POST.get('id'))
             if self.request.POST.get('remove'):
@@ -14645,23 +14691,7 @@ class CVEServicesDashboard(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         context['accounts'] = CVEServicesAccount.objects.filter(team=context['my_team'])
         if context['accounts']:
             acc = context['accounts'][0]
-            context['cve_service'] = acc
-            cve_lib = cvelib.CveApi(acc.email, acc.org_name, acc.api_key, env=settings.CVE_SERVICES_API)
-            if cve_lib.ping():
-                try:
-                    context['account'] = cve_lib.show_user(acc.email)
-                    context['org'] = cve_lib.show_org()
-                    context['quota'] = cve_lib.quota()
-                    context['cve_users'] = list(cve_lib.list_users())
-                except cvelib.CveApiError as e:
-                    context['account_error'] = str(e)
-                    context['accounts'][0].active = False
-                    context['accounts'][0].save()
-        else:
-            context['service_down'] = 1
-
-
-        
+            get_cve_info(context,acc)
         return context
 
 class CVEServicesDetailAccount(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.DetailView):
@@ -14679,21 +14709,7 @@ class CVEServicesDetailAccount(LoginRequiredMixin, TokenMixin, UserPassesTestMix
     def get_context_data(self, **kwargs):
         context = super(CVEServicesDetailAccount, self).get_context_data(**kwargs)
         acc = get_object_or_404(CVEServicesAccount, id=self.kwargs['pk'])
-        context['cve_service'] = acc
-        cve_lib = cvelib.CveApi(acc.email, acc.org_name, acc.api_key, env=settings.CVE_SERVICES_API)
-        if cve_lib.ping():
-            try:
-                context['account'] = cve_lib.show_user(acc.email)
-                context['org'] = cve_lib.show_org()
-                context['quota'] = cve_lib.quota()
-                context['cve_users'] = list(cve_lib.list_users())
-            except cvelib.CveApiError as e:
-                context['account_error'] = str(e)
-                acc.active = False
-                acc.save()
-        else:
-            context['service_down'] = 1    
-            
+        get_cve_info(context,acc)
         return context
 
 class CVEServicesDeleteAccount(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
@@ -14714,7 +14730,7 @@ class CVEServicesDeleteAccount(LoginRequiredMixin, TokenMixin, UserPassesTestMix
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         account = get_object_or_404(CVEServicesAccount, id=self.kwargs['pk'])
         if self.request.user.is_superuser:
             account.delete()
@@ -14775,8 +14791,7 @@ class VulReserveCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
-
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         form = CVEReserveForm(self.request.POST)
         groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
         #get available accounts associated with my teams
@@ -14835,11 +14850,16 @@ class VulReserveCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         
 
         new_cve_ids = []
+        quota = 0
         cve_lib = cvelib.CveApi(account.email, account.org_name, account.api_key, env=settings.CVE_SERVICES_API)
-        if cve_lib.ping():
+        if cve_lib.ping() is None:
             try:
-                new_reserve, quota = cve_lib.reserve(request_no, random, form.cleaned_data["year"])
-                for x in new_reserve["cve_ids"]:
+                reserved = cve_lib.reserve(request_no, random, form.cleaned_data["year"])
+                if not "cve_ids" in reserved:
+                    raise Exception("No cve_ids returned")
+                if "meta" in reserved and "remaining_quota" in reserved["meta"]:
+                    quota = reserved["meta"]["remaining_quota"]
+                for x in reserved["cve_ids"]:
                     cveres = CVEReservation(cve_info = cve,
                                             cve_id = x["cve_id"],
                                             account=account,
@@ -14855,7 +14875,7 @@ class VulReserveCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
                     new_cve_ids.append(cveres.cve_id)
                                    
                                
-            except cvelib.CveApiError as e:
+            except Exception as e:
                     messages.error(
                         self.request,
                         _(f"Error Requesting CVE ID {e}"))
@@ -14864,7 +14884,7 @@ class VulReserveCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         else:
             messages.error(
                 self.request,
-                _f("Error: CVE Service down. Try again later."))
+                _(f"Error: CVE Service down. Try again later."))
             return redirect(ret_link)
 
         messages.success(
@@ -14904,7 +14924,7 @@ class CVEListReserved(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         return False
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         year = self.request.POST.get('year')
         cve_id = self.request.POST.get('wordSearch')
@@ -14922,10 +14942,10 @@ class CVEListReserved(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         else:
             acc = get_object_or_404(CVEServicesAccount, id=self.kwargs['pk'])
             cve_lib = cvelib.CveApi(acc.email, acc.org_name, acc.api_key, env=settings.CVE_SERVICES_API)
-            if cve_lib.ping():
+            if cve_lib.ping() is None:
                 try:
                     if cve_id:
-                        cves = cve_lib.show_cve(cve_id)
+                        cves = cve_lib.show_cve_id(cve_id)
                         cves = [cves]
                     elif year:
                         cves = list(cve_lib.list_cves(year=year))
@@ -14948,7 +14968,7 @@ class CVEListReserved(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                                 x["vul"] = reverse("vince:vul", args=[v_cve.id])
                                 x["case"] = v_cve.case.vu_vuid
 
-                except cvelib.CveApiError as e:
+                except Exception as e:
                     return render(request, "vince/cve_list_results.html", {'error': e})
 
             else:
@@ -14964,10 +14984,10 @@ class CVEListReserved(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         context["my_team"] = acc.team
         context['form'] = CVEFilterForm(initial={'year': datetime.now().year})
         cve_lib = cvelib.CveApi(acc.email, acc.org_name, acc.api_key, env=settings.CVE_SERVICES_API)
-        if cve_lib.ping():
+        if cve_lib.ping() is None:
             try:
                 cves = list(cve_lib.list_cves(year=datetime.now().year))
-            except cvelib.CveApiError as e:
+            except Exception as e:
                 context['account_error'] = str(e)
                 acc.active = False
                 acc.save()
@@ -14993,7 +15013,6 @@ class CVEListReserved(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                     x["case"] = v_cve.case.vu_vuid
 
         context['cves'] = cves
-        logger.debug(context['cves'])
         return context
 
 
@@ -15010,19 +15029,16 @@ class CVESingleDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
 
     def get_context_data(self, **kwargs):
         context = super(CVESingleDetailView, self).get_context_data(**kwargs)
-        logger.debug("SINGLE VIEW")
         acc = get_object_or_404(CVEServicesAccount, id=self.kwargs['pk'])
         cve_lib = cvelib.CveApi(acc.email, acc.org_name, acc.api_key, env=settings.CVE_SERVICES_API)
-        if cve_lib.ping():
+        if cve_lib.ping() is None:
             try:
-                cves = cve_lib.show_cve(self.kwargs['cveid'])
-                logger.debug(cves)
-            except cvelib.CveApiError as e:
+                context['cve'] = cve_lib.show_cve_id(self.kwargs['cveid'])
+            except Exception as e:
                 context['account_error'] = str(e)
         else:
             context['service_down'] = 1
 
-        context['cve'] = cves
 
         context['vince_request'] = CVEReservation.objects.filter(cve_id = self.kwargs['cveid']).first() 
         
@@ -15067,7 +15083,7 @@ class CVEServicesManageAccount(LoginRequiredMixin, TokenMixin, UserPassesTestMix
         return context
 
     def form_invalid(self, form):
-        logger.debug(f"CVEservicesManageAccount errors: {form.errors}")
+        logger.debug(f"Form error in {self.__class__.__name__} post: {form.errors}")
         return super().form_invalid(form)
     
     def post(self, request, *args, **kwargs):

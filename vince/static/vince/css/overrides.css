@@ -1,0 +1,121 @@
+.login #container {
+    position: absolute;
+    top: 50%;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+.login #container input:not([type=button]):not([type=submit]) {
+    background-color: transparent;
+    color: #333;
+}
+/* Add darkmode */
+.blackbody #container {
+
+}
+
+@media only screen and (max-width: 600px) {
+    /* Force headernav to top of screen on mobile*/
+    .headernav {
+	top: 0px !important;
+    }
+    /* Let scroll out menu cover all the screen*/
+    #offCanvas.off-canvas.is-open {
+	height: auto !important;
+    }
+    #offCanvas ul.vertical.menu > li.menu-close {
+	position: fixed;
+	right: 15%;
+	top: 0px;
+	border: none;
+	padding-top: 0px;
+    }
+    #header {
+	height: auto !important;
+    }
+    #header .topbar-redbar .h2.subtitle {
+	display: none !important;
+    }
+    .mainbody .app-top-panel {
+	padding: 2px !important;
+    }
+    h2 {
+	font-size: 1.5em;
+	font-weight: bold;
+    }
+
+    .login #container {
+	top: 0%;
+    }
+}
+nav.cdown {
+    display:inline-block;
+}
+
+nav.cdown ul {
+    background: #ff8c00;
+    list-style: none;
+    margin: 0;
+    padding-left: 0;
+}
+
+nav.cdown li {
+    color: #fff;
+    background: #ff8c00;
+    display: block;
+    float: left;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.4rem 0.1rem 0.4rem;
+    position: relative;
+    text-decoration: none;
+    transition-duration: 0.5s;
+}
+
+nav.cdown li a {
+    color: #fff;
+}
+
+nav.cdown li:hover {
+    background: #dc3545;
+    cursor: pointer;
+}
+
+nav.cdown ul li ul {
+    background: #ffa500;
+    visibility: hidden;
+    opacity: 0;
+    min-width: 9rem;
+    position: absolute;
+    transition: all 0.5s ease;
+    margin-top: 1rem;
+    right: 0;
+    display: none;
+    top: 0.55rem;
+}
+
+nav.cdown ul li:hover > ul,
+nav.cdown ul li:focus-within > ul, 
+nav.cdown ul li ul:hover {
+    visibility: visible;
+    opacity: 1;
+    display: block;
+}
+
+nav.cdown ul li ul li {
+    clear: both;
+    width: 100%;
+}
+nav.cdown .fa-check {
+    font-size: 0.7rem;
+    opacity: 0;
+}
+nav.cdown .all .fa-check {
+    opacity: 1;
+}
+nav.cdown li.affected {
+    background-color: #990033;
+}
+nav.cdown li.not_affected {
+    background-color: #3adb76;
+}  
+

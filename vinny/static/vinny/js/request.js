@@ -105,19 +105,4 @@ $(document).ready(function() {
     
     initTooltipster(".vendor-participant", umProfileStore, displayUserCard);
 
-        $('#moreVendor').click(function(e) {
-        $("#hidevendors").toggle();
-        $("#moreVendors").toggle();
-        $("#lessVendors").toggle();
-        e.preventDefault();
-    });
-
-     $('#lessVendor').click(function(e) {
-        $("#hidevendors").toggle();
-        $("#moreVendors").toggle();
-        $("#lessVendors").toggle();
-        e.preventDefault();
-
-    });
-    
 });

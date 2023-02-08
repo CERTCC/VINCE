@@ -2,7 +2,7 @@
 {% for vendor in vendors %}
 
   {% if vendor.group.groupcontact.contact.vendor_name %}
-  <div class="participant">
+  <div class="participant type_vendor">
         <div class="participant-pic">
           {% autoescape off %}{{ vendor|grouplogo:"profile-pic" }}{% endautoescape %}
         </div>

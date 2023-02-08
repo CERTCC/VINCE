@@ -5,7 +5,7 @@
       <a href="{% url 'vinny:dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
     </li>
     <li class="has-submenu {{ inboxpage|yesno:'is,not' }}-active">
-      <a href="{% url 'vinny:inbox' %}" class="menu-notify"><i class="fas fa-envelope"></i> Inbox {% if unread_msg_count %}<span class="badge success">{{ unread_msg_count }}</span>{% endif %}</a>
+      <a href="{% url 'vinny:inbox' %}" class="menu-notify"><i class="fas fa-envelope"></i> Inbox <span id="unread_msg_count" data-url="{% url 'vinny:unread_msg_count' %}" class="unread_msg_count"></span></a>
     </li>
     <li class="has-submenu {{ casepage|yesno:'is,not' }}-active">
       <a href="{% url 'vinny:casesearch' %}"><i class="fas fa-briefcase"></i> Cases</a>

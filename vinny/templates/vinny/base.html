@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VINCE</title>
+
+{% load static %}
+{% load user_tags %}
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/foundation.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/style.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery-ui.min.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery.qtip.min.css' %}" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/fontawesome/all.css' %}" />
+<!--<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">-->
+<link rel="stylesheet" type="text/css" href="{% static 'vince/css/taggle.css' %}">
+<link rel="shortcut icon" href="{% static 'vincepub/images/favicon.ico' %}" type="image/x-icon" />
+{% block js %}
+<script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/jquery-ui.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/jquery.qtip.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/taggle.js' %}"></script>
+<script type="text/javascript" src="{% static 'vinny/js/vincecomm.js' %}"></script>
+{% if devmode %}
+<script type="text/javascript" src="{% static 'vinny/js/devtoken.js' %}"></script>
+{% endif %}
+<link rel="stylesheet" href="{% static 'vince/css/overrides.css' %}">
+{% endblock %}
+  </head>
+  {% block notice %}{% endblock %}
+  <body id="top-body">
+    <div id="hiddenloading" style="display:none">
+      <p id="loadingbanner" class="loading text-center"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span></p>
+    </div>
+    <div class="off-canvas-wrapper">
+      <!--<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>-->
+	<div class="off-canvas position-top" id="offCanvas" data-off-canvas>
+	  <!-- Close button -->
+	  <div class="row column">
+	    {% include 'vinny/dropmenu.html' %}
+	  </div>
+	</div>
+	<header id="header" class="header" data-sticky-container>
+	  <div class="headernav" data-sticky data-options="marginTop:0;" style="width:100%" data-top-anchor="top-body:top">
+	    <div class="title-bar {{ VINCE_DEV_SYSTEM }}">
+	      <div class="title-bar-left">
+		<!--<a href="http://sei.cmu.edu/"
+                   target="_blank"
+                   title="Software Engineering Institute | Carnegie Mellon University">
+                  <img border="0" class="bottom-footer__logo" src="{% static 'vince/css/images/Software_Engineering_Institute_Unitmark_White.svg' %}">
+		</a>-->
+	      </div>
+	      <div class="title-bar-right">
+		<div class="show-for-small-only text-right">
+		  <button type="button" class="vulcoord-menu-btn" data-toggle="offCanvas"><i class="fas fa-bars"></i></button>
+		</div>
+		<div class="menu hide-for-small-only">
+		  {% if user.is_authenticated %}
+		  <ul class="dropdown menu" data-dropdown-menu>
+		    <li class="is-dropdown-submenu-parent"><a href="#">Hello, <b>{{ user.vinceprofile.vince_username }}</b></a>
+		      <ul class="menu">
+			<li><a href="{% url 'cogauth:profile' %}">Profile</a></li>
+			<li><a href="{% url 'vinny:preferences' %}">Email Preferences</a></li>
+			<li><a href="{% url 'cogauth:password_change' %}">Change Password</a></li>
+
+			{% if user.is_staff %}
+			<li><a href="{% url 'vinnyadmin:index' %}">Admin</a></li>
+			{% endif %}
+			<li><a href="{% url 'cogauth:logout' %}">Log out</a></li>
+		      </ul>
+		  </li></ul>
+		  {% else %}
+		  <a href="{% url 'vince:login' %}" id="login">Sign in</a>
+		  {% endif %}
+		</div><!-- menu-->
+	      </div><!-- top bar right-->
+	    </div><!-- topbar-->
+	    <div class="topbar-redbar">
+	      <div class="row expanded">
+		<!-- logo -->
+		<div class="small-12 medium-12 large-12 columns">
+		  
+                  <h1 class="vince_logo d-lg-none"><a href="{% url 'vinny:dashboard' %}"
+                     title="VINCE">
+                      VINCE </a><small class="h2 subtitle">Vulnerability Information and Coordination Environment</small></h1>
+		  <h1 class="vince_logo_small d-sm-none">
+                    <a href="{% url 'vince:index' %}">VINCE</a> <small class="h2 subtitle">Vulnerability Information and Coordination Environment</small></h1>
+		  
+		</div>
+	      </div><!--row-->
+	    </div><!--topbar-->
+	  </div>
+	</header><!--header -->
+	<div class="off-canvas-wrapper">
+	  {% include 'vinny/offcanvas.html' %}
+	  <div class="off-canvas-content" data-off-canvas-content>
+	    <div class="mainbody">
+	    {% block content %}
+	    {% endblock %}
+	    </div>
+	    <div class="footer">
+              <div class="commentbar">
+                <div class="row">
+                  <div class="large-6 medium-6 medium-push-6 medium-text-right columns">
+                      <a href="https://vuls.cert.org/confluence/display/VIN/" target="_blank" class="font-weight-bold">VINCE Help</a>
+                    <!--<ul class="vertical menu medium-text-right text-left">-->
+		      <!--<li><a href="https://vuls.cert.org/confluence/display/VIN/" target="_blank" class="font-weight-bold">VINCE Help</a></li>-->
+                      <!--<li><a href="{% url 'vinny:construction' %}" class="font-weight-bold">Project Wiki</a></li>-->
+                      <!--<li><a href="{% url 'vinny:construction' %}" class="font-weight-bold">Issue Tracker</a></li>-->
+                    <!--</ul>-->
+                  </div>
+                  <div class="large-6 medium-6 medium-pull-6 columns">
+                    <i class="far fa-comments">&nbsp;</i>Do you have any comments? Give us <a href="{% url 'vinny:sendmsg' 8 %}" class="font-weight-bold">feedback</a>!
+                  </div>
+                </div>
+              </div>
+	      <div class="bottom-footer" id="bottom-footer">
+		<div class="row">
+		  <div class="large-6 medium-6 columns text-left">
+                    <div class="footer-images">
+                      <div class="cert-seal-wrap footer-image1">
+                        <a href="http://sei.cmu.edu/"
+                           target="_blank"
+                           title="Software Engineering Institute | Carnegie Mellon University">
+                          <!--<img border="0" class="bottom-footer__logo_cert" src="{% static 'vince/css/images/cert_seal_white.png' %}">-->
+			  <span class="cert-seal">CERT</span>
+                        </a>
+		      </div>
+                      <div class="footer-image2">
+			<a href="http://sei.cmu.edu/"
+                           target="_blank"
+                           title="Software Engineering Institute | Carnegie Mellon University">
+                          <img border="0" class="bottom-footer__logo" src="{% static 'vince/css/images/CMUSEICERT.png' %}">
+			</a>
+                      </div>
+                    </div>
+		  </div>
+                  <div class="large-6 medium-6 small-12 columns">
+                    <div class="bottom-footer__copyright">
+		      <ul class="vertical menu medium-text-right text-left ul_nobullet">
+			<li>
+			  <div>© 2022 Carnegie Mellon University</div></li>
+                        <li><div><a href="https://vuls.cert.org/confluence/display/VIN/VINCE+Code+of+Conduct#VINCECodeofConduct-TermsofUse" target="_blank" rel="nopener">Terms of Use</a></div></li>
+			<li><div><a href="https://vuls.cert.org/confluence/display/Wiki/Vulnerability+Disclosure+Policy" target="_blank" rel="nopener">Vulnerability Disclosure Policy</a></div></li>
+			<li><div><span class="font-weight-bold">V.{{ VERSION }}</span></div></li>
+		      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div><!-- endfooter--->
+	  </div><!--endmainbody-->
+	</div>
+    <!--</div>-->
+    </div>
+
+{% if devmode %}
+<div id="devtoken" href="{% url 'vinny:login' %}" action="{% url 'vinny:get_token' %}"></div>
+{% endif %}
+<script type="text/javascript" src="{% static 'vince/js/foundation.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vince/js/vincefoundation.js' %}"></script>
+  </body>
+</html>
