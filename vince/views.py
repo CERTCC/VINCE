@@ -928,7 +928,7 @@ def process_query_for_tags(s):
     return ret
 
 def process_query(s, live=True):
-    query = re.sub(r'[!\'()|&<>]', ' ', s).strip()
+    query = re.sub(r'[!\'()|&<>:]', ' ', s).strip()
     # get rid of empty quotes
     query = re.sub(r'""', '', query)
     if query == '"':
@@ -4757,7 +4757,7 @@ class CloseTicketandTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
                 crfup.save()
 
         elif int(form.cleaned_data['send_email']) == 3:
-            logger.debug(f"send message to VINCE User {vc_user}")
+            logger.debug(f"send message to VINCE User {ticket.submitter_email}")
             user_lookup = User.objects.using('vincecomm').filter(email=ticket.submitter_email).first()
             sender = User.objects.using('vincecomm').filter(email=self.request.user.email).first()
             subject = f"[{ticket.ticket_for_url}] {email_template.subject} {ticket.title}"
@@ -10342,7 +10342,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                  'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp, instance=contact)}
         #'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact)}
         context['groups'] = GroupMember.objects.filter(contact=self.kwargs['pk'])
-        context['form'] = self.form_class(initial=Contact.objects.filter(id=self.kwargs['pk']).values()[0])
+        context['form'] = self.form_class(initial=contact)
         context['form'].fields['vtype'].choices = [('User', 'User'), ('Vendor', 'Vendor'), ('Coordinator', 'Coordinator')]
         context['form'].fields['vtype'].initial = contact.vendor_type
         context['contact'] = contact

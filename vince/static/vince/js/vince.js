@@ -436,10 +436,11 @@ $(function () {
 	return JSON.stringify(d,null,'\t')
     }
     function msg_card(el,msg,level) {
-	$(el).html(msg).removeClass('hide').addClass('card-'+level);
+	$(el).html(msg).removeClass().addClass('card-' + level +
+					      ' dashboard-nav-card');
 	if(level == "bad") {
 	    $(el).on('click',function() { $('#xmodal').foundation('close'); })
-	}
+	}	
     }
     function load_cvedata(cvetype) {
 	$('a.cvetab').attr("aria-selected","false");
@@ -532,6 +533,29 @@ $(function () {
 		let btnSubmit = $('<button>').addClass('button primary')
 		    .html("Publish");
 		btnSubmit.on('click',function() {
+		    let cve5 = $('#cve5data').val();
+		    try {
+			let cve5Obj = JSON.parse(cve5);
+			if(deepGet(cve5Obj,"containers.cna")) {
+			    /* Remove non cna container fields */
+			    cve5 = json_pretty(cve5Obj.containers.cna);
+			    cve5Obj = JSON.parse(cve5);
+			    $('#cve5data').val(cve5);
+			}
+			["affected.0.product",
+			 "affected.0.versions.0.version",
+			 "affected.0.vendor",
+			 "descriptions.0.lang",
+			 "descriptions.0.value",
+			 "references.0.url"].forEach(function(x) {
+			     if(!deepGet(cve5Obj,x))
+				 throw new Error("Element " +
+						 x + " is required");
+			 });
+		    } catch(err) {
+			msg_card(el,"CVE data incorrect: " + err,"bad");
+			return;
+		    }
 		    let msg = "This CVE will go fully public immediately! "+
 			"\nAre you Sure?";
 		    el.addClass('hide');

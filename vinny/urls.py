@@ -81,6 +81,7 @@ urlpatterns = [
     re_path('^sendmsg/(?P<type>[1-9]|10)?/$', views.SendMessageView.as_view(), name='sendmsg'),
     re_path('^sendmsg/(?P<type>[2])/(?P<case>\d+)/$', views.SendMessageView.as_view(), name='sendmsg'),
     path('sendmsg/all/', views.SendMessageAllView.as_view(), name='sendmsgall'),
+    path('auto/api/allvendors/', views.autocomplete_allvendors, name='all_vendors'),
     path('auto/api/vlookup/', views.VendorLookupView.as_view(), name='vendorlookup'),
     path('auto/api/vendors/', views.autocomplete_vendor, name='auto_vendor'),
     path('auto/api/users/', views.autocomplete_users, name='auto_user'),
