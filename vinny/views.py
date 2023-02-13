@@ -390,6 +390,15 @@ def autocomplete_coordinators(request, pk):
         
     return HttpResponse([], 'application/json')
 
+@login_required(login_url="vinny:login")
+@user_passes_test(is_not_pending, login_url="vinny:login")
+def autocomplete_allvendors(request):
+    qs = VinceCommContact.objects.filter(vendor_type='Vendor',active=True).values('pk','vendor_name')
+    ed = ED(base64.b64encode(settings.SECRET_KEY.encode()))
+    #Hide uuid and pk fields - allow usage in specific Cases only
+    data = list(map(lambda x: {"euid": ed.encrypt(str(x['pk'])), "vendor_name" : x["vendor_name"]}, qs))
+    return HttpResponse(json.dumps(data,default=str), 'application/json')
+
 
 @login_required(login_url="vinny:login")
 @user_passes_test(is_in_group_vincetrack, login_url='vinny:login')
@@ -598,7 +607,7 @@ class VinceVRFAttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
             if not(mime_type):
                 mime_type = 'application/octet-stream'
             response = HttpResponseRedirect(report.user_file.url, content_type = mime_type)
-            filename = vinceutils.safe_filename(report.user_file.name,file_uuid,mime_type)
+            filename = vinceutils.safe_filename(report.user_file.name,None,mime_type)
             response['ResponseContentDisposition'] = f"attachment; filename=\"{filename}\""
             response["Content-type"] = mime_type
             response["Cache-Control"] = "must-revalidate"
@@ -3147,7 +3156,7 @@ class CaseFilter(LoginRequiredMixin, TokenMixin, PendingTestMixin, FormView):
 
 def process_query(s):
 
-    query = re.sub(r'[!\'()|&]', ' ', s).strip()
+    query = re.sub(r'[!\'()|&:]', ' ', s).strip()
     if query.startswith(settings.CASE_IDENTIFIER):
         query = query[len(settings.CASE_IDENTIFIER):]
     if query:
