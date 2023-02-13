@@ -1,11 +1,23 @@
 # Contributing to VINCE
 
-### Reporting Problems and Asking Questions
+### Reporting Problems and Asking Questions and Requesting Features
 
 You can report a bug, feature request, or other issue
 in this GitHub project. VINCE users can also send
 [feedback](https://kb.cert.org/vince/comm/sendmsg/8/)
-through the Private Message feature.
+through the Private Message feature.  When requesting
+a new feature, provide as much details as possible for
+the feature at hand. If the feature is relevant to a 
+specific community, consider making the feature modular
+using `settings.py` as the defacto place to configure
+enable/disable of all such flexible features. 
+
+Our GitHub repository has
+[Private Advisories](https://github.com/CERTCC/VINCE/security/advisories) feature
+enabled. You can use this to privately report security issues found in
+our software. You can also do so using VINCE
+[Private Message](https://kb.cert.org/vince/comm/sendmsg/8/), if you have an
+active VINCE account.
 
 
 ### Contributing Code Changes
@@ -20,11 +32,14 @@ resembling an open source public release.
 As a consequence, it is difficult for us to coordinate external pull
 requests with our internal code base, and we have not completely
 worked out a process for doing so.  If you would like to contribute
-code to VINCE, please do so by submitting a pull request and we'll
-work with you to get it accepted into the public code.
-
-We do plan to commit non-urgent and new feature changes on a monthly
-cadence.
+code to VINCE, please make sure you reference at least one GitHub
+issue either opened by you or another GitHub user that identifies
+either the problem/bugfix or a new feature/capability being introduced.
+We require all Pull Requests to be signed using a GPG verified certificate
+that is part of your GitHub profile. There is a specific `development`
+branch where we accept features that require compatibility testing with
+our `main` branch. We do plan to commit non-urgent and new feature changes
+on a monthly cadence.
 
 ### Terms of Submission
 
