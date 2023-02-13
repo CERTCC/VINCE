@@ -38,7 +38,7 @@ ecdsa==0.18.0
 envs==1.4
 fs==2.4.16
 fs-s3fs==1.1.1
-future==0.18.2
+future==0.18.3
 idna==3.4
 importlib-metadata==5.0.0
 importlib-resources==5.10.0
