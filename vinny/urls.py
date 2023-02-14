@@ -81,6 +81,7 @@ urlpatterns = [
     re_path('^sendmsg/(?P<type>[1-9]|10)?/$', views.SendMessageView.as_view(), name='sendmsg'),
     re_path('^sendmsg/(?P<type>[2])/(?P<case>\d+)/$', views.SendMessageView.as_view(), name='sendmsg'),
     path('sendmsg/all/', views.SendMessageAllView.as_view(), name='sendmsgall'),
+    path('auto/api/allvendors/', views.autocomplete_allvendors, name='all_vendors'),
     path('auto/api/vlookup/', views.VendorLookupView.as_view(), name='vendorlookup'),
     path('auto/api/vendors/', views.autocomplete_vendor, name='auto_vendor'),
     path('auto/api/users/', views.autocomplete_users, name='auto_user'),
@@ -153,6 +154,7 @@ urlpatterns = [
     re_path('api/vuls/cve/(?P<year>\d+)-(?P<pk>\d+)/$', views.CVEVulAPIView.as_view(), name='cve_lookup_api'),
     re_path('api/case/(?P<vuid>\d+)/csaf/$', views.CaseCSAFAPIView.as_view(), name='case_csaf_api'),
     re_path('api/case/csaf/(?P<vuid>\d+)/$', views.CaseCSAFAPIView.as_view(), name='case_csaf_api'),
+    re_path('api/unread_msg_count/$', views.UnreadCountAjax.as_view(), name='unread_msg_count'),
 ]
 
 if settings.DEBUG:

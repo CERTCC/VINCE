@@ -24,7 +24,7 @@
     
     <ul class="pagination text-center" role="navigation" aria-label="Pagination">
       {% if object_list.has_previous %}
-      <li class="pagination-previous"><a href="#" next="{{ object_list.previous_page_number }}" class="search_notes">Previous</a></li>
+      <li class="pagination-previous"><a href="#" next="{{ object_list.previous_page_number }}" class="search_notes asyncpage">Previous</a></li>
       {% else %}
       <li class="pagination-previous disabled">Previous</li>
       {% endif %}
@@ -32,19 +32,19 @@
       {% if object_list.number == i %}
       <li class="current"><span class="show-for-sr">You're on page</span> {{ object_list.number }}</li>
       {% elif i > object_list.number|add:'-3' and i < object_list.number|add:'3' %}
-        <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+        <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes asyncpage">{{ i }}</a></li>
         {% else %}
         {% if i == 1 %}
-      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes asyncpage">{{ i }}</a></li>
       <li class="ellipsis"></li>
       {% elif forloop.last %}
       <li class="ellipsis"></li>
-      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes asyncpage">{{ i }}</a></li>
       {% endif %}
       {% endif %}
       {% endfor %}
       {% if object_list.has_next %}
-      <li class="pagination-next"><a href="#" next="{{ object_list.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
+      <li class="pagination-next"><a href="#" next="{{ object_list.next_page_number }}" aria-label="Next page" class="search_notes asyncpage">Next</a></li>
       {% else %}
       <li class="pagination-next disabled">Next</li>
       {% endif %}

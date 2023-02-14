@@ -31,7 +31,6 @@ from django.utils.deprecation import MiddlewareMixin
 from django.utils import timezone
 from django.http import HttpResponseRedirect
 from django.urls import resolve
-from urllib.parse import urlparse
 import logging
 import pytz
 import traceback
@@ -51,12 +50,8 @@ class MultipleDomainMiddleware(MiddlewareMixin):
         host = None
         server = None
         path = request.get_full_path()
-        if request.session.session_key:
-            #logger.debug(request.META.get('HTTP_REFERER'))
-            #referer = request.META.get('HTTP_REFERER')
-            #referer = urlparse(referer)
-            #logger.debug(referer.netloc)
-            logger.debug(f"Path is {path}")
+        #if request.session.session_key:
+        #logger.debug(f"Path is {path}")
         scheme = "http" if not request.is_secure() else "https"
         
         try:

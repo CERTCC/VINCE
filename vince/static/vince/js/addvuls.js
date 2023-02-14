@@ -129,6 +129,11 @@ function del_tag(taggle, tag, modal){
 
 $(document).ready(function() {
 
+    if($('#largemodal').length < 1) {
+	$('body').prepend('<div class="reveal large" id="largemodal" ' +
+			  'data-reveal data-close-on-click="false"></div>');
+    }
+    let _ = new Foundation.Reveal($('#largemodal'));
     var modal = $("#largemodal");
     
     var vul_tags = [];

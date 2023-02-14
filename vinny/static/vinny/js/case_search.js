@@ -28,118 +28,7 @@
 ########################################################################
 */
 
-function nextPage(page) {
-    var url = $("#searchform").attr("action");
-    $("#searchresults").load(url+"?page=" + page);
-}
-
-
-function reloadSearch() {
-    $.ajax({
-        url: $("#searchform").attr("action"),
-        success: function(data) {
-            $("#searchresults").html(data);
-        }
-    });
-}
-
-function nextTickets(page) {
-    var url = $("#searchform").attr("action");
-    $("#id_page").val(page);
-    $.ajax({
-        url: url,
-        type: "POST",
-        data: $('#searchform').serialize(),
-        success: function(data) {
-            $("#searchresults").html(data);
-        }
-    });
-
-}
-
-function searchTickets(e,noalert) {
-    if (e) {
-	e.preventDefault();
-    }
-    $("#id_page").val("1");
-    var url = $("#searchform").attr("action");
-    lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
-    window.txhr = $.ajax({
-	url: url,
-	type: "POST",
-	data: $('#searchform').serialize(),
- 	success: function(data) {
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
- 	    $("#searchresults").html(data);
-	},
-	error: function() {
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
-	    console.log(arguments);
-	    if(noalert != true)
-		alert("Search failed or canceled! See console log for details.");
-	},
-	complete: function() {
-	    /* Just safety net */
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
-	    window.txhr = null;
- 	}
-    });
-}
-
 $(document).ready(function() {
-
-    $(document).on("click", '.search_page', function(event) {
-	var page = $(this).attr('next');
-	nextPage(page);
-    });
-
-    $(document).on("click", '.search_notes', function(event) {
-	var page = $(this).attr('next');
-	nextTickets(page);
-    });
-    
-    var input = document.getElementById("id_wordSearch");
-    input.addEventListener("keyup", function(event) {
-        searchTickets(event,true);
-    });
-
-    var form = document.getElementById('searchform');
-    if (form.attachEvent) {
-	form.attachEvent("submit", searchTickets);
-    } else {
-	form.addEventListener("submit", searchTickets);
-    }
-
-    $("input[id^='id_status_']").change(function() {
-	searchTickets();
-    });
-
-    $("#id_queue").change(function() {
-	searchTickets();
-    });
-
-    $("#id_case").change(function() {
-	searchTickets();
-    });
-
-    $("input[id^='id_owner_']").change(function() {
-	searchTickets();
-    });
-
-
-    $("#filter_by_dropdown_select_all_0").click(function(){
-	$("input[type=checkbox]").prop('checked', $(this).prop('checked'));
-
-    });
-
-    if ($("#searchform").attr("name") == "searchform") {
-	searchTickets();
-    }
-
-    /*$.getJSON("/vuls/ajax_calls/search/", function(data) {
-        vend_auto(data);
-    });*/
-
     var dateFormat = "yy-mm-dd",
         from = $( "#id_datestart" )
         .datepicker({
@@ -149,10 +38,6 @@ $(document).ready(function() {
           dateFormat: dateFormat,
           numberOfMonths: 1,
           maxDate: "+0D"
-         })
-        .on( "change", function() {
-            /*to.datepicker( "option", "minDate", getDate( this ) );*/
-	    searchTickets();
         }),
 	to = $( "#id_dateend" ).datepicker({
             defaultDate: "+1w",
@@ -162,13 +47,7 @@ $(document).ready(function() {
             numberOfMonths: 1,
             maxDate: "+0D"
 
-	})
-	.on( "change", function() {
-            from.datepicker( "option", "maxDate", getDate( this ) );
-	    searchTickets();
 	});
-
-
     $('input').qtip({
         show: {
             ready: true
@@ -184,9 +63,7 @@ $(document).ready(function() {
         style: {
             classes: 'qtip-red qtip-bootstrap'
         }
-
     });
-
     function getDate( element ) {
 	var date;
 	try {

@@ -32,7 +32,10 @@ import os
 import pytz
 from smtplib import SMTPException
 from django.conf import settings
-from django.utils import six
+try:
+    from django.utils import six
+except:
+    import six
 from django.utils.safestring import mark_safe
 from vince.models import Ticket, Contact, VulnerabilityCase, CaseAction, CaseAssignment, AdminPGPEmail, VTDailyNotification, TicketQueue, CalendarEvent, FollowUp, EmailTemplate, EmailContact
 from vinny.models import Case, VTCaseRequest, VinceCommGroupAdmin, VinceCommContact, GroupContact, VinceCommEmail
@@ -89,24 +92,30 @@ def get_vt_case_path(case_context):
 def is_case_action(title):
 
     logger.debug(f"TITLE IS {title}")
-    
+
+    tkt_text = str(_("Email Bounce"))
+
+    if tkt_text in title:
+        logger.warning(f"Email is a bounce returning 0 {tkt_text}")
+        return 0
+
     tkt_text = str(_("Vendor statement"))
 
     if tkt_text in title:
         #vendor status update
-        return 4
+        return CaseAction.lookup('Status Change')
 
     tkt_text = str(_("New Message"))
 
     if tkt_text in title:
         # message
-        return 3
+        return CaseAction.lookup('Message')
 
     tkt_text = str(_("Email"))
 
     if tkt_text in title:
         #new case task
-        return 8
+        return CaseAction.lookup('Task Activity')
 
     return 0
 
@@ -137,9 +146,7 @@ def get_html_preference(user):
 
 def check_user_availability(user):
     # is this user OOF?
-    logger.debug(date.today())
     today = date.today()
-    logger.debug(user)
     return CalendarEvent.objects.filter(event_id=CalendarEvent.OOF, date__range=(today,today), user=user).exists()
 
 def create_oof_ticket(user, action, ticket=None, case=None):
@@ -224,7 +231,7 @@ def send_updateticket_mail(followup, files=None, user=None):
             if not prefs:
                 # this user doesn't want email
                 return
-            if 2 in list(prefs):
+            if 2 in prefs:
                 # this user wants a daily summary of this
                 vtdn = VTDailyNotification(user=ticket.assigned_to,
                                            action_type=action,
@@ -337,7 +344,7 @@ def send_newticket_mail(followup, files, user=None):
         assigned_users = CaseAssignment.objects.filter(case=ticket.case)
         context.update(safe_case_context(ticket.case))
         for asuser in assigned_users:
-            if asuser.assigned.email not in messages_sent_to and check_email_preferences(CaseAction.TASK_ACTIVITY, asuser.assigned):
+            if asuser.assigned.email not in messages_sent_to and check_email_preferences(CaseAction.lookup("Task Activity"), asuser.assigned):
                 context['emailtitle'] = "New Task in Case %s" % ticket.case.get_vuid()
                 send_ticket_mail(
                     'case_new_ticket',
@@ -396,36 +403,35 @@ def send_newticket_mail(followup, files, user=None):
 
 
 def check_email_preferences(action_type, user):
-    if action_type == 1:
-        # Generic Case Change
-        pref = user.usersettings.settings.get('email_case_changes', ['1'])
-    elif action_type == 2:
-        # New Posts
-        pref = user.usersettings.settings.get('email_new_posts', ['1'])
-    elif action_type == 3:
-        # New Messages
-        pref = user.usersettings.settings.get('email_new_messages', ['1'])
-    elif action_type == 4:
-        # New Status Updates
-        pref = user.usersettings.settings.get('email_new_status', ['1'])
-    elif action_type == 8:
-        pref = user.usersettings.settings.get('email_tasks', ['1'])
-    else:
-        pref = []
-        
-    if type(pref) is not list:
-        if pref == True:
-            pref = ['1']
-        else:
-            pref = []
+    """ Check if email and user action require either an
+    immediate email or a digest email on a daily basis """
 
-    # now turn them all into ints
-    pref = [int(i) for i in pref]
-    
-    return pref
+    if not user.is_active:
+        logger.warning("User {user.username} is inactive returning []")
+        return []
+
+    pref_type = CaseAction.USER_ACTION_MAP.get(action_type,None)
+
+    if pref_type == None:
+        #pref_type does not map to any user actions requiring
+        #sending of an email
+        return []
+    #pref_type will be belong to user prefence such as
+    #('email_case_changes', 'email_tasks')
+    prefs = user.usersettings.settings.get(pref_type,[1])
+
+    #pref can be True or a list of integers. If pref is True
+    #turn this into array [1] send email but not in daily digest mode
+    if type(prefs) is not list:
+        if prefs:
+            prefs = [1]
+        else:
+            prefs = []
+
+    return prefs
 
 def emailable_action(action):
-    if action.action_type in [0, 4, 7, 8, 9, 11, 12]:
+    if action.action_type in CaseAction.EMAILABLE_ACTIONS:
         return False
 
     return True
@@ -456,7 +462,7 @@ def send_updatecase_mail(action, new_user=None):
             return
         # this is an assignment update
         pref = check_email_preferences(action.action_type, new_user)
-        if 1 in list(pref):
+        if 1 in pref:
             context['case']['assignee'] = action.user
             send_case_mail(
                 "case_assigned_to",
@@ -475,11 +481,10 @@ def send_updatecase_mail(action, new_user=None):
             vtdn.save()
         return
 
-    oof = True
+    #Assume everyone is OOF unless we get at least one user 
+    alloof = True
     for user in assigned_users:
-        logger.debug(user.assigned)
         if user.assigned not in [action.user, new_user]:
-            logger.debug("HERE")
             pref = check_email_preferences(action.action_type, user.assigned)
             if 1 in pref:
                 if get_html_preference(user.assigned):
@@ -496,12 +501,12 @@ def send_updatecase_mail(action, new_user=None):
 
         #if assigned users are OOF
         if not(check_user_availability(user.assigned)):
-            logger.debug("HELLO")
-            oof = False
-            # at least 1 user is not oof
+            logger.debug(f"User {user.assigned} is Out Of Office")
+            alloof = False
 
-    if (len(assigned_users) and oof):
-        logger.debug("HOW???")
+
+    if (len(assigned_users) and alloof):
+        logger.debug(f"All assigned users are Out of Office {assigned_users}")
         #all assigned users are oof, so cut a triage ticket to alert
         #someone that something happened
         create_oof_ticket(user.assigned, action.title, None, case)

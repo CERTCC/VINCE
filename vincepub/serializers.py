@@ -163,6 +163,16 @@ class CSAFSerializer(serializers.ModelSerializer):
         model = VUReport
         fields = ["document","vulnerabilities","product_tree"]
 
+    def to_representation(self, case):
+        ret = super().to_representation(case)
+        if not ret['vulnerabilities']:
+            del ret['product_tree']
+            if hasattr(settings,'CSAF_VUL_EMPTY'):
+                ret['vulnerabilities'] = settings.CSAF_VUL_EMPTY
+            else:
+                ret['vulnerabilities'] = [{"notes": [{"category": "general","text": "No vulnerabilities have been defined at this time for this report"}]}]
+        return ret
+
     def isvalid_reference(self,ref):
         if not ref:
             return False
@@ -170,7 +180,7 @@ class CSAFSerializer(serializers.ModelSerializer):
             self.validurl(ref)
             return True
         except Exception as e:
-            logger.debug("Encountered invalid URI for reference ignoring %s due to error %s" %(ref,str(e)))
+            logger.debug("CSAF Parser encountered invalid URI for reference ignoring %s due to error %s" %(ref,str(e)))
             return False
 
 
@@ -232,13 +242,15 @@ class CSAFSerializer(serializers.ModelSerializer):
             if ven.addendum:
                 addinfo = {"category": "other",
                            "text": ven.addendum,
-                           "title": f"settings.ORG_NAME comment on {ven.vendor} notes"}
+                           "title": f"{settings.ORG_NAME} comment on {ven.vendor} notes"}
                 csafdoc["notes"] += [addinfo]
         return csafdoc
 
     def get_csafvuls(self, vr):
         self.mproduct_tree = {"branches": []}
         casevuls = list(NoteVulnerability.objects.filter(note__vuid=vr.idnumber))
+        if not len(casevuls):
+            return None
         csafvuls = []
         tfile = os.path.join(self.template_json_dir,"vulnerability.json")
         csafvul_template = open(tfile,"r").read()
@@ -258,6 +270,7 @@ class CSAFSerializer(serializers.ModelSerializer):
             csafvul = csafvul_template % {
                 "vuid":  vr.vuid,
                 "cve":  cve,
+                "ORG_NAME": settings.ORG_NAME,
                 "title": json.dumps(casevul.description.split(".")[0]+"."),
                 "description": json.dumps(casevul.description) }
             csafvulj = json.loads(csafvul,strict=False)

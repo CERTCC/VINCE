@@ -29,7 +29,7 @@ of AWS services such as Cognito, S3, ElasticBeanstalk, Cloudfront, SQS, SNS,
 and SES. VINCE uses the python library,
 [warrant](https://github.com/capless/warrant), for AWS Cognito
 authentication.  [Warrant](https://github.com/capless/warrant) has been
-slightly modified and is included with VINCE.
+slightly modified and is included with VINCE. 
 
 VINCE also uses and includes
 the [django-bakery](https://github.com/palewire/django-bakery) project to
@@ -37,6 +37,41 @@ generate and publish flat HTML files of vulnerability notes that are served
 via an AWS S3 bucket. The
 [django-bakery](https://github.com/palewire/django-bakery) project has been
 modified to generate the flat files in memory versus using the filesystem. 
+
+VINCE also has a [development](https://github.com/CERTCC/VINCE/tree/development)
+branch which can be run using [LocalStack](https://localstack.cloud).
+
+
+### Architecture
+
+VINCE follows a traditional Django's `Model-Template-View-Controller` for most part.
+VINCE's 3-Tier setup is designed to work with Web/Presentation Tier (Amazon CloudFront),
+Application Tier (Amazon ElasticBeanStalk) and Database Tier (Amazon RDS).  All these
+components can be mimicked (or replaced) to either use LocalStack or individual
+open-source software for each of these tiers. VINCE's services interface to Storage (Amazon S3)
+Notifications (Amazon SNS), Queueing (Amazon SQS) and Messaging (Amazon SES) are all modular
+and can be adapted to either LocalStack or other python3+Django supported modules. VINCE's
+Identity Management is defaulted to Cognito - this also can be modified to use other Identity
+Providers. Cognito identity is also tied to few modules such as S3 buckets used for file
+storage, including both uploads and downloads. These can be mimicked using LocalStack. Code
+updates may be required in cases of file interactions. 
+
+VINCE application is made of three individual applications and databases.
+* VINCETRACK application (database vincetrack) launched from (vince/)[vince/] folder.
+* VINCECOMM application (database vincecomm) launched from (vinny/)[vinny/].
+* VINCEPUB application (database vincepub) launched from (vincepub/)[vincepub/].
+
+The VINCETRACK application requires access to all three database schemas and tables.
+The VINCETRACK app is meant for `Coordinators and Administrators` by default deisgned to be in
+a group labeled as `Coordinator` or as setup in `bigvince.settings.COGNITO_ADMIN_GROUP`
+with higher privileges. The VINCECOMM and VINCEPUB applications have access to their respective schemas.
+The VINCECOMM applications is acessible to Vendors, Finders
+(Security Researchers) as well as other stakeholders that are registered, verified and have been approved. The
+VINCEPUB application provides publicly available publications and reports that unauthenticated
+users. Each application can also be further protected by network access controls as desired to
+reduce the risk of exposure.
+
+[<img src="VINCE_Infrastructure.png" width="100%"></A>](./VINCE_Infrastructure.png)
 
 
 ### Local Install
@@ -79,9 +114,8 @@ DATABASE_PASSWORD=PASSWORD
 
 5. Create secret key
 ```
-python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+python3 -c 'from django.utils.crypto import get_random_string; chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#%^&*(-_=+)"; print(get_random_string(50, chars));';
 ```
-Swap out any "$" characters if they exist. $ characters mess with API key generation.  Or continue to regenerate until you get a key without a "$"
 Add it to bigvince/.env
 
 6. Edit bigvince/settings_.py as needed with your settings. Important settings to pay attention to:
@@ -109,6 +143,7 @@ SUPERUSER
 
 7. Run migrations
 ```
+python manage.py makemigrations
 python manage.py migrate
 python manage.py migrate --database=vincecomm
 python manage.py migrate --database=vincepub

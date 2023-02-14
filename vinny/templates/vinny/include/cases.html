@@ -1,10 +1,10 @@
 {% load inbox_tags %}
 {% if page_obj %}
-<div class="resultCount"> Showing results {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ paginator.count }} Results </div>
+<div class="resultCount page_obj"> Showing results {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ paginator.count }} Results </div>
 {% elif total %}
-<div class="resultCount"> Showing results {{ cases.start_index }} - {{ cases.end_index }} of {{ total }} Results </div>
+<div class="resultCount total"> Showing results {{ cases.start_index }} - {{ cases.end_index }} of {{ total }} Results </div>
 {% elif paginator.count %}
-<div class="resultCount"> {{ paginator.count }} Results </div>
+<div class="resultCount paginator_count"> {{ paginator.count }} Results </div>
 {% endif %}
 
 {% if dashboard and cases %}
@@ -37,9 +37,10 @@
 {% endfor %}
 {% endif %}
 {% if cases.paginator %}
+<!-- Standard Paginator Form -->
 <ul class="pagination text-center" role="navigation" aria-label="Pagination">
   {% if cases.has_previous %}
-  <li class="pagination-previous"><a href="#" next="{{ cases.previous_page_number }}" class="search_notes">Previous</a></li>
+  <li class="pagination-previous"><a href="#" next="{{ cases.previous_page_number }}" class="search_notes asyncpage">Previous</a></li>
   {% else %}
   <li class="pagination-previous disabled">Previous</li>
   {% endif %}
@@ -47,25 +48,25 @@
   {% if cases.number == i %}
   <li class="current"><span class="show-for-sr">You're on page</span> {{ cases.number }}</li>
   {% elif i > cases.number|add:'-3' and i < cases.number|add:'3' %}
-  <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+  <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes asyncpage">{{ i }}</a></li>
   {% else %}
   {% if i == 1 %}
-      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes asyncpage">{{ i }}</a></li>
       <li class="ellipsis"></li>
       {% elif forloop.last %}
       <li class="ellipsis"></li>
-      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+      <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes asyncpage">{{ i }}</a></li>
       {% endif %}
       {% endif %}
       {% endfor %}
       {% if cases.has_next %}
-      <li class="pagination-next"><a href="#" next="{{ cases.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
+      <li class="pagination-next"><a href="#" next="{{ cases.next_page_number }}" aria-label="Next page" class="search_notes asyncpage">Next</a></li>
       {% else %}
       <li class="pagination-next disabled">Next</li>
       {% endif %}
   </ul>
 {% else %}
-
+<!-- In custom paginator -->
 <ul class="pagination text-center" role="navigation" aria-label="Pagination">
   {% if page_obj.has_previous %}
   <li class="pagination-previous"><a href="?page={{ page_obj.previous_page_number }}">Previous</a></li>

@@ -56,7 +56,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "1.50.6"
+VERSION = "2.0.6"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -335,6 +335,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'libraries': {
+                'staticfiles': 'django.templatetags.static',
+            }
         },
     },
 ]
@@ -770,3 +773,51 @@ LEGAL_DISCLAIMER = """THIS DOCUMENT IS PROVIDED ON AN 'AS IS' BASIS AND DOES NOT
 
 #allowed options: "prod", "test", "dev"
 CVE_SERVICES_API = os.environ.get("CVE_SERVICES_API", "test")
+
+#Django 3 and 4 upgrade
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+#TLP related statements Note TLP2.0 says WHITE is replaced by CLEAR BUT CSAF2.0 is in TLP1.0
+#https://github.com/oasis-tcs/csaf/issues/591
+CSAF_DISTRIBUTION_OPTIONS = {
+    "RED": {
+        "distribution": {
+            "text": "For the eyes and ears of individual recipients only, no further disclosure.",
+            "tlp": {
+                "label": "RED",
+                "url": "https://www.first.org/tlp/"
+            }
+        }
+    },
+    "AMBER": {
+        "distribution": {
+            "text": "Limited disclosure, recipients can only spread this on a need-to-know basis within their organization and its clients.",
+            "tlp": {
+                "label": "AMBER",
+                "url": "https://www.first.org/tlp/"
+            }
+        }
+    },
+    "GREEN": {
+        "distribution": {
+            "text": "Limited disclosure, recipients can spread this within their community.",
+            "tlp": {
+                "label": "GREEN",
+                "url": "https://www.first.org/tlp/"
+            }
+        }
+    },
+    "WHITE": {
+        "distribution": {
+            "text": "Recipients can spread this to the world, there is no limit on disclosure. ",
+            "tlp": {
+                "label": "WHITE",
+                "url": "https://www.first.org/tlp/"
+            }
+        }
+    }
+}
+#Choose how VINCE's private and public CSAF documents are mapped with TLP
+#If you choose to disable TLP statements in CSAF comment out the MAP dictionary below
+CSAF_TLP_MAP = { "PUBLIC": "WHITE", "PRIVATE": "AMBER" }
+

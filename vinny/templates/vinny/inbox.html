@@ -15,7 +15,7 @@
     </div>
     <div class="large-6 medium-6 small-6 columns text-right">
       {% if user.is_staff %}
-      <a href="{% url 'vinny:sendmsguser' %}" class="button button-icon-badge cmu">
+      <a href="{% url 'vinny:sendmsguser' %}" class="button button-icon-badge cmu primary">
         <i class="fa fa-envelope"></i>
         <span class="button-icon-badge-text">Send Message</span>
       </a>
@@ -42,55 +42,59 @@
 
 
 
-<form method="POST" action="{% url 'vinny:filterthreads' %}" id="filterform">
-  {% csrf_token %}
-  <div class="row">
-    <div class="large-5 columns medium-5 small-8">
-      <div class="input-group">
-	<input class="input-group-field form-control" type="text" placeholder="Filter messages" id="id_keyword" name="keyword">
-	<div class="input-group-button">
-	  <button type="submit" class="button"><i class="fas fa-search"></i></button>
-	</div>
-      </div>
-    </div>
-    <div class="large-2 columns medium-4 small-4">
-      <div class="dropdown-pane" id="status-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
-        <div class="row column">
-          <div class="form-check border-bottom mb-2 pb-2">
-            <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
-            <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
-          </div>
-          {% render_field form.status class="form_check_input" %}
-        </div>
-    </div>
-      <div class="filter-by-dropdown">
-	<button type="button" class="filter-by-dropdown__toggle-button" data-toggle="status-dropdown">
-          Filter by status
-          <i aria-hidden="true" class="fas fa-chevron-down"></i>
-	</button>
-      </div>
-    </div>
-    <div class="large-5 medium-3 columns">
-      <input type="hidden" name="page" id="id_page" value="1"></div>
-  </div>
-</form>
-
-
 <div class="row">
   <div class="large-10 columns">
     <ul class="tabs" data-tabs id="inbox-tabs">
       <li class="tabs-title is-active"><a href="#rcv" aria-selected="true">Inbox</a></li>
-      <li class="tabs-title"><a data-tabs-target="sent" href="#sent">Sent</a></li>
+      <li class="tabs-title">
+	<a data-tabs-target="sent" href="#sent" data-divid="sent"
+	   class="asyncclick" data-parentdiv="div.mainbody"
+	   data-form="#filterform" data-method="GET">
+	  Sent
+	</a>
+      </li>
     </ul>
     <div class="tabs-content" data-tabs-content="inbox-tabs">
       <div class="tabs-panel is-active" id="rcv">
-	
-	<div class="case-list" id="inbox">
-	  {% include 'vinny/include/threads.html' with empty_msg="You have no messages" page_class="search_notes" %}
+	<form method="POST" action="{% url 'vinny:filterthreads' %}" id="filterform" class="asyncform" targetdivid="inbox">
+	  {% csrf_token %}
+	  <div class="row">
+	    <div class="large-5 columns medium-5 small-8">
+	      <div class="input-group">
+		<input class="input-group-field form-control asyncdelaysearch" type="text" placeholder="Filter messages" id="id_keyword" name="keyword">
+		<div class="input-group-button">
+		  <button type="submit" class="button"><i class="fas fa-search"></i></button>
+		</div>
+	      </div>
+	    </div>
+	    <div class="large-2 columns medium-4 small-4">
+	      <div class="dropdown-pane" id="status-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
+		<div class="row column select_all_group">
+		  <div class="form-check border-bottom mb-2 pb-2">
+		    <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input select_all_checkbox">
+		    <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
+		  </div>
+		  {% render_field form.status class="form_check_input" %}
+		</div>
+	      </div>
+	      <div class="filter-by-dropdown">
+		<button type="button" class="filter-by-dropdown__toggle-button" data-toggle="status-dropdown">
+		  Filter by status
+		  <i aria-hidden="true" class="fas fa-chevron-down"></i>
+		</button>
+	      </div>
+	    </div>
+	    <div class="large-5 medium-3 columns">
+	      <input type="hidden" name="page" id="id_page" value="1"></div>
+	  </div>
+	</form>
+
+	<div class="case-list asyncload autoload" id="inbox" href="{% url 'vinny:filterthreads' %}" parentdiv="div.mainbody" method="POST" form="#filterform">
+	  <!-- Async loading of this content with Auto Async on document.ready -->
 	</div>
       </div>
-      <div class="tabs-panel" id="sent">
-	{% include 'vinny/include/threads.html' with threads=sentthreads empty_msg="You have no messages" page_class="searchsent" %}
+      <div class="tabs-panel asyncload" id="sent" href="{% url 'vinny:filterthreads' %}">
+	<!-- Async loading of this content either by click or other changes-->
       </div>
     </div>
   </div>

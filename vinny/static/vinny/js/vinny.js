@@ -480,26 +480,4 @@ $(document).ready(function() {
 
     });
     
-    $('#moreVendor').click(function(e) {
-	e.preventDefault();
-	$.ajax({
-            url: $(this).attr("href"),
-            success: function( data ) {
-		$("#hidevendors").toggle();
-		$("#moreVendors").toggle();
-		$("#lessVendors").toggle();
-                $("#hidevendors").html(data);
-            }
-        });
-	
-    });
-
-     $('#lessVendor').click(function(e) {
-        $("#hidevendors").toggle();
-        $("#moreVendors").toggle();
-	$("#lessVendors").toggle();
-        e.preventDefault();
-
-    });
-    
 });

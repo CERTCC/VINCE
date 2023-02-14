@@ -18,7 +18,7 @@
     </div>
   </div>
 </div>
-<form action="{% url 'vinny:caseresults' %}" method="post" enctype="multipart/form-data" name="searchform" id="searchform">
+<form action="{% url 'vinny:caseresults' %}" method="post" enctype="multipart/form-data" name="searchform" id="searchform" targetdivid="searchresults" class="asyncform">
   <div class="row">
     <div class="large-4 medium-5 small-6 columns">
       {% with WIDGET_ERROR_CLASS='searchform_error' %}
@@ -27,9 +27,9 @@
     </div>
     <div class="large-2 columns medium-3 small-6">
       <div class="dropdown-pane" id="status-dropdown" data-dropdown data-hover="true" data-hover-pane="true">
-	<div class="row column">
+	<div class="row column select_all_group">
           <div class="form-check border-bottom mb-2 pb-2">
-            <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input">
+            <input id="filter_by_dropdown_select_all_0" type="checkbox" class="form-check-input select_all_checkbox">
             <label for="filter-by_dropdown_select_all_0" class="form-check-label"> Select all </label>
           </div>
           {% render_field form.status %}
@@ -67,6 +67,6 @@
   {% endwith %}
 </form>
 <div class="row column">
-  <div id="searchresults"></div>
+  <div id="searchresults" class="asyncload autoload" href="{% url 'vinny:caseresults' %}" method="POST" form="#searchform"></div>
 </div>
 {% endblock %}

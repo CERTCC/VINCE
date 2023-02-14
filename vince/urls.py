@@ -152,6 +152,8 @@ urlpatterns = [
     re_path(r'^cve/(?P<vul>[0-9]+)/create/$', views.CVEFormView.as_view(), name='newcve'),
     re_path(r'^cve/create/$', views.CVEFormView.as_view(), name='newcve'),
     re_path(r'^cve/(?P<pk>[0-9]+)/download/$', views.DownloadCVEJson, name='download_cve'),
+    re_path(r'^cve/(?P<pk>[0-9]+)/cve5/$', views.CreateCVE5Json, name='download_cve5'),
+    re_path(r'^cve/(?P<pk>[0-9]+)/cve5/submit/$', views.submitCVE5JSON.as_view(), name='submit_cve5'),        
     re_path(r'^cve/(?P<pk>[0-9]+)/edit/$', views.EditCVEView.as_view(), name='cve'),
     path('case_template/new/', views.NewCaseTemplate.as_view(), name='newtmpl'),
     path('case_template/filter/', views.CaseTemplateFilterView.as_view(), name='filtertmpl'),
@@ -338,8 +340,8 @@ try:
             path('logout/', auth_views.LogoutView.as_view(template_name='vince/logout.html'), name="logout"),
         ])
         
-except Exception as e:
-    print("Error when trying to detect VINCE_NAMESPACE %s" %(str(e)))
+
+except:
     urlpatterns.extend([
         path('login/', auth_views.LoginView.as_view(template_name='vince/login.html'), name='login'),
         path('logout/', auth_views.LogoutView.as_view(template_name='vince/logout.html'), name="logout")
