@@ -1,0 +1,6 @@
+FROM localstack/localstack:1.1.0
+
+COPY ./<cert>.crt /usr/local/share/ca-certificates/cert-bundle.crt
+RUN update-ca-certificates
+ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt

@@ -89,7 +89,43 @@
               {% endfor %}
             </table>
 	  </div>
-	</div>
+
+		<!-- This code enables products to be included when cloning a vulnerability from the case view -->
+	  <div class="row">
+		<div class="large-12 columns">
+		  {{ prod_formset.management_form }}
+		  <div id="prodprefix" class="hidden">{{ prod_formset.prefix }}</div>
+		  <table class="unstriped cve_formset_table">
+			{% for subform in prod_formset %}
+			<tr class="prod_formset">
+			  <td>
+			<label for="cve_prod">Organization: <span class='required'>*</span></label>
+			{% render_field subform.organization class="form-control" %}
+			  </td>
+			  <td>
+			<label for="cve_prod_name">Product Name: <span class='required'>*</span></label>
+			{% render_field subform.cve_affected_product class="form-control" %}
+			</td>
+			  <td>
+			<label for="cve_version_num">Version (or Starts): <span class='required'>*</span></label>
+			{% render_field subform.version_value class="form-control" %}
+			  </td>
+			  <td>
+			<label for="cve_version_num">Range Type: </label>
+			{% render_field subform.version_affected class="form-control" %}
+			  </td>
+			  
+			  <td> 
+			<label for="cve_version_name">Range End:</label>
+			{% render_field subform.version_name class="form-control" %}
+			  </td>
+			  <td>
+			  </td>
+			</tr>
+			{% endfor %}
+		  </table>
+		</div>
+		</div>
       </div>
       <div class="modal-footer">
 	<div class="row column text-right">

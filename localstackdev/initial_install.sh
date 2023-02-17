@@ -4,6 +4,8 @@ until $(curl --output /dev/null --silent --head --fail http://localstack:4566); 
     sleep 5
 done
 sleep 5
+
+#All Localstack Commands/Variables
 export LOCALSTACK_HOST=localstack
 pool_id=$(awslocal cognito-idp create-user-pool --pool-name $POOL_NAME | jq -rc ".UserPool.Id")
 client_id=$(awslocal cognito-idp create-user-pool-client --user-pool-id $pool_id --client-name $CLIENT_NAME | jq -rc ".UserPoolClient.ClientId")
@@ -41,9 +43,12 @@ do
     sed -i s/$i.*$/$i=\"$b\"/g $filename
 done
 export PGPASSWORD=$POSTGRESQL_PASS
+#PostgreSQL Database Creation
 createdb -h $POSTGRES_HOST -U postgres vince
 createdb -h $POSTGRES_HOST -U postgres vincecomm
 createdb -h $POSTGRES_HOST -U postgres vincepub 
+#Django Specific Application Commands
+python3 manage.py makemigrations
 python3 manage.py migrate
 python3 manage.py migrate --database=vincecomm
 python3 manage.py migrate --database=vincepub

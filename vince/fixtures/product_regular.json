@@ -1,0 +1,114 @@
+[
+    {
+        "model": "vince.sector",
+        "pk": 1,
+        "fields": {
+            "name": "Chemical"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 2,
+        "fields": {
+            "name": "Commercial Facilities"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 3,
+        "fields": {
+            "name": "Communications"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 4,
+        "fields": {
+            "name": "Critical Manufactoring"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 5,
+        "fields": {
+            "name": "Dams"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 6,
+        "fields": {
+            "name": "Defense Industrial Base"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 7,
+        "fields": {
+            "name": "Emergency Services"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 8,
+        "fields": {
+            "name": "Energy"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 9,
+        "fields": {
+            "name": "Financial"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 10,
+        "fields": {
+            "name": "Food and Agriculture"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 11,
+        "fields": {
+            "name": "Government Facilities"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 12,
+        "fields": {
+            "name": "Healthcare and Public Health"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 13,
+        "fields": {
+            "name": "Information Technology"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 14,
+        "fields": {
+            "name": "Nuclear Reactors, Materials, and Waste"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 15,
+        "fields": {
+            "name": "Transportation Systems"
+        }
+    },
+    {
+        "model": "vince.sector",
+        "pk": 16,
+        "fields": {
+            "name": "Water and Wastewater Systems"
+        }
+    }
+]

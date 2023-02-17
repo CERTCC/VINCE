@@ -566,20 +566,22 @@ $(function () {
 				contentType: 'application/json',
 				dataType: 'json'})
 			.done(function(ret) {
-			    let m = [{output: ret},{input:cvedata}];
-			    $('#cve5data').val(json_pretty(m));
+				let m = [{output: ret},{input:cvedata}];
+				$('#cve5data').val(json_pretty(m));
+
 			    if("error" in ret) {
-				msg_card(el,"Error: "+ret.error,"bad");
-				$('#cve5data').addClass('is-invalid-input');
+					msg_card(el,"Error: "+ret.error,"bad");
+					$('#cve5data').addClass('is-invalid-input');
 			    } else if("message" in ret) {
-				msg_card(el,"Result: "+ret.message,"good");
-				$('#cve5data').removeClass('is-invalid-input');
-				if('updated' in ret) {
-				    $('#cve5data')
-					.data('cveservices',ret.updated);
-				    load_cvedata('cveservices');
-				}
-				
+					msg_card(el,"Result: "+ret.message,"good");
+					$('#cve5data').removeClass('is-invalid-input');
+					
+					if('updated' in ret) {
+						$('#cve5data')
+						.data('cveservices',ret.updated);
+						load_cvedata('cveservices');
+					}
+			
 			    } else {
 				/* the card-cr class looks like warning*/
 				msg_card(el,"Result: "+ret.message,"cr")

@@ -12,7 +12,7 @@ Run the following:
 ### Configuration
 Then acquire a valid [Localstack](https://localstack.cloud/) Pro license key (trial will work)
 
-Environment Variables:
+## Environment Variables:
 #### VINCE/.env:
 - Modify the `LOCALSTACK_API_KEY` variable to be proper API key.
 
@@ -27,20 +27,20 @@ Add the following to `/etc/hosts`. An example line is below:
     127.0.0.1   localstack
     127.0.0.1   testpool.us-east-1.localstack
 
-An example `.env` for usage under `bigvince` is provided with fake or development only values. Although it must be copied to the proper location
+An example `.env` for usage under `bigvince` is provided in the localstackdev folder with fake or development only values. Although it must be copied to the proper location (bigvince/.env).
+
+This .env file is setup to serve static files from the LocalStack S3 bucket. If you want to truly serve them from a local filepath or nginx, remove the line AWS_DEPLOYED=1.
 
 #### Copy settings_.py
 `bigvince/settings_.py` will need to be copied to `bigvince/settings.py`
 
-
 #### Windows Specific
-- Modify Dockerfile-dev to use 20.04.
 - Set `git config --global core.autocrlf input` before cloning the repository.
 
 ### Usage
 Run `sudo docker-compose up`, and wait 2-5 minutes
 
-Navigate to `http://localstack`
+Navigate to `http://localstack:80`
 
 ### Additional commands
 Commands of note are below:
@@ -49,9 +49,11 @@ Commands of note are below:
 - `docker-compose build` (rebuild vince base container)
 - `docker-compose up -d` (run in the background)
 - `docker-compose ps` (show status of containers)
-- `docker-compose exec <name_of_container> /bin/bash` (start a bash shell in a running container)
+- `docker-compose exec -it <name_of_container> /bin/bash` (start a bash shell in a running container)
 
 ## Additional notes
+- With the recent changes to LocalStack docker container, something is broken.The target for LocalStack docker container has been modified LocalStack (1.1.0) inside docker-compose.yml.
+- If you are using a self signed certificate, a Dockerfile (Dockerfile-localstackdev) as well as localstackdev/docker-compose_localstackdev.yml are provided. The latter must be named appropriately and replace the original docker-compose.yml file in the root of this repository. The localstack target in this Dockerfile is also an older version (1.1.0).
 - The default password is currently set in the fixtures, it can be modified after logging in for the first time
 - The ADMIN_EMAIL field is used for login, not the username
 - If the containers are created anew from stratch then the browser cache will need to be cleared to remove an old JWT token

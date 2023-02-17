@@ -2,7 +2,10 @@ version: "3.8"
 services:
   localstack:
     container_name: localstack
-    image: localstack/localstack:1.1.0
+    build:
+      context: .
+      dockerfile: localstackdev/Dockerfile-localstackdev
+    image: localstack
     ports:
       - "127.0.0.1:4566:4566"            # LocalStack Gateway
       - "127.0.0.1:4510-4559:4510-4559"  # external services port range
@@ -36,8 +39,8 @@ services:
   bv-postgres:
     container_name: bv-postgres
     image: postgres:latest
-    #ports:
-    #  - "127.0.0.1:5432:5432"
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
       - POSTGRES_PASSWORD=${POSTGRESQL_PASS}
     volumes:

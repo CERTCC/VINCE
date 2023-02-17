@@ -134,8 +134,8 @@
 	      </td>
 	      <td>
 		<label for="cve_prod_name">Product Name: <span class='required'>*</span></label>
-		{% render_field subform.name class="form-control" %}
-	      </td>
+		{% render_field subform.cve_affected_product class="form-control" %}
+		</td>
 	      <td>
 		<label for="cve_version_num">Version (or Starts): <span class='required'>*</span></label>
 		{% render_field subform.version_value class="form-control" %}
@@ -160,6 +160,4 @@
     </form>
   </div>
 </div>
-
-
 {% endblock %}

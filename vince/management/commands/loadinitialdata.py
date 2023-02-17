@@ -84,7 +84,12 @@ class Command(BaseCommand):
                     if path.endswith("_extra.json"):
                         call_command('loaddata', os.path.join("vince/fixtures", path))
                         logger.info(f"Done loading {path}")
-                
+
+            if VendorProduct.objects.count() > 0:
+                logger.info("Product Info already exists")
+            else:
+                call_command('loaddata', 'vince/fixtures/product_regular.json')
+                logger.info("Done loading Product Info")
             #call_command('copy_contact_uuid')
 
             #logger.info("Loading Contact Info")
