@@ -1,7 +1,7 @@
 /*#########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -477,28 +477,6 @@ $(document).ready(function() {
                 $("#allposts .dropdown-pane").foundation();
             }
 	});
-
-    });
-    
-    $('#moreVendor').click(function(e) {
-	e.preventDefault();
-	$.ajax({
-            url: $(this).attr("href"),
-            success: function( data ) {
-		$("#hidevendors").toggle();
-		$("#moreVendors").toggle();
-		$("#lessVendors").toggle();
-                $("#hidevendors").html(data);
-            }
-        });
-	
-    });
-
-     $('#lessVendor').click(function(e) {
-        $("#hidevendors").toggle();
-        $("#moreVendors").toggle();
-	$("#lessVendors").toggle();
-        e.preventDefault();
 
     });
     

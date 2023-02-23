@@ -29,7 +29,7 @@
     </div>
     <div class="large-3 medium-3 columns small-12 text-right">
       {% if vincetrack %}
-      <a class="button cmu" href="{% url 'vince:case' case.vince_id %}">VINCETrack</a>
+      <a class="button cmu primary small" href="{% url 'vince:case' case.vince_id %}">VINCETrack</a>
       {% else %}
       <a href="{% url 'vinny:sendmsg' 2 case.id %}"><button class="default button small-only-expanded">Private Message Coordinators</button></a>
       {% endif %}
@@ -225,7 +225,7 @@
 	<div class="hidden" id="paginate_by">{{ paginate_by }}</div>
 	{% if num_posts > 10 %}
 	<a href="#" class="expandreplies">Show all</a>
-	<span id="showall">Showing all {{ total_posts }} posts</span>
+	<span id="showall">Showing all <span id="postcount">{{ total_posts }}</span> posts</span>
 	{% endif %}
       </div>
     </div>
@@ -263,12 +263,12 @@
   </div><!-- 9 columns -->
 
   <div class="large-3 columns">
-    <div class="participant_type">
+    <div class="participant_type type_coordinators">
       <div class="row column">
 	<h4>Coordinators</h4>
       </div>
       {% for coordinator in coordinators %}
-      <div class="participant">
+      <div class="participant type_coordinator">
 	<div class="participant-pic">
 	  {% if coordinator.participant %}
 	  {% autoescape off %}{{ coordinator.participant|userlogo:"profile-pic" }}{% endautoescape %}
@@ -288,7 +288,7 @@
       </div>
       {% endfor %}
     </div>
-    <div class="participant_type">
+    <div class="participant_type type_reporters">
       <div class="row column">
 	{% if participants|length > 1 %}
 	<h4>Reporters</h4>
@@ -297,7 +297,7 @@
 	{% endif %}
       </div>
       {% for participant in participants %}
-      <div class="participant">
+      <div class="participant type_reporter">
 	<div class="participant-pic">
 	  {% if participant.participant %}
 	  {% autoescape off %}{{ participant.participant|userlogo:"profile-pic" }}{% endautoescape %}
@@ -320,15 +320,36 @@
       {% endfor %}
     </div>
     {% if vendors %}
-    <div class="participant_type">
+    <div class="participant_type type_vendors">
       <div class="row column">
-	<h4>Vendors</h4>
+	<h4>Vendors
+	  <nav role="navigation" class="cdown" id="vendorfilter">
+	    <ul>
+	      <li><a><i class="fas fa-filter"></i></a>
+		<ul class="dropdown">
+		  <li class="affected" data-class="alert">
+		    <i class="fas fa-check"></i>
+		    Affected(<span class="count"></span>)
+		  </li>
+		  <li class="not_affected" data-class="success">
+		    <i class="fas fa-check"></i>
+		    Not Affected(<span class="count"></span>)
+		  </li>
+		  <li class="all">
+		    <i class="fas fa-check"></i>
+		    All(<span class="count"></span>)
+		  </li>
+		</ul>
+	      </li>
+	    </ul>
+	  </nav>
+	</h4>
       </div>
       {% if simulation %}
       {% elif user.is_staff %}
-      <div class="participant">
+      <div class="participant pheader">
         <div class="addfilebutton">
-          <a href="{% url 'vinny:groupchatcase' case.id %}" class="button default text-center"><i class="fa fa-plus"></i> Private Thread</a>
+          <a href="{% url 'vinny:groupchatcase' case.id %}" class="button default text-center small"><i class="fa fa-plus"></i> Private Thread</a>
         </div>
       </div>
       {% endif %}
@@ -337,7 +358,7 @@
       <div id="hidevendors">
 	{% endif %}
       {% if vendor.group.groupcontact.contact.vendor_name %}
-      <div class="participant">
+      <div class="participant type_vendor">
 	<div class="participant-pic">
 	  {% autoescape off %}{{ vendor|grouplogo:"profile-pic" }}{% endautoescape %}
 	</div>
@@ -356,12 +377,11 @@
       {% endfor %}
       {% if vendors|length > 5 %}
       </div>
-      <div class="row columns">
-        <div id="moreVendors">
-          <a href="{% url 'vinny:loadvendors' case.id %}" id="moreVendor">SHOW ALL {{num_vendors}}</a>
+      <div class="row column moreless" data-asyncdivid="hidevendors"  data-parentdivclass="type_vendors" data-rowdivclass="type_vendor" data-href="{% url 'vinny:loadvendors' case.id %}" data-batchcount="20">
+        <div id="moreVendors" class="asyncshowall">
+	  <a id="moreVendor" href="#"> SHOW ALL [<span id="vendorcount" class="showallcount">{{num_vendors}}</span>]</a>
         </div>
-        <div id="lessVendors">
-          <a href="#" id="lessVendor">SHOW LESS</a>
+        <div id="lessVendors" class="asyncshowless" data-asyncdivid="hidevendors"><a href="#" id="lessVendor">>SHOW LESS</a>
         </div>
       </div>
       {% endif %}
@@ -370,7 +390,7 @@
     <div class="large reveal" id="largemodal" data-reveal></div>
     <div class="reveal" id="modal" data-reveal></div>
 
-    <div class="participant_type">
+    <div class="participant_type type_documents">
       <div class="row">
 	<div class="large-12 columns">
 	  <h4>Documents </h4>
@@ -378,12 +398,12 @@
       </div>
       <div class="participant">
 	<div class="addfilebutton">
-	  <a href="{% url 'vinny:addfile' case.id %}" class="uploadfile button default text-center"><i class="fa fa-plus"></i> Add file</a>
+	  <a href="{% url 'vinny:addfile' case.id %}" class="uploadfile button default text-center small"><i class="fa fa-plus"></i> Add file</a>
 	</div>
       </div>
       <div class="reveal" id="upload-file" data-reveal></div>
       {% for attachment in attachments %}
-      <div class="participant">
+      <div class="participant type_document">
 	<div class="participant-pic">
 	  {% if attachment.file %}
           <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ attachment.file.filename|showfileicon }}{% endautoescape %}</span></div>
@@ -414,9 +434,9 @@
       <div class="participant">
 	<div class="addfilebutton">
 	  {% if case_muted %}
-	  <a href="{% url 'vinny:mute' case.id %}" class="mutecase button default text-center"><i class="fas fa-volume-up"></i> Unmute Case</a>
+	  <a href="{% url 'vinny:mute' case.id %}" class="mutecase button default text-center small"><i class="fas fa-volume-up"></i> Unmute Case</a>
 	  {% else %}
-	  <a href="{% url 'vinny:mute' case.id %}" class="mutecase button default text-center"><i class="fas fa-volume-mute"></i> Mute Case</a>
+	  <a href="{% url 'vinny:mute' case.id %}" class="mutecase button default text-center small"><i class="fas fa-volume-mute"></i> Mute Case</a>
 	  {% endif %}
 	</div>
       </div>

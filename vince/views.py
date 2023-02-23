@@ -1,7 +1,7 @@
 #########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -94,10 +94,16 @@ from bigvince.storage_backends import PrivateMediaStorage
 from vince.settings import VULNOTE_TEMPLATE
 from collections import OrderedDict
 from django.utils.http import is_safe_url
+from lib.vince import utils as vinceutils
+from rest_framework.views import APIView
+import pathlib
+import mimetypes
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+def json_error(msg):
+    return JsonResponse({"error":msg})
 
 def get_cve_info(context,acc):
     context['cve_service'] = acc
@@ -131,6 +137,48 @@ def object_to_json_response(obj, status=200):
     return JsonResponse(
         data=obj, status=status, safe=False, json_dumps_params={'ensure_ascii': False},
     )
+
+
+def filterDateFields(GET,initial={}):
+    date_from = GET.get('date_from')
+    if date_from:
+        try:
+            initial['datestart'] = DateField().clean(date_from)
+        except Exception as e:
+            logger.info(f"Error while parsing date {e}")
+    date_to = GET.get('date_to')
+    if date_to:
+        try:
+            initial['dateend'] = DateField().clean(date_to)
+        except Exception as e:
+            logger.info(f"Error while parsing date {e}")
+    return initial
+
+
+def filterDateTimeFields(POST,res,crit='created__range'):
+    enddate = DateTimeField().clean(datetime.now()) + timedelta(days=1)
+    startdate = DateTimeField().clean('1970-01-01')
+    doFilter = False
+    if 'dateend' in POST:
+        v = POST['dateend']
+        try:
+            enddate = DateTimeField().clean(v) + timedelta(days=1)
+            doFilter = True
+        except Exception as e:
+            logger.info(f"Error when parsing date field error {e} for {v}")
+    if 'datestart' in POST:
+        v = POST['datestart']
+        try:
+            startdate = DateTimeField().clean(v)
+            doFilter = True
+        except Exception as e:
+            logger.info(f"Error when parsing date field error {e} for {v}")
+    if doFilter:
+        try:
+            res = res.filter(**{crit :(startdate,enddate)})
+        except Exception as e:
+            logger.info(f"Filtering failed for DateTimeField error {e}")
+    return res
 
 @register.filter(name='leading_zeros')
 def leading_zeros(value, desired_digits):
@@ -880,7 +928,7 @@ def process_query_for_tags(s):
     return ret
 
 def process_query(s, live=True):
-    query = re.sub(r'[!\'()|&<>]', ' ', s).strip()
+    query = re.sub(r'[!\'()|&<>:]', ' ', s).strip()
     # get rid of empty quotes
     query = re.sub(r'""', '', query)
     if query == '"':
@@ -1291,18 +1339,17 @@ class AttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
 
     def get(self, request, *args, **kwargs):
         try:
-            attachment = Attachment.objects.filter(uuid=self.kwargs['path']).first()
+            file_uuid = self.kwargs['path']
+            attachment = Attachment.objects.filter(uuid=file_uuid).first()
             # if the UUID is not valid, this will throw a ValidationError
         except:
             raise Http404
 
         if attachment:
             filename = attachment.filename
-            # do this for old files
-            filename = filename.replace("\r", "")
-            filename = filename.replace("\n", "")
-            filename = filename.strip()
             mime_type = attachment.mime_type
+            filename = vinceutils.safe_filename(filename,file_uuid,mime_type)
+                    
             response = HttpResponseRedirect(attachment.access_url, content_type = mime_type)
 
             #test URL
@@ -1311,7 +1358,7 @@ class AttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
                 if not(attachment.file.storage.exists(str(attachment.uuid))):
                     raise Http404
                 else:
-                    url = attachment.file.storage.url(str(attachment.uuid), parameters={'ResponseContentDisposition': f'attachment; filename="{attachment.filename}"'})
+                    url = attachment.file.storage.url(str(attachment.uuid), parameters={'ResponseContentDisposition': f'attachment; filename="{filename}"'})
                     response = HttpResponseRedirect(url)
 
             response['ResponseContentDisposition'] = f"attachment; filename=\"{filename}\""
@@ -1613,16 +1660,8 @@ class TicketFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
             statuslist = self.request.POST.getlist('status')
             res = res.filter(status__in=statuslist)
 
-        if 'datestart' in self.request.POST:
-            # add a day to dateend since it translates to 0AM
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(created__range=(DateTimeField().clean(self.request.POST['datestart']),
-                                                 enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(created__range=(DateTimeField().clean('1970-01-01'),
-                                                     enddate))
+        res = filterDateTimeFields(self.request.POST,res,'created__range')
+
         if 'queue' in self.request.POST:
             queuelist = self.request.POST.getlist('queue')
             res = res.filter(queue__id__in=queuelist)
@@ -1756,14 +1795,7 @@ class ActivityFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
 
         page = self.request.POST.get('page', 1)
 
-        if 'datestart' in self.request.POST:
-            # add a day to dateend since it translates to 0AM
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(date__range=(DateTimeField().clean(self.request.POST['datestart']),enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(date__range=(DateTimeField().clean('1970-01-01'), enddate))
+        res = filterDateTimeFields(self.request.POST,res,'date__range')
 
         if 'user' in self.request.POST:
             userlist = self.request.POST.getlist('user')
@@ -1794,13 +1826,7 @@ class ActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
         context['triage_user'] = get_triage_users(self.request.user)
         assignable_users = User.objects.filter(is_active=True, groups__name='vince').order_by(User.USERNAME_FIELD)
 
-        date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        initial = filterDateFields(self.request.GET,{})
         if self.request.GET.get('user'):
             initial['user'] = int(self.request.GET.get('user'))
         form = ActivityFilterForm(initial=initial)
@@ -1825,13 +1851,8 @@ class TicketFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView
 
         readable_queues = TicketQueue.objects.filter(queuepermissions__group__in=self.request.user.groups.all(), queuepermissions__group_read=True).distinct()
 
-        date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        initial = filterDateFields(self.request.GET,{})
+
         if self.request.GET.get('owner'):
             initial['owner'] = int(self.request.GET.get('owner'))
         queue = self.request.GET.get('queue')
@@ -2081,14 +2102,9 @@ class CommunicationsFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTest
                 vt_results = vt_results.filter(caseaction__vendor__in=vendorlist)
             if participantlist:
                 vt_results = vt_results.filter(caseaction__title__icontains="Participant")
-            if 'datestart' in self.request.POST:
-                enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-                if self.request.POST['datestart']:
-                    vt_results = vt_results.filter(date__range=(DateTimeField().clean(self.request.POST['datestart']), enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    vt_results=vt_results.filter(date__range=(DateTimeField().clean('1970-01-01'),
-                                                     enddate))
+
+            vt_results = filterDateTimeFields(self.request.POST,vt_results,'dat__range')
+
             if keyword:
                 vt_results = vt_results.filter((Q(title__icontains=keyword) | Q(comment__icontains=keyword)))
                 print("AFTER KEYWORDS SEARCH")
@@ -2114,7 +2130,7 @@ class CommunicationsFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTest
                           reverse=True)
 
         paginator = Paginator(activity, 10)
-        return render(request, self.template_name, {'activity': activity, 'total': activity.count(), 'case': case, 'allow_edit': True})
+        return render(request, self.template_name, {'activity': activity, 'total': len(activity), 'case': case, 'allow_edit': True})
 
 
 class CaseFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.ListView):
@@ -2153,15 +2169,7 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
                 res = res.filter(status__in=statuslist)
 
 
-        if 'datestart' in self.request.POST:
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(created__range=(DateTimeField().clean(self.request.POST['datestart']),
-                                                 enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(created__range=(DateTimeField().clean('1970-01-01'),
-                                                     enddate))
+        res = filterDateTimeFields(self.request.POST,res,'created__range')
 
         if 'owner' in self.request.POST:
             ownerlist = self.request.POST.getlist('owner')
@@ -2229,14 +2237,8 @@ class CaseFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
         context = super(CaseFilter, self).get_context_data(**kwargs)
 
         assignable_users = User.objects.filter(is_active=True, groups__name='vince').order_by(User.USERNAME_FIELD)
-        context['casepage']=1
-        date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        context['casepage'] = 1
+        initial = filterDateFields(self.request.GET,{})
         owner = self.request.GET.get('owner')
         if self.request.GET.get('owner'):
             initial['owner'] = int(owner)
@@ -2881,8 +2883,8 @@ class MuteCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
         unmute = False
         settings = user.usersettings.settings
         if user.usersettings.settings.get('muted_cases'):
-            logger.debug(f"User {user} has muted cases {muted_cases}")
             muted_cases = user.usersettings.settings['muted_cases']
+            logger.debug(f"User {user} has muted cases {muted_cases}")
             if case.id in muted_cases:
                 #this case has already been muted, unmute this case:
                 muted_cases.remove(case.id)
@@ -4755,7 +4757,7 @@ class CloseTicketandTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
                 crfup.save()
 
         elif int(form.cleaned_data['send_email']) == 3:
-            logger.debug(f"send message to VINCE User {vc_user}")
+            logger.debug(f"send message to VINCE User {ticket.submitter_email}")
             user_lookup = User.objects.using('vincecomm').filter(email=ticket.submitter_email).first()
             sender = User.objects.using('vincecomm').filter(email=self.request.user.email).first()
             subject = f"[{ticket.ticket_for_url}] {email_template.subject} {ticket.title}"
@@ -5763,7 +5765,6 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         #Assume we have not vrf_url unless we get one from below methods
         context['vrf_url'] = None
         context['vincecomm_link'] = None
-        
         if hasattr(context['case'],'case_request') and context['case'].case_request:
             if hasattr(context['case'].case_request,'caserequest'):
                 context['cr'] = context['case'].case_request.caserequest
@@ -6566,27 +6567,21 @@ class CaseVendors(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
     def get_context_data(self, **kwargs):
         context = super(CaseVendors, self).get_context_data(**kwargs)
         case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
-        context['vendors'] = VulnerableVendor.casevendors(case).order_by('vendor')
-        context['vendorsjs'] = [obj.as_dict() for obj in context['vendors']]
-
-        zero_user_vendors = 0
-        #update dictionary to show which vendor group has active users
-        for vjs in context['vendorsjs']:
-            cid = vjs['contact_id']
-            vc_contact = VinceCommContact.objects.using('vincecomm').filter(vendor_id=cid).first()
-            if vc_contact:
-                groupcontact = GroupContact.objects.using('vincecomm').filter(contact=vc_contact).first()
-                if groupcontact:
-                    count = User.objects.using('vincecomm').filter(groups=groupcontact.group).count()
-                    if count == 0:
-                        zero_user_vendors += 1
-                    vjs.update({'users':count})
-                    continue
-            vjs.update({'users': 0})
-            zero_user_vendors += 1
-
-        context['zero_user_vendors'] = zero_user_vendors
-
+        summary = VulnerableVendor.casevendors(case).aggregate(
+            total=Count('id'),
+            is_notified=Count('id',filter=Q(contact_date__isnull=False)),
+            has_seen=Count('id',filter=Q(seen=True)),
+            has_responded=Count('id',filter=Q(statement_date__isnull=False)),
+            is_approved=Count('id',filter=Q(approved=True)),
+            needs_approval=Count('id',filter=Q(statement_date__isnull=False,
+                                               approved=False)))
+        for x in summary:
+            context[x] = summary[x]
+        vcase = Case.objects.using("vincecomm").filter(vuid=case.vuid).first()
+        if vcase:
+            context['zero_user_vendors'] = CaseMember.objects.using("vincecomm").filter(case=vcase,group__user__isnull=True).count()
+        else:
+            context['zero_user_vendors'] = 0
         context['case'] = case
         return context
 
@@ -10278,7 +10273,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                 _add_activity(self.request.user, 3, contact, f"modified {pvar}")
                 some_changes=True
         newcomment = self.request.POST.get('comment',"")
-        if contact.comment != new_comment:
+        if contact.comment != newcomment:
             if not((contact.comment == None) and (newcomment == '')):
                 if newcomment == "":
                     _add_activity(self.request.user, 3, contact, f"removed comment: {contact.comment}")
@@ -10347,7 +10342,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                  'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp, instance=contact)}
         #'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact)}
         context['groups'] = GroupMember.objects.filter(contact=self.kwargs['pk'])
-        context['form'] = self.form_class(initial=Contact.objects.filter(id=self.kwargs['pk']).values()[0])
+        context['form'] = self.form_class(initial=contact)
         context['form'].fields['vtype'].choices = [('User', 'User'), ('Vendor', 'Vendor'), ('Coordinator', 'Coordinator')]
         context['form'].fields['vtype'].initial = contact.vendor_type
         context['contact'] = contact
@@ -11675,7 +11670,7 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
                 form.add_error(None, "At least one Product is required")
                 return self.form_invalid(form)
         else:
-            logger.debug(f"Form errors in {self.__class__.__name__} si {f.errors}")            
+            logger.debug(f"Form errors in {self.__class__.__name__} is {form.errors}")
             return self.form_invalid(form)
 
     def form_valid(self, form):
@@ -12419,6 +12414,15 @@ class VulnerabilityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         user_groups= self.request.user.groups.exclude(groupsettings__contact__isnull=True)
         context['vul_tags'] = [tag.tag for tag in context['vul'].vulnerabilitytag_set.all()]
         context['allowed_tags'] = [tag.tag for tag in TagManager.objects.filter(tag_type=4).filter(Q(team__in=user_groups)|Q(team__isnull=True)).order_by('tag').distinct('tag')]
+        if hasattr(context['vul'],'cve') and context['vul'].cve:
+            cve = context['vul'].cve.upper()
+            if cve.find("CVE-") < 0:
+                cve = f"CVE-{cve}"
+            if cvelib.CveApi.ENVS.get(settings.CVE_SERVICES_API):
+                cve_url = cvelib.CveApi.ENVS.get(settings.CVE_SERVICES_API)
+                if cve_url[-1] != '/':
+                    cve_url = cve_url + '/'
+                context['cve_status'] = f"{cve_url}cve-id/{cve}"
         return context
 
 class VendorStatusListView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
@@ -12993,14 +12997,7 @@ class TriageView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Li
 
         page = self.request.POST.get('page', 1)
 
-        if 'datestart' in self.request.POST:
-            # add a day to dateend since it translates to 0AM
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(created__range=(DateTimeField().clean(self.request.POST['datestart']), enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(created__range=(DateTimeField().clean('1970-01-01'), enddate))
+        res = filterDateTimeFields(self.request.POST,res,'created__range')
 
         if 'queue' in self.request.POST:
             queuelist = self.request.POST.getlist('queue')
@@ -13033,12 +13030,7 @@ class TriageView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Li
         bounces = FollowUp.objects.filter(title__istartswith="Email Bounce Notification", ticket__status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS])
         context['pbounces'] = BounceEmailNotification.objects.filter(bounce_type=BounceEmailNotification.PERMANENT, action_taken=False)
         date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        initial = filterDateFields(self.request.GET,{})
         queue = self.request.GET.get('queue')
         if queue:
             queue = TicketQueue.objects.filter(title=queue).first()
@@ -13698,16 +13690,7 @@ class EmailFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
             ownerlist = self.request.POST.getlist('user')
             res = res.filter(user__id__in=ownerlist)
 
-        if 'datestart' in self.request.POST:
-            # add a day to dateend since it translates to 0AM
-            enddate = DateTimeField().clean(self.request.POST['dateend']) + timedelta(days=1)
-            if self.request.POST['datestart']:
-                res = res.filter(created__range=(DateTimeField().clean(self.request.POST['datestart']),
-                                                 enddate))
-            elif 'dateend' in self.request.POST:
-                if self.request.POST['dateend']:
-                    res = res.filter(created__range=(DateTimeField().clean('1970-01-01'),
-                                                     enddate))
+        res = filterDateTimeFields(self.request.POST,res,'created__range')
 
         if 'wordSearch' in self.request.POST:
             if self.request.POST['wordSearch']:
@@ -13735,13 +13718,7 @@ class EmailFilterView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
     def get_context_data(self, **kwargs):
         context = super(EmailFilterView, self).get_context_data(**kwargs)
         context['emailpage'] = 1
-        date_from = self.request.GET.get('date_from')
-        initial = {}
-        if date_from:
-            initial['datestart'] = DateField().clean(date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            initial['dateend'] = DateField().clean(date_to)
+        initial = filterDateFields(self.request.GET,{})
         if self.request.GET.get('user'):
             initial['user'] = int(self.request.GET.get('user'))
         if self.request.GET.get('method'):
@@ -14269,6 +14246,164 @@ def DownloadCVEJson(request, pk):
         response["Pragma"] = "must-revalidate"
         return response
 
+@login_required(login_url="vince:login")
+@user_passes_test(is_in_group_vincetrack, login_url='vince:login')
+def CreateCVE5Json(request, pk):
+    if is_in_group_vincetrack(request.user):
+        cve = CVEAllocation.objects.filter(id=pk).first()
+        cvss = VulCVSS.objects.filter(vul = cve.vul).first()
+        if not cve:
+            return JsonResponse({})
+
+        cvss = VulCVSS.objects.filter(vul = cve.vul).first()
+        cna = {}
+        if cve.title:
+            title = cve.title
+        else:
+            title = cve.cve_name
+        
+        cna["title"] = title
+        cna["descriptions"] = [{"lang": "en","value": cve.vul.description }]
+        cna["source"] = {"discovery": cve.source if cve.source else "UNKNOWN"}
+        affected = []
+        products = cve.cveaffectedproduct_set.all()
+        for p in products:
+            affect = {"vendor": p.organization,
+                      "product": p.name,
+                      "versions": [{
+                          "status": "affected",
+                          "version": p.version_value
+                          }]
+                      }
+            if p.version_affected and p.version_name:
+                affect["versions"][0][p.version_affected] = p.version_name
+                affect["versions"][0]["versionType"] = "custom"
+            affected.append(affect)
+        cna["affected"] = affected
+        problems = []
+        if cve.cwe:
+            for cwe in json.loads(cve.cwe):
+                problems.append({"descriptions": [
+                    {
+                        "lang": "en",
+                        "description": cwe
+                    }
+                ]})
+        if problems:
+            cna["problemTypes"] = problems
+        refs = []
+        if cve.references:
+            for ref in json.loads(cve.references):
+                if type(ref) is dict and "url" in ref:
+                    refs.append({"url": ref["url"]})
+        if refs:
+            cna["references"] = refs
+        metrics = []
+        if cvss:
+            if cvss.score:
+                cvss_score = float(cvss.score)
+            else:
+                cvss_score = 0            
+            metrics.append({
+                "format": "CVSS",
+                "scenarios": [
+                    {
+                        "lang": "en",
+                        "value": "GENERAL"
+                    }
+                ],
+                "cvssV3_1": {
+                    "version": "3.1",
+                    "attackVector":cvss_translator(cvss.AV, "AV"),
+                    "attackComplexity":cvss_translator(cvss.AC, "AC"),
+                    "privilegesRequired":cvss_translator(cvss.PR, "PR"),
+                    "userInteraction":cvss_translator(cvss.UI, "UI"),
+                    "scope":cvss_translator(cvss.S, "S"),
+                    "confidentialityImpact": cvss_translator(cvss.C, "C"),
+                    "integrityImpact":cvss_translator(cvss.I, "I"),
+                    "availabilityImpact":cvss_translator(cvss.A, "A"),
+                    "vectorString":cvss.vector,
+                    "baseScore":cvss_score,
+                    "baseSeverity":cvss.severity.upper()
+                }})
+        if metrics:
+            cna["metrics"] = metrics
+        cve_id = cve.cve_name.upper()
+        if cve_id.find("CVE-") < 0:
+            cve_id = f"CVE-{cve_id}"
+        cna["x_generator"] = {"engine": "VINCE "+settings.VERSION}
+        if cvelib.CveApi.ENVS.get(settings.CVE_SERVICES_API):
+            cve_url = cvelib.CveApi.ENVS.get(settings.CVE_SERVICES_API)
+            if cve_url[-1] != '/':
+                cve_url = cve_url + '/'
+            cna["x_generator"]["env"] = settings.CVE_SERVICES_API
+            cna["x_generator"]["origin"] = f"{cve_url}cve/{cve}"
+
+        cve5 = {"dataType": "CVE_RECORD",
+                "dataVersion": "5.0",
+                "cveMetadata": {
+                    "cveId": cve_id,
+                    "assignerOrgId": "00000000-0000-0000-0000-000000000000",
+                    "state": "PUBLISHED"
+                },
+                "containers": {
+                    "cna": cna
+                }
+                }            
+        return JsonResponse(cve5)
+
+class submitCVE5JSON(LoginRequiredMixin, UserPassesTestMixin, APIView):
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    
+    def post(self, request, *args, **kwargs):
+        
+        my_teams = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
+        cve = CVEAllocation.objects.filter(id=self.kwargs.get('pk',"")).first()
+        
+        account = CVEServicesAccount.objects.filter(team__in=my_teams).first()
+
+        if not account:
+            return json_error("No CVE Services Account available")
+        if not cve:
+            return json_error("No Matching CVE data found")
+        if not cve.cve_name:
+            return json_error("This CVE does not have a CVE Number allocated")
+        
+        cve_lib = cvelib.CveApi(account.email, account.org_name,
+                                account.api_key, env=settings.CVE_SERVICES_API)
+        if not cve_lib.ping() is None:
+            return json_error("CVE services down")
+        try:
+            cve_json = json.loads(request.body)
+        except Exception as e:
+            logger.info(f"No JSON body found for {self.__class__.__name__} {request.body} Error is {e}")
+            return json_error(f"Error No JSON body or an incorrect JSON body submitted")
+        try:
+            cve_id = cve.cve_name.upper()
+            if cve_id.find("CVE-") < 0:
+                cve_id = f"CVE-{cve_id}"
+            cve = cve_lib.show_cve_id(cve_id)
+            if 'state' in cve and cve['state'] == "PUBLISHED":
+                ret = cve_lib.update_published(cve_id,cve_json)
+            else:
+                ret = cve_lib.publish(cve_id,cve_json)
+            return JsonResponse(ret)
+        except Exception as e:
+            #25299 cross reference number
+            logger.info(f"CVE5 25299 JSON submitted error {e}")
+            if hasattr(e,"errors"):
+                return json_error(str(e.errors))
+            elif hasattr(e,'response') and hasattr(e.response,'content'):
+                if type(e.response.content) == bytes:
+                    return json_error(e.response.content.decode())
+                return json_error(str(e.response.content))
+            return json_error("Error 25299 CVE JSON Submission failed")
+            
+            
+    
 class ReadEmailAdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
     login_url = "vince:login"
     template_name = "vince/process_email.html"

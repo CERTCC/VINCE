@@ -1,7 +1,7 @@
 #########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -148,6 +148,7 @@ class SendMessageUserForm(forms.ModelForm):
     subject = forms.CharField(
         required = True,
         label=_('Subject'),
+        max_length=Thread._meta.get_field('subject').max_length,
     )
 
     case = forms.ChoiceField(

@@ -1,7 +1,7 @@
 /*#########################################################################
   # VINCE
   #
-  # Copyright 2022 Carnegie Mellon University.
+  # Copyright 2023 Carnegie Mellon University.
   #
   # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
   # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON

@@ -1,7 +1,7 @@
 #########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -57,6 +57,7 @@ import traceback
 import mimetypes
 from django.dispatch import Signal
 import io
+from lib.vince import utils as vinceutils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -634,7 +635,8 @@ class VinceAttachment(models.Model):
         return '%s' % self.filename
 
     def _get_access_url(self):
-        url = self.file.storage.url(self.file.name, parameters={'ResponseContentDisposition': f'attachment; filename="{self.filename}"'}, expire=10)
+        filename = vinceutils.safe_filename(self.filename,str(self.uuid),self.mime_type)
+        url = self.file.storage.url(self.file.name, parameters={'ResponseContentDisposition': f'attachment; filename="{filename}"'}, expire=10)
         return url
     
     access_url = property(_get_access_url)
@@ -690,6 +692,7 @@ class VinceCommInvitedUsers(models.Model):
 
 
 def update_filename(instance, filename):
+    filename = vinceutils.safe_filename(filename)
     if instance.vrf_id:
         new_filename = "vrf%s_%s" % (instance.vrf_id, filename)
     else:

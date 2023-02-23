@@ -1,10 +1,33 @@
 # VINCE Changelog
 
+Version 2.0.6  2023-01-23
+
+* Removed Edit Vulnerability button superfluous GHIssue #77
+* Updates to CVE publish buttons and automatic close of CVE modal on error
+* Modify CVEAffectedProduct.version_affected vince models.py for CVE5JSON
+* Bug fix newcomment not new_comment in vince/views.py
+* Add "Notify anyway" button routine for already notified vendor.
+
+## Version 2.0.5  2023-01-04
+
+* Update to CVE2.1 Services Publish using CVE5 JSON
+* More Async functions for vendor status views
+* Added more common libraries to lib/vince/utils
+* Added a mute_lib.py to support mute a Case for a user in automated way
+* Fixed a number of small bugs in max length in FORM submissions and S3 sensitive filenames
+
+## Version 2.0.4: 2022-12-20
+
+* Added Filter to CaseView in VinceComm
+* Addition of more Async functions for non-interactive queries
+* Fixing of slow performance on allvendors view to use Django Aggregate and Filter/Q functions
+* Friendly errors and fixes for logging to add IP address of remote client
+
 
 ## Version 2.0.3: 2022-12-14
 
 * Major upgrade to Django 3.2 LTS target end byt 2024. Fixes related to Django upgrade in all libraries.
-* Aded new QuerySet Paging library for performance extend chain with chainqs for QuerySet 
+* Aded new QuerySet Paging library for performance extend chain with chainqs for QuerySet
 * Asynchronous calls for most vinny/views via JSON through asyncLoad class
 * Provide API Views 404 with JSON generic error
 * Allow Session or API Token authentication to support API access from browser
