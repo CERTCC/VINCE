@@ -1,5 +1,15 @@
 # VINCE Changelog
 
+Version 2.0.7  2023-03-20
+
+* Security updates Django to 3.2.18 CVE-2023-24580, Remove python-futures (no longer used) GH Issues #91 #90 (Dependabot)
+* Support User Approve Request (UAR) new workflow for User joining Vendor Group GH Issue #94
+* Allow Tracking ID's to be added to Cases when user belongs to multiple groups (CaseTracking) reported by VINCE user.
+* Move from initial to instance on Form Class inits() to modify existing data in Models/Forms pair
+* Move more browser UI information to async data requests, less templates.
+* Remove `marquee`, `command` and `style` tags from supported markdown_helpers  lib.vince.markdown_helpers - reported by VINCE user.
+
+
 Version 2.0.6  2023-01-23
 
 * Removed Edit Vulnerability button superfluous GHIssue #77
