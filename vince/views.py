@@ -10342,7 +10342,7 @@ class EditContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView,
                  'pgp_formset': self.PgPFormSet(prefix='pgp', queryset=pgp, instance=contact)}
         #'email_formset': self.EmailFormSet(prefix='email', queryset=email, instance=contact)}
         context['groups'] = GroupMember.objects.filter(contact=self.kwargs['pk'])
-        context['form'] = self.form_class(initial=contact)
+        context['form'] = self.form_class(instance=contact)
         context['form'].fields['vtype'].choices = [('User', 'User'), ('Vendor', 'Vendor'), ('Coordinator', 'Coordinator')]
         context['form'].fields['vtype'].initial = contact.vendor_type
         context['contact'] = contact
@@ -13477,6 +13477,7 @@ class VinceTeamsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
         if context['my_teams']:
             context['my_team'] = context['my_teams'][0]
         return context
+
 
 class VinceTeamSettingsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     login_url = "vince:login"

@@ -714,7 +714,7 @@ ul {
 
 #login-footer{
     height:70px;
-    background-color:#FFF;
+    background-color:#525356;
     border: solid 1px white;
     max-width: 600px;
     width: 100%;
@@ -3730,6 +3730,7 @@ h4 a i {
     padding: 0 .25em;
     font-size: 14px;
     color: #666;
+    cursor:pointer;
 }
 
 .edit-delete-hover {
@@ -3756,7 +3757,7 @@ h4 a i {
 }
 
 .sent-by-me {
-    background-color: #7eb3af;
+    background-color: #777;
     color: #fff;
 }
 

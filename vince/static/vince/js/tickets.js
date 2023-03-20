@@ -583,7 +583,11 @@ $(document).ready(function() {
 		    $("#msgvendor").removeClass("hidden");
 		} else if (data['action_link']) {
 		    $("#msgvendor").addClass("hidden");
-		    $("#msgabutton").replaceWith("<a href=\""+data['action_link']+"\" class=\"button primary\">Send Email</a>");
+		    let send_email = $("<div>")
+			.append($("<a>").addClass("button primary")
+				.prop("href",data.action_link)
+				.html("Send Email")).html()
+		    $("#msgabutton").replaceWith(send_email);
 		} else {
 		    $("#msgvendor").addClass("hidden");
 		    $("#msgabutton").prop("disabled", true);
@@ -615,8 +619,28 @@ $(document).ready(function() {
 	    }
 	});
     }
-
-    
+    function msgadminform_async() {
+        $('#msgadminform').on('submit',function(e) {
+        e.preventDefault();
+        $('body').css({opacity: 0.5});
+        $.post(this.action,$(this).serialize(),function(d) {
+            console.log(d);
+            $('#msgadminform .modal-body').html('<h2>Submit completed</h2>')
+                .append(JSON.stringify(d,null,'\t'));
+        }).fail(function() {
+	    $('#msgadminform .modal-body').html('<h2>Submission Failed!<h2>')
+		.append("See console log for details");
+	    console.log(arguments);
+	}).done(function() {
+            $('#msgadminform .modal-footer').html('');
+            setTimeout(function() {
+                $("#adddependency").foundation('close');
+                location.reload();
+            }, 900);
+        });
+        return false;
+	});
+    }
     $(document).on("click", "#msgadmin", function(event) {
         event.preventDefault();
         var url = $(this).attr("href");
@@ -628,6 +652,7 @@ $(document).ready(function() {
                     adddepmodal.html(data).foundation('open');
 		    $.getJSON("/vince/api/vendors/", function(data) {
 			vend_auto(data);
+			msgadminform_async();
 		    });
                 },
                 error: function(xhr, status) {
