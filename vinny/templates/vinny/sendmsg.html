@@ -24,15 +24,6 @@
     </div>
   </div>
 </div>
-
-<div class="row">
-  <div class="large-12 columns">
-    {% for message in messages %}
-    <div class="callout {{ message.tags }}">{{ message }}</div>
-    {% endfor %}
-  </div>
-</div>
-
 <div class="row">
   <div class="large-9 columns">
     <div class="new-message">
@@ -78,7 +69,12 @@
 	  {% elif field.name == "vendor" %}
 	  <div id="vendor_selection" {% if msgtype != '10' %}class="collapse"{% endif %}>
 	      <div class="callout warning">
-		Please provide the name of the organization you are requesting access to.  If you are the first person to join this VINCE group, we perform a two-person validation process to verify your status at the organization. If the organization is already an active group in VINCE, we will ask the group administrator to add you to the group. If you know the group administrator for your organization, it may be quicker to ask them directly to add you to the group.
+		Please select the name of your organization under Vendor Name.
+		Provide Justification for your access to the organization.
+		If your organization is not listed, 
+		please provide the additional information to speed-up the
+		new organization validation process and to expedite your
+		onboarding promptly.
 	      </div>
 	    {% endif %}
 	    <div class="form-group">
