@@ -33,7 +33,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.views.generic import TemplateView, RedirectView
 from cogauth import views as cogauth_views
-
+from vinny.views import userapproverequest
 
 # DO NOT USE "vuls" or "comm" in the URL Path... these are special keywords in the
 # database router that change the request variable to use a different database
@@ -325,6 +325,8 @@ urlpatterns = [
     re_path('^manage/cve/(?P<pk>[0-9]+)/key/', views.CVEAccountViewKey.as_view(), name='cveviewkey'),
     re_path('^manage/cve/delete/(?P<pk>[0-9]+)/', views.CVEServicesDeleteAccount.as_view(), name='cve_services_delete'),
     path('manage/bounces/', views.VINCEBounceManager.as_view(), name='bouncemanager'),
+    #Cross applications app url views from vinny.views
+    path('api/userapprove/', userapproverequest, {"caller": "vince"}, name='userapprove'),
 ]
 try:
     if settings.MULTIURL_CONFIG:

@@ -86,7 +86,7 @@
     <a class="dashboard-nav-card vin-card orig_report" href="{% url 'vinny:cr' case.id %}">
       <i class="dashboard-nav-card-icon fas fa-file-alt" aria-hidden="true"></i>
       <h3 class="dashboard-nav-title">View Original Report</h3>
-      <p class="dashboard-nav-summary">{% if case.team_owner %}{{ case.team_owner.groupcontact.contact.vendor_name }}{% else %}We{% endif %} received this report on {% if case.cr.date_submitted %}{{ case.cr.date_submitted|date:"Y-m-d" }}{% else %}{{ case.created|date:"Y-m-d" }}{% endif %}.</p>
+      <p class="dashboard-nav-summary">{% if case.team_owner %}{{ case.team_owner.groupcontact.contact.vendor_name }}{% else %}We{% endif %} received this report on {% if case.cr.date_submitted %}<span class="datefield">{{ case.cr.date_submitted|date:"c" }}{% else %}{{ case.created|date:"c" }}{% endif %}</span>.</p>
       <h5 class="dashboard-nav-card-action"><p class="btn-cta">View the report</p></h5>
     </a>
   </div>
@@ -103,7 +103,7 @@
 	{{ message }}<br/>
 	{% endfor %}
 	{% else %}
-	We have identified {{ checkvuls|length }} {% if checkvuls|length > 1 %}vulnerabilities {% else %} vulnerability {% endif %}in this case. Your status was previously submitted on {% with s1=status|last_status %}{{ s1.date_modified|date:"Y-m-d" }} by {{ s1.user.vinceprofile.preferred_username }}{% endwith %}.
+	We have identified {{ checkvuls|length }} {% if checkvuls|length > 1 %}vulnerabilities {% else %} vulnerability {% endif %}in this case. Your status was previously submitted on {% with s1=status|last_status %}<span class="datefield">{{ s1.date_modified|date:"c" }}</span> by {{ s1.user.vinceprofile.preferred_username }}{% endwith %}.
 	{% endif %}
       </p>
       <h5 class="dashboard-nav-card-action"><p class="btn-cta">View vuls and update your status</p></h5>
@@ -175,20 +175,20 @@
       <i class="dashboard-nav-card-icon fas fa-calendar-alt" aria-hidden="true"></i>
       {% endif %}
       {% if case.published %}
-      <h3 class="dashboard-nav-title">Vulnerability Note Published {{ case.note.datefirstpublished|date:"Y-m-d" }}</h3>
+      <h3 class="dashboard-nav-title">Vulnerability Note Published <span class="datefield">{{ case.note.datefirstpublished|date:"c" }}</span></h3>
       <p class="dashboard-nav-summary">
-        We published this vulnerability note on {{ case.note.datefirstpublished|date:"Y-m-d" }}.
+        We published this vulnerability note on <span class="datefield">{{ case.note.datefirstpublished|date:"c" }}</span>.
       </p>
       <h5 class="dashboard-nav-card-action"><p class="btn-cta">
           View the vulnerability note <i class="fas fa-external-link-alt"></i>
       </h5>
       {% elif case.publicdate %}
-      <h3 class="dashboard-nav-title">Vulnerability Public {{ case.publicdate|date:"Y-m-d" }}</h3>
+      <h3 class="dashboard-nav-title">Vulnerability Public <span class="datefield">{{ case.publicdate|date:"c" }}</span></h3>
       <p class="dashboard-nav-summary">
 	{% if case.publicdate > today %}
-	We expect this vulnerability to become public on {{ case.publicdate|date:"Y-m-d" }}.
+	We expect this vulnerability to become public on <span class="datefield">{{ case.publicdate|date:"c" }}</span>.
 	{% else %}
-        This vulnerability became public on {{ case.publicdate|date:"Y-m-d" }}.
+        This vulnerability became public on <span class="datefield">{{ case.publicdate|date:"c" }}</span>.
 	{% endif %}
       </p>
       {% if case.publicurl %}
@@ -198,11 +198,11 @@
       {% endif %}
       {% else %}
       <h3 class="dashboard-nav-title">
-        Expected Date Public: {% if case.due_date %}{{ case.due_date|date:"Y-m-d" }}{% else %}<b>TBD</b>{% endif %}
+        Expected Date Public: {% if case.due_date %}<span class="datefield">{{ case.due_date|date:"c" }}</span>{% else %}<b>TBD</b>{% endif %}
         {% if case.note %}<span class="icsdownload" id="downloadics"><i class="far fa-calendar-plus"></i></span>{% endif %}
       </h3>
       <p class="dashboard-nav-summary">
-        We expect this vulnerability to become public on {% if case.due_date %}{{ case.due_date|date:"Y-m-d" }}{% else %}<b>TBD</b>{% endif %}.
+        We expect this vulnerability to become public on {% if case.due_date %}<span class="datefield">{{ case.due_date|date:"c" }}</span>{% else %}<b>TBD</b>{% endif %}.
       </p>
       {% if case.note or case.due_date %}
       <h5 class="dashboard-nav-card-action"><p class="btn-cta">
@@ -418,7 +418,7 @@
 	  {% elif attachment.attachment %}
 	  <span class="participant-name"> <a href="{{ attachment.attachment.url }}">{{ attachment.attachment.name }}</a>&nbsp; {% if attachment.action.user == user %}<a href="{% url 'vinny:rmfile' case.id attachment.id %}" class="file-remove" ><i class="fas fa-trash"></i></a>{% endif %}</span>
 	  {% endif %}
-	  <div class="document-info">Uploaded by {{ attachment.action.user.vinceprofile.vince_username }} on {{ attachment.action.created|date:'Y-m-d' }}</div>
+	  <div class="document-info">Uploaded by {{ attachment.action.user.vinceprofile.vince_username }} on <span class="datefield">{{ attachment.action.created|date:"c" }}</span></div>
 	</div>
       </div>
       {% empty %}
@@ -441,37 +441,84 @@
 	</div>
       </div>
     </div>
-    
     {% if showtracking %}
-     <div class="participant_type">
+    <div class="participant_type trackings">
       <div class="row">
         <div class="large-12 columns">
-          <h4>Tracking <span class="helptooltip" title="Are you tracking this case in your organization's own tracking system? The group administrator can add the tracking number here and it will be included in the subject of any email sent to you. Only users in your organization will see this tracking number."><i class="fas fa-question-circle"></i></span></h4>
+          <h4>Tracking <span class="helptooltip" title="Are you tracking this case in your organization's own tracking system? Any participant of a Case can add the tracking number here and it will be included in the subject of any email sent to the member of your organization. Only users in your organization will see this tracking number."><i class="fas fa-question-circle"></i></span></h4>
         </div>
       </div>
-      {% if tracking.tracking %}{% else %}
-      <div class="participant">
-	<div class="addfilebutton">
-          <a href="{% url 'vinny:addtrack' case.id %}" class="addtrack button default text-center"><i class="fa fa-plus"></i> Add tracking ID</a>
-        </div>
-      </div>
-      {% endif %}
-      {% if tracking.tracking %}
-      <div class="participant">
+      <div class="participant tracking hide">
 	<div class="participant-info">
-	  <span class="participant-name"><p>{{ tracking.tracking }} <a href="{% url 'vinny:addtrack' case.id %}" class="addtrack"><i class="fas fa-edit edittrack"></i></a></p>
+	  <span class="participant-name"><p>
+	      <span class="tracker"></span> 
+	      <a class="edittrack modtrack">
+		<i class="fas fa-edit edittrack"></i>
+	      </a>
+	      <span class="trackorg"></span> 
+	    </p>
 	  </span>
-	  <div class="document-info">Added by {{ tracking.added_by.vinceprofile.vince_username }} on {{ tracking.dateupdated|date:'Y-m-d' }}</div>
+	  <div class="document-info">Added by
+	    <span class="added_by"></span>
+	    on
+	    <span class="dateupdated datefield"></span>
+	  </div>
 	</div>
-
       </div>
-      {% endif %}
-     </div>
-     {% endif %}
+      <div class="participant addtracking hide">
+	<div class="addfilebutton">
+          <a class="addtrack modtrack button default text-center">
+	    <i class="fa fa-plus"></i>
+	    Add tracking ID
+	  </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 <div class="hidden">
-  <span id="publishdate">{{ case.due_date|date:"m/d/Y" }}</span>
+  <span id="publishdate" class="datefield">{{ case.due_date|date:"c" }}</span>
   <span id="uid">{{ case.uid }}</span>
 </div>
+<div class="fullmodal hide" id="trackingmodal">
+  <form class="updatetracking" method="post"
+	action="{% url 'vinny:casetracking' %}">
+    <input type="hidden" name="case_id" class="case_id" value="{{ case.id }}">
+    <input type="hidden" name="track_id" class="track_id" value="">
+    <div class="modal-content">
+      <div class="modal-header">
+	<h5 class="modal-title">Tracking</h5>
+      </div>
+      <div class="modal-body">
+        <div class="hidden callout alert errormsg">
+          <p>The tracking number can be max. 100 characters.</p>
+        </div>
+	<div class="form-group">
+	  <div class="trackorg">
+	    <label>Organization
+	      <select name="group_id" class="group_id">
+	      </select>
+	    </label>
+	  </div>
+	  <div>
+	    <label>
+	      Tracking 
+	      <input type="text" maxlength="100" name="tracker"
+		     class="tracker" placeholder="Tracking ID">
+	    </label>
+	  </div>
+	</div>
+      </div>
+      <div class="modal-footer text-right">
+	<button type="submit" name="vrfSubmit" class="button primary">Save</button>
+      </div>
+    </div>
+  </form>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
+
 {% endblock %}

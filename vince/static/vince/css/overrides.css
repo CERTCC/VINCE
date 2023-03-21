@@ -119,3 +119,18 @@ nav.cdown li.not_affected {
     background-color: #3adb76;
 }  
 
+.new-vendor {
+    padding-left: 4px;
+}
+.p-inline-block {
+    display:inline-block;
+}
+.p-inline {
+    display:inline;
+}
+span.trackorg::before {
+    content: "[";
+}
+span.trackorg::after {
+    content: "]";
+}

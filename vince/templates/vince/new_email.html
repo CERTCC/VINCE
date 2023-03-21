@@ -30,7 +30,7 @@
 
 <div class="row">
   <div class="small-12 large-12 columns">
-    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <form method="post" id="emailForm" enctype="multipart/form-data">{% csrf_token %}
       {% if form.errors %}
       <p class="errornote">
         {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
