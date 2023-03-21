@@ -1,0 +1,117 @@
+[
+    {
+    "model": "vince.ticketqueue",
+    "pk": 2,
+    "fields": {
+        "title": "Case",
+        "slug": "case",
+        "new_ticket_cc": null,
+        "updated_ticket_cc": null,
+        "default_owner": null,
+        "queue_type": 3,
+        "from_email": "vince-email",
+        "team": 2
+    }
+},
+{
+    "model": "vince.ticketqueue",
+    "pk": 3,
+    "fields": {
+        "title": "Vendor",
+        "slug": "vendor",
+        "new_ticket_cc": null,
+        "updated_ticket_cc": null,
+        "default_owner": 1,
+        "queue_type": 4,
+        "from_email": "vince-email",
+        "team": 2
+    }
+},
+{
+    "model": "vince.ticketqueue",
+    "pk": 4,
+    "fields": {
+        "title": "General",
+        "slug": "general",
+        "new_ticket_cc": null,
+        "updated_ticket_cc": null,
+        "default_owner": 1,
+        "queue_type": 1,
+        "from_email": "vince-email",
+        "team": 2
+    }
+},
+{
+    "model": "vince.ticketqueue",
+    "pk": 5,
+    "fields": {
+        "title": "Inbox",
+        "slug": "inbox",
+        "new_ticket_cc": null,
+        "updated_ticket_cc": null,
+        "default_owner": null,
+        "queue_type": 4,
+        "from_email": "vince-email",
+        "team": null
+    }
+},
+{
+    "model": "vince.ticketqueue",
+    "pk": 1,
+    "fields": {
+        "title": "CR",
+        "slug": "cr",
+        "new_ticket_cc": null,
+        "updated_ticket_cc": null,
+        "default_owner": 1,
+        "queue_type": 2,
+        "from_email": "vince-email",
+        "team": 2
+    }
+},
+
+{
+    "model": "vince.queuepermissions",
+    "pk": 1,
+    "fields": {
+        "queue": 4,
+        "group": 2,
+        "group_read": true,
+        "group_write": true,
+        "publish": true
+    }
+},
+{
+    "model": "vince.queuepermissions",
+    "pk": 2,
+    "fields": {
+        "queue": 3,
+        "group": 2,
+        "group_read": true,
+        "group_write": true,
+        "publish": true
+    }
+},
+{
+    "model": "vince.queuepermissions",
+    "pk": 3,
+    "fields": {
+        "queue": 2,
+        "group": 2,
+        "group_read": true,
+        "group_write": true,
+        "publish": true
+    }
+},
+{
+    "model": "vince.queuepermissions",
+    "pk": 4,
+    "fields": {
+        "queue": 1,
+        "group": 2,
+        "group_read": true,
+        "group_write": true,
+        "publish": true
+    }
+}
+]

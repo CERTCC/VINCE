@@ -41,7 +41,8 @@ logger.setLevel(logging.DEBUG)
 class MultipleDomainMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
-
+        if settings.LOCALSTACK:
+            return
         url_config = getattr(settings, 'MULTIURL_CONFIG', None)
         if not url_config:
             return

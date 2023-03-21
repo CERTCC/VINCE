@@ -5,6 +5,8 @@ import datetime
 import re
 import requests
 import logging
+from bigvince.utils import get_cognito_pool_url
+from django.conf import settings
 
 from envs import env
 from jose import jwt, JWTError
@@ -177,6 +179,8 @@ class Cognito(object):
             boto3_client_kwargs['aws_secret_access_key'] = secret_key
         if user_pool_region:
             boto3_client_kwargs['region_name'] = user_pool_region
+        if settings.LOCALSTACK:
+            boto3_client_kwargs['endpoint_url']=get_cognito_pool_url()
 
         self.client = boto3.client('cognito-idp', **boto3_client_kwargs)
 
@@ -191,10 +195,14 @@ class Cognito(object):
                 self.pool_jwk = pool_jwk_env
                 return self.pool_jwk
             #If it is not there use the requests library to get it
-            self.pool_jwk = requests.get(
-                'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.format(
-                    self.user_pool_region,self.user_pool_id
-                )).json()
+            if settings.LOCALSTACK:
+                url = f"{get_cognito_pool_url()}/.well-known/jwks.json"
+                self.pool_jwk = requests.get(url).json()
+            else:
+                self.pool_jwk = requests.get(
+                    'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.format(
+                        self.user_pool_region,self.user_pool_id
+                    )).json()
             return self.pool_jwk
 
     def get_key(self,kid):

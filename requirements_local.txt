@@ -1,2 +1,1 @@
-django-bakery==0.12.7+cert.1
-warrant==0.6.1+cert.1
+awscli-local[ver1]
