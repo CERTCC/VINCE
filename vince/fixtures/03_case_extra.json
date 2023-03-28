@@ -1,0 +1,126 @@
+[
+
+      
+    {
+        "model": "vince.ticket",
+        "pk": 1,
+        "fields": {
+            "title": "test_case",
+            "queue": 1,
+            "case": null,
+            "created": "2022-10-11T22:00:15.128Z",
+            "modified": "2022-10-11T22:00:15.165Z",
+            "submitter_email": "admin@test.com",
+            "assigned_to": 2,
+            "status": 1,
+            "on_hold": false,
+            "description": "New CR",
+            "resolution": null,
+            "priority": 3,
+            "due_date": null,
+            "close_reason": 2,
+            "search_vector": "'casea':2 'cr':4 'new':3 'test':1"
+        }
+    },
+    {
+        "model": "vince.caserequest",
+        "pk": 1,
+        "fields": {
+            "vrf_id": "",
+            "request_type": 1,
+            "contact_name": null,
+            "contact_org": null,
+            "contact_email": null,
+            "contact_phone": null,
+            "share_release": true,
+            "credit_release": true,
+            "comm_attempt": true,
+            "why_no_attempt": "",
+            "please_explain": "",
+            "vendor_name": null,
+            "multiplevendors": false,
+            "other_vendors": null,
+            "first_contact": null,
+            "vendor_communication": "",
+            "product_name": "test_case",
+            "product_version": "all versions",
+            "ics_impact": false,
+            "vul_description": "test vulnerability description",
+            "vul_exploit": "test vulnerability exploitation description",
+            "vul_impact": "test attacker impact description",
+            "vul_discovery": "test vulnerability discovery description",
+            "vul_public": false,
+            "public_references": "http://google.com",
+            "vul_exploited": false,
+            "exploit_references": "http://google.com",
+            "vul_disclose": true,
+            "disclosure_plans": "",
+            "user_file": "",
+            "tracking": null,
+            "comments": "",
+            "date_submitted": "2022-10-11T22:00:15.128Z",
+            "submission_type": "web",
+            "vc_id": 0
+        }
+    },
+    {
+        "model": "vince.vulnerabilitycase",
+        "pk": 1,
+        "fields": {
+            "vuid": "822267",
+            "created": "2022-10-11T22:00:26.926Z",
+            "modified": "2022-10-11T22:00:27.031Z",
+            "on_hold": false,
+            "status": 1,
+            "owner": 2,
+            "team_owner": 2,
+            "case_request": 1,
+            "product_name": "test_case",
+            "product_version": "all version",
+            "summary": "test vulnerability description",
+            "title": "test_case",
+            "due_date": "2022-11-25T00:00:00Z",
+            "publicdate": null,
+            "publicurl": null,
+            "template": null,
+            "vul_incrementer": 0,
+            "lotus_notes": false,
+            "changes_to_publish": false,
+            "search_vector": "'822267':1 'casea':3,8 'descript':6 'test':2,4,7 'version':10 'vulner':5"
+        }
+    },
+    {
+        "model": "vince.casepermissions",
+        "pk": 1,
+        "fields": {
+            "case": 1,
+            "group": 2,
+            "group_read": true,
+            "group_write": true,
+            "publish": true
+        }
+    },
+    {
+        "model": "vince.caseparticipant",
+        "pk": 1,
+        "fields": {
+            "case": 1,
+            "user_name": "test_vendor",
+            "group": true,
+            "contact": 1,
+            "added_to_case": "2022-10-11T22:00:26.997Z",
+            "status": "Lead",
+            "added_by": 2,
+            "coordinator": true
+        }
+    },
+    {
+        "model": "vince.caseassignment",
+        "pk": 1,
+        "fields": {
+            "case": 1,
+            "assigned": 2
+        }
+    }
+
+]

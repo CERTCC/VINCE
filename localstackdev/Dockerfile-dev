@@ -1,0 +1,20 @@
+FROM ubuntu:20.04
+ENV DEBIAN_FRONTEND=noninteractive 
+
+
+RUN apt update
+
+RUN apt install postgresql-client swig python3-pip libpq-dev python3-dev jq -y
+RUN apt install libssl-dev curl locales htpdate -y
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8   
+RUN htpdate -a google.com
+WORKDIR /opt/vince
+COPY requirements.txt requirements.txt
+RUN python3 -m pip install -r requirements.txt
+COPY requirements_local.txt requirements_local.txt
+RUN python3 -m pip install -r requirements_local.txt
+ENTRYPOINT ["./localstackdev/init.sh" ]
