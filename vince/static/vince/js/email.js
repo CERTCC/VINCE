@@ -1,7 +1,7 @@
 /*#########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -91,7 +91,18 @@ $(document).ready(function() {
     $('form').submit(function () {
         window.removeEventListener('beforeunload', onBeforeUnload);
     });
-
+    $('#emailform').on('submit', function() {
+	let emails = $('input[name="to"]').val().split(",");
+	let remail = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
+	for(let i = 0; i < emails.length; i++) {
+	    if(!remail.test(emails[i])) {
+		alert("Email entry " + emails[i] + " is invalid! \n" +
+		     "Enter valid email address before submitting.");
+		return false;
+	    }
+	}
+	return true;
+    });
     
     var options = {}
     var selector = 'input[id^=id_contact]'

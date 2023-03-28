@@ -1,7 +1,7 @@
 /*#########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -139,17 +139,145 @@ $(document).ready(function() {
 	    }
 	});
     });
-
-    $(document).on("click", ".addtrack", function(event) {
-        event.preventDefault();
-        $.ajax({
-            url: $(this).attr('href'),
-            type: "GET",
-            success: function(resp) {
-		$uploadmodal.html(resp).foundation('open');
-            }
-        });
-    });
+    function update_dropdown(dtrack,pk) {
+	if((!pk) && ('group_id' in dtrack)) {
+	    /* A new entry remove value from dropdown if exists */
+	    group_id = dtrack['group_id'];
+	    $('#trackingmodal')
+		.find('select.group_id option[value="'+group_id+'"]').remove();
+	    /* Hide Add Tracking if no longer needed */
+	    if($('#trackingmodal').find('select.group_id option').length < 1)
+		$('.addtracking').addClass('hide');
+	}
+    }
+    function submit_tracking(event) {
+	event.preventDefault();
+	$uploadmodal.find(".errormsg").addClass("hidden");
+	let tracker = $uploadmodal.find('.tracker').val();
+	let pk = $uploadmodal.find('.track_id').val();
+	let group_id = $uploadmodal.find('select.group_id').val();
+	if(pk) {
+	    group_id = 0;
+	}
+	$.post($('.updatetracking').attr('action'),
+	       {tracker: tracker,
+		group_id: group_id,
+		case_id: $('.case_id').val(),
+		pk:  pk,
+		'csrfmiddlewaretoken': getCookie('csrftoken')
+	       })
+	    .done(function(data) {
+		if("error" in data)
+		    return temp_error(data.error);
+		if(!("trackings" in data)) 
+		    return temp_error("Data is missing");
+		render_tracking(data.trackings[0]);
+		update_dropdown(data.trackings[0],pk);
+		$uploadmodal.foundation('close');
+	    }).fail(function() {
+		console.log(arguments);
+		temp_error("Server Error! See Console for details");
+	    });
+	return false;
+    }
+	    
+    function temp_error(msg) {
+	$uploadmodal.find(".errormsg")
+	    .removeClass("hidden")
+	    .html(msg);
+	setTimeout(function() {
+	    $uploadmodal.find(".errormsg").addClass("hidden");
+	},5000);
+    }
+    function update_tracking() {
+	if($('select.group_id option').length > 0) {
+	    /* Even if one group has no tracking ID show Add Tracking ID*/
+	    $('.addtracking').removeClass('hide');
+	}
+	if(typeof(update_locales) == 'function')
+	    update_locales();
+	$(".modtrack").on("click", function(event) {
+	    $uploadmodal.find(".errormsg").addClass("hidden");	    
+            event.preventDefault(); 
+	    let content = $('#trackingmodal').html();
+	    $uploadmodal.html(content).foundation('open');
+	    $uploadmodal.find('.updatetracking').on('submit',submit_tracking);
+	    if($(this).data('pk')) {
+		/* Modify tracking ID  */
+		$uploadmodal.find(".track_id").val($(this).data('pk'));
+		let div = $(this).closest('div.tracking');
+		let tracker = div.find('.tracker').html();
+		let trackorg = div.find('.trackorg').html();
+		let trackorg_id = div.find('.trackorg').data('pk');
+		/* Hide the organization dropdown and print the Organization's
+		 name if the user is part of more than one organization*/
+		$uploadmodal.find('.group_id').hide();
+		if(($uploadmodal.find('.group_id option').length > 1) ||
+		   ( $('.track-dynamic').length > 1) ) {
+		    $uploadmodal.find('.trackorg').append(
+			$('<div>')
+			    .css({border: '1px solid ',
+				  borderRadius: '3px',
+				  padding: '4px'})
+			    .text(trackorg));
+		}		
+		$uploadmodal.find('.tracker').val(tracker);
+	    } else {
+		/* Adding a new tracking ID */
+		$uploadmodal.find(".track_id").val('');
+	    }
+	});
+    }
+    function render_tracking(tdata) {
+	if(!("tracker" in tdata)) {
+	    $('.group_id')
+		.append($('<option>')
+			.text(tdata.trackorg)
+			.val(tdata.group_id)
+		       )
+	    return;
+	}
+	let pk = String(tdata.track_id);
+	let group_id = String(tdata.group_id);
+	let trackdiv = $('.trackings > .tracking.hide').clone()
+	    .removeClass('hide').attr("id","tracking-" + pk)
+	    .addClass('track-dynamic');
+	if($('#tracking-' + pk).length < 1)
+	    $('.trackings').append(trackdiv);
+	trackdiv = $('#tracking-' + pk);
+	trackdiv.find(".modtrack").attr("data-pk",pk);
+	/* Add options for new tracking if none present
+	   for this CaseMember */
+	Object.keys(tdata).forEach(function(v) {
+	    if(v in tdata)
+		trackdiv.find("."+v).text(tdata[v]);
+	});
+	trackdiv.find("trackorg").attr("data-pk",group_id);
+	return 1;
+    }
+    function get_trackings() {
+	/* Vendor or Participant that can add tracking numbers */
+	$.getJSON($('.updatetracking').attr('action'),
+		  {"case_id": $('.case_id').val()})
+	    .done(function(data) {
+		if(!("trackings" in data)) 
+		    return;
+		let tdata = data.trackings;
+		if(tdata.length < 2)
+		    $('.trackorg').hide()
+		else
+		    $('.trackorg').show()
+		for(let i=0; i<tdata.length; i++) {
+		    render_tracking(tdata[i]);
+		}
+		update_tracking();
+	    }).fail(function() {
+		console.log(arguments);
+	    });
+    }
+    if($('.trackings').length > 0) {
+	get_trackings();
+    }
 
 
     $(document).on("click", ".mutecase", function(event) {

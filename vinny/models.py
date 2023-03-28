@@ -1,7 +1,7 @@
 #########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -36,6 +36,7 @@ from django.contrib.postgres.search import SearchVectorField
 from django_countries.fields import CountryField
 from django.contrib.postgres import fields
 from django.utils import timezone
+from datetime import timedelta
 from django.urls import reverse
 from django.contrib.auth.hashers import make_password
 import logging
@@ -1262,16 +1263,21 @@ class CaseMember(models.Model):
     vince_id = models.IntegerField(
         default=0)
 
-    def __str__(self):
+    def get_member_name(self):
+        name = "Case Member"
         if self.participant:
-            return f"{self.participant} for case {self.case.vu_vuid}"
+            return self.participant
         elif self.group:
-            try:
-                return f"{self.group.groupcontact.contact.vendor_name} for case {self.case.vu_vuid}"
-            except:
-                return f"{self.group.name} for case {self.case.vu_vuid}"
-        else:
-            return f"Case Member for {self.case.vu_vuid}"    
+            name = vinceutils.deepGet(self,'group.groupcontact.contact.vendor_name')
+            if name:
+                return name
+            elif vinceutils.deepGet(self,'group.name'):
+                return self.group.name
+        return name
+    
+    def __str__(self):
+        name = self.get_member_name()
+        return f"{name} for case {self.case.vu_vuid}"
     
     def share_status(self):
         status = CaseStatement.objects.filter(member=self).first()
@@ -2467,4 +2473,37 @@ class VINCEEmailNotification(models.Model):
         default=timezone.now)
 
 
+class UserApproveRequest(models.Model):
+    """ User making a request to join a Vendor Group """
+    
+    class Status(models.IntegerChoices):
+        ACCEPTED = 1
+        DENIED = 0
+        UNKNOWN = -1
+
+    status = models.IntegerField(choices=Status.choices,default=Status.UNKNOWN)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+	on_delete=models.CASCADE)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    
+    completed_at = models.DateTimeField(blank=True, null=True)
+
+    expires_at = models.DateTimeField(default=timezone.now() + timedelta(days=30))
+    contact = models.ForeignKey(
+        VinceCommContact,
+        on_delete=models.CASCADE)    
+
+    thread = models.ForeignKey(
+        Thread,
+        on_delete=models.DO_NOTHING,
+        blank=True,
+        null=True)
+
+    class Meta:
+        unique_together = (('user', 'contact'),)
+
+    def __str__(self):
+        return f"User approve request for {self.user} to join {self.contact}"
     

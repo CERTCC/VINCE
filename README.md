@@ -71,7 +71,8 @@ VINCEPUB application provides publicly available publications and reports that u
 users. Each application can also be further protected by network access controls as desired to
 reduce the risk of exposure.
 
-[<img src="VINCE_Infrastructure.png" width="100%"></A>](./VINCE_Infrastructure.png)
+[<img src="https://github.com/CERTCC/VINCE/raw/main/Vince_Infrastructure.png" width="100%"></A>](https://github.com/CERTCC/VINCE/raw/main/Vince_Infrastructure.png)
+
 
 
 ### Local Install
@@ -81,7 +82,7 @@ reduce the risk of exposure.
 2. Create a virtual environment and install requirements
 ```
 cd bigvince
-mkvirtualenv --python=/usr/local/bin/python3.6 bigvince  (python3 -m venv env)
+mkvirtualenv  bigvince 
 source env/bin/activate
 pip install -r requirements.txt
 ```

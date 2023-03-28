@@ -32,7 +32,11 @@
 
 {% for revision in revisions %}
 <div class="panel-group">
-<div class="callout secondary" id="accordion{{ revision.revision_number }}">
+  {% if revision == vulnote.current_revision %}
+  <div class="callout success" id="accordion{{ revision.revision_number }}">
+  {% else %}
+  <div class="callout secondary" id="accordion{{ revision.revision_number }}">
+  {% endif %}
   <div class="callout-heading">
     <a class="callout-toggle" style="float: left;" data-toggle="collapse{{ revision.revision_number }}" href="{% url 'vince:diff' revision.id %}">
       {% if revision == vulnote.current_revision %}

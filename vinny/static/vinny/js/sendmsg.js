@@ -1,7 +1,7 @@
 /*#########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -138,6 +138,17 @@ $(document).ready(function() {
 				  });
 
     function submitFormWithoutFiles() {
+	let content = $('#id_content').val();
+	if($('#psirt_url').val()) {
+	    content = content + "\n\nFollowing PSIRT Information " +
+		"can be used to validate the Organization identity:\n\n" +
+		"PSIRT URL   : " + $('#psirt_url').val() + "\n\n";
+	} else if($('#group_admin_inactive').is(':checked')) {
+	    content = content + "\n\n***Note*** Current Group Administrator " +
+		"for this organization is no longer active! ";
+	    $('#vendor_euid').val('');
+	}
+	$('#id_content').val(content);
         $('#sendbutton').prop('disabled', true);
         $("#sendbutton").html("Sending");
         $.ajax({
@@ -317,18 +328,122 @@ $("#file-title-wrap").show();
             searchThreads(event);
 	});
     }
-
-    $(document).on("change", '#id_case', function(event) {
+    function get_cases() {
 	var selected_case = $("#id_case option:selected").val();
-        $.ajax({
+	if(selected_case)
+            $.ajax({
                 url: '/vince/comm/auto/api/coord/'+selected_case,
                 type: "GET",
                 success: function(data) {
                     $("#coords_list").html(data);
                 }
             });
-    });
-    
+    }
+    $(document).on("change", '#id_case', get_cases);
+    function old_vendor_info() {
+	$('.new-vendor').remove();
+	if($('.old-vendor').length)
+	    return;
+	let info = $("<div>");
+	info.append($("<div>").addClass("new-vendor"));
+	/*
+	  {name: "psirt_email",
+		       label: "Vendor PSIRT/Security Contact Email",
+		       type: "text", example: "psirt@example.com"},
+	*/
+	let fields = [{name: "group_admin_inactive",
+		       label: "Current Group Admin is no longer active",
+		       placeholder: "Current Group Admin is no longer active",
+		       type: "checkbox"}];
+	fields.forEach(function(d) {
+	    info.append($('<div>').addClass("form-group old-vendor")
+			.append($("<input>").attr({id: d.name,
+						   type:d.type,
+						   name:d.name,
+						   placeholder:d.example,
+						   autocomplete:"off",
+						   maxlength:"255"}))
+			.append($("<label>").attr("for",d.name)
+				.html(d.label)));
+	});
+	$('#id_vendor').parent().after(info.html());
+    }
+    function new_vendor_info() {
+	$('#vendor_euid').val('');
+	$('.old-vendor').remove();
+	if($('.new-vendor').length)
+	    return;
+	let info = $("<div>");
+	info.append($("<div>").addClass("new-vendor"));
+	/*
+	  {name: "psirt_email",
+		       label: "Vendor PSIRT/Security Contact Email",
+		       type: "text", example: "psirt@example.com"},
+	*/
+	let fields = [{name: "psirt_url",
+		       label: "Vendor PSIRT/Security Public URL",
+		       type: "text", example: "https://example.com/psirt"}]
+	fields.forEach(function(d) {
+	    info.append($('<div>').addClass("form-group new-vendor")
+			.append($("<label>").attr("for",d.name)
+				.html(d.label))
+			.append($("<input>").attr({id: d.name,
+						   type:d.type,
+						   name:d.name,
+						   placeholder:d.example,
+						   autocomplete:"off",
+						   maxlength:"255"})));
+	});
+	$('#id_vendor').parent().after(info.html());
+    }
+    function vend_auto() {
+	if($('#vendor_euid').length < 1) {
+	    $('#sendmsgform')
+		.append($("<input>")
+			.attr({type: "hidden",
+			       name: "vendor_euid",
+			       id: "vendor_euid"}))
+	} else {
+	    console.log("Already populated the vendor_auto fields");
+	    return;
+	}
+	$.getJSON("/vince/comm/auto/api/allvendors").done(
+	    function(data) {
+		data.vendors.forEach(function(x) {
+		    x.value = x.vendor_name;
+		});
+		/* Set difference on a object array */
+		let tdata = data.vendors.filter(function(x) {
+		    if(data.my_vendors.find(function(y) {
+			return y.vendor_name == x.vendor_name
+		    }))
+			return false;
+		    else
+			return true
+		});
+		$("#id_vendor").addClass("ui-autocomplete-input")
+		    .autocomplete({
+			/* all vendors exept my own vendor group*/
+			source: tdata,
+			select: function (_, ui) {
+			    $('#id_vendor').val(ui.item.vendor_name);
+			    $('#vendor_euid').val(ui.item.euid);
+			    return false;
+			},
+			change: function (_, ui) {
+			    if(ui.item) {
+				old_vendor_info();
+			    } else {
+				new_vendor_info();
+			    }}});
+	    });
+    }
+    if(!$('#vendor_selection').hasClass('collapse')) {
+	$('label[for="id_content"]').html("Justification for access");	
+	vend_auto();
+    } else {
+	$('label[for="id_content"]').html("Content");	
+    }
     $(document).on("change", '#id_subject', function(event) {
 	var t = $(this).attr("type");
 	if (t == "text"){
@@ -338,14 +453,7 @@ $("#file-title-wrap").show();
 	var queue = $("#id_subject option:selected").val();
 	if (queue == 2) {
 	    $("#case_selection").removeClass("collapse");
-	    var selected_case = $("#id_case option:selected").val();
-	    $.ajax({
-		url: '/vince/comm/auto/api/coord/'+selected_case,
-		type: "GET",
-		success: function(data) {
-		    $("#coords_list").html(data);
-		}
-	    });
+	    get_cases();
 	    $("#ga_selection").addClass("collapse");
 	    $("#report_selection").addClass("collapse");
 	    $("#vendor_selection").addClass("collapse");
@@ -365,6 +473,8 @@ $("#file-title-wrap").show();
 	    $("#ga_selection").addClass("collapse");
             $("#case_selection").addClass("collapse");
             $("#report_selection").addClass("collapse");
+	    /* Auto populate vendor */
+	    vend_auto();
 	} else {
 	    $("#case_selection").addClass("collapse");
 	    $("#ga_selection").addClass("collapse");
@@ -374,5 +484,4 @@ $("#file-title-wrap").show();
 	}
     });
     
-
 });

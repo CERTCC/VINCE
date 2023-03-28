@@ -1,7 +1,7 @@
 #########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -43,6 +43,11 @@ import mimetypes
 import os
 from django.utils.encoding import smart_text
 from vinny.settings import DEFAULT_USER_SETTINGS
+from django.urls import reverse, reverse_lazy
+import base64
+import json
+import time
+from urllib.parse import urljoin, urlencode
 
 class SignUpForm(UserCreationForm):
     organization = forms.CharField(
@@ -352,6 +357,10 @@ class SendMessageForm(forms.ModelForm):
         self.fields["subject"].initial = self.initial.get("subject")
 
     def save(self, files=None, commit=True):
+
+        vendor_pk = None
+        to_users = []
+
         data = self.cleaned_data
 
         cr = None
@@ -370,22 +379,67 @@ class SendMessageForm(forms.ModelForm):
             if cr:
                 subject = "Question about Vulnerability Report " + cr.get_title()
         elif why == 10:
+            #vendor association form.
             data['case'] = None
             data['report'] = None
             if data['vendor']:
                 subject = f"{self.user.username} requests access to Vendor Group: {data['vendor']}"
             else:
                 subject = f"{self.user.username} requests access to Vendor Group"
+            if hasattr(self,"vendor_pk"):
+                #Use case where a user asks to be associated with a Vendor Group
+                #Send it directly to the Vendor Admin 
+                #Create vendor ticket and inform admins to approve/add user to Group
+                logger.debug(f"{self.__class__.__name__} post: {self.data} {self.cleaned_data}")
+                vendor_pk = self.vendor_pk
+                logger.debug(f"We have a vendor_pk {vendor_pk}")
+                vc = VinceCommContact.objects.filter(pk=vendor_pk).first()
+                if vc != None:
+                    vc_admins = VinceCommGroupAdmin.objects.filter(contact=vc)
+                    admin_emails = list(map(lambda x: x.email.email, vc_admins))
+                    if len(admin_emails) > 0:
+                        admins = User.objects.filter(email__in=admin_emails)
+                        user_ids = admins.values_list('id',flat=True)
+                        to_users = list(user_ids)
+                        requestor_id = str(self.user.pk)
+                        thread_id = UserApproveRequest.objects.filter(user=self.user,contact=vc).values_list('thread__id',flat=True) 
+                        if thread_id:
+                            dup = type('',(),{})()
+                            thread_url = reverse("vinny:thread_detail",kwargs={"pk": thread_id[0]})
+                            dup.error = True
+                            dup.info = {"error":"Request already exists!",
+                                         "thread_url": thread_url }
+                            return dup
+                        uar = UserApproveRequest(user=self.user,contact=vc,status=UserApproveRequest.Status.UNKNOWN)
+                        uar.save()
+                        userinfo = f"{self.user.first_name} {self.user.last_name}"
+                        custom_content = f"""Please review this request from **{userinfo}** with username *{self.user.username}* requests permission to your vendor group **{vc}**. You can view this user's request under your **User Management** menu.
+
+The user provides following justification for his access to your group.
+```
+{data['content']}
+```
+                       """
+                        subject = f"User \"{self.user.username}\" request Group Admins to join \"{vc}\" "
+                        msg = Message.new_message(self.user, to_users, None, subject, custom_content)
+                        try:
+                            #Optionally add the thread of message to show.
+                            if hasattr(msg,'thread'):
+                                uar.thread = msg.thread
+                                uar.save()
+                        except Exception as e:
+                            logger.debug(f"Could not add thread to a UserApproveRequest error is {e} for user {self.user} requesting to join {vc}")
+                        return msg
+
         else:
             data['case'] = None
             data['report'] = None
             subject = why_choices[int(data['subject'])]
 
-
         #get a list of all cert/cc users:
         #to_users = list(User.objects.filter(groups__name='CERT/CC').values_list('id', flat=True))
         #print(to_users)
-        msg = Message.new_message(self.user, [], data['case'], subject, data['content'])
+        msg = Message.new_message(self.user, to_users, data['case'], subject, data['content'])
 
         if files:
             for file in files:
@@ -409,6 +463,9 @@ class SendMessageForm(forms.ModelForm):
                                     self.user.username, None, "New Comment on CR")
                 return msg
         elif why == 10:
+            #vendor association
+            #(queue, subject, message, case, user, group="None"):
+            #No track 
             new_track_ticket("Vendor", subject, msg.id, None, self.user.username)
             return msg
         
@@ -492,42 +549,6 @@ class UploadLogoForm(forms.ModelForm):
     class Meta:
         model = GroupContact
         fields = ['logo']
-
-class AddTrackingForm(forms.ModelForm):
-
-    tracking = forms.CharField(
-        required=False,
-        label=_('Tracking Number'))
-
-    def __init__(self, *args, **kwargs):
-        self.case = kwargs.pop("case")
-        self.group = kwargs.pop("group")
-        self.user = kwargs.pop("user")
-        super(AddTrackingForm, self).__init__(*args, **kwargs)
-
-    def save(self, commit=True):
-
-        if self.instance:
-            self.instance.tracking= self.cleaned_data['tracking']
-            self.instance.case=self.case
-            self.instance.group=self.group
-            self.instance.added_by=self.user
-            self.instance.save()
-            return self.instance
-        else:
-            tracking = CaseTracking(case=self.case,
-                                    tracking=self.cleaned_data['tracking'],
-                                    group = self.group,
-                                    added_by = self.user)
-            tracking.save()
-            return tracking
-
-
-
-    class Meta:
-        model=CaseTracking
-        fields = ['tracking']
-
 
 class UploadDocumentForm(forms.ModelForm):
 
@@ -652,8 +673,7 @@ class VulStatementForm(forms.Form):
 class StatementForm(forms.Form):
     share = forms.BooleanField(
         label=_('Share status and statement pre-publication'),
-        help_text=('Checking this box will share your status and statement with all'
-                   ' vendors and participants in this case before the vulnerability note is published.'),
+        help_text=_('Checking this box will share your status and statement privately with all of the other participants in this case until the vulnerability note becomes publicly available.'),
         required=False)
 
 

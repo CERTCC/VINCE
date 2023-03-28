@@ -18,10 +18,9 @@
     </div>
   </div>
 </div>
-<div class="row">
+<div class="row novosti">
   <div class="large-12 columns">
     {% for message in messages %}
-
     <div class="callout {{ message.tags }}">{{ message }}</div>
     {% endfor %}
   </div>
@@ -54,12 +53,49 @@
 <div class="row">
   <div class="large-12 medium-12 small-12 columns">
     <small>
-    <p>* Eligible users are emails that are associated with your organization but have not yet created a VINCE account.</p>
-    <p>** Invited users are emails that were sent a VINCE invitation by a group admin.</p>
-    <p><i class="fas fa-crown" title="Group Admin"></i> Group administrators are assigned by the VINCE coordinators or another group administator. <br/>Group administrators have access to <b>all</b> cases that the organization is involved in. Please <a href="{% url 'vinny:sendmsg' 4 %}">contact the VINCE coordination team</a> for questions about group administrators.</p>
+      <p>
+	* Eligible users are emails that are associated with your organization but have not yet created a VINCE account.<br>
+	** Invited users are emails that were sent a VINCE invitation by a group admin.<br>
+	<i class="fas fa-crown" title="Group Admin"></i> Group administrators are assigned by the VINCE coordinators or another group administator. <br/>Group administrators have access to <b>all</b> cases that the organization is involved in. Please <a href="{% url 'vinny:sendmsg' 4 %}">contact the VINCE coordination team</a> for questions about group administrators.
+      </p>
     </small>
   </div>
 </div>
+
+<div class="app-top-panel uar hide">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>Users Requesting Access</h2>
+    </div>
+  </div>
+</div>
+<div class="row uar hide">
+  <div class="complaint hide">
+    Abuse request from user to join our group. 
+    The following user requested to join our group. We do not recognize 
+    this user or his username/email address. Please take action as appropriate.
+    
+    User :  $username
+    
+    Name: $full_name
+
+    Group Requested: $vendor_name
+
+  </div>
+  <table id="uartable" data-href="{% url 'vinny:userapprove' %}" data-sendmsg="{% url 'vinny:sendmsg' %}">
+    <thead>
+      <tr>
+	<th>Username</th>
+	<th>Full Name</th>
+	<th>Requested at</th>
+	<th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+</div>
+
 <div class="app-top-panel">
   <div class="row">
     <div class="large-12 columns">
@@ -159,7 +195,7 @@
       
       <div class="modal-body">
 	<p class="lead">Provide their email address and we'll send them an email inviting them to create an account.</p>
-	<p>By inviting a user as a Group Admin, you are granting the user permission to all cases your organization has access to.</p>
+	<p>By inviting a user, you are granting the user permission to Cases your organization has access to.</p>
 	{% csrf_token %}
 	<div class="row">
 	  <div class="large-2 columns text-right">
@@ -189,6 +225,7 @@
     <span aria-hidden="true">&times;</span>
   </button>
 </div>
+
 {% else %}
 <div class="row">
   <div class="large-12 columns">

@@ -1,7 +1,7 @@
 #########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -85,6 +85,7 @@ urlpatterns = [
     path('auto/api/vlookup/', views.VendorLookupView.as_view(), name='vendorlookup'),
     path('auto/api/vendors/', views.autocomplete_vendor, name='auto_vendor'),
     path('auto/api/users/', views.autocomplete_users, name='auto_user'),
+    path('api/userapprove/', views.userapproverequest, {"caller": "vinny"},name='userapprove'),    
     re_path('^auto/api/coord/(?P<pk>\d+)/$', views.autocomplete_coordinators, name='auto_coord'),
     path('sendmsg/', views.SendMessageView.as_view(), name='sendmsg'),
     path('sendmsg/user/', views.SendMessageUserView.as_view(), name='sendmsguser'),
@@ -111,7 +112,7 @@ urlpatterns = [
     re_path('^case/(?P<pk>[0-9]+)?/mute/$', views.MuteCaseView.as_view(), name='mute'),
     re_path('^case/(?P<pk>[0-9]+)/add/document/$', views.CaseDocumentCreateView.as_view(), name='addfile'),
     re_path('^case/(?P<pk>[0-9]+)/rm/(?P<doc>[0-9]+)/document/$', views.RemoveFileView.as_view(), name='rmfile'),
-    re_path('^case/(?P<pk>[0-9]+)/add/track/$', views.CaseAddTrackingView.as_view(), name='addtrack'),
+    re_path('^case/tracking/$', views.casetracking, name='casetracking'),
     re_path('^case/(?P<pk>[0-9]+)/status/update/$', views.UpdateStatusView.as_view(), name='update_status'),
     re_path('^case/(?P<pk>[0-9]+)/report/$', views.CaseRequestView.as_view(), name='cr'),
     re_path('^case/(?P<pk>[0-9]+)/vuls/$', views.VulnerabilityDetailView.as_view(), name='vuls'),

@@ -1,7 +1,7 @@
 #########################################################################
 # VINCE
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2023 Carnegie Mellon University.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
 # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -39,6 +39,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.http import HttpResponse, Http404, JsonResponse, HttpResponseNotAllowed, HttpResponseServerError, HttpResponseForbidden, HttpResponseRedirect, HttpResponseBadRequest
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError, PermissionDenied
+from django.core import serializers
 from django.utils.translation import ugettext as _
 from django.utils import timezone
 from django.db.models import Case as DBCase
@@ -67,6 +68,7 @@ from vincepub.models import VulCoordRequest, VUReport, NoteVulnerability, Vendor
 from vinny.forms import *
 from vinny.lib import vince_comm_send_sqs, send_sns, send_sns_json, send_usermention_notification, new_track_ticket, send_post_email, user_is_admin, user_has_access
 from random import randint
+from os import urandom
 from django.template.defaulttags import register
 from django.urls import reverse, reverse_lazy
 from cogauth.views import TokenMixin, GetUserMixin, PendingTestMixin
@@ -361,7 +363,8 @@ def object_to_json_response(obj, status=200):
         data=obj, status=status, safe=False, json_dumps_params={'ensure_ascii': False},
     )
 
-
+#A similar method exists for all VinceComm users exists
+#below autocomplete_allvendors()
 @login_required(login_url="vinny:login")
 @user_passes_test(is_in_group_vincetrack, login_url='vinny:login')
 def autocomplete_vendor(request):
@@ -396,8 +399,154 @@ def autocomplete_allvendors(request):
     qs = VinceCommContact.objects.filter(vendor_type='Vendor',active=True).values('pk','vendor_name')
     ed = ED(base64.b64encode(settings.SECRET_KEY.encode()))
     #Hide uuid and pk fields - allow usage in specific Cases only
-    data = list(map(lambda x: {"euid": ed.encrypt(str(x['pk'])), "vendor_name" : x["vendor_name"]}, qs))
+    vendors = list(map(lambda x: {"euid": ed.encrypt(str(x['pk'])), "vendor_name" : x["vendor_name"]}, qs))
+    groups = request.user.groups.filter(groupcontact__contact__vendor_type="Vendor").exclude(groupcontact__isnull=True)
+    my_groups = []
+    for ug in groups:
+        my_groups.append({"euid": ed.encrypt(str(ug.groupcontact.contact.pk)), "vendor_name": ug.groupcontact.contact.vendor_name})
+    data = {"vendors": vendors, "my_vendors": my_groups}
     return HttpResponse(json.dumps(data,default=str), 'application/json')
+
+@login_required(login_url="vinny:login")
+@user_passes_test(is_not_pending, login_url="vinny:login")
+def userapproverequest(request, *args, **kwargs):
+    res = {"uar": [], "args": args, "kwargs": kwargs}
+    #when this method is called from vince/urls.py 
+    if kwargs and "caller" in kwargs and kwargs["caller"] == "vince":
+        #superflous call to `using` vincecomm for code clarity only
+        vinnyuser = User.objects.using("vincecomm").filter(username=request.user.username).first()
+        if vinnyuser and is_in_group_vincetrack(vinnyuser):
+            qall = UserApproveRequest.objects.all().order_by('-created_at')
+            if request.method == "GET":
+                spage = request.GET.get("page","1")
+                if spage.isdigit():
+                    page = int(spage)
+                else:
+                    page = 1
+                pageSize = 20
+                pager = Paginator(qall,pageSize)
+                if page > pager.num_pages:
+                    res["uar_error"] = f"Page given is too big {page} > {pager.num_pages}"
+                    page = pager.num_pages
+                qs_admin = pager.page(page).object_list
+                res["uar_count"] = qall.count()
+                res["uar_page"] = page
+                res["uar_pageSize"] = pageSize
+            else:
+                qs_admin = qall
+        else:
+            qs_admin = UserApproveRequest.objects.none()
+    else:
+        qs_admin = UserApproveRequest.objects.filter(contact__in=VinceCommGroupAdmin.objects.filter(email__email=request.user.username,contact__active=True).values_list('contact__id', flat=True),status=UserApproveRequest.Status.UNKNOWN)
+    #POST is an update record check if the user is admin and do the operation
+    if request.method == "POST":
+        if request.POST.get('pk'):
+            qupdate = qs_admin.filter(contact__pk=request.POST.get('pk'),user__username=request.POST.get('username'))
+            if len(qupdate) == 1:
+                rec = qupdate.first()
+                rec.completed = timezone.now()
+                if request.POST.get('status') != None and request.POST.get('status').isnumeric():
+                    rec.status = int(request.POST.get('status'))
+                rec.save()
+                recjson = serializers.serialize('json',[rec])
+                return HttpResponse(recjson, 'application/json')
+        return HttpResponse('[]', 'application/json')
+    for q in qs_admin:
+        justification = vinceutils.deepGet(q,'thread.latest_message.content')
+        thread_id = vinceutils.deepGet(q,'thread.pk')
+        thread_url = '#'
+        if thread_id:
+            thread_url = reverse('vinny:thread_detail', args=[thread_id])
+        res["uar"].append({"username": q.user.username,
+                           "full_name": f"{q.user.first_name} {q.user.last_name}",
+                           "vendor": q.contact.vendor_name, "pk": q.contact.pk,
+                           "justification": justification,
+                           "thread_url": thread_url,
+                           "created_at":  q.created_at
+                           })
+    qs = UserApproveRequest.objects.filter(user=request.user,status=UserApproveRequest.Status.UNKNOWN)
+    for q in qs:
+        res["uar"].append({"username": q.user.username,"vendor": q.contact.vendor_name})
+    return HttpResponse(json.dumps(res,default=str), 'application/json')
+
+
+@login_required(login_url="vinny:login")
+@user_passes_test(is_not_pending, login_url="vinny:login")
+def casetracking(request):
+    """ Case Tracking manager as simple view """
+    def responder(res):
+        return HttpResponse(json.dumps(res,default=str), 'application/json')        
+    def recobj(rin):
+        ret = {}
+        fields = {"tracker": "tracking",
+                  "track_id": "pk",
+                  "group_id": "group.pk",
+                  "trackorg": "group.groupcontact.contact.vendor_name",
+                  "added_by": "added_by.vinceprofile.vince_username",
+                  "dateupdated": "dateupdated"}
+        for x in fields:
+            ret[x] = vinceutils.deepGet(rin,fields[x])
+        return ret
+    rec = []
+    if request.method == "POST":
+        if request.POST.get('tracker'):
+            tracking = request.POST.get('tracker')
+            if request.POST.get('pk'):
+                #CaseTracking update just use primarykey and groups to find it
+                match = CaseTracking.objects.filter(group__in=request.user.groups.all(),pk=request.POST.get('pk')).first()
+                if match:
+                    match.tracking = tracking
+                    match.save()
+                    rec.append(recobj(match))
+                else:
+                    err = {"error": "No matching Tracking information found"}
+                    return responder(err)
+            elif request.POST.get('case_id'):
+                #CaseTracking Insert
+                case = Case.objects.filter(pk=request.POST.get('case_id')).first()
+                if not case:
+                    err = {"error": "No matching Case found"}
+                    return responder(err)
+
+                csms = _my_groups_for_case(request.user,case)
+                if csms.count() > 1:
+                    if request.POST.get('group_id'):
+                        csm = csms.filter(group__pk=request.POST.get('group_id')).first()
+                    else:
+                        err = {"error": "Please select your Organization"}
+                        return responder(err)
+                else:
+                    csm = csms.first()
+                if not csm:
+                    err = {"error": "Organization not found"}
+                    return responder(err)
+                newrec = CaseTracking(case=case,
+                                      tracking=tracking,
+                                      group=csm.group,
+                                      added_by=request.user)
+                try:
+                    newrec.save()
+                except Exception as e:
+                    logger.warning(f"Failed to create a new CaseTracking record Error: {e}")
+                    err = {"error": "Record not recorded, possible duplicate!"}
+                    return responder(err)
+                rec.append(recobj(newrec))
+    elif request.GET.get('case_id'):
+        case = Case.objects.filter(pk=request.GET.get('case_id')).first()
+        if case:
+            for cm in _my_groups_for_case(request.user,case):
+                #Create casetracking record and add tracking info if present.
+                ctrec = {"group_id": cm.group.pk,
+                         "trackorg": cm.get_member_name()}
+                ct = CaseTracking.objects.filter(group=cm.group,case=case).first()
+                if ct:
+                    ctrec.update(recobj(ct))
+                rec.append(ctrec)
+        else:
+            err = {"error": "No matching Case found"}
+            return responder(err)
+    res = {"trackings": rec}
+    return responder(res)
 
 
 @login_required(login_url="vinny:login")
@@ -1309,6 +1458,24 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
     def post(self, request, *args, **kwargs):
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         my_group = get_object_or_404(VinceCommContact, id=self.kwargs.get('vendor_id'))
+        if request.POST.get("action") and request.POST.get("requestor_id") :
+            if request.POST.get("action") == "reject":
+                #Create a Track ticket and send emails to admin
+                logger.info("Code not ready for this part")
+            safe_id = request.POST.get("requestor_id")
+            try:
+                ed = ED(base64.b64encode(settings.SECRET_KEY.encode()))
+                requestor_id = ed.decrypt(safe_id)
+            except Exception as e:
+                logger.info(f"Decryption of the safe_id failed {safe_id} with error {e}")
+                return JsonResponse({'error': 'Requestor could not be found'})
+            requestor = list(User.objects.filter(id=requestor_id).values('username','first_name','last_name'))
+            if len(requestor) == 1:
+                return JsonResponse(requestor[0])
+            else:
+                return JsonResponse({"error": "User not found"})
+        
+        
         # This doesn't use the email form used in other places in the app, so we have to strip() fields here
         users = request.POST.get('adduser')
         if users:
@@ -1962,7 +2129,6 @@ class SendMessageUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         })
         return kwargs
 
-
 class SendMessageView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.CreateView):
     template_name = "vinny/sendmsg.html"
     login_url = "vinny:login"
@@ -1972,7 +2138,27 @@ class SendMessageView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST} is valid")        
         files = [self.request.FILES.get('attachment[%d]' % i) for i in range (0, len(self.request.FILES))]
         logger.debug(files)
+        try:
+            if self.request.POST.get("vendor_euid"):
+                vendor_euid = self.request.POST.get("vendor_euid")
+                ed = ED(base64.b64encode(settings.SECRET_KEY.encode()))
+                vendor_pk = ed.decrypt(str(vendor_euid)).decode()
+                setattr(form,"vendor_pk",vendor_pk)
+        except Exception as e:
+            logger.info(f"Failed to decrypt session based vendor euid error {e}")
         ticket = form.save(files)
+        if ticket and hasattr(ticket,"error"):
+            msg = "Message could not be sent"
+            if hasattr(ticket,"info") and type(ticket.info) == dict:
+                if "error" in ticket.info:
+                    msg = ticket.info["error"]
+                if "thread_url" in ticket.info:
+                    thread_url = ticket.info["thread_url"]
+                    msg = msg + f" <a href=\"{thread_url}\">Click here</a> to see it"
+            messages.error(
+                self.request,
+                _(f"Error: {msg}"))
+            return JsonResponse(ticket.info, status=200)
         messages.success(
             self.request,
             _("Your message has been sent."))
@@ -1983,11 +2169,10 @@ class SendMessageView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.
         context['group_admin'] = _my_group_admin(self.request.user)
         context['unread_msg_count'] = 0
         context['msgtype'] = self.kwargs.get('type', 1)
-        csmembers = CaseMember.objects.filter(case__id=self.kwargs.get('case'), coordinator=True).exclude(group__groupcontact__vincetrack=False).values_list('group__groupcontact__contact__vendor_name', flat=True)
-        logger.debug(f"Case membership of {self.request.user} is {csmembers}")
         try:
             if self.kwargs.get('case'):
                 members = list(CaseMember.objects.filter(case__id=self.kwargs.get('case'), coordinator=True).exclude(group__groupcontact__vincetrack=False).values_list('group__groupcontact__contact__vendor_name', flat=True))
+                logger.debug(f"Case membership of {self.request.user} is {members}")
                 members = [i for i in members if i]
                 context['coord'] = ", ".join(members)
         except:
@@ -2002,9 +2187,8 @@ class SendMessageView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.
 
     def get_form_kwargs(self):
         kwargs = super(SendMessageView, self).get_form_kwargs()
-        kwargs.update({
-            "user": self.request.user,
-        })
+        updates = {"user": self.request.user}
+        kwargs.update(updates)
         return kwargs
 
 
@@ -2144,63 +2328,7 @@ class CaseDocumentCreateView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
                             self.request.user.username, None, "Vendor Uploaded File")
         return redirect('vinny:case', self.kwargs['pk'])
 
-class CaseAddTrackingView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
-    model = CaseTracking
-    template_name = 'vinny/addtracking.html'
-    form_class = AddTrackingForm
 
-    def test_func(self):
-        self.case = get_object_or_404(Case, id=self.kwargs['pk'])
-        test = _is_my_case(self.request.user, self.kwargs['pk'])
-        if test:
-            return PendingTestMixin.test_func(self)
-        else:
-            return False
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['case'] = self.case
-        context['title'] = "Add Tracking Number to Case"
-        return context
-
-    def get_form(self):
-        try:
-            my_group = _my_group_id_for_case(self.request.user, self.case)
-            ct = CaseTracking.objects.get(case=self.case, group=my_group)
-            return self.form_class(instance=ct, **self.get_form_kwargs())
-        except CaseTracking.DoesNotExist:
-            return self.form_class(**self.get_form_kwargs())
-    
-    def get_form_kwargs(self):
-        kwargs = super(CaseAddTrackingView, self).get_form_kwargs()
-        kwargs.update({
-            "case": self.case,
-            "user": self.request.user,
-            "group": _my_group_id_for_case(self.request.user, self.case)
-            
-        })
-        return kwargs
-
-    def form_invalid(self, form):
-        logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
-        return super().form_invalid(form)
-
-    def form_valid(self, form):
-        doc = form.save()
-        context = {}
-        context['vuid'] = self.case.vu_vuid
-        context['tracking'] = form.cleaned_data['tracking']
-        try:
-            if self.case.team_owner.coordinatorsettings.team_signature:
-                context['team_signature']= self.case.team_owner.coordinatorsettings.team_signature
-            else:
-                context['team_signature']= self.DEFAULT_EMAIL_SIGNATURE
-        except:
-            context['team_signature']= self.DEFAULT_EMAIL_SIGNATURE
-            
-        if context['tracking']:
-            send_templated_mail("new_tracking", context, [self.request.user.email])
-        return redirect('vinny:case', self.kwargs['pk'])
         
 class UserCardView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.DetailView):
     template_name = 'vinny/usercard.html'
@@ -2337,7 +2465,10 @@ class JsonVendorsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         data = json.dumps(members)
         mimetype='application/json'
         return HttpResponse(data, mimetype)
-    
+
+
+
+
 class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     template_name = "vinny/case.html"
     login_url="vinny:login"
@@ -2436,7 +2567,6 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
                 context['showupdatestatus'] = True
             else:
                 context['showupdatestatus'] = False
-            context['tracking'] = CaseTracking.objects.filter(case=case, group=cm.group).first()
             context['auto_members'] = [] #_case_participants(case)[:50]
             context['simulation'] = cm
 
@@ -2467,8 +2597,6 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
                 #if this person belongs to more than 1 vendor, don't present them with the form, make them
                 #choose which vendor to submit status for
                 context['multivendor'] = True
-            else:
-                context['tracking'] = CaseTracking.objects.filter(case=case, group=_my_group_id_for_case(self.request.user, case)).first()
 
         for member in members:
             if member.seen == False:
@@ -4015,7 +4143,6 @@ class CVEVulAPIView(generics.GenericAPIView):
 
         raise Http404
 
-
     
 class UpdateVendorStatusAPIView(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,CaseAccessPermission,PendingUserPermission)
@@ -4335,4 +4462,4 @@ class CaseCSAFAPIView(generics.RetrieveAPIView):
         if response.status_code == 200 and request.headers.get('Origin') and request.headers.get('Origin').find("https://") > -1:
             response["Access-Control-Allow-Origin"] = request.headers.get('Origin')
         return response
-    
+

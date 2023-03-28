@@ -2,7 +2,7 @@
   #########################################################################
   # VINCE
   #
-  # Copyright 2022 Carnegie Mellon University.
+  # Copyright 2023 Carnegie Mellon University.
   #
   # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
   # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
@@ -44,6 +44,35 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+function to_locale(df) {
+    try {
+	/* Check if already processed or the if the element is visible
+	  and return quietly*/
+	if(df.classList.contains('locale-processed'))
+	    return;
+	if(df.offsetParent == null)
+	    return;
+	let epoch_ms = Date.parse(df.innerHTML);
+	if(isNaN(epoch_ms)) {
+	    console.log("Invalid Date "+df.innerHTML);
+	    return;
+	}
+        let d = new Date(epoch_ms);
+	df.title = df.innerHTML;
+        if(df.classList.contains('datefield'))
+	    df.innerHTML = d.toLocaleDateString();
+        if(df.classList.contains('datetimefield'))
+	    df.innerHTML = d.toLocaleString();
+	df.classList.add('locale-processed');
+    } catch(err) {
+        console.log("Date field parsing error "+String(err));
+    }
+}
+function update_locales() {
+    $('.datetimefield,.datefield').each(function(_,el) {
+	to_locale(el);
+    });
 }
 
 $(function () {
@@ -380,5 +409,5 @@ $(function () {
         e.preventDefault();
 	e.stopPropagation();
     });
-    
+    update_locales();
 });
