@@ -549,7 +549,6 @@ def casetracking(request):
     return responder(res)
 
 
-
 @login_required(login_url="vinny:login")
 @user_passes_test(is_in_group_vincetrack, login_url='vinny:login')
 def autocomplete_users(request):

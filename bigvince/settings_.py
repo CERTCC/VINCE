@@ -67,6 +67,8 @@ SECRET_KEY = env('SECRET_KEY')
 VINCE_DEV_SYSTEM = os.environ.get('VINCE_DEV_SYSTEM', "")
 if VINCE_DEV_SYSTEM == '1':
     VINCE_DEV_SYSTEM = "title-dev"
+    
+LOCALSTACK=os.environ.get('LOCALSTACK')
 
 GOOGLE_SITE_KEY = os.environ.get('GOOGLE_SITE_KEY')
 
@@ -156,13 +158,20 @@ if os.environ.get('AWS_DEPLOYED'):
     AWS_REGION = os.environ.get('AWS_REGION')
     AWS_DEPLOYED = True
     AWS_DEFAULT_ACL = None
-    LOGGER_HANDLER = 'watchtower'
+    if LOCALSTACK:
+        AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL')
+        LOGGER_HANDLER = 'console'
+    else:
+        LOGGER_HANDLER = 'watchtower'
     AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
     AWS_S3_REGION_NAME = os.environ.get('AWS_REGION')
     # Tell django-storages the domain to use to refer to static files.
     AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN')
     AWS_LOCATION = os.environ.get('AWS_LOCATION')
-    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+    if os.environ.get('BUCKET_URL'):
+        STATIC_URL = os.environ.get('BUCKET_URL') + '/'
+    else:
+        STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
     # Tell the staticfiles app to use S3Boto3 storage when writing the collected static files (when
     # you run `collectstatic`).
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
@@ -326,6 +335,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'libraries': {
+                'staticfiles': 'django.templatetags.static',
+            }
         },
     },
 ]
@@ -472,8 +484,13 @@ AUTHENTICATION_BACKENDS = [
 COGNITO_USER_POOL_ID = os.environ.get('AWS_COGNITO_USER_POOL_ID')
 COGNITO_APP_ID = os.environ.get('AWS_COGNITO_APP_ID')
 COGNITO_REGION = os.environ.get('AWS_COGNITO_REGION')
+BASE_URL=os.environ.get('BASE_URL')
 if COGNITO_REGION:
-    keys_url = 'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.format(COGNITO_REGION, COGNITO_USER_POOL_ID)
+    if LOCALSTACK:
+        keys_url = f"http://cognito-idp.{COGNITO_REGION}.{BASE_URL}/{COGNITO_USER_POOL_ID}/.well-known/jwks.json"
+    else:
+        keys_url = 'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.format(COGNITO_REGION, COGNITO_USER_POOL_ID)
+
     response = urllib.request.urlopen(keys_url)
     COGNITO_KEYS = json.loads(response.read())['keys']
     
@@ -626,7 +643,7 @@ logging_dict = {
     },
 }
 
-if AWS_DEPLOYED:
+if AWS_DEPLOYED and not LOCALSTACK:
     LOG_GROUP_NAME = os.environ.get('VINCE_LOG_GROUP_NAME', 'VINCE')
     logging_dict['handlers']['watchtower'] = {
         'level': 'DEBUG',
@@ -638,7 +655,7 @@ if AWS_DEPLOYED:
 
 IS_WORKER = os.environ.get('IS_ELASTICBEANSTALK_WORKER', False)
 IS_VINCEWORKER = os.environ.get('IS_VINCEWORKER', False)
-if IS_VINCEWORKER and AWS_DEPLOYED:
+if IS_VINCEWORKER and AWS_DEPLOYED and not LOCALSTACK:
     IS_VINCEWORKER = True
     INSTALLED_APPS.append('vinceworker')
     logging_dict['loggers']['vinceworker'] = {
@@ -648,7 +665,7 @@ if IS_VINCEWORKER and AWS_DEPLOYED:
     logging_dict['handlers']['watchtower']['stream_name'] = 'vinceworker'
 
 IS_KBWORKER = os.environ.get('IS_KBWORKER', False)
-if IS_KBWORKER and AWS_DEPLOYED:
+if IS_KBWORKER and AWS_DEPLOYED and not LOCALSTACK:
     IS_KBWORKER = True
     INSTALLED_APPS.append('kbworker')
     logging_dict['loggers']['kbworker'] = {
@@ -659,7 +676,7 @@ if IS_KBWORKER and AWS_DEPLOYED:
     # only need to define this for the worker
 
 IS_VCWORKER = os.environ.get('IS_VCWORKER', False)
-if IS_VCWORKER and AWS_DEPLOYED:
+if IS_VCWORKER and AWS_DEPLOYED and not LOCALSTACK:
     IS_VCWORKER = True
     INSTALLED_APPS.append('vincecommworker')
     logging_dict['loggers']['vincecommworker'] = {
@@ -724,7 +741,7 @@ MAX_UPLOAD_SIZE = 10485760
 CSRF_COOKIE_HTTPONLY=False
 
 # Set CSRF trusted origins to our generated list of trusted domains
-CSRF_TRUSTED_ORIGINS = trusted_domains
+CSRF_TRUSTED_ORIGINS = [f'http://{t_domain}' for t_domain in trusted_domains] + [f'https://{t_domain}' for t_domain in trusted_domains]
 
 CSRF_FAILURE_VIEW = "vinny.views.csrf_failure_view"
 

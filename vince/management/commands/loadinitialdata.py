@@ -27,8 +27,7 @@
 # DM21-1126
 ########################################################################
 import logging
-import os.path
-from os import path
+import os
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
 from vince.models import *
@@ -77,6 +76,14 @@ class Command(BaseCommand):
             else:
                 call_command('loadcwe', 'vince/fixtures/cwe_regular.json')
                 logger.info("Done loading CWE Info")
+
+            if EmailContact.objects.count() > 0:
+                logger.info("extra data Info already exists")
+            else:
+                for path in sorted(os.listdir('vince/fixtures')):
+                    if path.endswith("_extra.json"):
+                        call_command('loaddata', os.path.join("vince/fixtures", path))
+                        logger.info(f"Done loading {path}")
                 
             #call_command('copy_contact_uuid')
 

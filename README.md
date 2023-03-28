@@ -74,6 +74,7 @@ reduce the risk of exposure.
 [<img src="https://github.com/CERTCC/VINCE/raw/main/Vince_Infrastructure.png" width="100%"></A>](https://github.com/CERTCC/VINCE/raw/main/Vince_Infrastructure.png)
 
 
+
 ### Local Install
 
 1. Clone the repo

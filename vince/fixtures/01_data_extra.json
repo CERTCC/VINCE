@@ -1,0 +1,142 @@
+[
+    {
+        "model": "auth.group",
+        "pk": 1,
+        "fields": {
+            "name": "vince",
+            "permissions": []
+        }
+    },
+    {
+        "model": "auth.group",
+        "pk": 2,
+        "fields": {
+            "name": "test_team",
+            "permissions": []
+        }
+    },
+    {
+        "model": "vince.contact",
+        "pk": 1,
+        "fields": {
+            "vendor_id": "1",
+            "vendor_name": "test_vendor",
+            "vendor_type": "Vendor",
+            "srmail_peer": null,
+            "srmail_salutation": null,
+            "srmail_id": null,
+            "lotus_id": null,
+            "countrycode": "US",
+            "active": true,
+            "date_added": "2022-10-11T21:54:12Z",
+            "user_added": null,
+            "location": "Domestic",
+            "comment": "",
+            "search_vector": "'test':1 'us':3 'vendor':2",
+            "modified": "2022-10-11T21:57:31.359Z",
+            "version": 0,
+            "uuid": "a90d21ea-d5eb-4b8c-91fd-0577f2eac09f"
+        }
+    },
+    {
+        "model": "vince.emailcontact",
+        "pk": 1,
+        "fields": {
+            "contact": 1,
+            "email": "test_contact_email@test.com",
+            "email_type": "Work",
+            "name": null,
+            "user_added": null,
+            "email_function": "TO",
+            "status": true,
+            "version": 0,
+            "email_list": false
+        }
+    },
+    
+    {
+        "model": "vince.groupsettings",
+        "pk": 1,
+        "fields": {
+            "group": 2,
+            "publish": true,
+            "organization": "test_team_org",
+            "vulnote_template": null,
+            "team_email": null,
+            "team_signature": "",
+            "disclosure_link": null,
+            "cna_email": null,
+            "contact": 1,
+            "contacts_read": true,
+            "contacts_write": true
+        }
+    },
+    
+    {
+        "model": "auth.user",
+        "pk": 1,
+        "fields": {
+            "password": "!TsUjG3PqzG1HMP6YR8tiCZeVPxbwn3sG3DR8foqJ",
+            "last_login": null,
+            "is_superuser": true,
+            "username": "admin",
+            "first_name": "",
+            "last_name": "",
+            "email": "admin@test.com",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2022-10-11T21:49:05.983Z",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "auth.user",
+        "pk": 2,
+        "fields": {
+            "password": "!pywBTneVYKVsWNYp6DqEd123XKBUtOSjJSpRNe1g",
+            "last_login": "2022-10-11T22:08:41Z",
+            "is_superuser": true,
+            "username": "admin@test.com",
+            "first_name": "admin_first",
+            "last_name": "admin_last",
+            "email": "admin@test.com",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2022-10-11T21:50:17Z",
+            "groups": [
+                1,
+                2
+            ],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "vince.usersettings",
+        "pk": 1,
+        "fields": {
+            "user": 1,
+            "settings_pickled": "gASVnAEAAAAAAAB9lCiMFnVzZV9lbWFpbF9hc19zdWJtaXR0ZXKUiIwWZW1haWxfb25fdGlja2V0\nX2Fzc2lnbpSIjBZlbWFpbF9vbl90aWNrZXRfY2hhbmdllIiMEmVtYWlsX2Nhc2VfY2hhbmdlc5RL\nAYwPZW1haWxfbmV3X3Bvc3RzlEsBjBJlbWFpbF9uZXdfbWVzc2FnZXOUSwGMEGVtYWlsX25ld19z\ndGF0dXOUSwGMC2VtYWlsX3Rhc2tzlEsBjBVsb2dpbl92aWV3X3RpY2tldGxpc3SUiIwQdGlja2V0\nc19wZXJfcGFnZZRLGYwOc2VuZF9yZW1pbmRlcnOUiIwNcmVtaW5kZXJfZGF5c5RLAowQZW1haWxf\ncHJlZmVyZW5jZZRLAYwGdHJpYWdllImMEHJlbWluZGVyX3RpY2tldHOUiIwUcmVtaW5kZXJfcHVi\nbGljYXRpb26UiIwWcmVtaW5kZXJfdmVuZG9yX3N0YXR1c5SIjBVyZW1pbmRlcl92ZW5kb3Jfdmll\nd3OUiIwOcmVtaW5kZXJfY2FzZXOUiHUu\n",
+            "org": null,
+            "preferred_username": null,
+            "triage": false,
+            "case_template": null,
+            "contacts_read": true,
+            "contacts_write": true
+        }
+    },
+    {
+        "model": "vince.usersettings",
+        "pk": 2,
+        "fields": {
+            "user": 2,
+            "settings_pickled": "gASVnAEAAAAAAAB9lCiMFnVzZV9lbWFpbF9hc19zdWJtaXR0ZXKUiIwWZW1haWxfb25fdGlja2V0\nX2Fzc2lnbpSIjBZlbWFpbF9vbl90aWNrZXRfY2hhbmdllIiMEmVtYWlsX2Nhc2VfY2hhbmdlc5RL\nAYwPZW1haWxfbmV3X3Bvc3RzlEsBjBJlbWFpbF9uZXdfbWVzc2FnZXOUSwGMEGVtYWlsX25ld19z\ndGF0dXOUSwGMC2VtYWlsX3Rhc2tzlEsBjBVsb2dpbl92aWV3X3RpY2tldGxpc3SUiIwQdGlja2V0\nc19wZXJfcGFnZZRLGYwOc2VuZF9yZW1pbmRlcnOUiIwNcmVtaW5kZXJfZGF5c5RLAowQZW1haWxf\ncHJlZmVyZW5jZZRLAYwGdHJpYWdllImMEHJlbWluZGVyX3RpY2tldHOUiIwUcmVtaW5kZXJfcHVi\nbGljYXRpb26UiIwWcmVtaW5kZXJfdmVuZG9yX3N0YXR1c5SIjBVyZW1pbmRlcl92ZW5kb3Jfdmll\nd3OUiIwOcmVtaW5kZXJfY2FzZXOUiHUu\n",
+            "org": "test_org",
+            "preferred_username": "admin@test.com",
+            "triage": false,
+            "case_template": null,
+            "contacts_read": true,
+            "contacts_write": true
+        }
+    }
+]

@@ -329,7 +329,7 @@ urlpatterns = [
     path('api/userapprove/', userapproverequest, {"caller": "vince"}, name='userapprove'),
 ]
 try:
-    if settings.MULTIURL_CONFIG:
+    if (settings.MULTIURL_CONFIG or settings.VINCE_NAMESPACE == "vince") and not settings.LOCALSTACK:
         urlpatterns.extend([
             path('login/', cogauth_views.COGLoginView.as_view(template_name='vince/tracklogin.html'), name="login"),
             path('login/mfa/', cogauth_views.MFAAuthRequiredView.as_view(), name='mfaauth'),
