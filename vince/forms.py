@@ -2339,7 +2339,10 @@ class CVEAllocationForm(forms.ModelForm):
 
 class ProductContactForm(forms.ModelForm):
 
-    sector = forms.MultipleChoiceField( widget = forms.CheckboxSelectMultiple, choices=VendorProduct.INFRASTRUCTURE_TYPE, required=False)
+    SECTORS = (('generic','generic'))
+    if hasattr(settings,"SECTORS"):
+        SECTORS = settings.SECTORS
+    sector = forms.MultipleChoiceField( widget = forms.CheckboxSelectMultiple, choices=SECTORS, required=False)
 
     def __init__(self, *args, **kwargs):
         super(ProductContactForm, self).__init__(*args, **kwargs)

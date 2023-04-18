@@ -3863,35 +3863,10 @@ class CVEAffectedProduct(models.Model):
         blank=True,
         null=True)
 
-class Sector(models.Model):
-
-    name = models.CharField(
-        max_length=75,
-        blank=True,
-        null=True)
-
 class VendorProduct(models.Model):
     """
     Store Vendor Product information. 
     """
-    INFRASTRUCTURE_TYPE = (
-        ('Chemical', 'Chemical'),
-        ('Commercial Facilities', 'Commercial Facilities'),
-        ('Communications', 'Communications'),
-        ('Critical Manufactoring', 'Critical Manufactoring'),
-        ('Dams', 'Dams'),
-        ('Defense Industrial Base', 'Defense Industrial Base'),
-        ('Emergency Services', 'Emergency Services'),
-        ('Energy', 'Energy'),
-        ('Financial', 'Financial'),
-        ('Food and Agriculture', 'Food and Agriculture'),
-        ('Government Facilities', 'Government Facilities'),
-        ('Healthcare and Public Health', 'Healthcare and Public Health'),
-        ('Information Technology', 'Information Technology'),
-        ('Nuclear Reactors, Materials, and Waste', 'Nuclear Reactors, Materials, and Waste'),
-        ('Transportation Systems', 'Transportation Systems'),
-        ('Water and Wastewater Systems', 'Water and Wastewater Systems')
-        )
     
     name = models.CharField(
     _('Product Name'),
@@ -3904,7 +3879,6 @@ class VendorProduct(models.Model):
         null=False)
     
     sector = ArrayField( models.CharField( max_length = 50 ), blank = True, null = True )
-
     
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     

@@ -56,7 +56,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "2.0.7"
+VERSION = "2.0.8"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -821,3 +821,23 @@ CSAF_DISTRIBUTION_OPTIONS = {
 #If you choose to disable TLP statements in CSAF comment out the MAP dictionary below
 CSAF_TLP_MAP = { "PUBLIC": "WHITE", "PRIVATE": "AMBER" }
 
+#Added in SECTORS for VERSION 2.0.8
+SECTORS = (
+    ('Chemical', 'Chemical'),
+    ('Commercial Facilities', 'Commercial Facilities'),
+    ('Communications', 'Communications'),
+    ('Critical Manufacturing', 'Critical Manufacturing'),
+    ('Dams', 'Dams'),
+    ('Defense Industrial Base', 'Defense Industrial Base'),
+    ('Emergency Services', 'Emergency Services'),
+    ('Energy', 'Energy'),
+    ('Financial', 'Financial'),
+    ('Food and Agriculture', 'Food and Agriculture'),
+    ('Government Facilities', 'Government Facilities'),
+    ('Healthcare and Public Health', 'Healthcare and Public Health'),
+    ('Information Technology', 'Information Technology'),
+    ('Nuclear Reactors, Materials, and Waste', 'Nuclear Reactors, Materials, and Waste'),
+    ('Transportation Systems', 'Transportation Systems'),
+    ('Water and Wastewater Systems', 'Water and Wastewater Systems')
+)
+	

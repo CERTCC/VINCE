@@ -74,7 +74,8 @@
 
 	  {{ cwe_formset.management_form }}
 	  <table class="unstriped cve_formset_table">
-	    <div id="cweprefix" class="hidden">{{ cwe_formset.prefix }}</div>
+	    <div id="cweprefix" class="hidden"
+		 data-cwe-url="{% url 'vince:cwe_autocomplete' %}">{{ cwe_formset.prefix }}</div>
 	    {% for subform in cwe_formset %}
 	    <tr class="cwe_formset">
 	      <td>
@@ -120,7 +121,8 @@
 	<div class="large-4 columns"></div>
       </div>
       <br/>
-      <div class="row">
+      <div class="row cveproduct"
+	   data-prod-autocomplete="{% url 'vince:prod_autocomplete' %}">
 	<div class="large-12 columns">
 	  <p><b>Please include at least 1 affected product</b></p>
 	  {{ prod_formset.management_form }}

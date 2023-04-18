@@ -441,13 +441,15 @@ def autocomplete_cwe(request):
 
 @login_required(login_url="vince:login")
 @user_passes_test(is_in_group_vincetrack, login_url='vince:login')
-def autocomplete_prods(request, org_id):
+def autocomplete_prods(request, org_id=''):
+    search = {}
+    if org_id:
+        search["organization_id"] = org_id
     if request.GET.get('term'):
-        prods = list(VendorProduct.objects.filter(organization_id=org_id,name__icontains=request.GET.get('term')).values_list('name', flat=True))
-    else:
-        prods = list(VendorProduct.objects.all().values_list('name', flat=True))
-
-    data = json.dumps(prods)
+        search["name__icontains"] = request.GET.get('term')
+    prods = list(VendorProduct.objects.filter(**search).values_list('name', flat=True))
+    #Always send dictionary so we can add paging etc if needed.
+    data = json.dumps({"products": prods})
     mimetype = 'application/json'
     return HttpResponse(data, mimetype)
 
