@@ -34,6 +34,7 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVectorField
+from django.contrib.postgres.fields import ArrayField
 from django_countries.fields import CountryField
 from django.contrib.postgres import fields
 from django.conf import settings
@@ -3873,7 +3874,25 @@ class VendorProduct(models.Model):
     """
     Store Vendor Product information. 
     """
-
+    INFRASTRUCTURE_TYPE = (
+        ('Chemical', 'Chemical'),
+        ('Commercial Facilities', 'Commercial Facilities'),
+        ('Communications', 'Communications'),
+        ('Critical Manufactoring', 'Critical Manufactoring'),
+        ('Dams', 'Dams'),
+        ('Defense Industrial Base', 'Defense Industrial Base'),
+        ('Emergency Services', 'Emergency Services'),
+        ('Energy', 'Energy'),
+        ('Financial', 'Financial'),
+        ('Food and Agriculture', 'Food and Agriculture'),
+        ('Government Facilities', 'Government Facilities'),
+        ('Healthcare and Public Health', 'Healthcare and Public Health'),
+        ('Information Technology', 'Information Technology'),
+        ('Nuclear Reactors, Materials, and Waste', 'Nuclear Reactors, Materials, and Waste'),
+        ('Transportation Systems', 'Transportation Systems'),
+        ('Water and Wastewater Systems', 'Water and Wastewater Systems')
+        )
+    
     name = models.CharField(
     _('Product Name'),
     max_length=200)
@@ -3884,8 +3903,8 @@ class VendorProduct(models.Model):
         blank=False,
         null=False)
     
-    sector = models.ManyToManyField(
-        Sector)
+    sector = ArrayField( models.CharField( max_length = 50 ), blank = True, null = True )
+
     
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     
@@ -3895,8 +3914,11 @@ class ProductVersion(models.Model):
     Stores Product Version information. Links to cve and vendorproduct tables.
     """
 
-    cve = models.ManyToManyField(
-        CVEAllocation)
+    cve = models.ForeignKey(
+        CVEAllocation,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
 
     product = models.ForeignKey(
         VendorProduct,

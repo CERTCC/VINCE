@@ -35,27 +35,34 @@ function change_org(value){
 	org_auto(retval, false)
 }
 
-function complete_prod(orgid, row_id, prod_input){
+function complete_prod(orgid, row_id, prod_input, item_found){
 	clear_row(row_id)
-	prod_input.autocomplete({
-		source: "/vince/ajax_calls/prods/"+orgid,
-		minLength: 2,
-		select: function( event, ui) { 
-			prod_input.val(ui.item.value); 
-			$('#newprod_indicator_'+row_id).html('');
-		}
-	});
-
-	$(prod_input[0]).on("input propertychange paste", function(){
-		if ($(this).data('val')!=this.value) {
-			if (this.value.length === 0){
+	if (item_found.val()){
+		prod_input.autocomplete({
+			source: "/vince/ajax_calls/prods/"+orgid,
+			disabled: false,
+			minLength: 2,
+			select: function( event, ui) { 
+					prod_input.val(ui.item.value); 
 				$('#newprod_indicator_'+row_id).html('');
-			}else{
-				$('#newprod_indicator_'+row_id).html('New Product');
 			}
-		}
-		$(this).data('val', this.value);	
-	});
+		});
+	
+		$(prod_input[0]).on("input propertychange paste", function(){
+			if ($(this).data('val')!=this.value && item_found.val()) {
+				if (this.value.length === 0){
+					$('#newprod_indicator_'+row_id).html('');
+				}else{
+					$('#newprod_indicator_'+row_id).html('New Product');
+				}
+			}
+				$(this).data('val', this.value);	
+		});
+	}else {
+		prod_input.autocomplete({
+			disabled: true
+		});
+	}
 }
 
 function org_auto(item, init) {
@@ -66,17 +73,16 @@ function org_auto(item, init) {
 	if(item){
 		orgid = $(item).val();
 	}
-
 	if (item && init == true) {
 		//new row in form
 		prod_input = $("#id_product-"+item[0].id.match(regex)[0]+"-cve_affected_product")
 		item_found = $("#id_product-"+item[0].id.match(regex)[0]+"-organization")
 	} else if (item && init == false){
-		//came back to form after submit
+		//came back to form after submit or after clearing an organization selection
 		let row_id =  $(item)[0].id.match(regex)[0]
 		prod_input = $("#id_product-"+item.match(regex)[0]+"-cve_affected_product")
 		item_found = $("#id_product-"+row_id+"-organization")
-		complete_prod(orgid, $(item)[0].id.match(regex)[0], prod_input)
+		complete_prod(orgid, $(item)[0].id.match(regex)[0], prod_input, item_found)		
 	} else {
 		//new form
 		prod_input = $('#id_product-0-cve_affected_product')
@@ -84,10 +90,11 @@ function org_auto(item, init) {
 	}
 	const row_id = item_found[0].id.match(regex)[0]
 	prod_input.parent().append('<div id=newprod_indicator_'+row_id+' style="color:red;font-size:14px"></div>')
-
+	
 	$(item_found).change(function() {
-		complete_prod(orgid, row_id, prod_input, item_found)
-
+		if (item_found.val()){
+			complete_prod(orgid, row_id, prod_input, item_found)
+		}
 	});
 }
 

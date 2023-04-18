@@ -314,7 +314,7 @@
 			{% for prod in product_list %}
 			<tr>
 				<td>{{ prod.name }}</td>
-				<td>{% for sec in prod.sector.all %}{{ sec.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+				<td>{% for sec in prod.sector %}{{ sec }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
 				<td class="large-6 columns text-right"><a href="{% url 'vince:editproduct' prod.id %}" class="small button default text-right" id="editproduct">{% trans "Edit" %}</a>
 				<a href="{% url 'vince:rmproduct' object.id prod.id %}" class="small button default" id="rmproduct"><i class="fas fa-trash-alt"></i>{% trans "Delete" %}</a></td>
 			</tr>

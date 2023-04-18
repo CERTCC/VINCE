@@ -447,7 +447,6 @@ def autocomplete_prods(request, org_id):
     else:
         prods = list(VendorProduct.objects.all().values_list('name', flat=True))
 
-    print('prods: ', prods)
     data = json.dumps(prods)
     mimetype = 'application/json'
     return HttpResponse(data, mimetype)
@@ -2120,8 +2119,7 @@ class CommunicationsFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTest
 
             if keyword:
                 vt_results = vt_results.filter((Q(title__icontains=keyword) | Q(comment__icontains=keyword)))
-                print("AFTER KEYWORDS SEARCH")
-                print(vt_results)
+
         posts = []
         messages = []
 
@@ -2557,7 +2555,6 @@ class EditTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
             form.fields['queue'].choices = [('', '--------')] + [
                 (q.id, q.title) for q in writable_queues]
         contacts = TicketContact.objects.filter(ticket=ticket)
-        print(contacts)
         context['contactform'] = self.ContactFormSet(prefix='contact', queryset=contacts, instance=ticket)
         context['ticket'] = ticket
         context['form'] = form
@@ -9541,6 +9538,8 @@ class RemoveProductFromContact(LoginRequiredMixin, TokenMixin, UserPassesTestMix
         return context
 
     def post(self, request, *args, **kwargs):
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
+
         contact = get_object_or_404(Contact, id=self.kwargs['pk'])
         product = get_object_or_404(VendorProduct, id=self.kwargs['product'])
         version = ProductVersion.objects.filter(product=product).first()
@@ -9745,16 +9744,14 @@ class AddProductToContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         contact = get_object_or_404(Contact, id=self.kwargs['pk'])
         name = self.request.POST.get('name')
         sectors = self.request.POST.getlist('sector')
         product = VendorProduct(name=name,
+                    sector=sectors,
                     organization=contact)
         product.save()
-
-        for sec in sectors:
-            product.sector.add(get_object_or_404(Sector, name=sec))
 
         messages.success(
             self.request,
@@ -10475,17 +10472,15 @@ class EditProduct(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.F
         return context
 
     def post(self, request, *args, **kwargs):
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
-        logger.debug(self.request.POST)
         product = get_object_or_404(VendorProduct, id=self.kwargs['pk'])
         original_name = product.name
         name = self.request.POST.get('name')
         sectors = self.request.POST.getlist('sector')
         product.name = name
-        product.sector.clear()
+        product.sector = sectors
         product.save()
-        for sec in sectors:
-            product.sector.add(get_object_or_404(Sector, name=sec))
         
         orgid = ""+ str(product.organization.id)
 
@@ -10500,10 +10495,6 @@ class EditProduct(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.F
                     # Do we just skip any published case for updates to affectedproducts?
                     pass
                 else:
-                    # affectedproduct.updated = True
-                    # affectedproduct.save()
-                    # version.updated = True
-                    # version.save()
                     affectedproduct.name = name
                     affectedproduct.save()
 
@@ -11920,52 +11911,56 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
 
             for f in cveprodformset:
                 cd = f.cleaned_data
-                contact = Contact.objects.filter(id=int(cd['organization']))
-                prods.append(CVEAffectedProduct(cve = cve,
-                                                name=cd['cve_affected_product'],
-                                                version_affected=cd['version_affected'],
-                                                version_name=cd['version_name'],
-                                                version_value=cd['version_value'],
-                                                organization=contact[0].vendor_name))
+                if cd['organization']:
+                    contact = Contact.objects.filter(id=int(cd['organization']))
+                    prods.append(CVEAffectedProduct(cve = cve,
+                                                    name=cd['cve_affected_product'],
+                                                    version_affected=cd['version_affected'],
+                                                    version_name=cd['version_name'],
+                                                    version_value=cd['version_value'],
+                                                    organization=contact[0].vendor_name))
 
-                #check if vendorProduct exists, if not create it.
-                checkprod = VendorProduct.objects.filter(name = cd['cve_affected_product'])
-                if not checkprod:
-                    checkprod = VendorProduct(name=cd['cve_affected_product'], organization=contact[0])
-                    checkprod.save()
-                else:
-                    checkprod = checkprod[0]
+                    #check if vendorProduct exists, if not create it.
+                    checkprod = VendorProduct.objects.filter(name = cd['cve_affected_product'])
+                    if not checkprod:
+                        checkprod = VendorProduct(name=cd['cve_affected_product'], organization=contact[0])
+                        checkprod.save()
+                    else:
+                        checkprod = checkprod[0]
 
-                prods2.append(ProductVersion(product=checkprod,
-                                    version_affected=cd['version_affected'],
-                                    version_name=cd['version_name'],
-                                    version_value=cd['version_value'],
-                                    case=cve.vul.case
-                                    ))
-                
-                oldprods = ProductVersion.objects.filter(cve=cve).all()
-                if oldprods.count() == len(cveprodformset):
-                    #CHECK FOR PRODUCT LIST BEING CHANGED
-                    falseindx = 0
-                    for _prod in oldprods:
+                    prods2.append(ProductVersion(cve=cve,
+                                        product=checkprod,
+                                        version_affected=cd['version_affected'],
+                                        version_name=cd['version_name'],
+                                        version_value=cd['version_value'],
+                                        case=cve.vul.case
+                                        ))
+                    
+                    oldprods = ProductVersion.objects.filter(cve=cve).all()
+                    if oldprods.count() == len(cveprodformset):
+                        #CHECK FOR PRODUCT LIST BEING CHANGED
+                        falseindx = 0
+                        for _prod in oldprods:
 
-                        if (cd['version_affected'] == _prod.version_affected) & (cd['version_name'] == _prod.version_name) & (cd['version_value'] == _prod.version_value)  & (cd['cve_affected_product'] == _prod.product.name) & (contact[0] == _prod.product.organization) & (prodchanged == False): #& (cd['organization'] == _prod.product.organization)
-                            if falseindx > 0:
-                                falseindx = 0
-                            break
-                        else:
-                            falseindx = falseindx + 1
-                            #if our false index is has iterated through our entire prodformset, then we are at the end
-                            if falseindx == len(cveprodformset):
+                            if (cd['version_affected'] == _prod.version_affected) & (cd['version_name'] == _prod.version_name) & (cd['version_value'] == _prod.version_value)  & (cd['cve_affected_product'] == _prod.product.name) & (contact[0] == _prod.product.organization) & (prodchanged == False): #& (cd['organization'] == _prod.product.organization)
+                                if falseindx > 0:
+                                    falseindx = 0
                                 break
-                    if falseindx > 0:
+                            else:
+                                falseindx = falseindx + 1
+                                #if our false index is has iterated through our entire prodformset, then we are at the end
+                                if falseindx == len(cveprodformset):
+                                    break
+                        if falseindx > 0:
+                            cve.cve_changes_to_publish=True
+                            prodchanged = True
+
+                    else:
                         cve.cve_changes_to_publish=True
-                        prodchanged = True
 
+                    cve.save()
                 else:
-                    cve.cve_changes_to_publish=True
-
-                cve.save()
+                    pass
                 
             try:
                 with transaction.atomic():   
@@ -11975,8 +11970,6 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
                     ProductVersion.objects.filter(cve=cve).delete()
                     ProductVersion.objects.bulk_create(prods2)
 
-                    for _prod in prods2:
-                        _prod.cve.add(cve)
             except:
                 return HttpResponseServerError()
         if self.request.META.get('HTTP_REFERER') and (self.request.path not in self.request.META.get('HTTP_REFERER')) and is_safe_url(self.request.META.get('HTTP_REFERER'),set(settings.ALLOWED_HOSTS),True):
@@ -12245,26 +12238,30 @@ class AddVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
         if cveprodformset.is_valid():
             for f in cveprodformset:
                 cd = f.cleaned_data
-                contact = Contact.objects.filter(id=int(cd['organization']))
-                prods.append(CVEAffectedProduct(cve = cve,
-                                                name=cd['cve_affected_product'],
-                                                version_affected=cd['version_affected'],
-                                                version_name=cd['version_name'],
-                                                version_value=cd['version_value'],
-                                                organization=contact[0].vendor_name))
+                if cd['organization']:
+                    contact = Contact.objects.filter(id=int(cd['organization']))
+                    prods.append(CVEAffectedProduct(cve = cve,
+                                                    name=cd['cve_affected_product'],
+                                                    version_affected=cd['version_affected'],
+                                                    version_name=cd['version_name'],
+                                                    version_value=cd['version_value'],
+                                                    organization=contact[0].vendor_name))
 
-                #check if vendorProduct exists, if not create it.
-                checkprod = VendorProduct.objects.filter(name = cd['cve_affected_product'])
-                if not checkprod:
-                    checkprod = VendorProduct(name=cd['cve_affected_product'], organization=contact[0])
-                    checkprod.save()
+                    #check if vendorProduct exists, if not create it.
+                    checkprod = VendorProduct.objects.filter(name = cd['cve_affected_product'])
+                    if not checkprod:
+                        checkprod = VendorProduct(name=cd['cve_affected_product'], organization=contact[0])
+                        checkprod.save()
+                    else:
+                        checkprod = checkprod[0]
+                    prods2.append(ProductVersion(cve=cve,
+                                            product=checkprod,
+                                            version_affected=cd['version_affected'],
+                                            version_name=cd['version_name'],
+                                            version_value=cd['version_value']
+                                            ))
                 else:
-                    checkprod = checkprod[0]
-                prods2.append(ProductVersion(product=checkprod,
-                                        version_affected=cd['version_affected'],
-                                        version_name=cd['version_name'],
-                                        version_value=cd['version_value']
-                                        ))
+                    pass
 
             try:
                 with transaction.atomic():
@@ -12274,8 +12271,6 @@ class AddVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
                     ProductVersion.objects.filter(cve=cve).delete()
                     ProductVersion.objects.bulk_create(prods2)
 
-                    for _prod in prods2:
-                        _prod.cve.add(cve)
             except:
                 return HttpResponseServerError()
 
@@ -13790,7 +13785,7 @@ class VinceTeamSettingsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         return context
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         team = get_object_or_404(Group, id=self.kwargs['pk'])
 
         if (self.request.POST['vulnote_template'] != team.groupsettings.vulnote_template):
@@ -13888,7 +13883,7 @@ class CreateNewVinceUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
         return reverse_lazy('vince:useradmin')
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         form = CreateNewVinceUser(self.request.POST)
         if form.is_valid():
             if form.cleaned_data["password1"] != form.cleaned_data["password2"]:
@@ -14020,7 +14015,7 @@ class SendEmailAll(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
         return is_in_group_vincetrack(self.request.user) and self.request.user.is_superuser
 
     def form_valid(self, form):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         ticket = form.save(self.request.user)
         messages.success(
 	    self.request,
@@ -14291,7 +14286,7 @@ class CreateNewEmailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         return HttpResponseRedirect(tkt.get_absolute_url())
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         form = NewVinceEmail(self.request.POST, request.FILES)
         templates = EmailTemplate.objects.filter(locale="en", body_only=True)
         form.fields['email_template'].choices = [('', '--------')] + [(q.id, q.template_name) for q in templates]
@@ -14783,7 +14778,7 @@ class CognitoGetUserDetails(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         return (is_in_group_vincetrack(self.request.user) and self.request.user.is_superuser)
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         data = None
 
@@ -14827,7 +14822,7 @@ class CognitoChangeUserAttributes(LoginRequiredMixin, TokenMixin, UserPassesTest
         return (is_in_group_vincetrack(self.request.user) and self.request.user.is_superuser)
 
     def post(self, request, *args, **kwargs):
-        logger.debug(self.request.POST)
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         change_email = False
         form = CognitoUserProfile(self.request.POST)

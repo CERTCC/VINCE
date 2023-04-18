@@ -2338,12 +2338,8 @@ class CVEAllocationForm(forms.ModelForm):
                 raise forms.ValidationError("Invalid CVE identifier, must start with CVE-")
 
 class ProductContactForm(forms.ModelForm):
-    user = forms.MultipleChoiceField(
-    choices=(),
-    required=False,
-    widget=forms.CheckboxSelectMultiple(attrs={'class': 'ul_nobullet'}))
 
-    sector = forms.ModelMultipleChoiceField(queryset=Sector.objects.all().values_list('name', flat=True), widget=forms.CheckboxSelectMultiple(), required=False)
+    sector = forms.MultipleChoiceField( widget = forms.CheckboxSelectMultiple, choices=VendorProduct.INFRASTRUCTURE_TYPE, required=False)
 
     def __init__(self, *args, **kwargs):
         super(ProductContactForm, self).__init__(*args, **kwargs)
