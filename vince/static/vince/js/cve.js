@@ -29,19 +29,31 @@
   ########################################################################
 */
 
-function change_org(value){
-    /* Something with the forms required onChange to be called from the form initialization itself.
-    This was to be able to access the proper elements of a row when returning to an existing cve. */
-    retval = '#' + value.id
-    org_auto(retval, false)
+function org_change(event) {
+    
+$(el).closest('tr').find('.organization')    
+    $(el).closest('tr').find('.organization')
+    let org = event.target;
 }
 
-function complete_prod(orgid, row_id, prod_input, item_found){
-    clear_row(row_id)
-    if (item_found.val()){
-	let org_url = $('.cveproduct').data('prod-autocomplete');
-	prod_input.autocomplete({
-	    source: function(request,response) {
+function org_auto(item) {
+    if (!item) {
+	item = $('.affected_product').not('.ui-autocomplete-input');
+    }
+    item.closest('tr').find('.organization').on("change",function() {
+	console.log(this); console.log(arguments);
+	/* Clear all elements in the row on organization change */
+	$(this).closest('tr').find("input").val('');
+	$(this).closest('tr').find(".range_type")
+	    .prop('selectedIndex',0);
+    });
+    let base_url = $('.cveproduct').data('prod-autocomplete');    
+    item.autocomplete({
+	source: function(request,response) {
+	    let el = this.element;
+	    let org_id = $(el).closest('tr').find('.organization').val();
+	    if(org_id) {
+		let org_url = base_url + org_id + '/';
 		$.getJSON(org_url,{term:request.term})
 		    .done(function(data) {
 			if("products" in data)
@@ -49,102 +61,46 @@ function complete_prod(orgid, row_id, prod_input, item_found){
 			else
 			    response([]);
 		    });
-	    },
-	    disabled: false,
-	    minLength: 2,
-	    select: function( event, ui) { 
-		prod_input.val(ui.item.value); 
-		$('#newprod_indicator_'+row_id).html('');
+	    } else {
+		response([]);
 	    }
-	});
-	
-	$(prod_input[0]).on("input propertychange paste", function(){
-	    if ($(this).data('val')!=this.value && item_found.val()) {
-		if (this.value.length === 0){
-		    $('#newprod_indicator_'+row_id).html('');
-		}else{
-		    $('#newprod_indicator_'+row_id).html('New Product');
-		}
-	    }
-	    $(this).data('val', this.value);	
-	});
-    }else {
-	prod_input.autocomplete({
-	    disabled: true
-	});
-    }
-}
-
-function org_auto(item, init) {
-    const regex = /[0-9]+/g;
-    let item_found = ''
-    let prod_input = ''
-    let orgid = ''
-    if(item){
-	orgid = $(item).val();
-    }
-    if (item && init == true) {
-	/* new row in form */
-	prod_input = $("#id_product-"+item[0].id.match(regex)[0]+"-cve_affected_product")
-	item_found = $("#id_product-"+item[0].id.match(regex)[0]+"-organization")
-    } else if (item && init == false){
-	/* came back to form after submit or after clearing an organization selection  */
-	let row_id =  $(item)[0].id.match(regex)[0]
-	prod_input = $("#id_product-"+item.match(regex)[0]+"-cve_affected_product")
-	item_found = $("#id_product-"+row_id+"-organization")
-	complete_prod(orgid, $(item)[0].id.match(regex)[0], prod_input, item_found)		
-    } else {
-	/* new form */
-	prod_input = $('#id_product-0-cve_affected_product')
-	item_found = $('#id_product-0-organization')
-    }
-    const row_id = item_found[0].id.match(regex)[0]
-    prod_input.parent().append('<div id=newprod_indicator_'+row_id+' style="color:red;font-size:14px"></div>')
-    
-    $(item_found).change(function() {
-	if (item_found.val()){
-	    complete_prod(orgid, row_id, prod_input, item_found)
-	}
+	},
+	disabled: false,
+	minLength: 2,
+	change: function(event, ui) {
+	    console.log(arguments); console.log(this);
+	    if(!ui.item)
+		$(event.target).after($("<small>")
+				      .addClass("required rnew")
+				      .html("** New Product **"));
+	    else
+		$(event.target).parent().find(".rnew").remove();
+	}	
     });
-}
-
-function clear_row(row_id) {
-    selected = false
-    $('#newprod_indicator_'+row_id).html('');
-    document.getElementById('id_product-'+row_id+'-cve_affected_product').value = "";
-    document.getElementById('id_product-'+row_id+'-version_value').value = "";
-    document.getElementById('id_product-'+row_id+'-version_affected').value = "None";
-    document.getElementById('id_product-'+row_id+'-version_name').value = "";
 }
 
 $(document).ready(function() {	
     function post_add_cwe_row(row) {
-	row.find("input[id*=cwe]").each(function() {
-	    cwe_auto($(this));
-	});
+	cwe_auto(row.find("input"));
     }
 
     function post_add_org_name(row) {
-	row.find("input[id*=product]").each(function() {
-	    org_auto($(this), true);
-	});
-	row.find("select[id*=organization]").trigger("change");
+	org_auto(row.find(".affected_product"));
     }
 
     $("#id_date_public").datepicker({dateFormat: 'yy-mm-dd'});
     $("#id_date_added").datepicker({dateFormat: 'yy-mm-dd'});
     
     function cwe_auto(item) {
-	if (item) {
-	    var cwe_input=item;
-	} else {
-	    var cwe_input = $('#id_cwe-0-cwe');
+	if (!item) {
+	    item = $('.cwe').not('.ui-autocomplete-input');
 	}
 	let cwe_url = $('#cweprefix').data('cwe-url');
-	cwe_input.autocomplete({
-	    source: cwe_url,
-	    minLength: 2,
-	    select: function( event, ui) { cwe_input.val(ui.item.value); }
+	$.getJSON(cwe_url).done(function(data) {
+	    item.autocomplete({
+		source: data,
+		minLength: 2
+	    });
 	});
     }
     
@@ -183,7 +139,7 @@ $(document).ready(function() {
 	formCssClass: 'cmu-formset4',
 	deleteCssClass: 'remove-formset'
     });
-
-    cwe_auto(null);
-    org_auto(null, true);
+    /* Run autocomplete on relevatn fields  */
+    cwe_auto();
+    org_auto();
 });

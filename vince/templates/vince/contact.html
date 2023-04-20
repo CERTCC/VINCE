@@ -42,10 +42,12 @@
 {{ contacttags|json_script:"contact_tags" }}
 {{ othertags|json_script:"other_tags" }}
 
-<div class="row">
+<div class="row" id="messages">
   <div class="large-12 columns">
     {% for message in messages %}
-    <div class="callout {{message.tags}}">{% autoescape off %}{{ message }}{% endautoescape %}</div>
+    <div class="callout {{message.tags}}">
+      {% autoescape off %}{{ message }}{% endautoescape %}
+    </div>
     {% endfor %}
   </div>
 </div>

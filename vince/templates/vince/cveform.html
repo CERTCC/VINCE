@@ -38,7 +38,8 @@
 
 <div class="row">
   <div class="small-12 large-12 columns">
-    <form method="post" id="cveform">{% csrf_token %}
+    <form method="post" id="cveform" autocomplete="off">
+      {% csrf_token %}
       <div class="row">
 	<div class="large-8 columns">
 	  {% if form.errors %}
@@ -79,8 +80,9 @@
 	    {% for subform in cwe_formset %}
 	    <tr class="cwe_formset">
 	      <td>
-		<label for="cwe_cwe">Problem Type (CWE):</label>
-		{% render_field subform.cwe class="form-control" %}
+		<label>Problem Type (CWE):
+		  {% render_field subform.cwe class="form-control cwe" %}
+		</label>
 	      </td>
 	      <td class="text-right"></td>
 	    </tr>
@@ -92,12 +94,14 @@
 	    {% for subform in ref_formset %}
 	    <tr class="ref_formset">
 	      <td>
-		<label for="cve_ref">Reference Source:</label>
-		{% render_field subform.ref_source class="form-control" %}
+		<label>Reference Source:
+		  {% render_field subform.ref_source class="form-control" %}
+		</label>
 	      </td>
 	      <td>
-		<label for="cve_ref">Reference:</label>
-		{% render_field subform.reference class="form-control" %}
+		<label>Reference:
+		  {% render_field subform.reference class="form-control" %}
+		</label>
 	      </td>
 	      <td class="text-right"></td>
 	    </tr>
@@ -109,8 +113,9 @@
 	    {% for subform in wa_formset %}
 	    <tr class="wa_formset">
 	      <td>
-		<label for="cve_wa">Workaround:</label>
-		{% render_field subform.workaround class="form-control" %}
+		<label>Workaround:
+		  {% render_field subform.workaround class="form-control" %}
+		</label>
 	      </td>
 	      <td class="text-right"></td>
 	    </tr>
@@ -131,25 +136,30 @@
 	    {% for subform in prod_formset %}
 	    <tr class="prod_formset">
 	      <td>
-		<label for="cve_prod">Organization: <span class='required'>*</span></label>
-		{% render_field subform.organization class="form-control" %}
+		<label>Organization: <span class='required'>*</span>
+		  {% render_field subform.organization class="form-control organization" %}
+		</label>
 	      </td>
 	      <td>
-		<label for="cve_prod_name">Product Name: <span class='required'>*</span></label>
-		{% render_field subform.cve_affected_product class="form-control" %}
+		<label>Product Name: <span class='required'>*</span>
+		  {% render_field subform.cve_affected_product class="form-control affected_product" %}
+		</label>
 		</td>
 	      <td>
-		<label for="cve_version_num">Version (or Starts): <span class='required'>*</span></label>
-		{% render_field subform.version_value class="form-control" %}
+		<label>Version (or Starts): <span class='required'>*</span>
+		  {% render_field subform.version_value class="form-control" %}
+		</label>
 	      </td>
 	      <td>
-		<label for="cve_version_num">Range Type: </label>
-		{% render_field subform.version_affected class="form-control" %}
+		<label>Range Type:
+		  {% render_field subform.version_affected class="form-control range_type" %}
+		</label>
 	      </td>
 	      
 	      <td> 
-		<label for="cve_version_name">Range End:</label>
-		{% render_field subform.version_name class="form-control" %}
+		<label>Range End:
+		  {% render_field subform.version_name class="form-control" %}
+		</label>
 	      </td>
 	      <td></td>
 	    </tr>

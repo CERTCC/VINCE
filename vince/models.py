@@ -3881,7 +3881,17 @@ class VendorProduct(models.Model):
     sector = ArrayField( models.CharField( max_length = 50 ), blank = True, null = True )
     
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    
+
+    class Meta:
+        unique_together = (('name', 'organization'),)
+
+    def save(self, *args, **kwargs):
+        if VendorProduct.objects.filter(organization=self.organization,
+                                        name__iexact=self.name):
+            logger.debug(f"Ignoring duplicate VendorProduct {self.name}")
+            return
+        return super(VendorProduct, self).save(*args, **kwargs)
+        
     
 class ProductVersion(models.Model):
     """

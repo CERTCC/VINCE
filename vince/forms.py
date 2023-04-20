@@ -2364,7 +2364,7 @@ class ProductForm(forms.Form):
         )
 
     organization = forms.ChoiceField(
-        widget = forms.Select(attrs={'class': 'form-control', 'onChange': "change_org(this)"}),
+        widget = forms.Select(attrs={'class': 'form-control organization'}),
         choices=(),
         required=False,
         label=_('Affected Organization'),

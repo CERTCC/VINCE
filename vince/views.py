@@ -98,6 +98,7 @@ from lib.vince import utils as vinceutils
 from rest_framework.views import APIView
 import pathlib
 import mimetypes
+from django.views.decorators.cache import cache_control
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -430,6 +431,7 @@ def autocomplete_contact(request, name):
 
 @login_required(login_url="vince:login")
 @user_passes_test(is_in_group_vincetrack, login_url='vince:login')
+@cache_control(max_age=3600,private=True)
 def autocomplete_cwe(request):
     if request.GET.get('term'):
         cwe = list(CWEDescriptions.objects.filter(cwe__icontains=request.GET.get('term')).values_list('cwe', flat=True))
@@ -441,13 +443,16 @@ def autocomplete_cwe(request):
 
 @login_required(login_url="vince:login")
 @user_passes_test(is_in_group_vincetrack, login_url='vince:login')
+@cache_control(max_age=60,private=True)
 def autocomplete_prods(request, org_id=''):
     search = {}
     if org_id:
         search["organization_id"] = org_id
     if request.GET.get('term'):
         search["name__icontains"] = request.GET.get('term')
-    prods = list(VendorProduct.objects.filter(**search).values_list('name', flat=True))
+    #Send products back as is if they are less than 20
+    qs = VendorProduct.objects.filter(**search)
+    prods = list(qs.values_list('name', flat=True))
     #Always send dictionary so we can add paging etc if needed.
     data = json.dumps({"products": prods})
     mimetype = 'application/json'
@@ -662,6 +667,7 @@ def vince_user_lookup(request):
             data = json.dumps({'message':'no user'})
         mimetype = 'application/json'
         return HttpResponse(data, mimetype)
+    return HttpResponse(json.dumps({'message':'no user requested'}))
 
 def group_name_exists(name):
     groups = ContactGroup.objects.filter(name=name).first()
@@ -9750,6 +9756,11 @@ class AddProductToContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         contact = get_object_or_404(Contact, id=self.kwargs['pk'])
         name = self.request.POST.get('name')
         sectors = self.request.POST.getlist('sector')
+        
+        if VendorProduct.objects.filter(organization=contact,name__iexact=name):
+            messages.error(self.request,_("Duplicate product names not allowed"))
+            return HttpResponseRedirect(reverse('vince:contact', args=[self.kwargs["pk"]]))
+            
         product = VendorProduct(name=name,
                     sector=sectors,
                     organization=contact)
@@ -11844,7 +11855,7 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
             if cveprodformset.is_valid():
                 return self.form_valid(form)
             else:
-                form.add_error(None, "At least one Product is required")
+                form.add_error(None, "Form data is invalid! Check Product details.")
                 return self.form_invalid(form)
         else:
             logger.debug(f"Form errors in {self.__class__.__name__} is {form.errors}")
@@ -11923,8 +11934,9 @@ class EditCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.U
                                                     organization=contact[0].vendor_name))
 
                     #check if vendorProduct exists, if not create it.
-                    checkprod = VendorProduct.objects.filter(name = cd['cve_affected_product'])
+                    checkprod = VendorProduct.objects.filter(name__iexact = cd['cve_affected_product'], organization=contact[0])
                     if not checkprod:
+                        logger.info(f"Creating a new Product under vendor {contact[0]} as {cd['cve_affected_product']}")
                         checkprod = VendorProduct(name=cd['cve_affected_product'], organization=contact[0])
                         checkprod.save()
                     else:
