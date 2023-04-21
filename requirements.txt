@@ -73,7 +73,7 @@ segno==1.5.2
 simplejson==3.18.0
 six==1.16.0
 soupsieve==2.3.2.post1
-sqlparse==0.4.3
+sqlparse==0.4.4
 typing_extensions==4.4.0
 urllib3==1.26.12
 vine==5.0.0
