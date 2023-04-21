@@ -14429,7 +14429,7 @@ def cvss_translator(value, field):
             return "NETWORK"
         return "NONE"
     elif value == "L":
-        if field == "L":
+        if field == "AV":
             return "LOCAL"
         return "LOW"
     elif value == "H":
