@@ -566,22 +566,20 @@ $(function () {
 				contentType: 'application/json',
 				dataType: 'json'})
 			.done(function(ret) {
-				let m = [{output: ret},{input:cvedata}];
-				$('#cve5data').val(json_pretty(m));
-
+			    let m = [{output: ret},{input:cvedata}];
+			    $('#cve5data').val(json_pretty(m));
 			    if("error" in ret) {
-					msg_card(el,"Error: "+ret.error,"bad");
-					$('#cve5data').addClass('is-invalid-input');
+				msg_card(el,"Error: "+ret.error,"bad");
+				$('#cve5data').addClass('is-invalid-input');
 			    } else if("message" in ret) {
-					msg_card(el,"Result: "+ret.message,"good");
-					$('#cve5data').removeClass('is-invalid-input');
-					
-					if('updated' in ret) {
-						$('#cve5data')
-						.data('cveservices',ret.updated);
-						load_cvedata('cveservices');
-					}
-			
+				msg_card(el,"Result: "+ret.message,"good");
+				$('#cve5data').removeClass('is-invalid-input');
+				if('updated' in ret) {
+				    $('#cve5data')
+					.data('cveservices',ret.updated);
+				    load_cvedata('cveservices');
+				}
+				
 			    } else {
 				/* the card-cr class looks like warning*/
 				msg_card(el,"Result: "+ret.message,"cr")
@@ -601,5 +599,83 @@ $(function () {
 	    }
 	});
     });
+    function rgba_rand(r,g,b,a) {
+	let c = [0,0,0];
+	for(let i=0; i<3; i++) {
+	    if(arguments[i] && (!isNaN(parseInt(arguments[i]))))
+		c[i] = arguments[i]
+	    else
+		c[i] = parseInt(Math.random()*255)
+	}
+	a && parseFloat(a) ? c.push(a) : c.push(1);
+	return "rgba(" + c.join(",") + ")";
+    }
+    /* If userapprove element exists display it and create user approve rows*/
+    if($('#userapprove').data('href')) {
+	$.getJSON($('#userapprove').data('href')).done(function(data) {
+            if("uar" in data) {
+                let incomplete = data.uar.filter(function(x) {
+		    return x.status < 0; });
+		if(incomplete.length) {
+                    $('#userapprove').html(' [' +
+					   String(incomplete.length) + ']' );
+		    /*  use pending/user/(?P<pk>[0-9]+)/addcontact/ and
+			create a prompt to start process */
+		    if($('.uar-row').length) {
+			/* Create a new Ticket by submitting data
+			   to Vendor Queue */
+			let divm = $('<div>').addClass('large-10 columns');
+			incomplete.forEach(function(rec) {
+			    let name = rec.full_name + " " ;
+			    let row = $("<p>")
+				.addClass("article-row-content-description")
+				.text(name).append($("<span>")
+						   .addClass("email")
+						   .text(rec.username));
+			    let divrow = $("<div>")
+				.addClass("article-row-content")
+				.append(row);
+			    let picdiv = $("<div>")
+				.addClass("profile-pic text-center")
+				.css({"background-color": rgba_rand(255)})
+				.append($("<span>").addClass("logo-initial")
+					.text(name[0]));
 
+			    let div = $("<div>").addClass("row list-row")
+				.attr("data-rec",JSON.stringify(rec))
+				.append($("<div>").addClass("large-1 columns")
+					.append(picdiv))
+				.append($("<div>").addClass("large-7 columns")
+					.append(divrow));
+			    $('.uar-row > .large-10').append(div);
+			});
+			let rec = {}
+			let vendor_queue = 13;
+			let vendor_associator = 5;
+			let csrf_token = getCookie('csrftoken');
+			let data = {searchbar: null,
+				    csrfmiddlewaretoken: csrf_token,
+				    vulnote_approval: null,
+				    queue: vendor_queue,
+				    title: "",
+				    role: vendor_associator,
+				    assigned_to: -2, 
+				    body: "",
+				    due_date: null,
+				    submitter_email: "",
+				    priority: 3,
+				    'case': null}
+			data.title = "Associate " + rec.username
+			    + " to Vendor "+ rec.vendor;
+			data.submitter_email = rec.username;
+			data.body = rec.justification;
+			/* GET this from ticket/url data-href*/
+			let ticket_url = $('.uar-row').data('newticket-url');
+		    }
+		}
+
+            }
+        });
+
+    }
 });

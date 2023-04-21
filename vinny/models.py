@@ -2490,6 +2490,13 @@ class UserApproveRequest(models.Model):
     
     completed_at = models.DateTimeField(blank=True, null=True)
 
+    #ADmin user or whoever rejected/approved this request.
+    completed_by =  models.CharField(
+	max_length=255,
+        blank=True,
+	null=True
+    )
+
     expires_at = models.DateTimeField(default=timezone.now() + timedelta(days=30))
     contact = models.ForeignKey(
         VinceCommContact,

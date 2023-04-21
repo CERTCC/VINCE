@@ -3886,8 +3886,9 @@ class VendorProduct(models.Model):
         unique_together = (('name', 'organization'),)
 
     def save(self, *args, **kwargs):
-        if VendorProduct.objects.filter(organization=self.organization,
-                                        name__iexact=self.name):
+        dup = VendorProduct.objects.filter(organization=self.organization,
+                                           name__iexact=self.name)
+        if self._state.adding and dup:
             logger.debug(f"Ignoring duplicate VendorProduct {self.name}")
             return
         return super(VendorProduct, self).save(*args, **kwargs)

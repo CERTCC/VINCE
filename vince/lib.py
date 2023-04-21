@@ -1622,8 +1622,6 @@ def parse_attachment(message_part):
         content_disposition = message_part.get("Content-Disposition", None)
     except AttributeError:
         return None
-    logger.debug("IN PARSE ATTACHMENT %s" % content_disposition)
-    logger.debug(message_part.get_content_type())
     if message_part.get_content_type() == "application/pgp-signature":
         # don't want pgp attachments
         return

@@ -821,6 +821,16 @@ CSAF_DISTRIBUTION_OPTIONS = {
 #If you choose to disable TLP statements in CSAF comment out the MAP dictionary below
 CSAF_TLP_MAP = { "PUBLIC": "WHITE", "PRIVATE": "AMBER" }
 
+#Choose alternate method to validate Session Tokens for non-AWS tokens
+#and for writing Tests with mock sessions
+def ALT_VERIFY_TOKEN(user,session):
+    """
+    This verify_token method provides an alternate way to verify Session
+    Tokens for writing Tests with mock sessions. Add your alternate method
+    if preferred to help with automated tests.
+    """
+    return False
+
 #Added in SECTORS for VERSION 2.0.8
 SECTORS = (
     ('Chemical', 'Chemical'),
@@ -840,4 +850,3 @@ SECTORS = (
     ('Transportation Systems', 'Transportation Systems'),
     ('Water and Wastewater Systems', 'Water and Wastewater Systems')
 )
-	

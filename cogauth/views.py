@@ -99,6 +99,10 @@ def mfafilter(mfa_name):
 class TokenMixin(AccessMixin):
 
     def dispatch(self, request, *args, **kwargs):
+        if hasattr(settings,'ALT_VERIFY_TOKEN') and settings.ALT_VERIFY_TOKEN(request.user,request.session):
+            """ If alternate token verify method provided for Automated
+            Tests, use it """
+            return super(TokenMixin, self).dispatch(request, *args, **kwargs)
         if not request.session.get('REFRESH_TOKEN'):
             return self.handle_no_permission()
         try:
@@ -126,8 +130,7 @@ class GetUserMixin(object):
         if (self.cognito is None):
             self.cognito = get_cognito(self.request)
         user =  self.cognito.get_user(attr_map=settings.COGNITO_ATTR_MAPPING)
-        # BYPASSED with localstack
-        if settings.LOCALSTACK:
+        if hasattr(settings,'LOCALSTACK') and settings.LOCALSTACK:
             user.phone_number_verified = True
             user.mfa = "SMS"
         return user
@@ -154,8 +157,7 @@ class PendingTestMixin(UserPassesTestMixin):
         if self.request.user.vinceprofile.service:
             return False
         if self.request.user.vinceprofile.pending:
-            if settings.LOCALSTACK:
-                # BYPASSED with localstack
+            if hasattr(settings,'LOCALSTACK') and settings.LOCALSTACK:            
                 self.request.user.vinceprofile.pending = False
                 return True
             return False
@@ -602,9 +604,15 @@ class InitialPasswordResetView(FormView):
         c = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID, user_pool_region=settings.COGNITO_REGION, username=form.cleaned_data['username'])
         try:
             c.initiate_forgot_password()
+            logger.warning("Initiate password reset for  %s" % form.cleaned_data['username'])
         except (Boto3Error, ClientError) as e:
             logger.warning("User %s does not exist" % form.cleaned_data['username'])
-            
+        #If the user_pool PreventUserExistenceErrors is NOT LEGACY
+        #there will be no exception thrown. Below two are for logging only
+        if not User.objects.using('vincecomm').filter(email__iexact=form.cleaned_data['username']):
+            logger.warning("User %s does not exist in VinceComm" % form.cleaned_data['username'])
+        if not User.objects.filter(email__iexact=form.cleaned_data['username']):
+            logger.warning("User %s does not exist in VinceTrack" % form.cleaned_data['username'])
         self.request.session['RESETPASSWORD']=True
         self.request.session['username']=form.cleaned_data['username']
         return redirect("cogauth:passwordreset")
@@ -1034,14 +1042,12 @@ class RegisterView(FormView):
         return context
         
     def form_valid(self, form):
-        #Begin reCAPTCHA validation                                                                           
+        #Begin reCAPTCHA validation
         recaptcha_response = self.request.POST.get('g-recaptcha-response')
-
         data = {
             'secret' : settings.GOOGLE_RECAPTCHA_SECRET_KEY,
             'response': recaptcha_response
         }
-
         r = requests.post(GOOGLE_VERIFY_URL, data=data)
         result = r.json()
         if result['success']:

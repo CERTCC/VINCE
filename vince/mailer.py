@@ -441,8 +441,6 @@ def send_updatecase_mail(action, new_user=None):
     # new_user is the user recently assigned to the case
     case = action.get_related_case
 
-    logger.debug(f"ACTION is {action.action_type}")
-    
     if not(emailable_action(action)):
         return
     

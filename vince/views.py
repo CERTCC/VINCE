@@ -103,6 +103,18 @@ from django.views.decorators.cache import cache_control
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+def normalize_time(instance,column):
+    """ Time fields normalize and find issues """
+    if hasattr(instance,column):
+        timefield = getattr(instance,column)
+        if type(timefield) == datetime:
+            if timefield.tzinfo == None:
+                return pytz.UTC.localize(timefield)
+            else:
+                return timefield
+    return pytz.UTC.localize(datetime.min)
+
+
 def json_error(msg):
     return JsonResponse({"error":msg})
 
@@ -160,25 +172,26 @@ def filterDateTimeFields(POST,res,crit='created__range'):
     enddate = DateTimeField().clean(datetime.now()) + timedelta(days=1)
     startdate = DateTimeField().clean('1970-01-01')
     doFilter = False
-    if 'dateend' in POST:
+    if 'dateend' in POST and POST.get('dateend'):
         v = POST['dateend']
         try:
             enddate = DateTimeField().clean(v) + timedelta(days=1)
             doFilter = True
         except Exception as e:
-            logger.info(f"Error when parsing date field error {e} for {v}")
-    if 'datestart' in POST:
+            logger.info(f"Error when parsing date end field error {e} for {v}, all fields are {POST}")
+    if 'datestart' in POST and POST.get('datestart'):
         v = POST['datestart']
         try:
             startdate = DateTimeField().clean(v)
             doFilter = True
         except Exception as e:
-            logger.info(f"Error when parsing date field error {e} for {v}")
+            logger.info(f"Error when parsing date start field error {e} for {v}, all fields are {POST}")
     if doFilter:
         try:
             res = res.filter(**{crit :(startdate,enddate)})
         except Exception as e:
-            logger.info(f"Filtering failed for DateTimeField error {e}")
+            logger.info(f"Filtering failed for DateTimeField error {e}, all fields are {POST}")
+
     return res
 
 @register.filter(name='leading_zeros')
@@ -929,7 +942,7 @@ def calc_basic_ticket_stats(Tickets):
 
 
 def is_query_ticket_id(s):
-    if s.isnumeric():
+    if s and s.isnumeric():
         return True, None, int(s)
     queues = list(TicketQueue.objects.all().values_list('slug', flat=True))
     queues.append("General")
@@ -1520,7 +1533,7 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
 
     def get(self, request, *args, **kwargs):
         logger.debug(f"TicketFilterResults GET: {self.request.GET}")
-        search_term = self.request.GET.get('searchbar', None)
+        search_term = self.request.GET.get('searchbar', "")
         tktsearch, queue, tktid = is_query_ticket_id(search_term)
         search_query = process_query(search_term)
         search_tags = process_query_for_tags(search_term)
@@ -1644,7 +1657,7 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
         results = chain(ticket_spec_results, ticket_results, case_results, contact_results, vul_results, cve_results, vince_user_results, group_results)
 
         qs = sorted(results,
-                    key=lambda instance: instance.modified,
+                    key=lambda x: normalize_time(x,'modified'),
                     reverse=True)
 
         page = self.request.GET.get('page', 1)
@@ -2127,6 +2140,7 @@ class CommunicationsFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTest
 
             if keyword:
                 vt_results = vt_results.filter((Q(title__icontains=keyword) | Q(comment__icontains=keyword)))
+                logger.debug(f"After Keywords search result is {vt_results}")
 
         posts = []
         messages = []
@@ -2145,7 +2159,7 @@ class CommunicationsFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTest
 
         case_activity = chain(vt_results, vc_activity, posts, messages)
         activity = sorted(case_activity,
-                          key=lambda instance:instance.created,
+                          key=lambda x: normalize_time(x,'created'),
                           reverse=True)
 
         paginator = Paginator(activity, 10)
@@ -5855,7 +5869,7 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         else:
             case_activity = chain(activity)
         context['activity'] = sorted(case_activity,
-                                     key=lambda instance: instance.created,
+                                     key=lambda x: normalize_time(x,'created'),
                                      reverse=True)[:10]
 
         # this is all done asych now...
@@ -8410,7 +8424,7 @@ class ContactsSearchView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         ga = GroupActivity.objects.all()
         res = chain(ca, ga)
         qs = sorted(res,
-                    key=lambda instance: instance.action_ts,
+                    key=lambda x: normalize_time(x,'action_ts'),
                     reverse=True)
         context['activity_list'] = qs[:30]
         context['show_contact'] = True
@@ -8488,7 +8502,7 @@ class ContactsResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         results = chain(contact_results, group_results, vince_results)
         if int(sort_type) == 1:
             qs = sorted(results,
-                        key=lambda instance: instance.modified,
+                        key=lambda x: normalize_time(x,'modified'),
                         reverse=True)
         else:
             qs = sorted(results,
@@ -9758,8 +9772,9 @@ class AddProductToContact(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         sectors = self.request.POST.getlist('sector')
         
         if VendorProduct.objects.filter(organization=contact,name__iexact=name):
-            messages.error(self.request,_("Duplicate product names not allowed"))
-            return HttpResponseRedirect(reverse('vince:contact', args=[self.kwargs["pk"]]))
+            messages.error(self.request,_("Product (case insensitive) and Vendor tuple shoud be unique!"))
+            return HttpResponseRedirect(reverse('vince:contact', args=[self.kwargs["pk"]]) + '#products')
+
             
         product = VendorProduct(name=name,
                     sector=sectors,
@@ -9812,7 +9827,7 @@ class ContactDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             changes = ContactInfoChange.objects.filter(contact=vc_contact)
             allchanges = chain(context['activity_list'], changes)
             qs = sorted(allchanges,
-                        key=lambda instance: instance.action_ts,
+                        key=lambda x: normalize_time(x,'action_ts'),
                         reverse=True)
             context['activity_list'] = qs
             context['changes'] = changes.filter(approved=False)
@@ -10515,7 +10530,7 @@ class EditProduct(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.F
             self.request,
             _(f"Product {name} updated."))
         
-        return HttpResponseRedirect(reverse('vince:contact', args=orgid) + '#products')
+        return HttpResponseRedirect(reverse('vince:contact', args=[orgid]) + '#products')
 
 #### ADMIN / Template / Reports stuff ####
 
@@ -14962,7 +14977,7 @@ class CVEServicesDashboard(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         if is_in_group_vincetrack(self.request.user):
             if self.kwargs.get('pk'):
                 if is_my_team(self.request.user, self.kwargs['pk']):
-                    return False
+                    return True
             else:
                 return True
         return False
@@ -14993,7 +15008,7 @@ class CVEServicesDetailAccount(LoginRequiredMixin, TokenMixin, UserPassesTestMix
             account = get_object_or_404(CVEServicesAccount, id=self.kwargs['pk'])
             if is_my_team(self.request.user, account.team.id):
                 return True
-        return True
+        return False
 
     def get_context_data(self, **kwargs):
         context = super(CVEServicesDetailAccount, self).get_context_data(**kwargs)

@@ -6,7 +6,7 @@ def get_cognito_pool_url():
 
 # adjusted as localstack is currently setting the hostname for cognito as just "localhost"
 def get_cognito_url():
-    if settings.LOCALSTACK:
+    if hasattr(settings,"LOCALSTACK") and settings.LOCALSTACK:
         base_url = settings.BASE_URL
         return f"http://{base_url}"
     else:

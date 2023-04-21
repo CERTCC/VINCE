@@ -41,7 +41,6 @@ function org_auto(item) {
 	item = $('.affected_product').not('.ui-autocomplete-input');
     }
     item.closest('tr').find('.organization').on("change",function() {
-	console.log(this); console.log(arguments);
 	/* Clear all elements in the row on organization change */
 	$(this).closest('tr').find("input").val('');
 	$(this).closest('tr').find(".range_type")
@@ -68,7 +67,6 @@ function org_auto(item) {
 	disabled: false,
 	minLength: 2,
 	change: function(event, ui) {
-	    console.log(arguments); console.log(this);
 	    if(!ui.item)
 		$(event.target).after($("<small>")
 				      .addClass("required rnew")
