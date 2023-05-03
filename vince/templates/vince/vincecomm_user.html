@@ -88,7 +88,7 @@
       {% if vc_user.vinceprofile.service %}
       <b>MFA Enabled:</b> Not required <br/>
       {% else %}
-      <b>MFA Enabled:</b> {{ vc_user.vinceprofile.multifactor|yesno }} <br/>
+      <b>MFA Enabled:</b> {{ vc_user.vinceprofile.multifactor|yesno }} ({{ PreferredMfaSetting }})<br/>
       {% endif %}
     </p>
   </div>
@@ -123,7 +123,7 @@
     <div class="case-container">
       <ul class="tabs" data-tabs id="case-tabs" data-deep-link="true" data-update-history="true">
 	<li class="tabs-title is-active"><a href="#tickets" aria-selected="true"><i class="fas fa-clipboard-list"></i>  Tickets</a></li>
-	<li class="tabs-title"><a href="#threads" data-tabs-target="threads"><i class="fas fa-envelope"></i>  Threads</a></li>
+	<li class="tabs-title"><a href="#threads" data-tabs-target="threads" class="asyncclick" data-divid="threads"><i class="fas fa-envelope"></i>  Threads</a></li>
 	<li class="tabs-title"><a data-tabs-target="activity" href="#activity"><i class="fas fa-cogs"></i>  Activity</a></li>
 	<li class="tabs-title"><a data-tabs-target="bounces" href="#bounces"><i class="fas fa-basketball-ball"></i> Bounces</a></li>
       </ul>
@@ -150,12 +150,17 @@
             </div>
 	    <div class="large-3 columns"></div>
 	  </div>
-	  <div id="case_tasks">
-	    {% include 'vince/include/case_tasks.html' %}
+	  <form method="POST" action="{% url 'vince:ticketresults' %}" class="hide" id="ticketform">
+	    {% csrf_token %}
+	    <input type="hidden" name="submitted_by" value="{{ vc_user.username }}">
+	    </form>
+	  <div id="case_tasks" href="{% url 'vince:ticketresults' %}"  method="POST" class="asyncload autoload" form="#ticketform">
+	    <!-- async autoloader -->
           </div>
 	</div>
-	<div class="tabs-panel" id="threads">
-	  {% include 'vince/include/threads.html' %}
+	<div class="tabs-panel" id="threads"
+	     href="{% url 'vince:vcuserthread' vc_user.id %}">
+	  <!-- async click loader -->
 	</div>
 	<div class="tabs-panel" id="activity">
 	  <h3>User Activity</h3>

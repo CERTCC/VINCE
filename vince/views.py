@@ -94,6 +94,7 @@ from bigvince.storage_backends import PrivateMediaStorage
 from vince.settings import VULNOTE_TEMPLATE
 from collections import OrderedDict
 from django.utils.http import is_safe_url
+from django.utils import timezone
 from lib.vince import utils as vinceutils
 from rest_framework.views import APIView
 import pathlib
@@ -689,6 +690,44 @@ def group_name_exists(name):
     else:
         return False
 
+@login_required(login_url="vince:login")
+@user_passes_test(is_in_group_vincetrack, login_url='vince:login')
+def create_ticket(request):
+    """ A simple method to create_ticket used async JSON loader"""
+    tkt = {"created": timezone.now(), "queue": None}
+    fields = ["title","submitter_email","description"]
+    for field in fields:
+        if request.POST.get(field):
+            tkt[field] = request.POST.get(field)
+        else:            
+            return JsonResponse({'error': f"Field {field} is missing"})
+    opt_fields = ['priority','due_date']
+    for field in opt_fields:
+        if request.POST.get(field):
+            tkt[field] = request.POST.get(field)
+    
+    if request.POST.get('queue'):
+        q = request.POST.get('queue')
+        if q.isnumeric():
+            tkt["queue"] = TicketQueue.objects.filter(pk=int(q)).first()
+        elif q.lower() == "vendor":
+            #verify user has access to such queue
+            tkt["queue"] = get_vendor_queue(request.user)
+        else:
+            tkt["queue"] = TicketQueue.objects.filter(title__iexact=q).first()
+
+    if not tkt["queue"]:
+        return JsonResponse({'error': f"Queue name or queue id required and valid"})
+    
+    try:
+        ticket = Ticket(**tkt)
+        ticket.save()
+        return JsonResponse({'success': f"Created Ticket","pk": ticket.pk})
+    except Exception as e:
+        logger.info(f"Failed to create ticket using async request error {e}")
+        return JsonResponse({'error': f"Ticket creation failed see logs for details."})
+
+    
 def srmail_name_exists(name):
     groups = ContactGroup.objects.filter(srmail_peer_name=name).first()
     if groups:
@@ -13406,11 +13445,13 @@ class VinceCommUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             context['activity'] = VendorAction.objects.using('vincecomm').filter(user=context['vc_user']).order_by('-created')[:30]
             context['contact'] = EmailContact.objects.filter(email=context['vc_user'].username)
             context['contact_record'] = EmailContact.objects.filter(email=context['vc_user'].username, contact__vendor_type="Contact").first()
-            threads = Thread.ordered(Thread.all(context['vc_user']))
-            paginator = Paginator(threads, 10)
-            page = 1
-            context['threads'] = paginator.page(page)
-            context['ticket_list'] = Ticket.objects.filter(submitter_email=context['vc_user'].username).order_by('-created')
+            ### Threads moved to asyncclick loader ### 
+            #threads = Thread.ordered(Thread.all(context['vc_user']))
+            #paginator = Paginator(threads, 10)
+            #page = 1
+            #context['threads'] = paginator.page(page)
+            ### ticket_list is moved to async autoload ### 
+            #context['ticket_list'] = Ticket.objects.filter(submitter_email=context['vc_user'].username).order_by('-created')
             context['reset_mfa'] = MFAResetTicket.objects.filter(user_id=context['vc_user'].id, ticket__status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS, Ticket.IN_PROGRESS_STATUS]).exists()
             context['bounce_stats'] = get_bounce_stats(context['vc_user'].email, context['vc_user'])
             context['bounces'] = BounceEmailNotification.objects.filter(email=context['vc_user'].email)

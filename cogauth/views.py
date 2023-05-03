@@ -68,6 +68,7 @@ from botocore.exceptions import ClientError, ParamValidationError
 from django.utils.http import is_safe_url
 from django.http.response import JsonResponse
 from bigvince.utils import get_cognito_url, get_cognito_pool_url
+from vinny.models import VinceCommEmail
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -1033,6 +1034,10 @@ class RegisterView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super(RegisterView, self).get_context_data(**kwargs)
+        if hasattr(settings,'TERMS_URL'):
+            context['terms_url'] = settings.TERMS_URL
+        else:
+            context['terms_url'] = "#"
         if self.request.session.get('REGISTER', False):
             context['form'] = self.form_class(initial={'email':self.request.session['REGISTER']})
             context['title'] = "Confirm your VINCE Registration"
@@ -1066,6 +1071,12 @@ class RegisterView(FormView):
             form._errors.setdefault("email", ErrorList([
                 f'Email already exists. Usernames are <b>CASE SENSITIVE</b>. Or did you forget your password? <a href="{reset_url}">Reset your password</a>.'
             ]))
+            return super().form_invalid(form)
+
+        reserved = VinceCommEmail.objects.filter(email__iexact = form.cleaned_data['email'])
+
+        if reserved:
+            form._errors.setdefault("email", ErrorList(["Email already exists. Usernames are <b>CASE SENSITIVE</b>. This email is reserved, please use your personal email address for accounts."]))
             return super().form_invalid(form)
 
         c = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID, user_pool_region=settings.COGNITO_REGION)

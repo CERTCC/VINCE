@@ -37,7 +37,7 @@ try:
 except:
     import six
 from django.utils.safestring import mark_safe
-from vince.models import Ticket, Contact, VulnerabilityCase, CaseAction, CaseAssignment, AdminPGPEmail, VTDailyNotification, TicketQueue, CalendarEvent, FollowUp, EmailTemplate, EmailContact
+from vince.models import Ticket, Contact, VulnerabilityCase, CaseAction, CaseAssignment, AdminPGPEmail, VTDailyNotification, TicketQueue, CalendarEvent, FollowUp, EmailTemplate, EmailContact, BounceEmailNotification
 from vinny.models import Case, VTCaseRequest, VinceCommGroupAdmin, VinceCommContact, GroupContact, VinceCommEmail
 from django.contrib.auth.models import User, Group
 from django.shortcuts import get_object_or_404
@@ -716,6 +716,16 @@ def send_templated_mail(template_name,
     if sender == None:
         sender = f"{settings.DEFAULT_VISIBLE_NAME} <{settings.DEFAULT_FROM_EMAIL}>"
 
+
+    #remove recipients who are bounced recently
+    try:
+        bouncers = BounceEmailNotification.objects.filter(email__in=recipients+bcc,bounce_type=BounceEmailNotification.PERMANENT,action_taken=False).values_list('email',flat=True)
+        if bouncers:
+            bcc = list(set(bcc) - set(bouncers))
+            recipients = list(set(recipients) - set(bouncers))
+    except Exception as e:
+        logger.debug(f"Could not execute query against bounce list error {e}")
+        
     if replyto:
         #if replyto, add default reply-to-email and headers
         #this is usually an auto-notification

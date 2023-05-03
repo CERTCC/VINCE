@@ -32,7 +32,7 @@ VINCE accounts are intended to be tied to a real person. If you would like to es
     {% for field in form %}
     {% if field.name == "agree_to_terms" %}
     <div class="form-row last_form_field">
-      {{ field }} <label for="id_{{ field.name }}">I agree to the <a href="#" target="_blank" rel="noopener">terms of service.</a> {% if field.field.required %}<span class="required">*</span>{% endif %}</label>
+      {{ field }} <label for="id_{{ field.name }}">I agree to the <a href="{{ terms_url }}" target="_blank" rel="noopener">terms of service.</a> {% if field.field.required %}<span class="required">*</span>{% endif %}</label>
     </div>
     {% else %}
     <div class="form-row">

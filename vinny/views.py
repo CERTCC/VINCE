@@ -410,7 +410,8 @@ def autocomplete_allvendors(request):
 @login_required(login_url="vinny:login")
 @user_passes_test(is_not_pending, login_url="vinny:login")
 def userapproverequest(request, *args, **kwargs):
-    res = {"uar": [], "args": args, "kwargs": kwargs}
+    status_map =  {x.name: x.value for x in UserApproveRequest.Status}
+    res = {"uar": [], "args": args, "kwargs": kwargs,"status_map": status_map}
     #when this method is called from VinceTrack vince/urls.py 
     if kwargs and "caller" in kwargs and kwargs["caller"] == "vince":
         #superflous call to `using` vincecomm for code clarity only
@@ -447,13 +448,14 @@ def userapproverequest(request, *args, **kwargs):
                 rec.completed_at = timezone.now()
                 if hasattr(rec,'completed_by'):
                     rec.completed_by = request.user.username
-                if request.POST.get('status') != None and request.POST.get('status').isnumeric():
-                    rec.status = int(request.POST.get('status'))
+                if request.POST.get('status'):
+                    if request.POST.get('status').replace("-","").isnumeric():
+                        rec.status = int(request.POST.get('status'))
                 rec.save()
                 recjson = serializers.serialize('json',[rec])
                 newuser = request.POST.get('username')
                 logger.info(f"Update of UserApproveRequest for {newuser} by {request.user.username} to new status {rec.status}. Full JSON result is {recjson}")
-                create_action(f"UserApproveRequest completed by {request.user.username} for {newuser} with updates {recjson}", request.user)
+                create_action(f"Updated {newuser} Group {request.POST}", request.user)
                 return HttpResponse(recjson, 'application/json')
         return HttpResponse('[]', 'application/json')
     for q in qs_admin:
@@ -642,6 +644,11 @@ def post_order(case, order):
 
 
 def create_action(title, user, case=None):
+    max_length = VendorAction._meta.get_field('title').max_length
+    
+    if len(title) > max_length:
+        logger.debug(f"VendorAction field Title was truncated expected \"{title}\" to {max_length}")
+        title = title[:max_length - 2] + '..'
     action = VendorAction(title=title,
                           user=user)
     if case:

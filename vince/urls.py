@@ -102,6 +102,7 @@ urlpatterns = [
     re_path(r'^ajax_calls/case/participants/(?P<pk>[0-9]+)/$', views.autocomplete_caseparticipants),
     re_path(r'^ajax_calls/case/tasks/(?P<pk>[0-9]+)/$', views.autocomplete_casetasks),
     re_path(r'^ajax_calls/case/vulnerabilities/(?P<pk>[0-9]+)/$', views.autocomplete_casevuls),
+    re_path(r'^ajax_calls/create_ticket/$', views.create_ticket,name='ajax_create_ticket'),    
     path('ticket/results/', views.TicketFilterResults.as_view(), name='ticketresults'),
     re_path(r'^ticket/encrypt/(?P<pk>[0-9]+)/$', views.VinceEncryptandSend.as_view(), name='encrypt'),
     path('ticket/auto/assign/', views.TicketAutoAssign.as_view(), name='autoassign'),

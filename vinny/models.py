@@ -2480,6 +2480,7 @@ class UserApproveRequest(models.Model):
         ACCEPTED = 1
         DENIED = 0
         UNKNOWN = -1
+        EXPIRED = -2
 
     status = models.IntegerField(choices=Status.choices,default=Status.UNKNOWN)
     user = models.ForeignKey(
@@ -2490,7 +2491,7 @@ class UserApproveRequest(models.Model):
     
     completed_at = models.DateTimeField(blank=True, null=True)
 
-    #ADmin user or whoever rejected/approved this request.
+    #Admin user or whoever rejected/approved this request.
     completed_by =  models.CharField(
 	max_length=255,
         blank=True,
