@@ -69,6 +69,7 @@ from django.utils.http import is_safe_url
 from django.http.response import JsonResponse
 from bigvince.utils import get_cognito_url, get_cognito_pool_url
 from vinny.models import VinceCommEmail
+from lib.vince import utils as vinceutils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -111,10 +112,11 @@ class TokenMixin(AccessMixin):
         except (Boto3Error, ClientError) as e:
             # likely that refresh token has expired so re-auth is required
             logout(request)
+            logger.debug(f"Failed Token request {request} with error {e}")
             return redirect(self.get_login_url())
         except SuspiciousOperation:
-            logger.debug("suspicous operation - invalid jwt")
             logout(request)
+            logger.debug(f"Suspicous operation - invalid Token request {request}")
             return redirect(self.get_login_url())
         return super(TokenMixin, self).dispatch(
             request, *args, **kwargs)
@@ -207,12 +209,15 @@ class AssociateSMSView(LoginRequiredMixin, TokenMixin, GetUserMixin, FormView):
             return render(request, 'cogauth/sms.html', {'form': form})
 
     def form_valid(self, form):
+        ip = vinceutils.get_ip(self.request)        
         coguser = self.get_user()
         client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         u = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID,
                     user_pool_region=settings.COGNITO_REGION,
                     id_token=coguser.id_token, refresh_token=coguser.refresh_token,
                     access_token=coguser.access_token)
+        phone = form.cleaned_data['phone_number']
+        logger.info(f"User {self.request.user.username} SMS update request as {phone} from ip {ip}")
         try:
             u.update_profile({'phone_number':form.cleaned_data['phone_number']})
         except (Boto3Error, ClientError) as e:
@@ -224,7 +229,7 @@ class AssociateSMSView(LoginRequiredMixin, TokenMixin, GetUserMixin, FormView):
         try:                         
             u.send_verification(attribute='phone_number')
         except (Boto3Error, ClientError) as e:
-            logger.debug(f"Error returned in cogauth as {e}")
+            logger.debug(f"Error returned in cogauth for SMS Update as {e}")
             return redirect("cogauth:limitexceeded") 
         return redirect("cogauth:verify_phone")
         
@@ -248,6 +253,8 @@ class AssociateTOTPView(LoginRequiredMixin,TokenMixin,GetUserMixin,FormView):
         return context
 
     def form_valid(self, form):
+        ip = vinceutils.get_ip(self.request)
+        logger.info(f"User {self.request.user.username} TOTP update request from ip {ip}")
         coguser = self.get_user()
         client= boto3.client('cognito-idp',  endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
         try:
@@ -306,7 +313,6 @@ class ResetMFAView(FormView, AccessMixin):
         return context
 
     def form_valid(self, form):
-
         del(self.request.session['MFAREQUIRED'])
 
         vince_comm_send_sqs("ResetMFA", "MFA", "None", self.request.session['username'], None, form.cleaned_data['reason'])
@@ -315,7 +321,8 @@ class ResetMFAView(FormView, AccessMixin):
         
         messages.success(self.request,
                          "Please check your email for further instructions on resetting your MFA.")
-        
+        ip = vinceutils.get_ip(self.request)
+        logger.info(f"Reset MFA request for User {self.request.user.username} from ip {ip}")
         return redirect('cogauth:login')
         
 class RemoveMFAView(LoginRequiredMixin,TokenMixin,GetUserMixin,PendingTestMixin,TemplateView):
@@ -329,8 +336,11 @@ class RemoveMFAView(LoginRequiredMixin,TokenMixin,GetUserMixin,PendingTestMixin,
     def post(self, request, *args, **kwargs):
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         password = self.request.POST.get('password', None)
+        ip = vinceutils.get_ip(self.request)
+        logger.info(f"Remove MFA request for User {self.request.user.username} from ip {ip}")
+        
         if password:
-            logger.debug(f"Trying to authenticate {self.request.user.username}")
+            logger.debug(f"Trying to authenticate {self.request.user.username} for MFA Removal")
             user = authenticate(request, username=self.request.user.username, password=password)
             if (user is None) and request.session.get('MFAREQUIRED'):
                 request.session['CHANGEMFA'] = True
@@ -347,6 +357,8 @@ class DeleteTokenView(LoginRequiredMixin,TokenMixin,GetUserMixin,TemplateView):
 
     def get(self, request, *args, **kwargs):
         dresponse = {"delete": 0}
+        ip = vinceutils.get_ip(self.request)
+        logger.info(f"Remove Token request for User {self.request.user.username} from ip {ip}")      
         try:
             token = VinceAPIToken.objects.get(user=self.request.user)
             token.delete()
@@ -374,7 +386,8 @@ class GenerateTokenView(LoginRequiredMixin,TokenMixin,GetUserMixin,TemplateView)
         token.save(context['token'])
         c = get_cognito(self.request)
         c.update_profile({'custom:api_key':str(token)})
-        logger.debug(f"New API key generated for { self.request.user.username }")        
+        ip = vinceutils.get_ip(self.request)
+        logger.debug(f"New API key generated for { self.request.user.username } from ip {ip}")
         return context
     
 
@@ -391,10 +404,11 @@ class GenerateServiceTokenView(LoginRequiredMixin,TokenMixin,UserPassesTestMixin
         return False
 
     def get_context_data(self, **kwargs):
+        ip = vinceutils.get_ip(self.request)
         context = super(GenerateServiceTokenView, self).get_context_data(**kwargs)
         # get service account
         gc = get_object_or_404(GroupContact, id=self.kwargs.get('vendor_id'))
-
+        logger.debug(f"New Service Token create request from user {self.request.user.username} for Group {gc.group} from ip {ip}")
         service = User.objects.filter(groups__in=[gc.group], vinceprofile__service=True).first()
         if service is None:
             raise Http404
@@ -521,7 +535,7 @@ class COGLoginView(FormView):
                 else:
                     self.request.session['LAST_LOGIN'] = "New"
                 auth_login(request, user)
-                logger.debug(f"Checking permissions for user {self.request.user.username} - is authenticated ? {self.request.user.is_authenticated} ")
+                logger.debug(f"Login success! Now checking permissions for user {self.request.user.username} - is authenticated ? {self.request.user.is_authenticated} ")
                 cognito_check_permissions(self.request)
                 return super().form_valid(form)
                 #return redirect("vinny:dashboard")
@@ -602,18 +616,19 @@ class InitialPasswordResetView(FormView):
     form_class = COGInitialPWResetForm
     
     def form_valid(self, form):
+        ip = vinceutils.get_ip(self.request)
         c = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID, user_pool_region=settings.COGNITO_REGION, username=form.cleaned_data['username'])
         try:
             c.initiate_forgot_password()
-            logger.warning("Initiate password reset for  %s" % form.cleaned_data['username'])
+            logger.warning("Initiate password reset for  %s from %s" % (form.cleaned_data['username'],ip))
         except (Boto3Error, ClientError) as e:
-            logger.warning("User %s does not exist" % form.cleaned_data['username'])
+            logger.warning("User %s does not exist from %s" % (form.cleaned_data['username'],ip))
         #If the user_pool PreventUserExistenceErrors is NOT LEGACY
         #there will be no exception thrown. Below two are for logging only
         if not User.objects.using('vincecomm').filter(email__iexact=form.cleaned_data['username']):
-            logger.warning("User %s does not exist in VinceComm" % form.cleaned_data['username'])
+            logger.warning("User %s does not exist in VinceComm from %s" % (form.cleaned_data['username'],ip))
         if not User.objects.filter(email__iexact=form.cleaned_data['username']):
-            logger.warning("User %s does not exist in VinceTrack" % form.cleaned_data['username'])
+            logger.warning("User %s does not exist in VinceTrack from %s" % (form.cleaned_data['username'],ip))
         self.request.session['RESETPASSWORD']=True
         self.request.session['username']=form.cleaned_data['username']
         return redirect("cogauth:passwordreset")
@@ -821,17 +836,19 @@ class MFAAuthRequiredView(FormView, AccessMixin):
             ]))
             return super().form_invalid(form)
         
-        return redirect('cogauth:pw_reset_confirmed')
-
+        return redirect('cogauth:pw_reset_confirmed'
+)
 class ResetPasswordView(FormView, AccessMixin):
     template_name = 'cogauth/reset_password.html'
     form_class = COGResetPasswordForm
 
     def form_valid(self, form):
+        ip = vinceutils.get_ip(self.request)
         c = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID, user_pool_region=settings.COGNITO_REGION, username=self.request.session['username'])
         try:
             c.confirm_forgot_password(form.cleaned_data['code'], form.cleaned_data['new_password1'])
         except (Boto3Error, ClientError) as e:
+            logger.warning("User %s Password reset failed error is %s from ip %s" % (self.request.session['username'],e,ip))
             error_code = e.response['Error']['Code']
             if error_code == "CodeMismatchException":
                 form._errors.setdefault("code", ErrorList([
@@ -934,16 +951,21 @@ class ChangePasswordView(LoginRequiredMixin, TokenMixin, PendingTestMixin, FormV
     def form_valid(self, form):
         #user = form.save()
         #update_session_auth_hash(self.request, user)
+
         c = get_cognito(self.request)
+        ip = vinceutils.get_ip(self.request)
         try:
             c.change_password(form.cleaned_data['old_password'], form.cleaned_data['new_password1'])
+            logger.info(f"Password was updated for {self.request.username} from IP {ip}")
         except ParamValidationError:
+            logger.info(f"Password updated failed for {self.request.username} from IP {ip} - invalid new password")
             form._errors.setdefault("new_password1", ErrorList([
 		u"New password is unacceptable."
             ]))
             return super().form_invalid(form)
         except (Boto3Error, ClientError) as e:
             error_code = e.response['Error']['Code']
+            logger.info(f"Password updated failed for {self.request.username} from IP {ip} - {e} {error_code}")
             if error_code == "NotAuthorizedException":
                 form._errors.setdefault("old_password", ErrorList([
                     u"Password is incorrect."
@@ -1048,35 +1070,38 @@ class RegisterView(FormView):
         
     def form_valid(self, form):
         #Begin reCAPTCHA validation
+        ip = vinceutils.get_ip(self.request)        
         recaptcha_response = self.request.POST.get('g-recaptcha-response')
         data = {
             'secret' : settings.GOOGLE_RECAPTCHA_SECRET_KEY,
             'response': recaptcha_response
         }
-        r = requests.post(GOOGLE_VERIFY_URL, data=data)
-        result = r.json()
-        if result['success']:
-            logger.debug("Successful recaptcha validation")
-        else:
-            logger.debug(result)
-            logger.debug("invalid recaptcha validation")
-            form._errors[forms.forms.NON_FIELD_ERRORS] = ErrorList([
-                u'Invalid reCAPTCHA.  Please try again'
+        email = form.cleaned_data['email']
+        try:
+            r = requests.post(GOOGLE_VERIFY_URL, data=data)
+            result = r.json()
+            if not result['success']:
+                logger.warning(f"Invalid recaptcha validation Result: {result} {email} from IP {ip}")
+                form._errors[forms.forms.NON_FIELD_ERRORS] = ErrorList([
+                    u'Invalid reCAPTCHA.  Please try again'
                 ])
-            return super().form_invalid(form)
-        
-        dup = User.objects.using('vincecomm').filter(email__iexact = form.cleaned_data['email'])
+                return super().form_invalid(form)
+        except Exception as e:
+            logger.warning(f"Failed for recaptcha exception raised {e} from IP {ip}")
+        dup = User.objects.using('vincecomm').filter(email__iexact = email)
         if dup:
             reset_url = reverse('cogauth:init_password_reset')
             form._errors.setdefault("email", ErrorList([
                 f'Email already exists. Usernames are <b>CASE SENSITIVE</b>. Or did you forget your password? <a href="{reset_url}">Reset your password</a>.'
             ]))
+            logger.warning(f"Attempt to register duplicate user {email} from IP {ip}")
             return super().form_invalid(form)
 
         reserved = VinceCommEmail.objects.filter(email__iexact = form.cleaned_data['email'])
 
         if reserved:
             form._errors.setdefault("email", ErrorList(["Email already exists. Usernames are <b>CASE SENSITIVE</b>. This email is reserved, please use your personal email address for accounts."]))
+            logger.warning(f"Attempt to register duplicate user {email} which is notification onlyfrom IP {ip}")
             return super().form_invalid(form)
 
         c = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID, user_pool_region=settings.COGNITO_REGION)
@@ -1112,6 +1137,7 @@ class RegisterView(FormView):
         user.vinceprofile.title = form.cleaned_data['title']
         user.vinceprofile.save()
         user.save()
+        logger.info(f"New user successfully registered {user.email} from IP {ip}")
         self.request.session['CONFIRM_ID'] = user.id
         return redirect('cogauth:account_activation_sent')        
 
@@ -1177,6 +1203,8 @@ class LogoutView(CALogoutView):
     @method_decorator(never_cache)
     def dispatch(self, request, *args, **kwargs):
         request.session.delete()
+        ip = vinceutils.get_ip(request)        
+        logger.info(f"Performing logout of user {request.user.username} from ip {ip}")
         return super(LogoutView, self).dispatch(request, *args, **kwargs)
 
 
