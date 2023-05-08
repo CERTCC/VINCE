@@ -257,7 +257,7 @@ def add_permissions(user):
         if created:
             logger.info(f"Adding user {user.username} to case {u.case.vuid}")
         else:
-            logger.info(f"User already a member")
+            logger.info(f"User {user.username} already a member for case {u.case}")
 
     if len(vciu) == 0:
         logger.info(f"User { user.username } was not invited to participate in case")
@@ -304,9 +304,8 @@ def cognito_check_track_permissions(request):
                 gs = GroupSettings.objects.filter(organization=g).first()
                 if gs:
                     vgroup = gs.group
-                    if request.user.groups.filter(name=vgroup.name).exists():
-                        logger.info(f"User already in group {vgroup.name}")
-                    else:
+                    if not request.user.groups.filter(name=vgroup.name).exists():
+                        logger.info(f"User {request.user.username} is not part of Group {vgroup.name}")
                         vgroup.user_set.add(request.user)
                         #set contact permissions
                         if (old_user==False):
@@ -354,9 +353,6 @@ def cognito_check_permissions(request):
                 request.user.is_superuser=False
                 request.user.save()
 
-        logger.debug(settings.COGNITO_VINCETRACK_GROUPS)
-        # if user has access to vincetrack
-        logger.debug("CHECKING GROUPS")
         vt_groups = settings.COGNITO_VINCETRACK_GROUPS.split(",")
         if list(set(vt_groups) & set(groups)):
             vincetrackgroup = Group.objects.filter(name='vincetrack').first()
@@ -379,7 +375,6 @@ def cognito_check_permissions(request):
                     vincetrack_user.usersettings.save()
         gov_groups = settings.COGNITO_LIMITED_ACCESS_GROUPS.split(',')
         if list(set(gov_groups) & set(groups)):
-            logger.debug("Checking for limited access group")
             vincelimited = Group.objects.filter(name="vince_limited").first()
             if vincelimited:
                 vincelimited.user_set.add(request.user)

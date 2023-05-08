@@ -34,6 +34,7 @@ request_cfg = threading.local()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 class DatabaseRouterMiddleware:
 
     def __init__(self, get_response):

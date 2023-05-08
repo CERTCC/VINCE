@@ -214,12 +214,13 @@
 	{% if vulnote %}
 	<a href="{% url 'vince:edit_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vul Note</button></a>
 	<ul class="dropdown menu" data-dropdown-menu="fake-dropdown-menu" role="menubar" id="download_drop">
-          <li class="is-dropdown-submenu-parent opens-right" role="menuitem" aria-haspopup="true" data-is-click="false" aria-label="Download Options"><a href="#" class="button cmu tiny download_btn">Download</a>
-	    <ul class="menu submenu is-dropdown-submenu first-sub vertical" data-submenu="" role="menu" id="download_menu">
-              <li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="{% url 'vince:download_vulnote' vulnote.id %}">JSON</a></li>
-	      <li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="javascript:void(0)" id="download_html">HTML</a></li>
-            </ul>
-	  </li>
+    	<li class="is-dropdown-submenu-parent opens-right" role="menuitem" aria-haspopup="true" data-is-click="false" aria-label="Download Options"><a href="#" class="button cmu tiny download_btn">Download</a>
+			<ul class="menu submenu is-dropdown-submenu first-sub vertical" data-submenu="" role="menu" id="download_menu">
+				<li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="{% url 'vince:download_vulnote' vulnote.id %}">JSON</a></li>
+				<li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="javascript:void(0)" id="download_html">HTML</a></li>
+				<li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="javascript:void(0)" id="download_pdf">PDF</a></li>
+			</ul>
+		</li>
 	</ul>
 
 	

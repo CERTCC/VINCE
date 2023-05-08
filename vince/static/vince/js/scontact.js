@@ -378,6 +378,57 @@ $(document).ready(function() {
 	});
     });
 
+    $(document).on("click", "#addproduct", function(event) {
+    event.preventDefault();
+    var url = $(this).attr("href");
+    $.ajax({
+        url: url,
+            type: "GET",
+            success: function(data) {
+        $modal.html(data).foundation('open');
+            }
+    });
+    });
+    
+    $(document).on("click", "#rmproduct", function(event) {
+    event.preventDefault();
+    var url = $(this).attr("href");
+    $.ajax({
+            url: url,
+            type: "GET",
+            success: function(data) {
+        $modal.html(data).foundation('open');
+            }
+    });
+    });
+
+    $(document).on("click", "#editproduct", function(event) {
+    event.preventDefault();
+    var url = $(this).attr("href");
+    $.ajax({
+            url: url,
+            type: "GET",
+            success: function(data) {
+        $modal.html(data).foundation('open');
+            }
+    });
+    });
+    
+    $(document).on("submit", "#editproductform", function(event) {
+        event.preventDefault();
+        var data = $("#editproductform").serialize();
+        var url = $("#editproductform").attr("action");
+
+        $.ajax({
+                url: url,
+                type: "POST",
+                data: data,
+                success: function(data) {
+                    window.location.reload(true); 
+                }
+        });
+        });
+
     $(document).on("submit", "#addemailform", function(event) {
 	event.preventDefault();
 	var url = $("#addemailform").attr("action");

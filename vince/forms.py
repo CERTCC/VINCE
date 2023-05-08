@@ -89,7 +89,7 @@ class TeamSettingsForm(forms.Form):
         label=_('Email Signature'),
         required=False
     )
-    
+
     email_phone = forms.CharField(
         label=_("Phone number in email footer"),
         widget=forms.TextInput(attrs={'class': 'form-control', 'readonly':'readonly'}),
@@ -111,7 +111,7 @@ class TeamSettingsForm(forms.Form):
         help_text=('If not set, this will default to the team email field above, or the default VINCE email if team email is not set.'),
         widget=forms.TextInput(attrs={'class':'form-control'})
     )
-    
+
     disclosure_link = forms.URLField(
         required=False,
         label=_('Link to disclosure guidance'),
@@ -121,8 +121,8 @@ class TeamSettingsForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(TeamSettingsForm, self).__init__(*args, **kwargs)
 	#if setting is not set for this user, set to default
-        
-    
+
+
 class PreferencesForm(forms.Form):
 
     case_template = forms.ChoiceField(
@@ -137,7 +137,7 @@ class PreferencesForm(forms.Form):
         choices=[],
         required=False,
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'ul_nobullet'}))
-        
+
     updated_tickets = forms.MultipleChoiceField(
         choices=[],
         required=False,
@@ -217,7 +217,7 @@ class PreferencesForm(forms.Form):
     reminder_cases = forms.BooleanField(
         label=_('Remind me about active cases that have not been modified > 14 days?'),
         required=False)
-    
+
     def __init__(self, *args, **kwargs):
         super(PreferencesForm, self).__init__(*args, **kwargs)
         #if setting is not set for this user, set to default
@@ -236,7 +236,7 @@ class PreferencesForm(forms.Form):
                         self.fields[x].initial = y
 
 
-                    
+
 class CreateVulNote(forms.Form):
 
     content = forms.CharField(
@@ -289,7 +289,7 @@ class VulNoteReviewForm(forms.Form):
 	label=_('Feedback'),
 	required=False,
 	help_text=_("General feedback/comments about this vulnerability note."))
-    
+
     current_revision = forms.IntegerField(
 	required=False,
         widget=forms.HiddenInput()
@@ -299,13 +299,13 @@ class VulNoteReviewForm(forms.Form):
         required=False,
         widget=forms.HiddenInput()
     )
-    
+
     approved = forms.BooleanField(
         required=False,
         widget=forms.HiddenInput()
-    )    
+    )
 
-        
+
 class EditVulNote(forms.Form):
     content = forms.CharField(
         widget=forms.Textarea(),
@@ -380,7 +380,7 @@ class EditVulNote(forms.Form):
         super().__init__(*args, **kwargs)
 
     def clean(self):
-        """ 
+        """
         Validates form data by checking that no new revisions have been created
         while user attempted to edit
         """
@@ -462,7 +462,7 @@ class NotificationForm(forms.Form):
 
 
 
-    
+
 class VendorNotificationForm(forms.ModelForm):
     email_body = forms.CharField(
         widget=forms.Textarea(),
@@ -481,16 +481,16 @@ class VendorNotificationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(VendorNotificationForm, self).__init__(*args, **kwargs)
-        
+
     def save(self, user=None):
 
         email = VendorNotificationEmail(
             subject=self.cleaned_data['subject'],
             email_body = self.cleaned_data['email_body'])
         email.save()
-        
+
         return email
-            
+
 
 class ShareVulNoteForm(forms.Form):
     content = forms.CharField(
@@ -498,22 +498,22 @@ class ShareVulNoteForm(forms.Form):
         required=False,
         widget=forms.Textarea(attrs={'class': 'form-control'})
     )
-    
-    
+
+
 class NewPostForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(NewPostForm,self).__init__(*args, **kwargs)
         self.fields['version'].required=False
         self.fields['content'].required=False
-    
+
     class Meta:
         model = VendorNotificationContent
         fields = ('content', 'version', )
         widgets = {
             'content': forms.Textarea(attrs={'class': 'form-control white-space:pre'}),
             'version': forms.HiddenInput()
-            
+
             }
 
 
@@ -546,7 +546,7 @@ class UploadFileForm(forms.ModelForm):
         case = VulnerabilityCase.objects.filter(id=case).first()
 
         pathname = self.cleaned_data['pathname']
-        
+
         file = self.cleaned_data['file']
 
         vulnote = False
@@ -576,7 +576,7 @@ class UploadFileForm(forms.ModelForm):
             att.save(using='vincecomm')
 
             vc_case = Case.objects.filter(vuid=case.vuid).first()
-            
+
             attach = VinceTrackAttachment(
                 file = att,
                 vulnote=vulnote,
@@ -592,9 +592,9 @@ class UploadFileForm(forms.ModelForm):
 
             return vf
         return None
-    
-        
-        
+
+
+
 class AddArtifactForm(forms.ModelForm):
     taggles = forms.CharField(
         max_length=200,
@@ -612,11 +612,11 @@ class AddArtifactForm(forms.ModelForm):
         label='Is this a file?',
         widget=forms.RadioSelect(attrs={'class':'ul_nobullet horizontal_bullet'}),
         required=False)
-        
+
     def __init__(self, *args, **kwargs):
         super(AddArtifactForm, self).__init__(*args, **kwargs)
         self.initial['is_file'] = False
-        
+
     def _attach_files_to_follow_up(self, followup):
         files = self.cleaned_data['attachment']
         logger.debug(files)
@@ -633,7 +633,7 @@ class AddArtifactForm(forms.ModelForm):
                    'value': forms.Textarea(attrs={'class':'form-control', 'rows': 4})}
 
     def save(self, ticket=None, case=None, user=None):
-        """ 
+        """
         Writes and returns an Artifact() object
         """
         if ticket:
@@ -673,7 +673,7 @@ class AddArtifactForm(forms.ModelForm):
 
         files = self._attach_files_to_follow_up(followup)
 
-        
+
         return artifact
 
 class EditArtifactForm(forms.ModelForm):
@@ -715,10 +715,10 @@ class CaseCommunicationsFilterForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(CaseCommunicationsFilterForm, self).__init__(*args, **kwargs)
         self.fields['dateend'].initial = timezone.now
-        
+
 class CaseFilterForm(forms.Form):
 
-    
+
     STATUS_FILTER_CHOICES = (
         (VulnerabilityCase.ACTIVE_STATUS, _('Active')),
         (VulnerabilityCase.INACTIVE_STATUS, _('Inactive')),
@@ -747,7 +747,7 @@ class CaseFilterForm(forms.Form):
         label='Tag',
         required=False,
         widget=forms.HiddenInput())
-    
+
     page = forms.CharField(max_length=5,
                            required=False)
 
@@ -784,7 +784,7 @@ class ActivityFilterForm(forms.Form):
         self.fields['dateend'].initial = timezone.now
         now = timezone.now()
         self.fields['datestart'].initial = now - timedelta(days=7)
-    
+
 class TriageFilterForm(forms.Form):
     wordSearch = forms.CharField(
         max_length=100,
@@ -804,7 +804,7 @@ class TriageFilterForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(TriageFilterForm, self).__init__(*args, **kwargs)
         self.fields['dateend'].initial = timezone.now
-    
+
 class TicketFilterForm(forms.Form):
     wordSearch = forms.CharField(
         max_length=100,
@@ -821,7 +821,7 @@ class TicketFilterForm(forms.Form):
         required=False,
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'ul_nobullet'})
     )
-    
+
     case = forms.MultipleChoiceField(
         choices=(),
         required=False,
@@ -832,7 +832,7 @@ class TicketFilterForm(forms.Form):
         label='Tag',
         required=False,
         widget=forms.HiddenInput())
-    
+
     page = forms.CharField(max_length=5,
                            required=False)
     priority = forms.MultipleChoiceField(
@@ -853,7 +853,7 @@ class TicketFilterForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(TicketFilterForm, self).__init__(*args, **kwargs)
         self.fields['dateend'].initial = timezone.now
-    
+
 
 #eventually add a create structured vul note...
 
@@ -958,7 +958,7 @@ class TicketForm(AbstractTicketForm):
         help_text=_('If you select an owner other than yourself, they\'ll be '
                     'e-mailed details of this ticket immediately.'),
     )
-    
+
     case = forms.CharField(
         max_length=250,
         label=_('Case'),
@@ -971,9 +971,9 @@ class TicketForm(AbstractTicketForm):
         label='Which role would you like to assign to this ticket?',
 	widget=forms.RadioSelect(attrs={'class':'ul_nobullet'}),
 	required=False)
-    
+
     vulnote_approval = forms.IntegerField(required=False, widget=forms.HiddenInput())
-    
+
     def __init__(self, *args, request=None, **kwargs):
         """
         Add any custom fields that are defined to the form.
@@ -994,7 +994,7 @@ class TicketForm(AbstractTicketForm):
                 return case
             except:
                 raise forms.ValidationError("Invalid Case Selection")
-        
+
     def save(self, user=None):
         """
         Writes and returns a Ticket() object
@@ -1114,7 +1114,7 @@ class CloseTicketForm(forms.Form):
         super(CloseTicketForm, self).__init__(*args, **kwargs)
         self.fields['send_email'].initial=1
         self.fields['close_choice'].initial = 2
-    
+
 class TicketDependencyForm(forms.ModelForm):
     ''' Adds a different ticket as a dependency for this Ticket '''
 
@@ -1145,7 +1145,7 @@ class CreateCaseRequestForm(forms.ModelForm):
     create_case = forms.IntegerField(
         widget=forms.HiddenInput(),
         required=False)
-    
+
     queue = forms.IntegerField(
         widget=forms.HiddenInput(),
         label=_('Queue'),
@@ -1234,7 +1234,7 @@ class CreateCaseRequestForm(forms.ModelForm):
         newCR = {}
 
         assigned_to = None
-        
+
         if user:
             user_email = user.email
             assigned_to = user
@@ -1242,7 +1242,7 @@ class CreateCaseRequestForm(forms.ModelForm):
             user_email = self.cleaned_data.get('contact_email')
         else:
             user_email = ""
-            
+
         if self.cleaned_data['share_release'] == "True":
             newCR['share_release'] = True
         else:
@@ -1268,16 +1268,16 @@ class CreateCaseRequestForm(forms.ModelForm):
         else:
             newCR['vul_exploited'] = False
 
-            
+
 
         priority = 3
         due_date = None
 
         description = "New CR"
-        
+
         if submission:
             description = submission
-            
+
         ticket = None
         if self.cleaned_data.get('ticket_ref'):
             ticket = Ticket.objects.filter(id = int(self.cleaned_data['ticket_ref'])).first()
@@ -1291,7 +1291,7 @@ class CreateCaseRequestForm(forms.ModelForm):
                     due_date = ticket.due_date
                 else:
                     due_date = None
-                
+
 
         if queue:
             logger.debug("GETTING QUEUE FROM PARAMETERS")
@@ -1299,13 +1299,13 @@ class CreateCaseRequestForm(forms.ModelForm):
         else:
             logger.debug("GETTING QUEUE FROM DATA")
             ticketqueue = self.cleaned_data['queue']
-            
+
         if ticketqueue == None:
             logger.warning("NO QUEUE this will fail.")
         else:
             logger.debug("Adding CR on queue %s" % ticketqueue.title)
 
-        
+
         newCase = CaseRequest(vrf_id = self.cleaned_data['vrf_id'],
                               share_release = newCR['share_release'],
                               credit_release = newCR['credit_release'],
@@ -1343,21 +1343,21 @@ class CreateCaseRequestForm(forms.ModelForm):
                               created=timezone.now(),
                               status = Ticket.OPEN_STATUS,
                               priority = priority)
-        
-            
+
+
         newCase.save()
         if assigned_to:
             newCase.assigned_to = assigned_to
             newCase.save()
-            
+
         if due_date:
             newCase.due_date = due_date
             newCase.save()
-            
+
         if self.cleaned_data['date_submitted']:
             newCase.date_submitted =  self.cleaned_data['date_submitted']
             newCase.save()
-            
+
         if ticket:
             if ticket.case:
                 newCase.case = ticket.case
@@ -1372,7 +1372,7 @@ class CreateCaseRequestForm(forms.ModelForm):
         followup.save()
 
         send_newticket_mail(followup, None, user=user)
-        
+
 #        files = self._attach_files_to_follow_up(followup)
 #        self._send_messages(ticket=newCase,
 #                            queue=newCase.queue,
@@ -1381,7 +1381,7 @@ class CreateCaseRequestForm(forms.ModelForm):
 #                            user=user)
 
         return newCase
-        
+
 class CreateCaseForm(forms.ModelForm):
     ''' Creates a new case '''
     title = forms.CharField(
@@ -1450,11 +1450,11 @@ class CreateCaseForm(forms.ModelForm):
         self.fields['lotus_notes'].initial = False
         self.fields['auto_assign'].initial = False
         self.fields['team_owner'].choices = self.get_group_choices(user)
-        
+
     class Meta:
         model = VulnerabilityCase
         exclude = ('created', 'owner', 'case_request', 'due_date', 'status', 'modified', 'on_hold', 'search_vector', 'vul_incrementer', 'publicdate', 'publicurl', 'changes_to_publish')
-        
+
     def create_action(self, case, title, user=None):
         action = CaseAction(case=case,
                             title=title,
@@ -1484,7 +1484,7 @@ class CreateCaseForm(forms.ModelForm):
         else:
             lotus = False
 
-            
+
         newcase = VulnerabilityCase(title=self.cleaned_data['title'],
                                     summary=self.cleaned_data['summary'],
                                     case_request=case,
@@ -1494,7 +1494,7 @@ class CreateCaseForm(forms.ModelForm):
                                     team_owner = self.cleaned_data['team_owner'],
                                     lotus_notes=lotus,
                                     created=timezone.now(),
-                                    due_date = date.today()+timedelta(days=45), 
+                                    due_date = date.today()+timedelta(days=45),
                                     vuid=self.cleaned_data['vuid'])
         newcase.save()
 
@@ -1502,7 +1502,7 @@ class CreateCaseForm(forms.ModelForm):
         if newcase.due_date.weekday() >= 5: #sunday = 6
             newcase.due_date = newcase.due_date+timedelta(days=(7-newcase.due_date.weekday()))
             newcase.save()
-        
+
         assignment = CaseAssignment(assigned=user,
                                     case=newcase)
         assignment.save()
@@ -1577,18 +1577,18 @@ class CreateCaseForm(forms.ModelForm):
                         vc_user = User.objects.using('vincecomm').filter(username=user.username).first()
                     else:
                         vc_user = None
-                    
+
                     # update with new ID
                     vc_cr.new_vuid = newcase.vuid
                     vc_cr.status = VTCaseRequest.OPEN_STATUS
                     vc_cr.save()
-                    
+
                     cr = CRFollowUp(cr = vc_cr,
                                     title = "Report status changed from Pending to Open",
                                     user = vc_user,
                                     comment = f"Case {settings.CASE_IDENTIFIER}{newcase.vuid} Opened")
                     cr.save()
-                    
+
                     if vc_cr.user:
                         cp = CaseParticipant(case=newcase,
                                              user_name=vc_cr.user.username,
@@ -1597,9 +1597,9 @@ class CreateCaseForm(forms.ModelForm):
                         ca = CaseAction(case=newcase, title="Participant Auto-added to Case",
                                         user=user, action_type=1)
                         ca.save()
-                    
 
-        #create  case permissions        
+
+        #create  case permissions
         if case or ticket:
             if ticket:
                 #this case was formed from a general ticket, use queue perms to determine
@@ -1627,11 +1627,11 @@ class CreateCaseForm(forms.ModelForm):
                                      group_write=True,
                                      publish=group.groupsettings.publish)
                 cp.save()
-                
-            
-        
+
+
+
         return newcase
-        
+
 class EditCaseForm(forms.ModelForm):
     lotus_notes = forms.BooleanField(
         label=_('Do not create this case in VINCEComm.'),
@@ -1649,9 +1649,9 @@ class EditCaseForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
         help_text=_('Estimated Public Date'),
         required=False)
-    
+
     field_order = ['vuid', 'title', 'product_name', 'product_version', 'summary', 'publicdate', 'publicurl', 'template', 'lotus_notes']
-    
+
     class Meta:
         model = VulnerabilityCase
         exclude = ('vuid', 'created', 'modified', 'status', 'on_hold', 'case_request', 'search_vector', 'vul_incrementer', 'changes_to_publish')
@@ -1689,7 +1689,7 @@ class RejectCaseTransferForm(forms.Form):
         required=True,
         label=_('Reason for Rejection of Transfer'),
     )
-    
+
 class RequestCaseTransferForm(forms.Form):
 
     team = forms.ChoiceField(
@@ -1703,7 +1703,7 @@ class RequestCaseTransferForm(forms.Form):
         required=False,
         label=_('Reason for Transfer'),
     )
-        
+
 
 class VulCVSSForm(forms.ModelForm):
 
@@ -1720,7 +1720,7 @@ class EditTicketResolutionForm(forms.Form):
         widget = forms.Textarea(),
         required=False)
 
-        
+
 class EditTicketForm(forms.ModelForm):
 
     case = forms.CharField(
@@ -1764,7 +1764,7 @@ class TicketContactForm(forms.ModelForm):
         required=False,
         help_text=_('If this ticket is associated with a Contact, add it here.')
     )
-    
+
     def clean_contact(self):
         data = self.cleaned_data['contact']
         if data in [None, '', 'None']:
@@ -1778,7 +1778,7 @@ class TicketContactForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(TicketContactForm, self).__init__(*args, **kwargs)
-            
+
     class Meta:
         model = TicketContact
         fields = ['id', 'contact']
@@ -1834,7 +1834,7 @@ class EditCaseRequestForm(forms.ModelForm):
         max_length=1000,
         label="Please provide references (max 1000 chars)",
 	widget=forms.Textarea(attrs={'placeholder': 'URL(s)'}),
-        required=False)    
+        required=False)
     class Meta:
         model = CaseRequest
         exclude = ('created', 'modified', 'status', 'on_hold', 'resolution', 'assigned_to', 'title', 'description', 'priority', 'due_date', 'submitter_email', 'vrf_id', 'ticket_ptr_id', 'search_vector', 'request_type', 'close_reason', 'vc_id', 'case')
@@ -1886,7 +1886,7 @@ class InitContactForm(forms.ModelForm):
         label=_('Internal Verification'),
         help_text=_('By checking this box, an email will not be sent but the email body will be logged in the ticket and should provide justification for why external verification is not needed.')
     )
-    
+
     email_body = forms.CharField(
 	widget=forms.Textarea(),
         label=_('Email Body'),
@@ -1898,7 +1898,7 @@ class InitContactForm(forms.ModelForm):
         label=_('Ticket ID'),
         help_text=_('If this is related to an existing ticket, provide the ID here'),
         required=False)
-    
+
     class Meta:
         model = ContactAssociation
         fields = ['contact', 'user', 'email', 'internal', 'subject', 'email_body', 'ticket']
@@ -1914,7 +1914,7 @@ class InitContactForm(forms.ModelForm):
             return contact
         else:
             raise forms.ValidationError("Invalid Contact")
-        
+
     def clean_ticket(self):
         data = self.cleaned_data['ticket']
         if data in [None, '', 'None']:
@@ -1924,7 +1924,7 @@ class InitContactForm(forms.ModelForm):
             return ticket
         except:
             raise forms.ValidationError("Invalid Ticket Selection. Use only numeric ID of Ticket.")
-        
+
 class ContactForm(forms.ModelForm):
 
 
@@ -1933,8 +1933,8 @@ class ContactForm(forms.ModelForm):
         choices=(('User', 'User'), ('Vendor', 'Vendor'), ('Coordinator', 'Coordinator'), ('Group', 'Group')),
         required=True,
         label=_('Type'),
-    ) 
-    
+    )
+
     def __init__(self, *args, **kwargs):
         super(ContactForm, self).__init__(*args, **kwargs)
         self.fields['version'].required=False
@@ -1978,12 +1978,12 @@ class PhoneForm(forms.ModelForm):
 
 class EmailContactForm(forms.ModelForm):
 
-    email_type = forms.ChoiceField(                                       
+    email_type = forms.ChoiceField(
         choices=[('User', 'User'), ('Notification', 'Notification Only')],
         label='Is this a user or notification-only email address?',
         required=False,
-        widget=forms.RadioSelect(attrs={'class':'ul_nobullet horizontal_bullet'}))                         
-    
+        widget=forms.RadioSelect(attrs={'class':'ul_nobullet horizontal_bullet'}))
+
     def __init__(self, *args, **kwargs):
         super(EmailContactForm, self).__init__(*args, **kwargs)
         self.fields['version'].required=False
@@ -2028,13 +2028,13 @@ def pgp_validator(key_data):
         key_data = key_data.strip()
     if key_data == '':
         return key_data
-    # validate start and end identifiers                                                                                  
+    # validate start and end identifiers
     if not key_data.startswith("-----BEGIN PGP PUBLIC KEY BLOCK-----"):
         raise ValidationError("PGP Key Data must begin with valid BEGIN line")
     if not key_data.endswith("-----END PGP PUBLIC KEY BLOCK-----"):
         raise ValidationError("PGP Key Data must end with valid END line")
 
-    # find where the key data starts and ends                                                                             
+    # find where the key data starts and ends
     key_text_start = key_data.find("\n\n")
     if key_text_start > 0:
         key_text_start += 2
@@ -2044,18 +2044,18 @@ def pgp_validator(key_data):
             key_text_start += 3
     key_text_end = key_data.find("\n=")
 
-    # validate the key data                                                                                               
+    # validate the key data
     if not key_text_start or not key_text_end:
         raise ValidationError("PGP Key Data is invalid")
-    # get the key text as a single string so we can validate the base64 encoding                                          
+    # get the key text as a single string so we can validate the base64 encoding
     key_text = key_data[key_text_start:key_text_end].replace("\n", "")
     key_text = key_text.replace("\r", "")
-    # RE MAGIC                                                                                                            
+    # RE MAGIC
     if not search("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$", key_text):
         raise ValidationError("PGP Key Data is invalid")
-    # if we got here, data is good!                                                                                       
+    # if we got here, data is good!
     return key_data
-        
+
 class ContactPgPForm(forms.ModelForm):
     #pgp_key_data = forms.CharField(max_length=200,
     #                               required=False,
@@ -2068,7 +2068,7 @@ class ContactPgPForm(forms.ModelForm):
         self.fields['version'].required=False
         self.fields['pgp_key_data'].required=False
         self.fields['pgp_key_id'].required=False
-        
+
 
     def clean_pgp_key_id(self):
         key_id = self.cleaned_data['pgp_key_id']
@@ -2097,11 +2097,11 @@ class ContactPgPForm(forms.ModelForm):
                     raise ValidationError('Dates are required if PGP Key not provided')
             return self.cleaned_data
         raise ValidationError('Either PGP Key or ID is required')
-    
+
     def clean_pgp_key_data(self):
         key_data = self.cleaned_data['pgp_key_data']
         return pgp_validator(key_data)
-    
+
     class Meta:
         model = ContactPgP
         fields = ['id', 'pgp_key_id', 'pgp_fingerprint', 'pgp_key_data', 'pgp_email', 'pgp_protocol', 'startdate', 'enddate', 'revoked', 'version']
@@ -2116,13 +2116,13 @@ class AddEmailTemplateForm(forms.ModelForm):
 	label=_('Email Body'),
 	required=True,
         initial=settings.STANDARD_EMAIL_SIGNATURE)
-    
+
     class Meta:
         model = EmailTemplate
         exclude = ('user', 'modified', 'locale', 'body_only', 'html', 'heading')
 
-        
-        
+
+
 class AddCaseTemplateForm(forms.ModelForm):
 
     queue = forms.ChoiceField(
@@ -2174,13 +2174,13 @@ class EditCaseTemplateTaskForm(forms.ModelForm):
             return userassign
         except UserNotExist:
             return None
-        
+
     class Meta:
         model = CaseTask
         fields = ["task_title", "task_description", "assigned_to", "task_priority", "dependency", "time_to_complete", "template"]
         widgets = {'description': forms.Textarea(attrs={'class': 'form-control'}),
                    'template': forms.HiddenInput()}
-        
+
 class AddCaseTemplateTaskForm(forms.ModelForm):
 
     assigned_to = forms.ChoiceField(
@@ -2189,7 +2189,7 @@ class AddCaseTemplateTaskForm(forms.ModelForm):
         required=False,
         label=_('Assign a User'),
     )
-    
+
     def __init__(self, *args, **kwargs):
         self.template = kwargs.pop("template")
         super(AddCaseTemplateTaskForm, self).__init__(*args, **kwargs)
@@ -2198,14 +2198,14 @@ class AddCaseTemplateTaskForm(forms.ModelForm):
         self.fields['template'].initial = self.template
         assignable_users = User.objects.filter(is_active=True).order_by(User.USERNAME_FIELD)
         self.fields['assigned_to'].choices = [(None, '------')] + [(u.id, u.get_username()) for u in assignable_users]
-        
+
     class Meta:
         model = CaseTask
         fields = ["task_title", "task_description", "assigned_to", "task_priority", "dependency", "time_to_complete", "template"]
         widgets = {'description': forms.Textarea(attrs={'class': 'form-control'}),
         'template': forms.HiddenInput()}
 
-        
+
     def clean_assigned_to(self):
         data = self.cleaned_data['assigned_to']
         if data in [None, '', 'None']:
@@ -2235,12 +2235,12 @@ class AddVulnerabilityForm(forms.ModelForm):
         label=_('Date Public'),
         required=False
     )
-    
+
     taggles = forms.CharField(
         max_length=300,
         label='Tag(s)',
         required=False)
-    
+
     class Meta:
         model = Vulnerability
         fields = ['cve', 'description', 'taggles', 'date_public']
@@ -2265,7 +2265,7 @@ class AddExploitForm(forms.ModelForm):
         widget=forms.DateInput(attrs={'placeholder':'YYYY-MM-DD', 'autocomplete':'off'}),
         required=False
     )
-    
+
     class Meta:
         model=VulExploit
         fields = ('id', 'link', 'reference_type', 'reference_date', 'notes')
@@ -2273,7 +2273,7 @@ class AddExploitForm(forms.ModelForm):
             'id': forms.HiddenInput(),
             'reference_type': forms.RadioSelect(attrs={'class':'ul_nobullet horizontal_bullet'})
         }
-        
+
 class AddCWEForm(forms.ModelForm):
 
     class Meta:
@@ -2302,7 +2302,7 @@ class CVEServicesForm(forms.ModelForm):
     class Meta:
         model = CVEServicesAccount
         fields = ('team', 'org_name', 'api_key', 'email', 'first_name', 'last_name', 'active')
-    
+
 class CVEAllocationForm(forms.ModelForm):
     vul = forms.IntegerField(
         required=False,
@@ -2336,7 +2336,67 @@ class CVEAllocationForm(forms.ModelForm):
                 return self.cleaned_data['cve_name']
             else:
                 raise forms.ValidationError("Invalid CVE identifier, must start with CVE-")
-            
+
+class ProductContactForm(forms.ModelForm):
+
+    SECTORS = (('generic','generic'))
+    if hasattr(settings,"SECTORS"):
+        SECTORS = settings.SECTORS
+    sector = forms.MultipleChoiceField( widget = forms.CheckboxSelectMultiple, choices=SECTORS, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(ProductContactForm, self).__init__(*args, **kwargs)
+        self.fields['name'].required = True
+        self.fields['sector'].required=False
+
+    class Meta:
+        model = VendorProduct
+        exclude = ()
+
+
+class ProductForm(forms.Form):
+
+    version_affected = forms.ChoiceField(
+        widget = forms.Select(attrs={'class': 'form-control'}),
+        label=_('Version Affected'),
+        required=False,
+        choices=([('None', None), ('lessThan', '< (affects X versions prior to n)'), ('lessThanOrEqual', '<= (affects X versions up to n)')])
+        )
+
+    organization = forms.ChoiceField(
+        widget = forms.Select(attrs={'class': 'form-control organization'}),
+        choices=(),
+        required=False,
+        label=_('Affected Organization'),
+    )
+
+    cve_affected_product = forms.CharField(
+        max_length=100,
+        required=False
+    )
+
+    version_name = forms.CharField(
+        max_length=100,
+        required=False
+    )
+    version_value = forms.CharField(
+        max_length=100,
+        required=True
+    )
+
+    class Meta:
+        model = ProductVersion
+        exclude = ('cve_affected_product', 'cve', 'case',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _contacts = Contact.objects.all()
+        self.fields['organization'].choices = [(None, '------')] + [(int(u.id),u) for u in _contacts]
+        initial_arguments = kwargs.get('initial', None)
+        if initial_arguments:
+            _prod = VendorProduct.objects.filter(id=int(initial_arguments['product_id'])).first()
+            self.initial['organization'] = _prod.organization.id
+            self.initial['cve_affected_product'] = _prod.name
 
 class CVEAffectedProductForm(forms.ModelForm):
 
@@ -2346,11 +2406,11 @@ class CVEAffectedProductForm(forms.ModelForm):
         required=False,
         choices=([('None', None), ('lessThan', '< (affects X versions prior to n)'), ('lessThanOrEqual', '<= (affects X versions up to n)')])
         )
-    
+
     class Meta:
         model = CVEAffectedProduct
         exclude = ('cve',)
-        
+
 
 class CVEReferencesForm(forms.Form):
 
@@ -2360,7 +2420,7 @@ class CVEReferencesForm(forms.Form):
 	required=True,
         choices=([('URL', 'URL')])
      )
-    
+
     reference = forms.URLField(
 	label=_('Reference'),
         widget = forms.TextInput(attrs={'placeholder': 'e.g., https://dhs.gov.'}),
@@ -2387,14 +2447,14 @@ class VendorVulStatementForm(forms.Form):
 	help_text=_('Provide references for all vulnerabilities in this case. 1 URL per line.'),
         required=False
     )
-    
+
 class StatementForm(forms.Form):
     share = forms.BooleanField(
         label=_('Share status and statement pre-publication'),
         help_text=('Checking this box will share your status and statement with all'
                    ' vendors and participants in this case before the vulnerability note is published.'),
         required=False)
-    
+
     statement = forms.CharField(
         widget = forms.Textarea(),
         label=_('Statement'),
@@ -2445,7 +2505,7 @@ class CreateNewVinceUser(forms.Form):
         required=True,
         help_text=_('This will be the login username. Please note that this field is CASE SENSITIVE.'),
         label="Email address")
-    
+
     preferred_username=forms.RegexField(label=_("Preferred Display Name"), max_length=254, help_text=_('The name visible to other VINCE users. It may only contain 1 space and may not contain certain special characters. (The user can modify this later)'), regex=r'^[\w\+-_]+(\s[\w\+-_]+)*$', required=True,
                                             error_messages={'invalid':_("Invalid username. The display name may only contain 1 space and may not contain certain special characters.")})
 
@@ -2492,7 +2552,7 @@ class NewEmailAll(forms.ModelForm):
         required=True,
         choices=([(1, 'All VINCE Vendor Users'), (2, 'All Admins'), (3, 'All Users'), (4, 'All Staff'), (5, 'Vendors without Users')])
     )
-    
+
     subject = forms.CharField(
         max_length=200,
         help_text=_('The subject of the email. If related to a case or ticket, Case ID or Ticket ID will be prepended to subject.'),
@@ -2517,7 +2577,7 @@ class NewEmailAll(forms.ModelForm):
     class Meta:
         model = VinceEmail
         fields = ('to_group', 'subject', 'email_body', 'ticket', 'case')
-    
+
 
     def clean_case(self):
         data = self.cleaned_data['case']
@@ -2579,25 +2639,25 @@ class NewEmailAll(forms.ModelForm):
                          assigned_to = user)
             if case:
                 tkt.case = case
-            
+
             tkt.save()
-        
+
         subject = f"[{tkt.queue.slug}-{tkt.id}] {self.cleaned_data['subject']}"
 
         notification = VendorNotificationEmail(subject=self.cleaned_data['subject'], email_body = self.cleaned_data['email_body'])
         notification.save()
-            
+
         email = VinceEmail(user=user,
                            to=to,
                            ticket=tkt,
                            notification=notification)
         email.save()
 
-        
+
         send_worker_email_all(self.cleaned_data['to_group'], subject, self.cleaned_data['email_body'], tkt.id, user)
-        
-        return 
-        
+
+        return
+
 class NewVinceEmail(forms.ModelForm):
 
     subject = forms.CharField(
@@ -2609,7 +2669,7 @@ class NewVinceEmail(forms.ModelForm):
         choices=(),
         label="Choose an email template",
 	required=False)
-    
+
     email_body = forms.CharField(
 	widget=forms.Textarea(),
 	label=_('Email Body'),
@@ -2659,7 +2719,7 @@ class NewVinceEmail(forms.ModelForm):
         self.fields['certificate'].required = False
         self.fields['certificate'].label = "Or select a previously uploaded certificate"
 
-    
+
     def clean_case(self):
         data = self.cleaned_data['case']
         if data in [None, '', 'None']:
@@ -2693,7 +2753,7 @@ class EmailFilterForm(forms.Form):
 	label='Keyword(s)',
         widget=forms.TextInput(attrs={'placeholder':'Keyword search'}),
         required=False)
-    
+
     page = forms.CharField(max_length=5,
                            required=False)
 
@@ -2702,11 +2762,11 @@ class EmailFilterForm(forms.Form):
         required=False,
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'ul_nobullet'})
     )
-    
+
     datestart = forms.DateField(required=False)
-    
+
     dateend = forms.DateField(required=False)
-    
+
     user = forms.MultipleChoiceField(
         choices=(),
         required=False,
@@ -2722,7 +2782,7 @@ class EmailImportForm(forms.Form):
 class UserSearchForm(forms.Form):
     email = forms.CharField(max_length=300, label="Email", required=True)
 
-    
+
 class CognitoUserProfile(forms.Form):
     first_name = forms.CharField(
         max_length=200,
@@ -2743,7 +2803,7 @@ class CognitoUserProfile(forms.Form):
         disabled=True,
         required=False,
         max_length=60)
-    
+
     email = forms.EmailField(
         required=True,
         label="Login Username/Email. This field is case sensitive."
@@ -2755,7 +2815,7 @@ class CognitoUserProfile(forms.Form):
         regex=r'^[\w\+-_]+(\s[\w\+-_]+)*$',
         required=True,
         error_messages={'invalid':_("Invalid username. Your display name may only contain 1 space and may not contain certain special characters.")})
-    
+
     org = forms.CharField(
         max_length=200,
         label="Company/Affiliation",
@@ -2770,7 +2830,7 @@ class CognitoUserProfile(forms.Form):
         disabled=True)
 
 class CalendarEventForm(forms.ModelForm):
-    
+
     class Meta:
         model = CalendarEvent
         fields = ('user', 'event_id', 'date')
@@ -2784,7 +2844,7 @@ class AddRoleUserForm(forms.ModelForm):
     weight = forms.IntegerField(
         max_value=5,
         min_value=1)
-    
+
     class Meta:
         model = UserAssignmentWeight
         fields = ('user', 'role', 'weight')
@@ -2822,8 +2882,8 @@ class AddNewTagForm(forms.ModelForm):
 
     def clean_tag(self):
         return self.cleaned_data['tag'].lower()
-    
-    
+
+
 class ReminderForm(forms.ModelForm):
 
     case = forms.CharField(
@@ -2837,7 +2897,7 @@ class ReminderForm(forms.ModelForm):
         label="Related to Ticket?",
         widget=forms.TextInput(attrs={'placeholder':'Ticket ID e.g. gen-123'}),
     )
-    
+
     user = forms.ChoiceField(
         widget=forms.Select(attrs={'class': 'form-control'}),
         choices=(),
@@ -2854,7 +2914,7 @@ class ReminderForm(forms.ModelForm):
         label='Create a new ticket on the alert date?',
         widget=forms.RadioSelect(attrs={'class':'ul_nobullet horizontal_bullet'}),
 	required=False)
-    
+
     class Meta:
         model = VinceReminder
         fields = ('alert_date', 'title', 'case', 'ticket', 'user', 'create_ticket', 'frequency')
@@ -2863,7 +2923,7 @@ class ReminderForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ReminderForm, self).__init__(*args, **kwargs)
         self.initial['create_ticket'] = False
-        
+
     def clean_case(self):
         data = self.cleaned_data['case']
         if data in [None, '', 'None']:
@@ -2891,8 +2951,8 @@ class ReminderForm(forms.ModelForm):
                 if m:
                     data = m.group(2)
                 else:
-                    raise forms.ValidationError("Invalid Ticket Selection. Use either numeric ticket id or slug-id.")    
-                    
+                    raise forms.ValidationError("Invalid Ticket Selection. Use either numeric ticket id or slug-id.")
+
             try:
                 ticket = Ticket.objects.get(id=data)
                 return ticket
@@ -2902,11 +2962,11 @@ class ReminderForm(forms.ModelForm):
     def clean_user(self):
         data = self.cleaned_data['user']
         try:
-            
+
             return User.objects.get(id=data)
         except:
             raise form.ValidationError("Invalid User Selection")
-        
+
 
 
 class CVEReserveForm(forms.Form):
@@ -2931,7 +2991,7 @@ class CVEReserveForm(forms.Form):
         max_value=10,
         min_value=1
     )
-    
+
     sequential = forms.ChoiceField(
         choices=[(True, 'Yes'), (False, 'No')],
         label=_('Reserve Sequential IDs'),
@@ -2942,7 +3002,7 @@ class CVEReserveForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(CVEReserveForm, self).__init__(*args, **kwargs)
         self.fields['sequential'].initial = False
-        
+
 
 class CVEFilterForm(forms.Form):
     wordSearch = forms.CharField(
@@ -2960,5 +3020,5 @@ class CVEFilterForm(forms.Form):
     vince = forms.BooleanField(
         required=False,
         label="Search VINCE CVEs")
-        
-    
+
+

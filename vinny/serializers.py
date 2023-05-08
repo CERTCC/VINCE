@@ -298,11 +298,11 @@ class CSAFSerializer(serializers.ModelSerializer):
         ackurl = f"{settings.KB_SERVER_NAME}{vulnote}#acknowledgments"
 
         if case.modified:
-            revision_date = case.modified
+            revision_date = case.modified.isoformat(timespec='seconds')
             revision_number = case.modified.strftime("1.%Y%m%d%H%M%S.0")
             case_version = revision_number
         else:
-            revision_date = datetime.datetime.now()
+            revision_date = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
             revision_number = revision_date.strftime("1.%Y%m%d%H%M%S.0")
             case_version = revision_number
         csafdocument = csafdocument_template % {

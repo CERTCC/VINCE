@@ -35,3 +35,28 @@ $( function() {
 	$("#caseform:disabled").removeAttr('disabled');
     });
 });
+
+// The following 15 lines or so create a checkbox that the user can tick to leave the publication date TBD.
+var checkboxDiv = '<div class="form-group">' +
+'<label for="dateTBDCheckbox">Leave publication date TBD.</label>' +
+'<input type="checkbox" name="dateTBDCheckbox" id="dateTBDCheckbox">' +
+'</div>'
+
+$(document).ready(function() {
+    $("#id_due_date").parent().after(checkboxDiv);
+});
+
+$(document).ready(function() {
+    var checkbox = document.getElementById("dateTBDCheckbox")
+    checkbox.addEventListener("click", function() {
+        if(checkbox.checked == true){
+            $('#id_due_date').attr("readonly", true);
+            $('#id_due_date').datepicker("destroy");
+            $('#id_due_date').val("");
+        }else{
+            $('#id_due_date').removeAttr('readonly')
+            $('#id_due_date').datepicker({dateFormat: 'yy-mm-dd', minDate: 0});
+        }
+    });
+});
+

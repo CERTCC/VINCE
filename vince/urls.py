@@ -90,7 +90,7 @@ urlpatterns = [
     re_path(r'^case/(?P<pk>[0-9]+)/activity/results/$', views.CommunicationsFilterResults.as_view(), name='commfilter'),
     path('ajax_calls/search/', views.autocomplete_vendor),
     path('ajax_calls/calendar/events/', views.calendar_events),
-    path('ajax_calls/cwe/', views.autocomplete_cwe),
+    path('ajax_calls/cwe/', views.autocomplete_cwe, name='cwe_autocomplete'),
     path('ajax_calls/user/lookup/', views.vince_user_lookup, name='userlookup'),
     re_path(r'^ajax_calls/references/case/(?P<pk>[0-9]+)/$', views.autocomplete_case_references, name='syncrefs'),
     re_path(r'^ajax_calls/search/(?P<groups>nogroup)/', views.autocomplete_vendor),
@@ -102,6 +102,7 @@ urlpatterns = [
     re_path(r'^ajax_calls/case/participants/(?P<pk>[0-9]+)/$', views.autocomplete_caseparticipants),
     re_path(r'^ajax_calls/case/tasks/(?P<pk>[0-9]+)/$', views.autocomplete_casetasks),
     re_path(r'^ajax_calls/case/vulnerabilities/(?P<pk>[0-9]+)/$', views.autocomplete_casevuls),
+    re_path(r'^ajax_calls/create_ticket/$', views.create_ticket,name='ajax_create_ticket'),    
     path('ticket/results/', views.TicketFilterResults.as_view(), name='ticketresults'),
     re_path(r'^ticket/encrypt/(?P<pk>[0-9]+)/$', views.VinceEncryptandSend.as_view(), name='encrypt'),
     path('ticket/auto/assign/', views.TicketAutoAssign.as_view(), name='autoassign'),
@@ -113,6 +114,11 @@ urlpatterns = [
     path('contact/verify/init/', views.ContactVerifyInit.as_view(), name='initcontactverify'),
     re_path(r'^contact/verify/init/(?P<pk>[0-9]+)/$', views.ContactVerifyInit.as_view(), name='initcontactverify'),
     re_path(r'^contact/admin/lookup/(?P<pk>[0-9]+)/$', views.ContactAdminLookup.as_view(), name='msgadmin'),
+    re_path(r'^ajax_calls/prods/$', views.autocomplete_prods, name='prod_autocomplete'),    
+    re_path(r'^ajax_calls/prods/(?P<org_id>.*)/$', views.autocomplete_prods),
+    re_path(r'^contact/add/product/(?P<pk>[0-9]+)/$', views.AddProductToContact.as_view(), name='addproduct'),
+    re_path(r'^contact/edit/product/(?P<pk>[0-9]+)/$', views.EditProduct.as_view(), name='editproduct'),
+    re_path('contact/remove/product/(?P<pk>[0-9]+)/(?P<product>[0-9]+)/$', views.RemoveProductFromContact.as_view(), name='rmproduct'),
     re_path(r'^contact/admin/message/(?P<pk>[0-9]+)/$', views.MessageAdminAddUser.as_view(), name='msgadminadduser'),
     path('contact/verify/list/', views.ContactAssociationListView.as_view(), name='contactlist'),
     path('contact/verify/complete/list/', views.CompletedContactAssociationListView.as_view(), name='complete_contact_list'),
@@ -329,7 +335,7 @@ urlpatterns = [
     path('api/userapprove/', userapproverequest, {"caller": "vince"}, name='userapprove'),
 ]
 try:
-    if (settings.MULTIURL_CONFIG or settings.VINCE_NAMESPACE == "vince") and not settings.LOCALSTACK:
+    if (settings.MULTIURL_CONFIG or settings.VINCE_NAMESPACE == "vince") and not (hasattr(settings,"LOCALSTACK") and settings.LOCALSTACK):
         urlpatterns.extend([
             path('login/', cogauth_views.COGLoginView.as_view(template_name='vince/tracklogin.html'), name="login"),
             path('login/mfa/', cogauth_views.MFAAuthRequiredView.as_view(), name='mfaauth'),

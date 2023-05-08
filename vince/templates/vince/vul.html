@@ -88,6 +88,9 @@
 </div>
 <hr>
 <div class="row">
+    {% if vul.cveallocation.cve_changes_to_publish%}
+    <div class="callout warning">The CVE has unpublished changes.</div>
+    {% endif %}
   <div class="large-6 columns">
     <h3 class="section-title">{% if vul|cve_complete %}<i title="All information is needed for CVE request" class="fas fa-check-circle goodtext"></i> {% else %}<i class="fas fa-exclamation-circle required" title="Information needed for CVE request"></i> {% endif %}CVE</h3>
   </div>

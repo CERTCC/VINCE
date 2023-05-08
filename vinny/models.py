@@ -2480,6 +2480,7 @@ class UserApproveRequest(models.Model):
         ACCEPTED = 1
         DENIED = 0
         UNKNOWN = -1
+        EXPIRED = -2
 
     status = models.IntegerField(choices=Status.choices,default=Status.UNKNOWN)
     user = models.ForeignKey(
@@ -2489,6 +2490,13 @@ class UserApproveRequest(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     
     completed_at = models.DateTimeField(blank=True, null=True)
+
+    #Admin user or whoever rejected/approved this request.
+    completed_by =  models.CharField(
+	max_length=255,
+        blank=True,
+	null=True
+    )
 
     expires_at = models.DateTimeField(default=timezone.now() + timedelta(days=30))
     contact = models.ForeignKey(

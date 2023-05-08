@@ -37,7 +37,7 @@ class PrivateMediaStorage(S3Boto3Storage):
     region_name=settings.AWS_REGION
     #region_name = "us-east-1"
     custom_domain=False
-    if not settings.LOCALSTACK:
+    if not (hasattr(settings,"LOCALSTACK") and settings.LOCALSTACK):
         bucket_name = getattr(settings, 'PRIVATE_BUCKET_NAME')
         acl='private'
         default_acl = 'private'
@@ -48,7 +48,7 @@ class SharedMediaStorage(S3Boto3Storage):
     region_name = settings.AWS_REGION
     #region_name = "us-east-1"
     custom_domain = False
-    if not settings.LOCALSTACK:
+    if not (hasattr(settings,"LOCALSTACK") and settings.LOCALSTACK):
         bucket_name = getattr(settings, 'VINCE_SHARED_BUCKET')
         acl = 'private'
         default_acl = 'private'
@@ -58,7 +58,7 @@ class VRFReportsStorage(S3Boto3Storage):
     file_overwrite = False
     custom_domain=False
     region_name = settings.AWS_REGION
-    if not settings.LOCALSTACK:
+    if not (hasattr(settings,"LOCALSTACK") and settings.LOCALSTACK):
         bucket_name = getattr(settings, 'S3_INCOMING_REPORTS')
         acl = 'private'
         default_acl = 'private'

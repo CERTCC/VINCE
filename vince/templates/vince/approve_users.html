@@ -23,7 +23,6 @@
     {% endfor %}
   </div>
 </div>
-
 <div class="row">
   <div class="large-10 columns">
     <div id="user-list">
@@ -31,7 +30,15 @@
     </div>
   </div>
 </div>
-
+<div class="row uar-row" data-newticket-url="{% url 'vince:ajax_create_ticket' %}">
+  <h6>&nbsp; [Requests pending for Vendor Group Admins]</h6>
+  <div class="large-10 columns">
+  <!-- Dynamic listing of pending users that directly contact Vendor group admin -->
+  </div>
+  <span id="userapprove" class="hide"
+        data-href="{% url 'vince:userapprove' %}">
+  </span>
+</div>
 {% if last_week %}
 <div class="row signin">
   <div class="large-12 columns">
