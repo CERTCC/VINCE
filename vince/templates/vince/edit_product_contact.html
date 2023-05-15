@@ -1,0 +1,42 @@
+{% load i18n markdown_extras %}
+<div class="full_modal">
+  <form method="post" action="{% url 'vince:editproduct' product.id %}" id="editproductform" lookup="{% url 'vince:userlookup' %" name="editroductform_"}>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Product</h3>
+    </div>
+    <div class="row" id="messages">
+      <div class="large-12 columns">
+	{% for message in messages %}
+	<div class="callout {{message.tags}}">
+	  {% autoescape off %}{{ message }}{% endautoescape %}
+	</div>
+	{% endfor %}
+      </div>
+    </div>
+    <div class="modal-body">
+      {% csrf_token %}
+      <p>
+        <div class="form-group">
+          <label for='id_{{ form.product.name }}'>{% trans form.name.label %}<span class='required'>*</span></label>
+          {% if form.product.help_text %}<small class='form-text text-muted'>{% trans form.name.help_text %}</small>{% endif %}
+          {{ form.name }}
+          {% if form.name.errors %}<dd class='error'>{{ form.name.errors }}</dd>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for='id_{{ form.product.sector }}'>Critical Infrastructure Sectors<span class='required'></span></label>
+          {% if form.sector.help_text %}<small class='form-text text-muted'>{% trans form.sector.help_text %}</small>{% endif %}
+          {{ form.sector }}
+          {% if form.sector.errors %}<dd class='error'>{{ form.sector.errors }}</dd>{% endif %}
+        </div>
+        </p>
+    </div>
+    <div class="modal-footer text-right">
+      <a href="#" class="hollow button" data-close type="cancel">Cancel</a>
+      <input class="button" type='submit' value='{% trans "Save" %}' />
+    </div>
+  </div>
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>

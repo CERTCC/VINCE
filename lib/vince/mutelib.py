@@ -37,7 +37,7 @@ def mute_user(useremail,case_id,interactive=False):
         print(l._get_settings())
     return 1
 
-def mute_case_not_affected(case_id,interactive=False):
+def mute_case_not_affected(case_id,vendor_id=None,interactive=False):
     """ Mute case for all users who are participating in a Case but
     have already indicated that they are "Not Affected" - the assumption
     is they do not want to hear about this Case any more due to their
@@ -51,10 +51,22 @@ def mute_case_not_affected(case_id,interactive=False):
     vul = CaseVulnerability.objects.filter(case=c)
     if not vul:
         if interactive:
-            print("No Vulnerabilities for this Case found in VinceComm")
+            print("No Vulnerabilities for this Case found!")
         return -1
-    x = CaseMemberStatus.objects.filter(vulnerability__in=vul,status=2)
-    f = CaseMember.objects.filter(id__in=x.values_list('member'))
+    x = CaseMemberStatus.objects.filter(vulnerability__in=vul,status=CaseMemberStatus.UNAFFECTED)
+    if vul.count() > 1:
+        #exclude members who may be AFFECTED or UNKNOWN for one of the vuls
+        nx = CaseMemberStatus.objects.filter(vulnerability__in=vul).exclude(status=CaseMemberStatus.UNAFFECTED)
+        x = x.exclude(member__in=nx.values('member'))
+    #f = CaseMember.objects.filter(id__in=y.values_list('member'))
+    if vendor_id:
+        f = CaseMember.objects.filter(id=vendor_id)
+    else:
+        f = CaseMember.objects.filter(id__in=x.values_list('member'))
+    if not f:
+        if interactive:
+            print("No Matching vendors found for this Case!")
+        return -1        
     user_list = User.objects.using('vincecomm').filter(groups__in=f.values_list('group'))
     t = 'muted_cases'
     updated = 0

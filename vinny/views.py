@@ -410,8 +410,9 @@ def autocomplete_allvendors(request):
 @login_required(login_url="vinny:login")
 @user_passes_test(is_not_pending, login_url="vinny:login")
 def userapproverequest(request, *args, **kwargs):
-    res = {"uar": [], "args": args, "kwargs": kwargs}
-    #when this method is called from vince/urls.py 
+    status_map =  {x.name: x.value for x in UserApproveRequest.Status}
+    res = {"uar": [], "args": args, "kwargs": kwargs,"status_map": status_map}
+    #when this method is called from VinceTrack vince/urls.py 
     if kwargs and "caller" in kwargs and kwargs["caller"] == "vince":
         #superflous call to `using` vincecomm for code clarity only
         vinnyuser = User.objects.using("vincecomm").filter(username=request.user.username).first()
@@ -444,11 +445,17 @@ def userapproverequest(request, *args, **kwargs):
             qupdate = qs_admin.filter(contact__pk=request.POST.get('pk'),user__username=request.POST.get('username'))
             if len(qupdate) == 1:
                 rec = qupdate.first()
-                rec.completed = timezone.now()
-                if request.POST.get('status') != None and request.POST.get('status').isnumeric():
-                    rec.status = int(request.POST.get('status'))
+                rec.completed_at = timezone.now()
+                if hasattr(rec,'completed_by'):
+                    rec.completed_by = request.user.username
+                if request.POST.get('status'):
+                    if request.POST.get('status').replace("-","").isnumeric():
+                        rec.status = int(request.POST.get('status'))
                 rec.save()
                 recjson = serializers.serialize('json',[rec])
+                newuser = request.POST.get('username')
+                logger.info(f"Update of UserApproveRequest for {newuser} by {request.user.username} to new status {rec.status}. Full JSON result is {recjson}")
+                create_action(f"Updated {newuser} Group {request.POST}", request.user)
                 return HttpResponse(recjson, 'application/json')
         return HttpResponse('[]', 'application/json')
     for q in qs_admin:
@@ -457,13 +464,17 @@ def userapproverequest(request, *args, **kwargs):
         thread_url = '#'
         if thread_id:
             thread_url = reverse('vinny:thread_detail', args=[thread_id])
-        res["uar"].append({"username": q.user.username,
-                           "full_name": f"{q.user.first_name} {q.user.last_name}",
-                           "vendor": q.contact.vendor_name, "pk": q.contact.pk,
-                           "justification": justification,
-                           "thread_url": thread_url,
-                           "created_at":  q.created_at
-                           })
+        qrec = {"username": q.user.username,
+                "full_name": f"{q.user.first_name} {q.user.last_name}",
+                "vendor": q.contact.vendor_name,
+                "pk": q.contact.pk,
+                "justification": justification,
+                "thread_url": thread_url,
+                "created_at":  q.created_at,
+                "completed_by": q.completed_by,
+                "status": q.status
+                }
+        res["uar"].append(qrec)
     qs = UserApproveRequest.objects.filter(user=request.user,status=UserApproveRequest.Status.UNKNOWN)
     for q in qs:
         res["uar"].append({"username": q.user.username,"vendor": q.contact.vendor_name})
@@ -633,6 +644,11 @@ def post_order(case, order):
 
 
 def create_action(title, user, case=None):
+    max_length = VendorAction._meta.get_field('title').max_length
+    
+    if len(title) > max_length:
+        logger.debug(f"VendorAction field Title was truncated expected \"{title}\" to {max_length}")
+        title = title[:max_length - 2] + '..'
     action = VendorAction(title=title,
                           user=user)
     if case:
@@ -1490,6 +1506,7 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         username = request.POST.get('username')
         if username:
             username = username.strip()
+        logger.info(f"Request for user {username} to be added to {my_group.vendor_name} being processed by {self.request.user.username}")
         new_contact = {'email': users, 'name': username, 'email_type': 'Work', 'email_function': 'TO', 'status': True}
         context = {}
         context['group'] = my_group.vendor_name
@@ -1502,6 +1519,7 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             # add user to group
             group = GroupContact.objects.filter(contact=my_group).first()
             group.group.user_set.add(old_user)
+            create_action(f"{self.request.user.username} added {old_user.email} to {my_group}", self.request.user)
             users = old_user.email
             
         # check if email already exists
@@ -1538,7 +1556,7 @@ class AdminAddUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         
         contact_update.add_email_contact(my_group, new_contact, self.request.user)
 
-        logger.debug(f"SENDING MAIL to {users} on Group changes for {my_group}")
+        logger.debug(f"SENDING MAIL to {users} on Group changes for {my_group} as {context}")
         if old_user:
             send_templated_mail("vincecomm_add_existing_user", context, [users])
         else:

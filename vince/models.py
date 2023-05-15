@@ -34,6 +34,7 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVectorField
+from django.contrib.postgres.fields import ArrayField
 from django_countries.fields import CountryField
 from django.contrib.postgres import fields
 from django.conf import settings
@@ -3750,6 +3751,11 @@ class CVEAllocation(models.Model):
         _('CVE ID'),
         max_length=200)
 
+    cve_changes_to_publish = models.BooleanField(
+        default = True,
+        help_text=_('Switch to True if changes affected already published cve')
+    )
+    
     references = OldJSONField(
         _('References'),
         blank=True,
@@ -3759,6 +3765,7 @@ class CVEAllocation(models.Model):
         blank=True,
         null=True,
         choices=CVE_DISCOVERY_CHOICES)
+
     description = models.TextField(
         _('Description'))
 
@@ -3856,6 +3863,85 @@ class CVEAffectedProduct(models.Model):
         blank=True,
         null=True)
 
+class VendorProduct(models.Model):
+    """
+    Store Vendor Product information. 
+    """
+    
+    name = models.CharField(
+    _('Product Name'),
+    max_length=200)
+
+    organization = models.ForeignKey(
+        Contact,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    
+    sector = ArrayField( models.CharField( max_length = 50 ), blank = True, null = True )
+    
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    class Meta:
+        unique_together = (('name', 'organization'),)
+
+    def save(self, *args, **kwargs):
+        dup = VendorProduct.objects.filter(organization=self.organization,
+                                           name__iexact=self.name)
+        if self._state.adding and dup:
+            logger.debug(f"Ignoring duplicate VendorProduct {self.name}")
+            return
+        return super(VendorProduct, self).save(*args, **kwargs)
+        
+    
+class ProductVersion(models.Model):
+    """
+    Stores Product Version information. Links to cve and vendorproduct tables.
+    """
+
+    cve = models.ForeignKey(
+        CVEAllocation,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+
+    product = models.ForeignKey(
+        VendorProduct,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+
+    version_name = models.CharField(
+        _('Version'),
+        blank=True,
+        null=True,
+        max_length=100)
+
+    version_affected = models.CharField(
+        _('Version Affected'),
+        blank=True,
+        null=True,
+        max_length=25)
+
+    version_value = models.CharField(
+        _('Version Value'),
+        blank=True,
+        null=True,
+        max_length=100)
+
+    case = models.ForeignKey(
+        VulnerabilityCase,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+
+    cve_affected_product = models.ForeignKey(
+        CVEAffectedProduct,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+    
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
 class CVEReservation(models.Model):
 

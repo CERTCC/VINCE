@@ -48,6 +48,5 @@ def vince_version(request):
             'CASE_ID': settings.CASE_IDENTIFIER,
             'REPORT_ID': settings.REPORT_IDENTIFIER}
 
-
             
 

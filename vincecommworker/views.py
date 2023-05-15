@@ -56,7 +56,7 @@ def send_sns(vul_id, issue, error):
         print("Response:{}".format(response))
 
     except:
-        logger.debug(traceback.format_exc())
+        logger.debug("Error in send_sns " + traceback.format_exc())
         print('Error publishing to SNS')
 
 
@@ -69,16 +69,15 @@ def vincecomm_send_email(request):
             message = request.body.decode('utf-8')
             attributes = {}
             body_data = json.loads(message)
-            logger.debug(body_data)
+            logger.debug(f"Email body is {body_data}")
 
             if body_data.get('MessageAttributes'):
                 if body_data['MessageAttributes'].get('MessageType'):
                     attributes['MessageType'] = body_data['MessageAttributes'].get('MessageType').get('Value')
 
         except Exception:
-            logger.debug(f"Message is not valid json")
             error_msg = "%s" % (traceback.format_exc())
-            logger.debug(error_msg)
+            logger.debug("Message is not valid json Error is " + error_msg)
             #send_sns('vinceworker', 'issue with json load of HTTP POST', error_msg)
             return HttpResponse(status=404)
 
@@ -119,12 +118,11 @@ def vincecomm_send_email(request):
 
 @csrf_exempt
 def send_daily_digest(request):
-    logger.debug("Received comm request")
 
     if request.method == 'POST':
         taskname = request.META.get('HTTP_X_AWS_SQSD_TASKNAME')
-        logger.debug(taskname)
-        logger.debug(request.META.get('HTTP_X_AWS_SQSD_SCHEDULED_AT'))
+        logger.debug(f"Task name is {taskname}")
+        logger.debug("HTTP SQS Schedule at value is " + request.META.get('HTTP_X_AWS_SQSD_SCHEDULED_AT'))
         if taskname != "dailydigest":
             return HttpResponse(status=404)
 

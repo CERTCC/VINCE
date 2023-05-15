@@ -64,6 +64,7 @@ function getEmails(e, taggle) {
 
 $(document).ready(function() {
 
+    var original_email_body = $("#id_email_body").val();
 
     $('form').on('submit', function (e) {
         var $form = $(this);
@@ -96,6 +97,7 @@ $(document).ready(function() {
 
     $(document).on('click', "#customize", function(e) {
 	e.preventDefault();
+    $("#id_email_body").val(original_email_body);
 	replaceVendor();
 	replaceEmail();
     });

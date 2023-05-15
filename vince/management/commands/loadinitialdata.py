@@ -84,7 +84,7 @@ class Command(BaseCommand):
                     if path.endswith("_extra.json"):
                         call_command('loaddata', os.path.join("vince/fixtures", path))
                         logger.info(f"Done loading {path}")
-                
+
             #call_command('copy_contact_uuid')
 
             #logger.info("Loading Contact Info")

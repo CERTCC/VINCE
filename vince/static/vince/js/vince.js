@@ -77,16 +77,16 @@ function delaySearch(callfun,wait) {
     };
 }
 function deepGet(obj,idir) {
-  let x= obj;
-  let y = idir.split(".");
-  y.every(function(d) { 
-    if (typeof(x) == "object" && d in x) {
-	x = x[d];
-	return true;
-    } else {
-	x = null;
-	return false;
-    }});
+    let x= obj;
+    let y = idir.split(".");
+    y.every(function(d) { 
+	if (typeof(x) == "object" && d in x) {
+	    x = x[d];
+	    return true;
+	} else {
+	    x = null;
+	    return false;
+	}});
     return x;
 }
 
@@ -208,15 +208,15 @@ function get_modal() {
     let hm = $('#txmodal');
     if(hm.length != 1) {
 	$('body').append($('<div>').addClass("reveal").
-	    attr({"id": "xmodal",
-		  "role": "dialog",
-		  "aria-hidden": "true",
-		  "data-close-on-click": "false",
-		  "data-close-on-esc": "false",
-		  "data-yeti": "modal",
-		  "data-resize": "modal"}).
-	    css({"border": "2px solid #007dac",
-		 "border-radius": "12px"}));
+			 attr({"id": "xmodal",
+			       "role": "dialog",
+			       "aria-hidden": "true",
+			       "data-close-on-click": "false",
+			       "data-close-on-esc": "false",
+			       "data-yeti": "modal",
+			       "data-resize": "modal"}).
+			 css({"border": "2px solid #007dac",
+			      "border-radius": "12px"}));
         let _ = new Foundation.Reveal($('#xmodal'));
         _.open();
 	$('#xmodal').append($('<div>').attr({"id": "txmodal"}).
@@ -437,7 +437,7 @@ $(function () {
     }
     function msg_card(el,msg,level) {
 	$(el).html(msg).removeClass().addClass('card-' + level +
-					      ' dashboard-nav-card');
+					       ' dashboard-nav-card');
 	if(level == "bad") {
 	    $(el).on('click',function() { $('#xmodal').foundation('close'); })
 	}	
@@ -455,7 +455,7 @@ $(function () {
 		   " in the CVE Program?")) {
 	    let href = $('#cve5json').attr('href');
 	}
-	    
+	
     });
     $('.cve_status').each(function(_,el) {
 	if($(el).data("origin")) {
@@ -482,7 +482,7 @@ $(function () {
 	hm.append("<h4><u>Submit CVE5 JSON To CVE Program</u></h4>");
 	hm.append($('<small>')
 		  .html("If needed edit and update JSON before submission. " +
-		       "Use the Tabs to compare CVE data in VINCE and " +
+			"Use the Tabs to compare CVE data in VINCE and " +
 			"in the CVE Services API")); 
 	hm.append($('<a>').addClass("dashboard-nav-card hide"));
 	hm.append($('<ul>').addClass("tabs hide")
@@ -599,5 +599,198 @@ $(function () {
 	    }
 	});
     });
+    function rgba_rand(r,g,b,a) {
+	let c = [0,0,0];
+	for(let i=0; i<3; i++) {
+	    if(arguments[i] && (!isNaN(parseInt(arguments[i]))))
+		c[i] = arguments[i]
+	    else
+		c[i] = parseInt(Math.random()*255)
+	}
+	a && parseFloat(a) ? c.push(a) : c.push(1);
+	return "rgba(" + c.join(",") + ")";
+    }
+    function json_table(data) {
+	let tb = $('<table>');
+	for(x in data) {
+	    tb.append($("<tr>").append($("<td>").text(x))
+		      .append($("<td>").text(data[x])));
+	}
+	return tb;
+    }
+    function close_uar(msg,timer) {
+	$('#txmodal .modal-body').html(msg);
+	$('#txmodal .modal-footer')
+	    .html($("<button>").addClass("button secondary")
+		  .html("Close")
+		  .on("click",function() {
+		      $('#xmodal').foundation('close');
+		  }));
+	if(timer) {
+	    /* If timer is 0 never close wait for click to close*/
+	    if(timer > 0) 
+		setTimeout(function() {
+		    $('#xmodal').foundation('close');
+		},timer);
+	}
+	
+    }
+    function reject_uar() {
+	let data = $('#txmodal').data("rec");
+	if(!(data)) {
+	    return close_uar("Data validation error!",3000);
+	}
+	if(confirm("This user's request will be rejected!\nAre you sure?")) {
+	    let csrf_token = getCookie('csrftoken');
+	    let uar_data = $('#userapprove').data();
+	    let uar_url = uar_data.href;
+	    let status_map = uar_data.status_map;
+	    /* Note: This pk is user's contact pk */
+	    $.post(uar_url,
+		  {pk:data.pk,
+		   status:status_map.DENIED,
+		   username:data.username,
+		   csrfmiddlewaretoken: csrf_token}
+		  ).done(function(d) {
+		      if(d.length == 1 && d[0].fields.contact == data.pk) {
+			  close_uar("User request has been denied and closed!",3000);
+			  $('#uar-pk-'+String(data.pk)).remove();
+		      } else {
+			  close_uar("Sorry there was an error! See console log",0);
+			  console.log(d);
+		      }
+		  }).fail(function() {
+		      console.log(arguments);
+		      close_uar("Sorry there was an error! See console log",0);
+		      
+		  });
+	}
+    }
+    function tkt_uar() {
+	let rec = $('#txmodal').data("rec");
+        if((!rec)) {
+            return close_uar("Data validation error!",3000);
+        }
+	let csrf_token = getCookie('csrftoken');
+	let pdata = {queue: "vendor",
+		     csrfmiddlewaretoken: csrf_token,
+		     title: "Vendor Association Group Admin unavailable",
+		     description: rec.justification,
+		     submitter_email: rec.username
+		    }
+	/* GET this from ticket/url data-href*/
+	let ticket_url = $('.uar-row').data('newticket-url');
+	console.log(pdata);
+	$.post(ticket_url,pdata).done(function(x) {
+	    if("success" in x) {
+		let uar_data = $('#userapprove').data();
+		let uar_url = uar_data.href;
+		let status_map = uar_data.status_map;
+		/* Note: This pk is user's contact pk */
+		$.post(uar_url,
+		       {pk:rec.pk,
+			status:status_map.EXPIRED,
+			username:rec.username,
+			csrfmiddlewaretoken: csrf_token}		
+		      ).always(function() { console.log(arguments); })
+		return close_uar("Success! a new ticket created for this request");
+	    }
+	    console.log(x);
+	    return close_uar("Error! Could not create ticket. Error is :"
+			     + x.error,3000);
+	}).fail(function() {
+	    console.log(arguments);
+	    close_uar("Error in submission to Ticket. See console.log!",0);
+	});
+    }
+    /* If userapprove element exists display it and create user approve rows*/
+    if($('#userapprove').data('href')) {
+	let uar_url = $('#userapprove').data('href');
+	$.getJSON(uar_url).done(function(data) {
+	    if("status_map" in data)
+		$('#userapprove').data('status_map',data.status_map);
+            if("uar" in data) {
+                let incomplete = data.uar.filter(function(x) {
+		    /* UNKNOWN is same as PENDING */
+		    return x.status == data.status_map.UNKNOWN; });
+		if(incomplete.length) {
+                    $('#userapprove').html(' [' +
+					   String(incomplete.length) + ']' );
+		    /*  use pending/user/(?P<pk>[0-9]+)/addcontact/ and
+			create a prompt to start process */
+		    if($('.uar-row').length) {
+			/* Create a new Ticket by submitting data
+			   to Vendor Queue */
+			let divm = $('<div>').addClass('large-10 columns');
+			incomplete.forEach(function(rec) {
+			    let name = rec.full_name + " " ;
+			    let row = $("<p>")
+				.addClass("article-row-content-description")
+				.text(name).append($("<span>")
+						   .addClass("email")
+						   .text(rec.username))
+				.append(" ")
+				.append($("<button>")
+					.addClass("button")
+					.html("Review"));
+			    let divrow = $("<div>")
+				.addClass("article-row-content")
+				.append(row);
+			    let picdiv = $("<div>")
+				.addClass("profile-pic text-center")
+				.css({"background-color": rgba_rand(255)})
+				.append($("<span>").addClass("logo-initial")
+					.text(name[0]));
 
+			    let div = $("<div>").addClass("row list-row")
+				.attr("id","uar-pk-"+String(rec.pk))
+				.attr("data-rec",JSON.stringify(rec))
+				.append($("<div>").addClass("large-1 columns")
+					.append(picdiv))
+				.append($("<div>").addClass("large-7 columns")
+					.append(divrow));
+			    $('.uar-row > .large-10').append(div);
+			});
+			$('.uar-row .list-row')
+			    .on('click',function() {
+				let rec = $(this).data('rec');
+				let footer = $('<div>')
+				    .addClass("modal-footer")
+				    .append($("<div>")
+					    .addClass("row column text-right")
+					    .append($("<button>")
+						    .addClass("button cmu")
+						    .html("Reject"))
+					    .append(" ")
+					    .append($("<button>")
+						    .addClass("button primary")
+						    .html("Create Ticket"))
+					   );
+				if(rec) {
+				    let l = get_modal();
+				    l.data("rec",rec);
+				    let tb = json_table(rec);
+				    $('#txmodal').html($("<div>")
+						      .addClass("modal-body")
+						      .append(tb))
+					.append(footer);
+				    $('#txmodal .cmu').on('click', reject_uar);
+				    $('#txmodal .primary').on('click', tkt_uar);
+				    let btnCancel = $('<button>')
+					.addClass('close-button')
+					.html("X")
+					.on('click',function() {
+					    $('#xmodal').foundation('close');
+					});
+				    $('#xmodal').append(btnCancel);
+				}
+			    });
+		    }
+		}
+	    }
+	}).fail(function() {
+	    console.log("Error in getting UAR request for users pending");
+	    console.log(arguments);
+	});
+    }
 });

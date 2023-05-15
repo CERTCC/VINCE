@@ -52,6 +52,7 @@ from django.utils.encoding import smart_text
 from django.utils.translation import ugettext as _
 from bigvince.utils import get_cognito_url, get_cognito_pool_url
 import traceback
+from lib.vince import utils as vinceutils
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -125,6 +126,7 @@ class CognitoUser(Cognito):
 
 class CognitoAuthenticate(ModelBackend):
     def authenticate(self, request, username=None, password=None):
+        ip = vinceutils.get_ip(request)
         if username and password:
             cognito_user = CognitoUser(
                 settings.COGNITO_USER_POOL_ID,
@@ -135,7 +137,7 @@ class CognitoAuthenticate(ModelBackend):
                 username=username)
 
             try:
-                logger.debug(f"trying to authenticate {username}")
+                logger.debug(f"trying to authenticate {username} from IP {ip}")
                 cognito_user.authenticate(password)
             except ForceChangePasswordException:
                 request.session['FORCEPASSWORD']=True
@@ -156,14 +158,14 @@ class CognitoAuthenticate(ModelBackend):
                 return None
             except (Boto3Error, ClientError) as e:
                 error_code = e.response['Error']['Code']
-                logger.debug(f"error authenticating user {username} error: {e} {error_code}")
+                logger.debug(f"error authenticating user {username} error: {e} {error_code} from IP {ip}")
                 if error_code == "PasswordResetRequiredException":
-                    logger.debug(f"reset password needed for {username}")
+                    logger.debug(f"reset password needed for {username} from IP {ip}")
                     request.session['RESETPASSWORD']=True
                     request.session['username']=username
                     return None
                 if error_code == "UserNotConfirmedException":
-                    logger.debug(f"User {username} did not confirm their account")
+                    logger.debug(f"User {username} did not confirm their account from IP {ip}")
                     #get user
                     user = User.objects.filter(username=username).first()
                     if user:
@@ -242,9 +244,9 @@ class CognitoAuthenticate(ModelBackend):
         # now we have a cognito user - set session variables and return
         if cognito_user:
             user = cognito_user.get_user()
-            logger.debug(f"USER IS {user}")
+            logger.debug(f"Cognito User is {user}")
         else:
-            logger.debug("No user found for Cognito auth returning None")
+            logger.debug(f"No user found for Cognito auth returning None request {request} from {ip}")
             return None
 
         if user:
@@ -252,8 +254,8 @@ class CognitoAuthenticate(ModelBackend):
             request.session['ID_TOKEN'] = cognito_user.id_token
             request.session['REFRESH_TOKEN'] = cognito_user.refresh_token
             #request.session.save()
-            
-        logger.info(f"USER {user} IS AUTHENTICATED!")
+
+        logger.info(f"USER {user} is authenticated from ip {ip}")
         return user
 
 
@@ -268,12 +270,13 @@ class CognitoAuthenticateAPI(ModelBackend):
         https://www.django-rest-framework.org/api-guide/authentication/        
         """
         try:
+            ip = vinceutils.get_ip(request)
             user = CognitoAuthenticate().authenticate(request)
             if user:
-                logger.info(f"API authentication using session for User {user} success")
+                logger.info(f"API authentication using session for User {user} success from ip {ip}")
                 return user, None
             else:
-                logger.warn(f"Failed API authentication using session for User {user} ")
+                logger.warn(f"Failed API authentication using session for User {user} from IP {ip}")
                 raise exceptions.AuthenticationFailed(_('Invalid API session attempted'))
         except Exception as e:
             logger.warn(f"Failed API authentication for session error is {e}")
@@ -302,24 +305,33 @@ class HashedTokenAuthentication(TokenAuthentication):
     * key -- The string identifying the token
     * user -- The user to which the token belongs
     """
+    def authenticate(self, request):
+        ip = vinceutils.get_ip(request)
+        setattr(self,"ip",ip)
+        return super(HashedTokenAuthentication, self).authenticate(request)
 
+        
     def authenticate_credentials(self, key):
+        if hasattr(self,'ip'):
+            ip = self.ip
+        else:
+            ip = "Unknown"
         model = self.get_model()
         hashed_key = make_password(key, settings.SECRET_KEY)
         try:
             token = model.objects.select_related('user').get(key=hashed_key)
         except model.DoesNotExist:
-            logger.warn(f"Failed API auth for token that does not exist {key}")
+            logger.warn(f"Failed API auth for token that does not exist {key} from IP {ip}")
             raise exceptions.AuthenticationFailed(_('Invalid token.'))
         except Exception as e:
-            logger.warn(f"Failed API auth for token Error {e}")
+            logger.warn(f"Failed API auth for token Error {e} from IP {ip}")
             raise exceptions.AuthenticationFailed(_('Unknown Token error.'))
             
         if not token.user.is_active:
-            logger.warn(f"Failed API auth for {token.user} user is inactive or deleted")
+            logger.warn(f"Failed API auth for {token.user} user is inactive or deleted from IP {ip}")
             raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
 
-        logger.info(f"Success user {token.user} is authenticated using API Token ")
+        logger.info(f"Success user {token.user} is authenticated using API Token from IP {ip}")
         return (token.user, token)
 
     

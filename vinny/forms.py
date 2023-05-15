@@ -412,6 +412,12 @@ class SendMessageForm(forms.ModelForm):
                             return dup
                         uar = UserApproveRequest(user=self.user,contact=vc,status=UserApproveRequest.Status.UNKNOWN)
                         uar.save()
+                        try:
+                            action = VendorAction(title=f"UserApproveRequest made by {self.user} to join Vendor group {vc}",
+                                                  user=self.user)
+                            action.save()
+                        except Exception as e:
+                            logger.debug(f"Error when trying to create activity for UserApproveRequest creation {e}")
                         userinfo = f"{self.user.first_name} {self.user.last_name}"
                         custom_content = f"""Please review this request from **{userinfo}** with username *{self.user.username}* requests permission to your vendor group **{vc}**. You can view this user's request under your **User Management** menu.
 

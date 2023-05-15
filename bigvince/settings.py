@@ -45,6 +45,7 @@ import os
 import boto3
 import environ
 import urllib
+#from celery.schedules import crontab
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -56,19 +57,22 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "2.0.8"
+VERSION = "2.1.1"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
+#SECRET_KEY = '9e7)o1r(^1d!z8&@&t*@r_70(=ygd!m=zyx+_sl'
+
+LOCALSTACK=os.environ.get('LOCALSTACK')
+
+TERMS_URL=os.environ.get('TERMS_URL',"https://www.sei.cmu.edu/legal/index.cfm")
 
 VINCE_DEV_SYSTEM = os.environ.get('VINCE_DEV_SYSTEM', "")
 if VINCE_DEV_SYSTEM == '1':
     VINCE_DEV_SYSTEM = "title-dev"
-    
-LOCALSTACK=os.environ.get('LOCALSTACK')
 
 GOOGLE_SITE_KEY = os.environ.get('GOOGLE_SITE_KEY')
 
@@ -88,7 +92,7 @@ if os.environ.get('AWS_DEPLOYED'):
         else:
             trusted_domains.append(host[host.index('.'):])
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.elasticbeanstalk.com', '.elb.amazonaws.com'] + trusted_domains
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.elasticbeanstalk.com', '.elb.amazonaws.com', '.cert-dit.org'] + trusted_domains
 
 # When bigvince is deployed as an Elastic Beanstalk application,
 # the Elastic LoadBalancer will try to do health checks using the internal
@@ -158,33 +162,22 @@ if os.environ.get('AWS_DEPLOYED'):
     AWS_REGION = os.environ.get('AWS_REGION')
     AWS_DEPLOYED = True
     AWS_DEFAULT_ACL = None
-    if LOCALSTACK:
-        AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL')
-        LOGGER_HANDLER = 'console'
-    else:
-        LOGGER_HANDLER = 'watchtower'
+    LOGGER_HANDLER = 'watchtower'
     AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
     AWS_S3_REGION_NAME = os.environ.get('AWS_REGION')
     # Tell django-storages the domain to use to refer to static files.
     AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN')
     AWS_LOCATION = os.environ.get('AWS_LOCATION')
-    if os.environ.get('BUCKET_URL'):
-        STATIC_URL = os.environ.get('BUCKET_URL') + '/'
-    else:
-        STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
     # Tell the staticfiles app to use S3Boto3 storage when writing the collected static files (when
     # you run `collectstatic`).
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    #set to True if you want VINCE to write a contacts backup file to an S3 directory,
-    # you must also set ANCIENT_SRMAIL_BUCKET to S3 arn
-    # To reload contacts into VINCE, set INITIAL_CONTACT_FILE and
-    # uncomment code in vince/management/commands/loadinitialdata.py
-    WRITE_SRMAIL = False
-    #ANCIENT_SRMAIL_BUCKET=os.environ.get('ANCIENT_SRMAIL_BUCKET')
     if VINCE_DEV_SYSTEM == "title-dev":
         EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+        WRITE_SRMAIL = False
     else:
         EMAIL_BACKEND = 'django_ses.SESBackend'
+        WRITE_SRMAIL = True
     #AWS_UPDATE_QUEUE = os.environ.get('AWS_UPDATE_QUEUE')
     S3_INCOMING_REPORTS = os.environ.get('S3_INCOMING_REPORTS')
     #for vincepub this is the bucket to update the website from LN
@@ -215,8 +208,20 @@ else:
     LOGGER_HANDLER = 'console'
 #    EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
     EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.vince.example')
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.cert.org')
     EMAIL_PORT = os.environ.get('EMAIL_PORT', 25)
+
+    # STATIC_ROOT and STATIC_URL need to be set appropriately for django-bakery
+    # to generate the correct paths to the static files
+    #STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static-bigvince-prod-kb-eb")
+    #STATIC_URL = '/static-bigvince-prod-kb-eb/'
+    #AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    #STATIC_URL = "https://kb.cert.org%s" % (STATIC_URL)
+
+    ##STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static-bigvince-dev-kb-eb")
+    ##STATIC_URL = '/static-bigvince-dev-kb-eb/'
+    ##AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    ##STATIC_URL = "https://bigvince-dev-kb.cert-dit.org%s" % (STATIC_URL)
 
     #BELOW IS FOR A LOCAL (DEBUG) setup - use the local static directory
     STATIC_URL = '/static/'
@@ -225,7 +230,7 @@ else:
     S3_INCOMING_REPORTS = "vince-reports"
     AWS_REGION = os.environ.get('AWS_REGION', 'us-east-2')
     MULTIURL_CONFIG = False
-    BUILD_DIR='/local/dir/static/notes'
+    BUILD_DIR='/usr/local/dir/static/notes'
     KB_SERVER_NAME = SERVER_NAME
     
     #BAKERY_FILESYSTEM = 'mem://'
@@ -269,6 +274,8 @@ VINCE_ERROR_SNS_ARN = os.environ.get('VINCE_ERROR_SNS_ARN')
 VINCE_COMM_SNS_ARN = os.environ.get('VINCE_COMM_SNS_ARN', VINCE_TRACK_SNS_ARN)
 
 ROOT_URLCONF = 'bigvince.urls'
+
+
 
 # These are BAKERY variables
 AWS_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
@@ -349,12 +356,45 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE = 432000
 
 
+
+# this is for AWS queue simulation with celery and vince/tasks.py - not used in AWS
+############
+#CELERY_RESULT_BACKEND = 'django-db'
+#CELERY_CACHE_BACKEND = 'django-cache'
+#CELERY_IMPORTS = (
+#    'vince.tasks',
+#)
+
+#CELERY_BEAT_SCHEDULE = {
+#    'vince-poll-sqs': {
+#        'task': 'vince.tasks.vince_poll_sqs',
+#        'schedule': crontab(minute="*/1")
+#    },
+#    'vince_poll_vinny_sqs': {
+#        'task': 'vince.tasks.vince_poll_vinny_sqs',
+#        'schedule': crontab(minute="*/1")
+#    },
+#    'vince_pub_report_sqs': {
+#        'task': 'vince.tasks.vince_pub_report_sqs',
+#        'schedule': crontab(minute="*/1")
+#    },
+#}
+#############
+
 def get_secret(secret_arn):
     # Create a Secrets Manager client
     session = boto3.session.Session()
     client = session.client(service_name='secretsmanager', region_name=os.environ.get('AWS_REGION'))
     secrets = client.get_secret_value(SecretId=secret_arn)
     return json.loads(secrets['SecretString'])
+
+
+### SRMAIL environ variables ###
+# ONLY USED IF WRITE_SRMAIL is set to True
+INITIAL_CONTACT_FILE = os.environ.get('CONTACTS_FILE')
+# A separate S3 bucket is used so that the file written here can be polled
+# and transfered locally when modified
+ANCIENT_SRMAIL_BUCKET = os.environ.get('ANCIENT_SRMAIL_BUCKET')
 
 SUPERUSER = None
 
@@ -394,7 +434,7 @@ if os.environ.get('AWS_SECRET_MANAGER', None):
 # Check environment variables for database credentials
 else:
     VINCE_NAMESPACE = 'vince'
-    SUPERUSER = {'username': 'superuser@example.com', 'password': 'SavingTheWorldWithPerl'}
+    SUPERUSER = {'username': 'ta-dit@cert.org', 'password': 'SavingTheWorldWithPerl'}
     vincetrack_user = os.environ.get('VINCE_TRACK_DB_USER', 'vincetrack')
     vincetrack_password = os.environ.get('VINCE_TRACK_DB_PASS', 'vincetrack')
     vincetrack_db = os.environ.get('VINCE_TRACK_DB_NAME', 'vincetrack')
@@ -484,13 +524,8 @@ AUTHENTICATION_BACKENDS = [
 COGNITO_USER_POOL_ID = os.environ.get('AWS_COGNITO_USER_POOL_ID')
 COGNITO_APP_ID = os.environ.get('AWS_COGNITO_APP_ID')
 COGNITO_REGION = os.environ.get('AWS_COGNITO_REGION')
-BASE_URL=os.environ.get('BASE_URL')
 if COGNITO_REGION:
-    if LOCALSTACK:
-        keys_url = f"http://cognito-idp.{COGNITO_REGION}.{BASE_URL}/{COGNITO_USER_POOL_ID}/.well-known/jwks.json"
-    else:
-        keys_url = 'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.format(COGNITO_REGION, COGNITO_USER_POOL_ID)
-
+    keys_url = 'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.format(COGNITO_REGION, COGNITO_USER_POOL_ID)
     response = urllib.request.urlopen(keys_url)
     COGNITO_KEYS = json.loads(response.read())['keys']
     
@@ -498,22 +533,17 @@ if COGNITO_REGION:
 # should match up with the Cognito Group name
 # The COGNITO_ADMIN_GROUP is used to promote users to "staff" upon login
 # which give them permission to access the django admin console.
-COGNITO_ADMIN_GROUP = os.environ.get('AWS_COGNITO_ADMIN_GROUP', "Coordinator")
-# the following 2 vars can be comma separated string if more than 1
-# group/team should have access to Track
-# anyone in the COGNITO_VINCETRACK_GROUPS will be put in a
-#"vincetrack" local group
-COGNITO_VINCETRACK_GROUPS = os.environ.get("AWS_COGNITO_VINCETRACK_GROUPS", default=COGNITO_ADMIN_GROUP)
+COGNITO_ADMIN_GROUP = os.environ.get('AWS_COGNITO_ADMIN_GROUP', "CERT/CC")
+# the following 2 vars can be comma separated string if more than 1 group
+# anyone in the COGNITO_VINCETRACK_GROUPS will be put in a "vincetrack" local group
+COGNITO_VINCETRACK_GROUPS = os.environ.get("AWS_COGNITO_VINCETRACK_GROUPS", default="CERT/CC,INL,CISA")
 
-# Any user in this group will automatically be promoted to superuser
-# Choose wisely - ideally this should be a more select set than the
-# VINCETrack group
-COGNITO_SUPERUSER_GROUP = os.environ.get('AWS_COGNITO_SUPERUSER_GROUP', COGNITO_ADMIN_GROUP)
+COGNITO_SUPERUSER_GROUP = os.environ.get('AWS_COGNITO_SUPERUSER_GROUP', "ADMIN")
 
 #COGNITO_LIMITED_ACCESS_GROUPS can be used to give special permission to views
 # in VINCECOMM
 
-COGNITO_LIMITED_ACCESS_GROUPS = os.environ.get('AWS_COGNITO_LTD_ACCESS', default='Limited')
+COGNITO_LIMITED_ACCESS_GROUPS = os.environ.get('AWS_COGNITO_LTD_ACCESS', default='CISA')
 
 #If an account exists in AWS, but not locally - create the user locally
 COGNITO_CREATE_UNKNOWN_USERS = True
@@ -576,11 +606,11 @@ DEFAULT_USER_SETTINGS = {
 }
 
 #from emails on auto-notifications
-DEFAULT_FROM_EMAIL = os.environ.get('NO_REPLY_EMAIL', "vuls+donotreply@vince.example")
+DEFAULT_FROM_EMAIL = os.environ.get('NO_REPLY_EMAIL', "cert+donotreply@cert.org")
 #from for emails sent from VINCE
-DEFAULT_REPLY_EMAIL = os.environ.get('REPLY_EMAIL', "vuls@vince.example")
+DEFAULT_REPLY_EMAIL = os.environ.get('REPLY_EMAIL', "cert@cert.org")
 
-#EMAIL_BUCKET = os.environ.get('S3_EMAIL_BUCKET', 'vince-email')
+EMAIL_BUCKET = os.environ.get('S3_EMAIL_BUCKET', 'vince-email')
 
 #if set to True, subjects of emails will only be compared with the queue names associated
 # with the S3 bucket the email came from
@@ -596,7 +626,7 @@ DEFAULT_EMAIL_HEADERS = {'X-VINCE': 'auto-notify'}
 
 VINCE_MAX_EMAIL_LENGTH = 300000
 
-IGNORE_EMAILS_TO = ['vuls+donotreply@vince.example']
+IGNORE_EMAILS_TO = ['cert+donotreply@cert.org']
 
 LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
 DJANGO_LOGLEVEL = os.environ.get('DJANGO_LOGLEVEL', 'info').upper()
@@ -643,7 +673,7 @@ logging_dict = {
     },
 }
 
-if AWS_DEPLOYED and not LOCALSTACK:
+if AWS_DEPLOYED:
     LOG_GROUP_NAME = os.environ.get('VINCE_LOG_GROUP_NAME', 'VINCE')
     logging_dict['handlers']['watchtower'] = {
         'level': 'DEBUG',
@@ -655,7 +685,7 @@ if AWS_DEPLOYED and not LOCALSTACK:
 
 IS_WORKER = os.environ.get('IS_ELASTICBEANSTALK_WORKER', False)
 IS_VINCEWORKER = os.environ.get('IS_VINCEWORKER', False)
-if IS_VINCEWORKER and AWS_DEPLOYED and not LOCALSTACK:
+if IS_VINCEWORKER and AWS_DEPLOYED:
     IS_VINCEWORKER = True
     INSTALLED_APPS.append('vinceworker')
     logging_dict['loggers']['vinceworker'] = {
@@ -665,7 +695,7 @@ if IS_VINCEWORKER and AWS_DEPLOYED and not LOCALSTACK:
     logging_dict['handlers']['watchtower']['stream_name'] = 'vinceworker'
 
 IS_KBWORKER = os.environ.get('IS_KBWORKER', False)
-if IS_KBWORKER and AWS_DEPLOYED and not LOCALSTACK:
+if IS_KBWORKER and AWS_DEPLOYED:
     IS_KBWORKER = True
     INSTALLED_APPS.append('kbworker')
     logging_dict['loggers']['kbworker'] = {
@@ -676,7 +706,7 @@ if IS_KBWORKER and AWS_DEPLOYED and not LOCALSTACK:
     # only need to define this for the worker
 
 IS_VCWORKER = os.environ.get('IS_VCWORKER', False)
-if IS_VCWORKER and AWS_DEPLOYED and not LOCALSTACK:
+if IS_VCWORKER and AWS_DEPLOYED:
     IS_VCWORKER = True
     INSTALLED_APPS.append('vincecommworker')
     logging_dict['loggers']['vincecommworker'] = {
@@ -690,26 +720,27 @@ logging.config.dictConfig(logging_dict)
 #LOGGING = logging_dict
 
 STANDARD_VENDOR_EMAIL = "We have new information about a vulnerability \
-that may affect your products. Please login to the VINCE portal for more information about this vulnerability."
-STANDARD_PARTICIPANT_EMAIL = "Hello, VINCE coordinators invite you to participate in an active vulnerability disclosure case. \
-Please login to the VINCE portal for more information about this case."
+that may affect your products. Please login to the CERT/CC VINCE portal for more information about this vulnerability."
+STANDARD_PARTICIPANT_EMAIL = "Hello, CERT/CC has invited you to participate in an active vulnerability disclosure case. \
+Please login to the CERT/CC VINCE portal for more information about this case."
 
 
 DEFAULT_PHONE_NUMBER = "412-268-5800"
 # the default email signature in VINCE automatic notifications - make team specific in Team Settings
 # used in Email Templates
-DEFAULT_EMAIL_SIGNATURE = "The VINCE Vulnerability Coordination Team"
+DEFAULT_EMAIL_SIGNATURE = "The CERT/CC Vulnerability Coordination Team"
 
 # This is used in form views as default text for email/contact forms
 STANDARD_EMAIL_SIGNATURE="\r\n\r\n\r\n\r\n\r\nRegards,\r\n\r\nVulnerability Analysis Team\r\n\
 =====================================\r\n\
-VINCE\r\n\
-vince.yourdomain.com\r\n\
+CERT Coordination Center\r\n\
+kb.cert.org / cert@cert.org\r\n\
 =====================================\r\n"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'cogauth.backend.HashedTokenAuthentication',
+        'cogauth.backend.CognitoAuthenticateAPI',
         #'rest_framework.authentication.TokenAuthentication',
         #        'cogauth.backend.JSONWebTokenAuthentication',
     ]
@@ -741,7 +772,7 @@ MAX_UPLOAD_SIZE = 10485760
 CSRF_COOKIE_HTTPONLY=False
 
 # Set CSRF trusted origins to our generated list of trusted domains
-CSRF_TRUSTED_ORIGINS = [f'http://{t_domain}' for t_domain in trusted_domains] + [f'https://{t_domain}' for t_domain in trusted_domains]
+CSRF_TRUSTED_ORIGINS = trusted_domains
 
 CSRF_FAILURE_VIEW = "vinny.views.csrf_failure_view"
 
@@ -754,22 +785,20 @@ VINCECOMM_URL =  os.environ.get('VINCE_PUB_DOMAIN')
 FAVICON = "vincepub/images/favicon.ico"
 
 WEB_TITLE = "Vulnerability Notes Database"
-ORG_NAME = "Your Organization Name"
-CONTACT_EMAIL = "vuls@vince.example"
-CONTACT_PHONE = "+12021115555"
-ORG_POLICY_URL = "https://vuls.vince.example/terms"
-ORG_AUTHORITY =  f"{ORG_NAME} "
-VINCEPUB_BASE_TEMPLATE = "vincepub/base_public.html"
-VINCECOMM_BASE_TEMPLATE = "vinny/base_public.html"
-VINCETRACK_BASE_TEMPLATE = "vince/base_public.html"
-ACK_EMAIL_TEMPLATE = "vincepub/email-general.txt"
 
-CASE_IDENTIFIER = "CASE#"
-REPORT_IDENTIFIER = "REPORT#"
+ORG_NAME = "CERT/CC"
+CONTACT_EMAIL = "cert@cert.org"
+CONTACT_PHONE = "+14122685800"
+ORG_POLICY_URL = "https://vuls.cert.org/confluence/display/Wiki/Vulnerability+Disclosure+Policy"
+ORG_AUTHORITY =  f"{ORG_NAME}"
 
-#CSAF API legal disclaimer
+VINCEPUB_BASE_TEMPLATE = "vincepub/base.html"
+VINCECOMM_BASE_TEMPLATE = "vinny/base.html"
+VINCETRACK_BASE_TEMPLATE = "vince/base.html"
+ACK_EMAIL_TEMPLATE = "vincepub/email-autoack.txt"
 LEGAL_DISCLAIMER = """THIS DOCUMENT IS PROVIDED ON AN 'AS IS' BASIS AND DOES NOT IMPLY ANY KIND OF GUARANTEE OR WARRANTY, INCLUDING THE WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE. YOUR USE OF THE INFORMATION ON THE DOCUMENT OR MATERIALS LINKED FROM THE DOCUMENT IS AT YOUR OWN RISK. """
-
+CASE_IDENTIFIER = "VU#"
+REPORT_IDENTIFIER = "VRF#"
 
 #allowed options: "prod", "test", "dev"
 CVE_SERVICES_API = os.environ.get("CVE_SERVICES_API", "test")
@@ -829,6 +858,8 @@ def ALT_VERIFY_TOKEN(user,session):
     Tokens for writing Tests with mock sessions. Add your alternate method
     if preferred to help with automated tests.
     """
+    if user and hasattr(session,"bypass") and session.bypass == SECRET_KEY:
+        return True
     return False
 
 #Added in SECTORS for VERSION 2.0.8

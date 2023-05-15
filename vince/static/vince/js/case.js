@@ -61,8 +61,8 @@ function initTooltipster(element, umProfileStore, displayUserCard) {
             var userUrl = $(this).attr('href');
             if(umProfileStore.hasOwnProperty(userUrl)){
                 callback(umProfileStore[userUrl])
-                //displayUserCard(instance, umProfileStore[userUrl]);                                              
-                // load from cache                                                                                 
+                //displayUserCard(instance, umProfileStore[userUrl]);
+                // load from cache
             }
             else {
                 $.get(userUrl, function(data) {
@@ -178,7 +178,7 @@ function searchComms(e) {
 
 function searchTasks(e, tablet) {
     var csrftoken = getCookie('csrftoken');
-    
+
     if (e) {
 	e.preventDefault();
     }
@@ -186,7 +186,7 @@ function searchTasks(e, tablet) {
     if (window.txhr && 'abort' in window.txhr) {
         window.txhr.abort();
     }
-    
+
     var url = $("#filter_tasks").attr("href");
     var sort = $("#filterstatus option:selected").val();
     lockunlock(true,'div.mainbody,div.vtmainbody','#case_tasks');
@@ -258,7 +258,7 @@ $(document).ready(function() {
 	    style: {classes: 'qtip-youtube'}
 	})
     });
-    
+
     var input = document.getElementById("id_keyword");
     if (input) {
 	input.addEventListener("keydown", function(event) {
@@ -267,7 +267,7 @@ $(document).ready(function() {
 	    }
 	});
     }
-    
+
     var form = document.getElementById('filterform');
     if (form) {
 	if (form.attachEvent) {
@@ -276,7 +276,7 @@ $(document).ready(function() {
             form.addEventListener("submit", searchComms);
 	}
     }
-    $('#download_html').on("click", function() {    
+    $('#download_html').on("click", function() {
 	var vulnote = $('#vulnote a').attr('href');
 	$.get(vulnote).done(function(h) {
             var plainText = $($.parseHTML(h)).find("#id_content").val();
@@ -296,6 +296,90 @@ $(document).ready(function() {
 	    delete tarea;
             delete link;
 	});
+    });
+
+    $('#download_pdf').on("click", function() {
+        var vulnote = $('#vulnote a').attr('href');
+        $.get(vulnote).done(function(h) {
+            var doc = new jsPDF();
+            var specialElementHandlers = {
+                '#editor': function (element, renderer) {
+                    return true;
+                }
+            };
+            var plainText = $($.parseHTML(h)).find("#id_content").val();
+            let cleanText = plainText.replace(/\“/g, "\"").replace(/\”/g, "\"").replace(/\’/g, "\'").replace(/\—/g, "\-")
+            var tarea = document.createElement("textarea");
+            tarea.style.display = "none";
+            tarea.id = "ccB";
+            document.body.appendChild(tarea);
+            var simplemde = new EasyMDE({element: tarea})
+            var simpleHTML = simplemde.markdown(cleanText);
+            margins = {
+                bottom:10,
+                top:15,
+                left:10,
+                right:10,
+                width:170
+            };
+
+            // Set watermark
+            doc.setPage(0);
+            doc.setFont("helvetica");
+            doc.setFontType("normal");
+            doc.setTextColor(220,220,220);
+            doc.setFontSize(70);
+            doc.text("EMBARGOED", 50, doc.internal.pageSize.height - 120, null, 45);
+
+            doc.fromHTML(
+                simpleHTML, 
+                margins.left, 
+                margins.top, 
+                {
+                    'width': margins.width,
+                        'elementHandlers': specialElementHandlers
+                },
+                function (dispose) {
+                }, margins
+            );
+            var pageCount = doc.internal.getNumberOfPages();
+            console.log(pageCount)
+            for(i = 0; i < pageCount; i++) { 
+                doc.setPage(i);
+                // Set header
+                let amberPosition = 94.5;
+                let amberTop = 3
+                doc.setFillColor(0,0,0);
+                doc.rect(amberPosition, amberTop, 21.2, 5, 'F');
+
+                doc.setFont("times");
+                doc.setFontType("bold");
+                doc.setFontSize(10);
+                doc.setTextColor(245, 194, 66);
+                doc.text(amberPosition,amberTop+4, "TLP:AMBER");
+
+                doc.setFontSize(10);
+                doc.setTextColor(255,0,0);
+                doc.text(19, 12, "The information within this document is to be restricted to participants’ organizations only until publicly released.");
+
+                doc.setFontSize(10);
+                doc.setTextColor(150);
+                doc.text(7, 5, "EMBARGOED");
+                doc.text(179, 5, "EMBARGOED");
+
+                // Set footer
+                let amberBottom = 275
+                doc.setFillColor(0,0,0);
+                doc.rect(amberPosition, amberBottom, 21.2, 5, 'F');
+
+                doc.setFont("times");
+                doc.setFontType("bold");
+                doc.setFontSize(10);
+                doc.setTextColor(245, 194, 66);
+                doc.text(amberPosition,amberBottom+4, "TLP:AMBER");
+            }
+            doc.save($('#vutitle').html() + " - Notice (Draft).pdf");
+        });
     });
 
     if (document.getElementById("user_taggs")) {
@@ -345,8 +429,8 @@ $(document).ready(function() {
 	    },
 	});
 
-	auto(assignable, taggle2, tag_url, addmodal);	
-	
+	auto(assignable, taggle2, tag_url, addmodal);
+
     }
 
 
@@ -404,11 +488,11 @@ $(document).ready(function() {
             },
         });
         auto(case_avail_tags, casetaggle, case_tag_url, addmodal);
-	
+
     }
 
 
-    
+
     $("input[id^='id_status_']").change(function(event) {
         searchTickets();
     });
@@ -421,7 +505,7 @@ $(document).ready(function() {
         searchComms();
     });
 
-    
+
     $("#id_communication_type").change(function(event) {
         searchComms();
     });
@@ -452,16 +536,16 @@ $(document).ready(function() {
             dateFormat: dateFormat,
             numberOfMonths: 1,
             maxDate: "+0D"
-	    
+
         })
         .on( "change", function() {
             from.datepicker( "option", "maxDate", getDate( this ) );
             searchComms();
         });
-    
+
     var addmodal = $("#smallmodal");
     var largemodal = $("#largemodal");
-    
+
     $(document).on("submit", '#addvendorform', function(event) {
 	event.preventDefault();
 	var reload = $(this).attr("reload");
@@ -469,12 +553,12 @@ $(document).ready(function() {
 	var csrftoken = getCookie('csrftoken');
 	var rows = $("#project-description > tr");
 	var case_id = $('.addvulmodal').attr('caseid');
-	
+
 	$.each(rows, function(index, item) {
 	    vendors.push(item.cells[0].innerText);
 	});
 	var url = $(this).attr("action");
-	
+
 	$.post(url, {'csrfmiddlewaretoken': csrftoken, 'vendors': vendors,
 		     'case_id': case_id}, function(data) {
 			 if (reload == "list") {
@@ -484,7 +568,7 @@ $(document).ready(function() {
 			 }
 			 /*remove rows in table */
 			 $("#project-description").find("tr").remove();
-			 
+
 		     })
 	    .fail(function(xhr, status, error) {
 		var data = xhr.responseText;
@@ -532,14 +616,14 @@ $(document).ready(function() {
             url: $(this).attr("href"),
             type: "GET",
             success: function(data) {
-		addmodal.html(data).foundation('open');
-		$.getJSON("/vince/api/vendors/", function(data) {
-		    vend_auto(data);
-		});
-            },
-	    error: function(xhr, status) {
-                permissionDenied(addmodal);
-            }
+            addmodal.html(data).foundation('open');
+            $.getJSON("/vince/api/vendors/", function(data) {
+                vend_auto(data);
+            });
+                },
+            error: function(xhr, status) {
+                    permissionDenied(addmodal);
+                }
 
         });
     });
@@ -555,7 +639,7 @@ $(document).ready(function() {
 	    error: function(xhr, status) {
 		permissionDenied(addmodal);
             }
-	    
+
         });
     });
 
@@ -573,12 +657,12 @@ $(document).ready(function() {
 
         });
     });
-    
-    
+
+
     $(document).on("click", '.addvulmodal', function(event) {
 	event.preventDefault();
 	var caseid = $(this).attr("caseid");
-	
+
         $.ajax({
             url: "/vince/case/"+caseid+"/addvul/",
             type: "GET",
@@ -661,7 +745,7 @@ $(document).ready(function() {
 	    hm.append("<strong style='color:red'>Error no CaseID found");
 	    return false;
 	}
-	
+
 	window.allvendors = [];
 	var max = 2;
 	hm.append("<h5> Fetching vendors list by Page " +
@@ -710,7 +794,7 @@ $(document).ready(function() {
 		console.log("Contacting vendor :  " + v.vendor);
 		hm.append("<li> " + si + " Attempting to contact : " + v.vendor +
 			  " result is <span class='vendor'" + si +
-			  "'></span></li>");  
+			  "'></span></li>");
 		var url = 'https://vince.cert.org/vince/editcasevendors/' +
 		    caseid+'/';
 		fsubmit['vendors'] = v.contact_id;
@@ -753,7 +837,7 @@ $(document).ready(function() {
 			  "this Case, please wait </h4>");
 		hm.append("<div><ul><li><h5>Starting Contact</h5></li>");
 		for(let i=0; i<d.data.length; i++) {
-		    
+
 		    let si = String(i+1);
 		    hm.find("li:last-child").fadeOut('10000');
 		    hm.find('.mdcounter').html(si);
@@ -773,16 +857,16 @@ $(document).ready(function() {
 				   vendor: v.id
 				 },
 				 function(y) {
-				     
+
 				     hm.find(".vendor" + si).html(JSON.stringify(y));
 				 });
 		}
 	    }
-	    
+
 	});
 	finish_modal(hm);
     }
-    
+
     $(document).on("click", '#approveall', approve_all_vendors);
     $(document).on("click", '#notifyall', notify_all);
 
@@ -802,13 +886,13 @@ $(document).ready(function() {
     });
 
 
-    
+
     $(document).on("click", '.makepublic', function(event) {
 	event.preventDefault();
 	var csrftoken = getCookie('csrftoken');
 	var artifact = $(this).attr("artid");
 	var url = $(this).attr("href");
-	
+
 	$.post(url, {'csrfmiddlewaretoken': csrftoken, 'artifact': artifact
                     }, function(data) {
 			reloadArtifacts(data['case']);
@@ -817,7 +901,7 @@ $(document).ready(function() {
                 permissionDenied(addmodal);
             });
     });
-    
+
 
     $(document).on("click", '#notifyparticipants', function(event) {
         event.preventDefault();
@@ -835,7 +919,7 @@ $(document).ready(function() {
 		    type: "GET",
 		    success: function(data) {
 			addmodal.html(data).foundation('open');
-			
+
 		    },
 		    error: function(xhr, status) {
 			permissionDenied(addmodal);
@@ -848,14 +932,14 @@ $(document).ready(function() {
         }
 
     });
-    
+
     $(document).on("click", '.downloadcve', function(event) {
 	event.preventDefault();
 	var vulid = $(this).attr('vulid');
 	window.location = "/vince/cve/"+vulid+"/download/";
     });
-    
-    
+
+
     $.widget("custom.tablecomplete", $.ui.autocomplete, {
 	_create: function() {
 	    this._super();
@@ -903,7 +987,7 @@ $(document).ready(function() {
     }
 
 
-    
+
     function _doFocusStuff(event, ui) {
 	if (ui.item) {
 	    var $item = ui.item;
@@ -912,7 +996,7 @@ $(document).ready(function() {
 	}
 	return false;
     }
-    
+
     function _doSelectStuff(event, ui) {
 	if (ui.item) {
 	    var $item = ui.item;
@@ -929,10 +1013,10 @@ $(document).ready(function() {
 	    source: data,
 	    focus: _doFocusStuff,
 	    select: _doSelectStuff
-	    
+
 	});
 	// create the autocomplete
-	
+
 	// get a handle on it's UI view
 	var autocomplete_handle = autocomplete.data("ui-autocomplete");
     }
@@ -974,14 +1058,14 @@ $(document).ready(function() {
         }
         return false;
     }
-    
+
     function user_auto(data) {
 	var autocomplete = $("#user").tablecomplete({
             minLength: 1,
             source: data,
             focus: _doFocusUserStuff,
             select: _doSelectUserStuff
-	    
+
 	});
     }
 
@@ -1015,7 +1099,7 @@ $(document).ready(function() {
         });
     }
 
-    
+
     var input = document.getElementById("newuser");
     if (input) {
 	input.addEventListener("keydown", function(event) {
@@ -1027,11 +1111,11 @@ $(document).ready(function() {
 	    }
 	});
     }
-    
+
     /*$.getJSON("/vince/api/vendors/", function(data) {
       vend_auto(data);
       });*/
-    
+
     $.getJSON("/vince/api/users/", function(data) {
 	user_auto(data);
     });
@@ -1109,7 +1193,7 @@ $(document).ready(function() {
     });
 
     var approvemodal = $("#approvenote");
-    
+
     $(document).on("click", "#approvevulnote", function(event) {
 	event.preventDefault();
         var url = $(this).attr("action");
@@ -1125,14 +1209,14 @@ $(document).ready(function() {
             }
 
 	});
-	
+
     });
 
 
     $(document).on("click", ".publishvulnote", function(event) {
 	event.preventDefault();
 	var url = $(this).attr("action");
-	
+
 	$.ajax({
             url: url,
             type: "GET",
@@ -1148,7 +1232,7 @@ $(document).ready(function() {
     });
 
 
-    
+
 
     $(document).on("click", "#sharevulnote", function(event) {
         event.preventDefault();
@@ -1243,7 +1327,7 @@ $(document).ready(function() {
     deleteCssClass: 'remove-formset right'
     });
     }
-    
+
     var exploit_formset = $('.exploit_formset').length;
     if (exploit_formset) {
     $('.exploit_formset').formset({
@@ -1269,11 +1353,11 @@ $(document).ready(function() {
         e.preventDefault();
 
     });
-    
+
 
     if (document.getElementById('vuls_data')) {
         var data = JSON.parse(document.getElementById('vuls_data').textContent);
-	console.log(data);
+	    console.log(data);
     }
 
 
@@ -1285,7 +1369,7 @@ $(document).ready(function() {
     function printFormatter(cell, formatterParams, onRendered){
 	return cell.getValue() ? "YES" : "NO";
     }
-    
+
     var buttonFormatter = function(cell,  formatterParams, onRendered) {
         var rv = "<a vulid="+cell.getValue()+" href=\"#\" title=\"edit this vulnerability\" class=\"openeditmodal btn-link\"><i class=\"fas fa-pencil-alt\"></i></a><button title=\"clone this vulnerability\" class=\"clonevul btn-link\" obj="+cell.getValue()+"><i class=\"far fa-clone\"></i></button><button title=\"delete this vulnerability\" class=\"deletevul btn-link\" href=\""+cell.getRow().getData().remove_link+"\"><i class=\"fas fa-trash-alt\"></i></button>";
 	/*if (cell.getRow().getData().ask_vendor_status) {
@@ -1296,7 +1380,7 @@ $(document).ready(function() {
 	return rv
     }
 
-    
+
 
     function cveFormatter(cell, formatterParams, onRendered){
 	if (cell.getRow().getData().cveallocation) {
@@ -1325,7 +1409,7 @@ $(document).ready(function() {
             success: function(data) {
 		largemodal.html(data).foundation('open');
 		initiate_vul_add_form();
-		
+
 	    },
 	    error: function(xhr, status) {
                 permissionDenied(addmodal);
@@ -1334,7 +1418,7 @@ $(document).ready(function() {
     });
 
 
-    
+
     $(document).on("click", '.nosharevul', function(event) {
 	event.preventDefault();
         var vulid = $(this).attr("vulid")
@@ -1371,7 +1455,7 @@ $(document).ready(function() {
 	window.location = url_mask;
     };
 
-    //define custom formatter function                                                                                    
+    //define custom formatter function
     var tagFormatter = function(cell, formatterParams, onRendered){
         var values = cell.getValue();
         var tags = "";
@@ -1383,7 +1467,7 @@ $(document).ready(function() {
         }
         return tags;
     }
-    
+
     if (data) {
 	var tablet = new Tabulator("#vuls-table", {
             data:data,
@@ -1412,7 +1496,7 @@ $(document).ready(function() {
 	if (cell.getRow().getData().alert_tags.length) {
 	    val = "<i class=\"fas fa-bell warning\"></i>  " + val
 	}
-	
+
         var url_mask = cell.getRow().getData().contact_link;
 	return "<a href=\""+url_mask+"\">"+ val + "</a>";
     }
@@ -1421,7 +1505,7 @@ $(document).ready(function() {
 	if (cell.getRow().getData().alert_tags.length) {
 	    return "This Vendor is tagged with an ALERT Tag: " + cell.getRow().getData().alert_tags[0]
 	}
-	
+
 	if (cell.getRow().getData().users == 0) {
 	    return "This vendor does not have any VINCE Users";
 	} else {
@@ -1450,7 +1534,7 @@ $(document).ready(function() {
 	    return "<a href=\""+cell.getValue()+"\"><i class=\"fas fa-inbox\"></i>";
 	}
     }
-    
+
     function stmtFormatter(cell, formatterParams, onRendered) {
 	if (cell.getValue()) {
 	    return "<a href=\"" + cell.getValue() + "\" class=\"openmodal button cmu tiny\" data-open=\"statusmodal\"> View Statement</a>";
@@ -1483,13 +1567,13 @@ $(document).ready(function() {
 
 	editor.addEventListener("change", successFunc);
 	editor.addEventListener("blur", successFunc);
-	
+
 	return editor;
     };
 
 
     function vendornotifiedFormatterFunction(cell, formatterParams, onRendered) {
-	
+
 	return "Notified <i class=\"far fa-edit\"></i>";
     }
 
@@ -1530,7 +1614,7 @@ $(document).ready(function() {
     function customNouserfilter(data, filterParams) {
 	return (data.users == 0);
     }
-    
+
     $(document).on("click", ".reqapproval", function(event) {
         event.preventDefault();
         vendors_table.setFilter("reqapproval", "=", "true");
@@ -1538,7 +1622,7 @@ $(document).ready(function() {
 
     $(document).on("click", ".vendorsnousers", function(event) {
         event.preventDefault();
-	
+
         vendors_table.setFilter("users", "=", "0");
     });
 
@@ -1550,7 +1634,7 @@ $(document).ready(function() {
     function custom3(data, filterParams) {
         return (data.seen == true);
     }
-    
+
     $(document).on("click", ".vendorsseen", function(event) {
 	event.preventDefault();
 	vendors_table.setFilter("seen", "=", "true");
@@ -1560,9 +1644,9 @@ $(document).ready(function() {
         event.preventDefault();
         vendors_table.setFilter("statement_date", "!=", "false");
     });
-    
+
     var vendors_table = new Tabulator("#vendors-table", {
-        //data:vendors_data, //set initial table data     
+        //data:vendors_data, //set initial table data
 	data:[],
         layout:"fitColumns",
 	selectable:true,
@@ -1592,7 +1676,7 @@ $(document).ready(function() {
             {title:"Statement", field:"statement", formatter:stmtFormatter},
 	    {title:"Emails", field:"vendor_notification", formatter: vendorNotificationFormatter},
         ],
-	
+
     });
 
     reloadVendorStats($(".addvulmodal").attr('caseid'));
@@ -1614,7 +1698,7 @@ $(document).ready(function() {
     });
 
     var flag = false;
-    
+
     approvemodal.bind("closed", function() {
 	flag = true;
     });
@@ -1623,8 +1707,8 @@ $(document).ready(function() {
     function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
     }
-    
-    
+
+
     $(document).on("click", '#remove-vendor', function(event) {
 	event.preventDefault();
 	var selectedRows = vendors_table.getSelectedRows();
@@ -1640,7 +1724,7 @@ $(document).ready(function() {
 		reloadVendors($(".addvulmodal").attr('caseid'), vendors_table);
 	    }
 	};
-	
+
 	for (i=0; i < selectedRows.length; i++) {
             while (flag == false) {
                 window.setTimeout(checkFlag, 100);
@@ -1658,7 +1742,7 @@ $(document).ready(function() {
                     }});
 	    } else {
 		$.ajax({
-		    
+
                     url: selectedRows[i].getData().remove_link,
                     success: function(data) {
 			ajaxCallComplete();
@@ -1729,7 +1813,7 @@ $(document).ready(function() {
 	    .fail(function(d) {
                 permissionDenied(addmodal);
             });
-	
+
     }
     $(document).off("click", '#notifyvendors');
     $(document).on("click", '#notifyvendors', function(event) {
@@ -1738,7 +1822,7 @@ $(document).ready(function() {
 
     $(document).on("click", "#submit_vendors", function(event) {
 	event.preventDefault();
-	$("#submit_vendors").attr("disabled", true);	
+	$("#submit_vendors").attr("disabled", true);
         approvemodal.foundation('close');
 	var selectedRows = vendors_table.getSelectedRows();
 	var formdata = $("#vendornotifyform").serializeArray();
@@ -1774,8 +1858,8 @@ $(document).ready(function() {
             });
 	approvemodal.foundation('close');
     });
-    
-    
+
+
     $(document).on("submit", "#changedateform", function(event) {
 	event.preventDefault();
 	$.post($(this).attr("action"), $(this).serializeArray(),
@@ -1792,7 +1876,7 @@ $(document).ready(function() {
 	approvemodal.foundation('close');
 	reloadVendors($(".addvulmodal").attr('caseid'), vendors_table);
     });
-    
+
     $(document).on("submit", "#removevendorform", function(event) {
 	event.preventDefault();
 	$.post($(this).attr("action"), $(this).serializeArray(),
@@ -1804,7 +1888,7 @@ $(document).ready(function() {
                 permissionDenied(addmodal);
             });
 	approvemodal.foundation('close');
-	
+
     })
 
 
@@ -1833,7 +1917,7 @@ $(document).ready(function() {
 	    return "<i class=\"fas fa-eye-slash warning\" title=\"Participant has not viewed the case\"></i>"
 	}
     }
-    
+
     function roleFormatterFunction(cell, formatterParams, onRendered) {
         return "Role <i class=\"far fa-edit\"></i>";
     }
@@ -1852,7 +1936,7 @@ $(document).ready(function() {
 	    tooltipsHeader:true,
             selectable:true,
 	    dataEdited:function(data) {
-		
+
 		var csrftoken=getCookie('csrftoken');
 		for (i=0; i < data.length; i++) {
 		    var url = data[i].changetype;
@@ -1867,7 +1951,7 @@ $(document).ready(function() {
 			   })
 			.done(function() {
 			    reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
-			    
+
 			})
 		        .fail(function(d) {
 			    permissionDenied(addmodal);
@@ -1984,7 +2068,7 @@ $(document).ready(function() {
 		    .done(function() {
 			window.location.reload(true);
 		    });
-		
+
 	    }
 	    },
 	    {titleFormatter:statusFormatterFunction, field:"status", editor:"select", editorParams: {values: {"2":"Reopened", "4":"Closed", "6":"In Progress", "3":"Resolved"}},
@@ -1998,13 +2082,13 @@ $(document).ready(function() {
 		     })
 		     .fail(function(d) {
 			 permissionDenied(addmodal);
-		     });		 
+		     });
 	     }
 	    },
             {title:"Resolution", field:"resolution"},
 	    {title:"Modified", field:"date"},
         ],
-	
+
     });
 
     $(".task_status").on("click", "a", function(event) {
@@ -2026,9 +2110,9 @@ $(document).ready(function() {
     $(document).on("click", ".task_assign_cancel", function(event) {
 	$(this).parent().prev().show();
 	$(this).parent().remove();
-	
+
     });
-    
+
     $(document).on("click", ".task_assign_submit", function(event) {
 	/*var txt = $(this).prev();*/
 	var val = $(".task_reassign:last").val();
@@ -2042,15 +2126,15 @@ $(document).ready(function() {
 	    .fail(function(d) {
                 permissionDenied(adddepmodal);
             });
-	
+
     });
 
 
-    
+
     var filter_task = document.getElementById("filter_tasks");
     if (filter_task) {
 	filter_task.addEventListener("keyup", delaySearch(function(event) {
-            searchTasks(event, tasks_table);	    
+            searchTasks(event, tasks_table);
         },1000));
     }
 
@@ -2092,7 +2176,7 @@ $(document).ready(function() {
     var displayUserCard = function(instance, data) {
         instance.content(data);
     }
-    
+
     initTooltipster(".vviewed", umProfileStore, displayUserCard);
 
     $(document).on("click", "#mutecase", function(event) {
@@ -2105,7 +2189,7 @@ $(document).ready(function() {
             button.html(data["button"]);
         });
     });
-    
+
     $(document).on("closed.zf.reveal", "#statusmodal", function(event) {
 	var case_id = $('.addvulmodal').attr('caseid');
 	reloadVendors(case_id, vendors_table);
@@ -2114,7 +2198,7 @@ $(document).ready(function() {
 
     $(document).on("submit", "#notifyform", function(e) {
 	var $form = $(this);
-	
+
 	if ($form.data('submitted') === true) {
 	    // Previously submitted - don't submit again
 	    e.preventDefault();
@@ -2125,5 +2209,5 @@ $(document).ready(function() {
         // Keep chainability
 	return this;
     });
-    
+
 });

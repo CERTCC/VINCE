@@ -1622,8 +1622,6 @@ def parse_attachment(message_part):
         content_disposition = message_part.get("Content-Disposition", None)
     except AttributeError:
         return None
-    logger.debug("IN PARSE ATTACHMENT %s" % content_disposition)
-    logger.debug(message_part.get_content_type())
     if message_part.get_content_type() == "application/pgp-signature":
         # don't want pgp attachments
         return
@@ -2074,6 +2072,13 @@ def create_ticket_from_email(filename, body, bucket):
         logger.warning(f"Ignoring email TO: {to_email_only} FROM: {from_email} CERT_ID: {xcert_id} SUBJECT: {subject}")  
         return
     
+    # ignoring bounce messages from disabled Track users
+    bouncetext = "^Email Bounce Notification"
+    bounce = re.search(bouncetext, subject)
+    if bounce and from_email_only in settings.IGNORE_EMAILS_TO:
+        logger.warning(f"Ignoring bounce email TO: {to_email} CERT_ID: {xcert_id} SUBJECT: {subject}")
+        return
+
     email_msg = None
     # default the charset to utf-8, and we'll set it below if we get something valid
     email_msg_charset = 'utf-8'

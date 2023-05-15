@@ -1,5 +1,18 @@
 # VINCE Changelog
 
+Version 2.1.1  2023-05-02
+
+* Security updates fixing a number of dependencies - sqlparse, redis (GHSA-rrm6-wvj7-cwh2,CVE-2023-28859,CVE-2023-28858)
+* Updates (UAR) workflow for User joining Vendor Group GH Issue #94
+* INL Code updates to perform Product/Version for CVE records GH PR #104
+* INL Code updates for PDF download of VulNote GH PR #104
+* Async requests for VinceTrack Contacts to reduce page wait times
+* Check for Bounces before sending emails from vince/mailer.py
+* Add TERMS_URL to ensure Terms & Conditions are flexible
+* Fix CVSS Translator GH Issue #105
+* Check for notification-only addresses and provide error on Signup
+
+
 Version 2.0.7  2023-03-20
 
 * Security updates Django to 3.2.18 CVE-2023-24580, Remove python-futures (no longer used) GH Issues #91 #90 (Dependabot)
