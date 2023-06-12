@@ -31,7 +31,7 @@
 function reloadVendors() {
     var vuid = $("#vuid").html();
     var url_mask="/vuls/vendor/VU%23" + vuid;
-    $("#accordion").replaceWith("<div class='loading_gif'></div>");
+    $("#accordion").replaceWith("<div id='accordion' class='ui-accordion ui-widget ui-helper-reset'><div class='loading_gif'></div></div>");
     $.get(url_mask)
 	.done(function(data, textStatus, jqXHR) {
             $("#vendorinfo").html(data);
@@ -52,7 +52,7 @@ function reloadVendors() {
 function reloadVendorsStatus() {
     var vuid = $("#vuid").html();
     var url_mask="/vuls/vendorstatus/VU%23" + vuid;
-    $("#accordion").replaceWith("<div class='loading_gif'></div>");
+    $("#accordion").replaceWith("<div id='accordion' class='ui-accordion ui-widget ui-helper-reset'><div class='loading_gif'></div></div>");
     $.ajax({
      url: url_mask,
      success: function(data) {
@@ -72,9 +72,40 @@ function reloadVendorsStatus() {
    });
 }
 
-function printvunote() {
-   $('.accordion-expand-collapse a').click();
-   javascript:window.print();
+async function printvunote() {
+    /*
+      Preferably use addClass and removeClass shortcuts
+      and css appropriate to show relevant content only
+     */
+    $('body').addClass("print-friendly");
+    $('.callout.primary').hide();
+    $('.topbar-redbar').hide();
+    $('.site-title').hide();
+    $('.site-subtitle').hide();
+    $('.top-bar').hide();
+    $('nav').hide();
+    $('.sticky-container').hide();
+    $('.small-text-left').hide();
+    $('.accordion-header').click();
+    $('#moreVendorsLink').click();
+    $('#sponsorbar').hide();
+    $('#bottombar').hide();
+    $('#footer').hide();
+    $('.accordion-expand-collapse a').click();
+    await window.print();
+    console.log("done printing");
+    $('body').removeClass("print-friendly");
+    $('.callout.primary').show();
+    $('.topbar-redbar').show();
+    $('.site-title').show();
+    $('.site-subtitle').show();
+    $('.top-bar').show();
+    $('nav').show();
+    $('.sticky-container').show();
+    $('.small-text-left').show();
+    $('#sponsorbar').show();
+    $('#bottombar').show();
+    $('#footer').show();
 }
 
 function showInfo() {

@@ -91,7 +91,7 @@ function deepGet(obj,idir) {
 }
 
 
-function asyncLoad(fdiv,furl,fmethod,pdiv,formpost,silent) {
+function asyncLoad(fdiv,furl,fmethod,pdiv,formpost,silent,transform) {
     /* asyncload from furl(URL) to fdiv(Content div identifier) whose
        pdiv(Parent div identified) using fmethod(GET or POST)
        in the case of POST use the formpost(Form identified) that
@@ -131,7 +131,10 @@ function asyncLoad(fdiv,furl,fmethod,pdiv,formpost,silent) {
         data: fdata,
         success: function(data) {
 	    lockunlock(false,pdiv,fdiv);
-	    $(fdiv).html(data);
+	    if(transform && typeof(transform) == 'function')
+		$(fdiv).html(transform(data)).foundation();
+	    else
+		$(fdiv).html(data).foundation();
         },
 	error: function() {
 	    lockunlock(false,pdiv,fdiv);
@@ -171,8 +174,12 @@ function clickAsyncLoad(e) {
                 pdiv = $(el).data("parentdiv");
 	    let formpost = null;
 	    if($(el).data("form"))
-                formpost = $(el).data("form");	    
-	    asyncLoad(fdiv,furl,fmethod,pdiv,formpost,true);
+                formpost = $(el).data("form");
+	    let transform = null;
+	    if($(el).data("transform") && $(el).data("transform") in window
+	       && typeof(window[$(el).data("transform")]) == "function")
+		transform = window[$(el).data("transform")];
+	    asyncLoad(fdiv,furl,fmethod,pdiv,formpost,true,transform);
 	    /* Mark download as complete */
 	    $(el).attr("data-completeurl",furl);
         }
@@ -260,6 +267,15 @@ $(function () {
       tooltipClass: 'tooltipster-default'
       });
     */
+
+	var tabIDsoughtviaurl = $(location).prop('hash').substr(1);
+	
+	if (tabIDsoughtviaurl){
+		let divtoload = document.getElementById(tabIDsoughtviaurl);
+		if (divtoload && divtoload.classList.contains("asynchronized")){
+			divtoload.classList.add("asyncload","autoload");
+		};
+	};
 
     $('[vince-tooltip]').tooltip ({
 	tooltipClass: 'vince-tooltip-class',
@@ -610,9 +626,17 @@ $(function () {
 	a && parseFloat(a) ? c.push(a) : c.push(1);
 	return "rgba(" + c.join(",") + ")";
     }
-    function json_table(data) {
-	let tb = $('<table>');
+    function json_table(data,tr) {
+	/* If variable tr (transform) exists and is valid then transform
+	 the data before returning it*/
+	let tb = $('<table>').addClass("table");
 	for(x in data) {
+	    if(tr && x in tr) {
+		if(typeof(tr[x]) == "function")
+		    data[x] = tr[x](data[x]);
+		else
+		    continue;
+	    }
 	    tb.append($("<tr>").append($("<td>").text(x))
 		      .append($("<td>").text(data[x])));
 	}
@@ -705,12 +729,25 @@ $(function () {
     }
     /* If userapprove element exists display it and create user approve rows*/
     if($('#userapprove').data('href')) {
+	let two_weeks = 1209600000;
 	let uar_url = $('#userapprove').data('href');
 	$.getJSON(uar_url).done(function(data) {
 	    if("status_map" in data)
 		$('#userapprove').data('status_map',data.status_map);
             if("uar" in data) {
                 let incomplete = data.uar.filter(function(x) {
+		    if('created_at' in x) {
+			/* Skip data that is less than two weeks old */
+			try {
+			    let ctm = Date.parse(x.created_at);
+			    let now = Date.now();
+			    if((now - ctm) < two_weeks)
+				return false;
+			} catch(err) {
+			    console.log("Date parsing error "+err);
+			    console.log(x);
+			}
+		    }
 		    /* UNKNOWN is same as PENDING */
 		    return x.status == data.status_map.UNKNOWN; });
 		if(incomplete.length) {
@@ -769,7 +806,30 @@ $(function () {
 				if(rec) {
 				    let l = get_modal();
 				    l.data("rec",rec);
-				    let tb = json_table(rec);
+				    function dstatus(inp) {
+					let ret = inp;
+					 Object.keys(data.status_map)
+                                            .forEach(function(x) {
+						if(inp == data.status_map[x])
+                                                    ret = x;
+                                            }); console.log(l);
+                                        return ret;
+				    }
+				    function dtime(inp) {
+					try {
+					    let m = Date.parse(inp);
+					    return new Date(m).toLocaleString();
+					} catch(err) {
+					    console.log("Date parsing error "
+							+ err);
+					}
+					return inp;
+				    }
+				    let tb = json_table(rec,
+							{pk:false,
+							 thread_url: false,
+							 status: dstatus,
+							 created_at: dtime});
 				    $('#txmodal').html($("<div>")
 						      .addClass("modal-body")
 						      .append(tb))
@@ -785,7 +845,9 @@ $(function () {
 				    $('#xmodal').append(btnCancel);
 				}
 			    });
-		    }
+		    } 
+		} else {
+		    $('.uar-row').hide();
 		}
 	    }
 	}).fail(function() {

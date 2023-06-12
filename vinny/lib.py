@@ -83,9 +83,9 @@ def send_comm_worker_msg_all(to, subject, content, from_user, from_group):
                 },
             })
         
-        logger.debug(f"Response:{response}")
+        logger.debug(f"In send_comm_worker_msg_all Response:{response}")
     except:
-        logger.debug(traceback.format_exc())
+        logger.debug(f"Error in send_comm_worker_msg_all {traceback.format_exc()}")
 
 
 def send_comm_worker(post=None, message=None):
@@ -123,9 +123,10 @@ def send_comm_worker(post=None, message=None):
                     },
                 })
             
-        logger.debug(f"Response:{response}")
+        logger.debug(f"In send_comm_worker Response:{response}")
     except:
-        logger.debug(traceback.format_exc())
+        logger.debug(f"Error in send_comm_worker {traceback.format_exc()}")
+
 
 
 def vince_comm_send_sqs(msgtype, table, case, user, group, body, queue="Inbox", message=None):
@@ -171,10 +172,10 @@ def vince_comm_send_sqs(msgtype, table, case, user, group, body, queue="Inbox", 
                 },
              })
             
-        logger.debug(f"Response:{response}")
+        logger.debug(f"In vince_comm_send_sqs Response:{response}")
     except:
         send_sns('sending to update queue', 'send_sns_json failed', traceback.format_exc())
-        logger.debug(traceback.format_exc())
+        logger.debug(f"Error in vince_comm_send_sqs {traceback.format_exc()}")
 
 def get_vince_track_users():
     return User.objects.filter(groups__name='vincetrack')
@@ -225,7 +226,7 @@ def add_participant_case(data):
                                 user=User.objects.filter(username=data['user_added']).first())
             member.save()
         except:
-            logger.debug("Member already exists")
+            logger.debug(f"In add_participant_case Member already exists")
 
 
 def add_vendor_case(data):
@@ -263,7 +264,7 @@ def add_vendor_case(data):
                 member.save()
 
         else:
-            logger.debug("MAJOR PROBLEM - We don't have this contact. SEND AN ALERT")
+            logger.debug(f"In add_vendor_case MAJOR PROBLEM - We don't have this contact. SEND AN ALERT")
 
 def add_vul_case(data):
 
@@ -313,10 +314,9 @@ def send_sns(vul_id, issue, error):
             TopicArn=settings.VINCE_ERROR_SNS_ARN,
             Subject=subject,
             Message=error)
-        logger.debug("Response:{}".format(response))
-
-    except:
-        logger.debug('Error publishing to SNS')
+        logger.debug(f"In send_sns Response:{response}")
+    except Exception as e:
+        logger.debug(f"Exception in send_sns Error is {e}")
 
 
 def send_sns_json(form, subject, message):
@@ -332,21 +332,21 @@ def send_sns_json(form, subject, message):
                     'StringValue': form
                     }
                 })
-        logger.debug(f"Response:{response}")
-    except:
+        logger.debug(f"In send_sns_json Response:{response}")
+    except Exception as e:
         send_sns('publishing json', 'send_sns_json failed', traceback.format_exc())
-        logger.debug(traceback.format_exc())
+        logger.debug(f"Exception in send_sns Error is {e}")
+
 
 
 def get_usernames_from_md(text):
     """ Returns a unique usernames set from a text """
     usernames = set()
     html_text = markdown_helpers.markdown(text)
-    logger.debug(html_text)
+    logger.debug(f"In get_usernames_from_md, HTML text is {html_text}")
     soup = BeautifulSoup(html_text, 'html.parser')
     for mention in soup.select('a.user-mention'):
-        logger.debug(mention)
-        logger.debug(mention.get_text())
+        logger.debug(f"In get_usernames_from_md mention is {mention} and text is {mention.get_text()}")
         usernames.add(mention.get_text().replace('@', ''))
     return usernames
 
@@ -394,7 +394,7 @@ def send_usermention_notification(post, text):
     usernames = get_usernames_from_md(text)
     emails_sent = []
     vt_groups = list(GroupContact.objects.filter(vincetrack=True).values_list('contact__vendor_name', flat=True))
-    logger.debug(vt_groups)
+    logger.debug(f"In get_usernames_from_md the VT Groups are {vt_groups}")
     for username in usernames:
         u = User.objects.filter(vinceprofile__preferred_username=username).first()
         if u:
@@ -516,14 +516,11 @@ def get_user_preferences(post, user, role, tracking=None):
         if s == False:
             return False
 
-    logger.debug(user.vinceprofile.preferred_username)
-    logger.debug(user.vinceprofile.settings.get('email_daily', 1))
-    
     #does this user have daily notifications setup?                          
     s = user.vinceprofile.settings.get('email_daily', 1)
     if int(s) == 2:
-        # yes, send once daily                                     
-        logger.debug("CREATING POST NOTIFICATION")
+        # yes, send once daily
+        logger.debug(f"Sending daily digest sent for {user.username} according to preference")
         create_post_notification(post, user, tracking)
         return False
 
@@ -554,10 +551,9 @@ def send_post_email(post, emails):
                     continue
                 try:
                     send_post_notification(post, u.participant, role=role)
-                except:
-                    logger.debug("Failure in sending post notification")
+                except Exception as e:
+                    logger.debug(f"Failure in sending post notification error generated is {e} for user {u.participant}")
                     send_sns('sending post notification email', 'email failed', traceback.format_exc())
-                    logger.debug(traceback.format_exc())
                 sent_emails.append(u.participant.email)
                 create_mail_notice(u.participant, post.case)
         elif u.group:
@@ -584,10 +580,9 @@ def send_post_email(post, emails):
                         continue
                     try:
                         send_post_notification(post, us, track_id, role=role)
-                    except:
+                    except Exception as e:
                         send_sns('sending group notification email', 'email failed', traceback.format_exc())
-                        logger.debug("Failure in sending post notification")
-                        logger.debug(traceback.format_exc())
+                        logger.debug(f"Failure in sending post notification for {us}, error is {e}")
                     sent_emails.append(us.email)
                     create_mail_notice(us, post.case)
                     
@@ -643,12 +638,10 @@ def send_message_to_all_group(to_group, subject, content, from_user, from_group)
         # get all users
         to_list = User.objects.filter(is_active=True)
         to_list_str = 'all users'
-        logger.debug(to_list)
     elif to_group == '4':
         #staff
         to_list = User.objects.filter(is_active=True, is_staff=True)
         to_list_str = 'all staff'
-        logger.debug(to_list)
 
     #send all messages individually
 
@@ -660,7 +653,6 @@ def send_message_to_all_group(to_group, subject, content, from_user, from_group)
             #signal is disabled above so send email here
             send_newmessage_mail(msg, u)
             create_mail_notice(u)
-        except:
-            logger.warning(f"Error saving message for user {u}")
-            logger.warning(traceback.format_exc())
+        except Exception as e:
+            logger.warning(f"Error saving message for user {u} error is {e}")
 

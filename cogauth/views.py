@@ -1088,7 +1088,7 @@ class RegisterView(FormView):
                 return super().form_invalid(form)
         except Exception as e:
             logger.warning(f"Failed for recaptcha exception raised {e} from IP {ip}")
-        dup = User.objects.using('vincecomm').filter(email__iexact = email)
+        dup = User.objects.using('vincecomm').filter(email__iexact=email)
         if dup:
             reset_url = reverse('cogauth:init_password_reset')
             form._errors.setdefault("email", ErrorList([
@@ -1097,8 +1097,7 @@ class RegisterView(FormView):
             logger.warning(f"Attempt to register duplicate user {email} from IP {ip}")
             return super().form_invalid(form)
 
-        reserved = VinceCommEmail.objects.filter(email__iexact = form.cleaned_data['email'])
-
+        reserved = VinceCommEmail.objects.filter(email__iexact=form.cleaned_data['email'],email_list=True)
         if reserved:
             form._errors.setdefault("email", ErrorList(["Email already exists. Usernames are <b>CASE SENSITIVE</b>. This email is reserved, please use your personal email address for accounts."]))
             logger.warning(f"Attempt to register duplicate user {email} which is notification onlyfrom IP {ip}")

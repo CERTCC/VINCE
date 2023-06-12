@@ -14,9 +14,9 @@
     <li class="tabs-title is-active"><a aria-selected="true" data-tabs-target="tasks" href="#tasks"><i class="fas fa-list-alt"></i> Tasks</a></li>
     <li class="tabs-title"><a data-tabs-target="vuls" href="#vuls"><i class="fas fa-skull"></i> Vuls</a></li>
     <li class="tabs-title"><a data-tabs-target="vendors" href="#vendors"><i class="fas fa-users"></i> Vendors</a></li>
-    <li class="tabs-title"><a data-tabs-target="posts" href="#posts"><i class="fas fa-sticky-note"></i> Posts</a></li>
-    <li class="tabs-title"><a data-tabs-target="vulnote" href="#vulnote"><i class="fas fa-bookmark"></i> Vul Note</a></li>
-    <li class="tabs-title"><a data-tabs-target="participants" href="#participants"><i class="fas fa-users"></i> Participants</a></li>
+    <li class="tabs-title"><a data-tabs-target="posts" href="#posts" class="asyncclick" data-divid="posts"><i class="fas fa-sticky-note"></i> Posts</a></li>
+    <li class="tabs-title"><a data-tabs-target="vulnote" href="#vulnote" class="asyncclick" data-divid="vulnote"><i class="fas fa-bookmark"></i> Vul Note</a></li>
+    <li class="tabs-title"><a data-tabs-target="participants" href="#participants" class="asyncclick" data-divid="participants"><i class="fas fa-users"></i> Participants</a></li>
   </ul>
   <div class="tabs-content" data-tabs-content="case-tabs">
     <div class="tabs-panel" id="details">
@@ -169,134 +169,56 @@
       <div id="case_tasks" class="tabulator bootstrap">
       </div>
     </div>
+
     <div class="tabs-panel" id="vendors">
-      <!-- Link to open the modal -->
-      <div class="row">
-	<div class="large-9 medium-12 small-12 columns">
-	  <button class="button cmu tiny" id="addnewvendor" href="{% url 'vince:addvendor' %}"> <i class="fas fa-plus"></i> Add Vendor </button>
-	  <!--<a href="{% url 'vince:editvendorlist' case.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vendor</button></a>-->
-	  <button class="button cmu tiny" id="select-all-vendors" title="Select all" alt="Select all"> <i class="fas fa-check"></i> &nbsp; All </button>
-	  <button class="button cmu tiny" title="Unselect all" alt="Unselect all" id="deselect-all-vendors"> <i class="fas fa-square"></i>&nbsp; All </button>
-	  <button class="button cmu tiny" id="remove-vendor"> <i class="fas fa-trash"></i> Remove Vendor </button>
-	  <a href="#" data-href="{% url 'vince:approveall' case.id %}" id="approveall" class="button cmu tiny"><i class="fas fa-thumbs-up"></i> Approve all</a>
-	  {% if case.lotus_notes %}
-	  {% else %}
-	  <a href="#" class="button cmu tiny" id="notifyvendors"><i class="fas fa-paper-plane"></i> Send Notifications</a>
-	  <a href="#" class="button cmu tiny" id="notifyall"><i class="fas fa-paper-plane"></i> Notify All</a>	  
+		<!-- Link to open the modal -->
+		<div class="row">
+	  <div class="large-9 medium-12 small-12 columns">
+		<button class="button cmu tiny" id="addnewvendor" href="{% url 'vince:addvendor' %}"> <i class="fas fa-plus"></i> Add Vendor </button>
+		<!--<a href="{% url 'vince:editvendorlist' case.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vendor</button></a>-->
+		<button class="button cmu tiny" id="select-all-vendors"> Select All </button>
+		<button class="button cmu tiny" id="deselect-all-vendors"> Deselect All </button>
+		<button class="button cmu tiny" id="remove-vendor"> <i class="fas fa-trash"></i> Remove Vendor </button>
+		<a href="{% url 'vince:approveall' case.id %}" id="approveall" class="button cmu tiny"><i class="fas fa-check"></i> Approve all</a>
+		{% if case.lotus_notes %}
+		{% else %}
+		<a href="#" class="button cmu tiny" id="notifyvendors"><i class="fas fa-paper-plane"></i> Send Notifications</a>
+		{% endif %}
+		{% if case.lotus_notes %}{% else %}
+		<a class="button cmu tiny" href="{% url 'vinny:groupchatcase' vc_case.id %}">Start Group Thread</a>
+		{% endif %}
+	  </div>
+	  <div class="large-3 small-12 medium-12 columns large-text-right">
+		{% if vendorgroups %}
+		{% for g in vendorgroups %}
+		<span title="Group added to case" class="label"><a href="{% url 'vince:group' g.from_group.id %}">{{ g.from_group.name }}</a></span>
+		{% endfor %}
+		{% endif %}
+	  </div>
+		</div>
+	  <div class="reveal" id="statusmodal" data-reveal data-close-on-click="false"></div>	  
+		<div id="vendorlist">
+	  {% if vendors %}
+	  {% include 'vince/casevendors.html' %}
 	  {% endif %}
-	  {% if case.lotus_notes %}{% else %}
-	  <a class="button cmu tiny" href="{% url 'vinny:groupchatcase' vc_case.id %}">Start Group Thread</a>
-	  {% endif %}
-	</div>
-	<div class="large-3 small-12 medium-12 columns large-text-right">
-	  {% if vendorgroups %}
-	  {% for g in vendorgroups %}
-	  <span title="Group added to case" class="label"><a href="{% url 'vince:group' g.from_group.id %}">{{ g.from_group.name }}</a></span>
-	  {% endfor %}
-	  {% endif %}
-	</div>
-      </div>
-	<div class="reveal" id="statusmodal" data-reveal data-close-on-click="false"></div>	  
-      <div id="vendorlist">
-	{% if vendors %}
-	{% include 'vince/casevendors.html' %}
-	{% endif %}
-      </div>
-      {{ vendorsjs|json_script:"vendors_data" }}
-      <div id="vendors-table" class="tabulator bootstrap"></div>
-    </div>
-    <div class="tabs-panel" id="posts">
-      {% include 'vince/include/posts.html' %}
+		</div>
+		{{ vendorsjs|json_script:"vendors_data" }}
+		<div id="vendors-table" class="tabulator bootstrap"></div>
+	  </div>
+
+    <div class="tabs-panel asynchronized" id="posts" href="{% url 'vince:casepoststab' case.id %}">
+      <!-- async click loader -->
     </div>
     
-    <div class="tabs-panel" id="vulnote">
-      <div>
-	{% if vulnote %}
-	<a href="{% url 'vince:edit_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vul Note</button></a>
-	<ul class="dropdown menu" data-dropdown-menu="fake-dropdown-menu" role="menubar" id="download_drop">
-    	<li class="is-dropdown-submenu-parent opens-right" role="menuitem" aria-haspopup="true" data-is-click="false" aria-label="Download Options"><a href="#" class="button cmu tiny download_btn">Download</a>
-			<ul class="menu submenu is-dropdown-submenu first-sub vertical" data-submenu="" role="menu" id="download_menu">
-				<li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="{% url 'vince:download_vulnote' vulnote.id %}">JSON</a></li>
-				<li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="javascript:void(0)" id="download_html">HTML</a></li>
-				<li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="javascript:void(0)" id="download_pdf">PDF</a></li>
-			</ul>
-		</li>
-	</ul>
+	<div class="tabs-panel asynchronized" id="vulnote" href="{% url 'vince:casevulnotetab' case.id %}">
+	  <!-- async click loader -->
+	</div>
 
-	
-	<a href="{% url 'vince:changelog' vulnote.id %}"><button class="button cmu tiny"> <i class="fas fa-clock"></i> View Full History</button></a>
-	<button id="sharevulnote" class="button cmu tiny" action="{% url 'vince:sharevulnote' vulnote.id %}" {% if case.lotus_notes %}disabled{% endif %}> <i class="fas fa-share-square"></i> Share in VinceComm</button>
-	{% if vulnote.ticket_to_approve %}
-	{% if vulnote.ticket_to_approve.submitter_email != user.email %}
-	<a class="button cmu tiny" href="{% url 'vince:vulnotereviewal' vulnote.id %}"><i class="fas fa-tasks"></i> Review Vul Note</a>
-	{% endif %}
-	{% endif %}
-
-	{% if vulnote.approved %}
-	<a href="{% url 'vince:notify' case.id %}"><button class="button cmu tiny publishvulnote" action="{% url 'vince:publish' vulnote.id %}" {% if vulnote.ticket_to_approve.status != 4 %}disabled{% else %}{% if not case.can_be_resolved %}disabled{% endif %}{% endif %}><i class="fas fa-bell"></i> Publish</button></a>
-	{% else %}
-	<a href="{% url 'vince:newticket' case.id %}?approval=1" id="approvalrequest"><button class="button cmu tiny"> <i class="fas fa-hands-helping"></i> Request Approval</button></a>
-	{% if user.is_superuser %}
-	<button class="button cmu tiny" id="approvevulnote" action="{% url 'vince:approvevulnote' vulnote.id %}"><i class="fas fa-thumbs-up"></i> Approve for Publishing</button>
-	{% endif %}
-
-	{% endif %}
-	{% else %}
-	<a href="{% url 'vince:create' case.id %}"> <button class="button cmu tiny"> <i class="fas fa-plus"></i> Start Vul Note </button></a>
-	{% endif %}
-      </div>
-      {% include 'vince/include/changelog.html' %}
-    </div>
     <div id="approvenote" class="reveal" data-reveal data-close-on-click='false'></div>
-    <div class="tabs-panel" id="participants">
-      <div id="adduser" class="reveal" data-reveal data-close-on-click='false'>
-        <form id="adduserform" case="{{ case.id }}">
-	  <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Add new participant(s)</h5>
-            </div>
-            <div class="modal-body">
-              <label for="user">Search for a current VinceComm user:</label>
-              <input id="user" class="form-control" type="text" name="vendor" />
-	      <p>OR</p>
-	      <label for="contact">Search for a Contact/Vendor/Group:</label>
-	      <small class="form-text text-muted">  (Type "Group:" to search groups)</small>
-              <input id="contact" class="form-control" type="text" name="contact" />
-              <p>OR</p>
-	      <label for="newuser">Invite a user to signup for VinceComm</label>
-	      <input id="newuser" class="form-control" type="text" name="newuser" />
-	      
-              <p>Adding users (click submit to continue):</p>
-              <table class="hover unstriped" id="user-description">
-		
-              </table>
-	    </div>
-	    <div class="modal-footer text-right">
-	      <a href="#" id="cancelparticipant" class="hollow button" data-close type="cancel">Cancel</a>
-              <input type="submit" class="primary button" value="Submit">
-	    </div>
+
+	<div class="tabs-panel asynchronized" id="participants" href="{% url 'vince:caseparticipantstab' case.id %}">
+		<!-- async click loader -->
 	  </div>
-	  <button class="close-button" data-close aria-label="Close modal" type="button">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </form>
-      </div>
-      <p>
-	<button class="button cmu tiny" data-open="adduser"> <i class="fas fa-plus"></i> Add Participant </button>&nbsp;&nbsp;
-	<button class="button cmu tiny" id="select-all-participants"> Select All </button>
-        <button class="button cmu tiny" id="deselect-all-participants"> Deselect All </button>
-        <button class="button cmu tiny" id="remove-participant"> <i class="fas fa-trash"></i> Remove Participant </button>
-        {% if case.lotus_notes %}
-        {% else %}
-        <a href="#" class="button cmu tiny" id="notifyparticipants"><i class="fas fa-paper-plane"></i> Send Invitations</a>
-        {% endif %}
-      </p>
-      <div id="participant_list">
-	{% include 'vince/case_participants.html' %}
-      </div>
-      {{ participantsjs|json_script:"participant_data" }}
-      <div id="participant-table" class="tabulator bootstrap"></div>
-    </div>
   </div>
 </div>
 

@@ -1,5 +1,14 @@
 # VINCE Changelog
 
+Version 2.1.2  2023-06-09
+
+* VinceTrack CaseView,VinceCommUserView updated for Asynchronous calls for tab-based browsing.
+* Fixed GH Issue #111 PDF Links not working
+* Updated Vendor approval workflow with time lapse of 2 weeks of no-response from Vendor Admin
+* Fix bounce issues of creating tickets for dead/disabled users.
+* Dependabot security recommendations PyPi `cryptography` 39.0.1 to 41.0.0, `requests` 2.281 to 2.31.0, `django-ses` from 3.2.2 to 3.5.0
+* Fixed vincepubviews multiple choice field Years to be dynamic
+
 Version 2.1.1  2023-05-02
 
 * Security updates fixing a number of dependencies - sqlparse, redis (GHSA-rrm6-wvj7-cwh2,CVE-2023-28859,CVE-2023-28858)

@@ -49,8 +49,7 @@ WHY_NOT_CHOICES = [(1, 'I have not attempted to contact any vendors'),
                    (2, 'I have been unable to find contact information for a vendor'),
                    (3, 'Other')]
 YES_NO_CHOICES = [(1, "YES"), (2, "NO")]
-YEAR_CHOICES = [2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009, 2008,
-                2007, 2006, 2005, 2004, 2003, 2002, 2001, 2000]
+YEAR_CHOICES = [(y,y) for y in range(date.today().year,1999,-1)]
 
 # to restrict size of uploads
 # http://chriskief.com/2013/10/19/limiting-upload-file-size-with-django-forms/
@@ -105,6 +104,9 @@ class SearchForm(forms.Form):
         super(SearchForm, self).__init__(*args, **kwargs)
         self.fields['dateend'].initial = timezone.now
 
+    def to_list(self):
+        return [y[0] for y in YEAR_CHOICES]
+
     def clean(self):
         cleaned_data = super(SearchForm, self).clean()
         wordSearch1 = cleaned_data.get("wordSearch")
@@ -116,6 +118,77 @@ class SearchForm(forms.Form):
             raise forms.ValidationError("Please fill out fields.")
 
         return cleaned_data
+
+
+class GovReportForm(forms.ModelForm):
+    contact_name = forms.CharField(
+        max_length=100,
+        required=False,
+        label='Name', 
+        help_text='The name of the person submitting this form. You may use a pseudonym, alias, or handle in place of your real name.')
+    contact_org = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label='Organization', 
+        help_text='The name of the organization you are reporting on behalf of, if applicable.')
+    contact_email = forms.EmailField(
+        label='Email address', 
+        required=False,
+        max_length=100,
+        help_text='Your personal email address. Consider creating a free webmail account if you do not wish to share your email address.')
+    reporter_pgp = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 4, 'placeholder': 'ASCII-armored public PGP key or URL (optional, but helps us communicate securely with you)'}),
+        label='Public PGP key',
+        max_length=100000000,
+        required=False,
+        help_text="Optionally, if you would like to use PGP encrypted email, please include either your ASCII-armored PGP key or a URL to your key. CERT/CC will use this key for future correspondence."
+    )
+    contact_phone = forms.CharField(
+        widget=forms.TextInput(attrs={'placeholder': '+1 412-268-7090'}),
+        max_length=60, 
+        required=False, 
+        label='Telephone', 
+        validators=[validate_phone_number],
+        help_text='The telephone where we may reach you if necessary')
+    credit_release = forms.ChoiceField(
+        choices=[(True, 'Yes'), (False, 'No')],
+        label='Do you want to be acknowledged by name if DHS publishes a document based on this report?',
+        help_text='DHS will credit you unless otherwise specified.', 
+        required=True,
+        widget=forms.RadioSelect(attrs={'class' : 'ul_nobullet'}))
+    affected_website = forms.URLField(
+        widget=forms.TextInput(attrs={'placeholder': 'e.g., https://dhs.gov'}),
+        label='Affected Website', 
+        help_text='Please provide the URL to the domain affected by this vulnerability',
+        required=True,
+        max_length=200)
+    vul_description = forms.CharField(
+        max_length=10000, 
+        label='Proof of Concept Description', 
+        widget=forms.Textarea(), 
+        help_text='Please provide a description of the vulnerability and proof of concept information here.')
+
+    comments = forms.CharField(
+        max_length=20000, 
+        label='Any additional comments that will not be shared with vendors:', 
+        help_text='Comments in this box will be kept private and will not be included in any publication or shared with vendors.', 
+        required=False, 
+        widget=forms.Textarea())
+
+    user_file = RestrictedFileField(
+        label='Upload File',
+        help_text="You may specify one (1) related file to send us",
+        content_types=['application', 'text', 'image', 'video'],
+        required=False
+    )
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('label_suffix', '')
+        super(GovReportForm, self).__init__(*args,**kwargs)
+    
+    class Meta:
+        model = GovReport
+        fields = "__all__"
 
 
 class VulCoordForm(forms.ModelForm):

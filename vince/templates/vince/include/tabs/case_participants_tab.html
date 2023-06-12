@@ -1,0 +1,64 @@
+<div id="adduser" class="reveal" data-reveal data-close-on-click='false'>
+    <form id="adduserform" case="{{ case.id }}">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add new participant(s)</h5>
+            </div>
+            <div class="modal-body">
+                <label for="user">Search for a current VinceComm user:</label>
+                <input id="user" class="form-control" type="text" name="vendor" />
+                <p>OR</p>
+                <label for="contact">Search for a Contact/Vendor/Group:</label>
+                <small class="form-text text-muted">  (Type "Group:" to search groups)</small>
+                <input id="contact" class="form-control" type="text" name="contact" />
+                <p>OR</p>
+                <label for="newuser">Invite a user to signup for VinceComm</label>
+                <input id="newuser" class="form-control" type="text" name="newuser" />
+    
+                <p>Adding users (click submit to continue):</p>
+                <table class="hover unstriped" id="user-description">
+    
+                </table>
+            </div>
+            <div class="modal-footer text-right">
+                <a href="#" id="cancelparticipant" class="hollow button" data-close type="cancel">Cancel</a>
+                <input type="submit" class="primary button" value="Submit">
+            </div>
+        </div>
+        <button class="close-button" data-close aria-label="Close modal" type="button">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </form>
+</div>
+<p>
+    <button class="button cmu tiny" data-open="adduser"> <i class="fas fa-plus"></i> Add Participant </button>&nbsp;&nbsp;
+    <button class="button cmu tiny" id="select-all-participants"> Select All </button>
+    <button class="button cmu tiny" id="deselect-all-participants"> Deselect All </button>
+    <button class="button cmu tiny" id="remove-participant"> <i class="fas fa-trash"></i> Remove Participant </button>
+    {% if case.lotus_notes %}
+    {% else %}
+    <a href="#" class="button cmu tiny" id="notifyparticipants"><i class="fas fa-paper-plane"></i> Send Invitations</a>
+    {% endif %}
+</p>
+<div id="participant_list">
+    <div class="reveal" id="error-participant" data-reveal>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Error</h3>
+            </div>
+            <div class="modal-body">
+                <p><b><span id="error-participant-msg">Please only notify 1 participant at a time.</span></b></p>
+            </div>
+            <div class="modal-footer text-right">
+                <a href="#" class="hollow button" data-close type="cancel">Ok</a>
+            </div>
+        </div>
+        <button class="close-button" data-close aria-label="Close modal" type="button">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+</div>
+
+{{ participantsjs|json_script:"participant_data" }}
+
+<div id="participant-table" class="tabulator bootstrap"></div>
