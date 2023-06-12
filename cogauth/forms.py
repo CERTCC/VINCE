@@ -136,6 +136,9 @@ class COGResetPasswordForm(forms.Form):
         newpassword1 = cleaned_data.get('new_password1')
         newpassword2 = cleaned_data.get('new_password2')
 
+        if newpassword1 is None or newpassword2 is None:
+            raise forms.ValidationError("Password is required")
+
         if len(newpassword1) < 8:
             raise forms.ValidationError("Password does not meet length requirements")
         

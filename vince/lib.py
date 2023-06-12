@@ -1857,18 +1857,30 @@ def create_bounce_record(email_to, bounce_type, subject, ticket=None):
 
 def create_bounce_ticket(headers, bounce_info):
     subject = headers.get("subject")
-    email_to = headers.get("to")
+    #email_to = headers.get("to")
+    email_to = bounce_info.get("bouncedRecipients")
     email_to_str = ", ".join(email_to)
     email_from = headers.get("from")
     email_from_str = ", ".join(email_from)
     bounce_type = bounce_info.get('bounceType')
     date = headers.get("date")
 
-
-    if (bounce_type == "Transient") and VINCE_IGNORE_TRANSIENT_BOUNCES:
-        for email in email_to:
+    dead_users = []
+    for email in email_to:
+        if User.objects.filter(username=bemail,is_active=False):
+            logger.debug(f"Ignoring {email} as this user is inactive")
+            dead_users.append(email)
+        elif (bounce_type == "Transient") and VINCE_IGNORE_TRANSIENT_BOUNCES:
             create_bounce_record(email, bounce_type, subject)
-        return
+
+    if dead_users:
+        email_to = list(set(email_to) - set(dead_users))
+        email_to_str = ", ".join(email_to)
+        if not email_to:
+            logger(f"No valid bounced recipients found all recipients are inactive")
+            return
+
+
 
     ticket = None
     case = None

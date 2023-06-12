@@ -126,7 +126,6 @@ function del_tag(taggle, tag, modal){
 
 }
 
-
 $(document).ready(function() {
 
     if($('#largemodal').length < 1) {

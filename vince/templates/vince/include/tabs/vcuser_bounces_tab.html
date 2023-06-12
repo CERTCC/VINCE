@@ -1,0 +1,19 @@
+{% if bounces %}
+<table>
+  <tr>
+    <td>Ticket</td>
+    <td>Bounce Type</td>
+    <td>Date</td>
+  </tr>
+{% for bounce in bounces %}
+  <tr>
+    <td><a href="{{ bounce.ticket.get_absolute_url }}">{{ bounce.ticket.ticket_for_url }} {% autoescape off %}{{ bounce.ticket.get_status_html }}{% endautoescape %}</td>
+    <td>{{ bounce.get_bounce_type_display }}</td>
+        <td>{{ bounce.bounce_date|date:"Y-m-d" }}</td>
+
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No email bounces for this user.</p>
+{% endif %}

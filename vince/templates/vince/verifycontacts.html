@@ -23,63 +23,8 @@
     {% endfor %}
   </div>
 </div>
-<div class="row">
-  <div class="large-12 columns">
-    <div id="user-list">
-      {% if object_list %}
-      <div class="row list-row">
-        <div class="large-2 columns">
-	  <b>Ticket</b>
-	</div>
-        <div class="large-3 columns">
-	  <b>User</b>
-	</div>
-	<div class="large-3 columns">
-	  <b>Contact</b>
-	</div>
-	<div class="large-2 columns">
-	  <b>Status</b>
-        </div>
-	<div class="large-2 columns">
-	</div>
-      </div>
-      {% for u in object_list %}
-      <div class="row list-row">
-	<div class="large-2 columns">
-	  {% if u.ticket %}
-	  <a href="{{ u.ticket.get_absolute_url }}">[{{ u.ticket.ticket_for_url }}]</a>
-	  {% autoescape off %}{{ u.ticket.get_status_html }}{% endautoescape %}
-	  {% endif %}
-	</div>
-	<div class="large-3 columns">
-	  {{ u.user }}
-	</div>
-	<div class="large-3 columns">
-	  <a href="{% url 'vince:contact' u.contact.id %}">{{ u.contact.vendor_name }}</a>
-	</div>
-	<div class="large-2 columns">
-	  {% if u.approval_requested %}
-	  Approval Requested
-	  {% else %}
-	  Association Initiated
-	  {% endif %}
-	</div>
-	<div class="large-2 columns">
-	  {% if u.ticket %}
-	  {% if u.approval_requested %}
-	  <a href="{% url 'vince:complete_contact' u.id %}" class="complete button small cmu">Complete Association</a>
-        <a href="{% url 'vince:restart_contact' u.id %}" class="complete button small default">Restart</a>
-	  {% else %}
-	  <a href="{% url 'vince:contactreqauth' u.id %}" class="approve button small default">Request Authorization</a>
-	  {% endif %}
-	  {% endif %}
-	</div>
-      </div>
-      {% endfor %}
-      {% endif %}
-    </div>
-  </div>
-</div>
+
+{% include "vince/include/contacts_info.html" %}
 
 <div class="row">
   <div class="large-12 columns">

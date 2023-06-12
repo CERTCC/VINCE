@@ -252,6 +252,9 @@ function auto(data, taggle, tag_url, modal) {
 }
 
 $(document).ready(function() {
+
+    var tabsoughtviaurl = $(location).prop('hash').substr(1);
+
     $('a').each(function () {
         $(this).qtip({
             content: $(this).attr("title"),
@@ -276,111 +279,6 @@ $(document).ready(function() {
             form.addEventListener("submit", searchComms);
 	}
     }
-    $('#download_html').on("click", function() {
-	var vulnote = $('#vulnote a').attr('href');
-	$.get(vulnote).done(function(h) {
-            var plainText = $($.parseHTML(h)).find("#id_content").val();
-	    var tarea = document.createElement("textarea");
-	    tarea.style.display = "none";
-	    tarea.id = "ccB";
-	    document.body.appendChild(tarea);
-            var simplemde = new EasyMDE({element: tarea})
-            var simpleHTML = simplemde.markdown(plainText);
-            var link = document.createElement("a");
-            link.download = $('#vutitle').html() + " - Notice (Draft).html";
-            link.href = "data:text/html;charset=utf8,"+ encodeURIComponent(simpleHTML);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-	    document.body.removeChild(tarea);
-	    delete tarea;
-            delete link;
-	});
-    });
-
-    $('#download_pdf').on("click", function() {
-        var vulnote = $('#vulnote a').attr('href');
-        $.get(vulnote).done(function(h) {
-            var doc = new jsPDF();
-            var specialElementHandlers = {
-                '#editor': function (element, renderer) {
-                    return true;
-                }
-            };
-            var plainText = $($.parseHTML(h)).find("#id_content").val();
-            let cleanText = plainText.replace(/\“/g, "\"").replace(/\”/g, "\"").replace(/\’/g, "\'").replace(/\—/g, "\-")
-            var tarea = document.createElement("textarea");
-            tarea.style.display = "none";
-            tarea.id = "ccB";
-            document.body.appendChild(tarea);
-            var simplemde = new EasyMDE({element: tarea})
-            var simpleHTML = simplemde.markdown(cleanText);
-            margins = {
-                bottom:10,
-                top:15,
-                left:10,
-                right:10,
-                width:170
-            };
-
-            // Set watermark
-            doc.setPage(0);
-            doc.setFont("helvetica");
-            doc.setFontType("normal");
-            doc.setTextColor(220,220,220);
-            doc.setFontSize(70);
-            doc.text("EMBARGOED", 50, doc.internal.pageSize.height - 120, null, 45);
-
-            doc.fromHTML(
-                simpleHTML, 
-                margins.left, 
-                margins.top, 
-                {
-                    'width': margins.width,
-                        'elementHandlers': specialElementHandlers
-                },
-                function (dispose) {
-                }, margins
-            );
-            var pageCount = doc.internal.getNumberOfPages();
-            console.log(pageCount)
-            for(i = 0; i < pageCount; i++) { 
-                doc.setPage(i);
-                // Set header
-                let amberPosition = 94.5;
-                let amberTop = 3
-                doc.setFillColor(0,0,0);
-                doc.rect(amberPosition, amberTop, 21.2, 5, 'F');
-
-                doc.setFont("times");
-                doc.setFontType("bold");
-                doc.setFontSize(10);
-                doc.setTextColor(245, 194, 66);
-                doc.text(amberPosition,amberTop+4, "TLP:AMBER");
-
-                doc.setFontSize(10);
-                doc.setTextColor(255,0,0);
-                doc.text(19, 12, "The information within this document is to be restricted to participants’ organizations only until publicly released.");
-
-                doc.setFontSize(10);
-                doc.setTextColor(150);
-                doc.text(7, 5, "EMBARGOED");
-                doc.text(179, 5, "EMBARGOED");
-
-                // Set footer
-                let amberBottom = 275
-                doc.setFillColor(0,0,0);
-                doc.rect(amberPosition, amberBottom, 21.2, 5, 'F');
-
-                doc.setFont("times");
-                doc.setFontType("bold");
-                doc.setFontSize(10);
-                doc.setTextColor(245, 194, 66);
-                doc.text(amberPosition,amberBottom+4, "TLP:AMBER");
-            }
-            doc.save($('#vutitle').html() + " - Notice (Draft).pdf");
-        });
-    });
 
     if (document.getElementById("user_taggs")) {
 	var tag_url = $("#user_taggs").attr("href");
@@ -591,10 +489,6 @@ $(document).ready(function() {
 	$("#project-description").find("tr").remove();
     });
 
-    $(document).on("click", '#cancelparticipant', function(event) {
-        $("#user-description").find("tr").remove();
-    });
-
     $(document).on("click", '#changestatus', function(event) {
         event.preventDefault();
 	$.ajax({
@@ -616,79 +510,79 @@ $(document).ready(function() {
             url: $(this).attr("href"),
             type: "GET",
             success: function(data) {
-            addmodal.html(data).foundation('open');
-            $.getJSON("/vince/api/vendors/", function(data) {
-                vend_auto(data);
-            });
-                },
+		addmodal.html(data).foundation('open');
+		$.getJSON("/vince/api/vendors/", function(data) {
+                    vend_auto(data);
+		});
+            },
             error: function(xhr, status) {
-                    permissionDenied(addmodal);
-                }
+                permissionDenied(addmodal);
+            }
 
         });
     });
 
-    $(document).on("click", '.confirmpush', function(event) {
-	event.preventDefault();
-	$.ajax({
+    function confirmpushhandler(event){
+        event.preventDefault();
+        $.ajax({
             url: $(this).attr("href"),
             type: "GET",
             success: function(data) {
                 addmodal.html(data).foundation('open');
             },
-	    error: function(xhr, status) {
-		permissionDenied(addmodal);
+            error: function(xhr, status) {
+                permissionDenied(addmodal);
             }
+        });        
+    };
 
-        });
-    });
+    $(document).on("click", '.confirmpush', confirmpushhandler);
 
-    $(document).on("click", '.postremove', function(event) {
+    function postremovehandler(event){
         event.preventDefault();
-	$.ajax({
+    	$.ajax({
             url: $(this).attr("href"),
             type: "GET",
             success: function(data) {
-		addmodal.html(data).foundation('open');
+	        addmodal.html(data).foundation('open');
             },
             error: function(xhr, status) {
 		permissionDenied(addmodal);
             }
-
         });
-    });
+    };
 
+    $(document).on("click", '.postremove', postremovehandler);
 
     $(document).on("click", '.addvulmodal', function(event) {
-	event.preventDefault();
-	var caseid = $(this).attr("caseid");
-
+        event.preventDefault();
+        var caseid = $(this).attr("caseid");
         $.ajax({
             url: "/vince/case/"+caseid+"/addvul/",
             type: "GET",
             success: function(data) {
-		largemodal.html(data).foundation('open');
+	        largemodal.html(data).foundation('open');
 		initiate_vul_add_form();
 	    },
 	    error: function(xhr, status) {
                 permissionDenied(addmodal);
             }
-	});
+    	});
     });
 
-
-    $(document).on("click", '.openpost', function(event) {
+    function openposthandler(event){
         event.preventDefault();
         var url = $(this).attr("href");
-
         $.ajax({
             url: url,
             type: "GET",
             success: function(data) {
-		addmodal.html(data).foundation('open');
+        	addmodal.html(data).foundation('open');
             }
         });
-    });
+    };
+
+    $(document).on("click", '.openpost', openposthandler);
 
     $(document).on("click", '.openeditmodal', function(event) {
         event.preventDefault();
@@ -903,36 +797,6 @@ $(document).ready(function() {
     });
 
 
-    $(document).on("click", '#notifyparticipants', function(event) {
-        event.preventDefault();
-        var vendorlist = "";
-        var selectedRows = participants_table.getSelectedRows();
-        if (selectedRows.length > 0) {
-	    if (selectedRows.length > 1) {
-		$("#error-participant-msg").html("Please only notify 1 participant at a time.");
-		$("#error-participant").foundation('open');
-	    } else {
-		var cpid= selectedRows[0].getData().id;
-
-		$.ajax({
-		    url: "/vince/notify/"+cpid+"/",
-		    type: "GET",
-		    success: function(data) {
-			addmodal.html(data).foundation('open');
-
-		    },
-		    error: function(xhr, status) {
-			permissionDenied(addmodal);
-		    }
-		});
-	    }
-        } else {
-	    $("#error-participant-msg").html("Please choose a participant");
-	    $("#error-participant").foundation('open');
-        }
-
-    });
-
     $(document).on("click", '.downloadcve', function(event) {
 	event.preventDefault();
 	var vulid = $(this).attr('vulid');
@@ -1022,63 +886,6 @@ $(document).ready(function() {
     }
 
 
-    function _doFocusUserStuff(event, ui) {
-        if (ui.item) {
-            var $item = ui.item;
-            $("#user").val($item.value);
-        }
-        return false;
-    }
-
-    function _doSelectUserStuff(event, ui) {
-        if (ui.item) {
-            var $item = ui.item;
-            renderTable("#user-description", $item);
-            $("#user").val('');
-            $("#user").focus();
-        }
-        return false;
-    }
-
-
-    function _doFocusContactStuff(event, ui) {
-        if (ui.item) {
-            var $item = ui.item;
-            $("#contact").val($item.value);
-        }
-        return false;
-    }
-
-    function _doSelectContactStuff(event, ui) {
-        if (ui.item) {
-            var $item = ui.item;
-            renderTable("#user-description", $item);
-            $("#contact").val('');
-            $("#contact").focus();
-        }
-        return false;
-    }
-
-    function user_auto(data) {
-	var autocomplete = $("#user").tablecomplete({
-            minLength: 1,
-            source: data,
-            focus: _doFocusUserStuff,
-            select: _doSelectUserStuff
-
-	});
-    }
-
-
-    function contact_auto(data) {
-	var autocomplete = $("#contact").tablecomplete({
-	    minLength: 1,
-	    source: data,
-	    focus: _doFocusContactStuff,
-	    select:_doSelectContactStuff
-	});
-    }
-
     /*
       $(window).keydown(function(event){
       if(event.keyCode == 13) {
@@ -1098,55 +905,6 @@ $(document).ready(function() {
             }
         });
     }
-
-
-    var input = document.getElementById("newuser");
-    if (input) {
-	input.addEventListener("keydown", function(event) {
-	    if (event.keyCode == 13) {
-		event.preventDefault();
-		renderTable("#user-description", {value:$("#newuser").val(), label:$("#newuser").val()});
-		$("#newuser").val('');
-		$("#newuser").focus();
-	    }
-	});
-    }
-
-    /*$.getJSON("/vince/api/vendors/", function(data) {
-      vend_auto(data);
-      });*/
-
-    $.getJSON("/vince/api/users/", function(data) {
-	user_auto(data);
-    });
-
-    $.getJSON("/vince/api/contacts/", function(data) {
-	contact_auto(data);
-    });
-
-    $("#adduserform").submit(function(event) {
-        event.preventDefault();
-        var vendors = [];
-        var csrftoken = getCookie('csrftoken');
-        var rows = $("#user-description > tr");
-        var case_id = $(this).attr('case');
-
-        $.each(rows, function(index, item) {
-            vendors.push(item.cells[0].innerText);
-        });
-        var url = "/vince/addparticipant/";
-
-        $.post(url, {'csrfmiddlewaretoken': csrftoken, 'users': vendors,
-                     'case_id': case_id}, function(data) {
-			 reloadParticipants(case_id, participants_table);
-                     })
-            .done(function() {
-                $("#adduser").foundation('close');
-	    })
-	    .fail(function(d) {
-		permissionDenied(addmodal);
-            });
-    });
 
     $(document).on("click", '.changetype', function(event) {
 	event.preventDefault();
@@ -1194,64 +952,23 @@ $(document).ready(function() {
 
     var approvemodal = $("#approvenote");
 
-    $(document).on("click", "#approvevulnote", function(event) {
-	event.preventDefault();
-        var url = $(this).attr("action");
-
-        $.ajax({
-            url: url,
-            type: "GET",
-            success: function(data) {
-		approvemodal.html(data).foundation('open');
-	    },
-	    error: function(xhr, status) {
-                permissionDenied(addmodal);
-            }
-
-	});
-
-    });
-
-
-    $(document).on("click", ".publishvulnote", function(event) {
-	event.preventDefault();
-	var url = $(this).attr("action");
-
-	$.ajax({
-            url: url,
-            type: "GET",
-            success: function(data) {
-		approvemodal.html(data).foundation('open');
-            },
-	    error: function(xhr, status) {
-                permissionDenied(addmodal);
-            }
-
-	});
-
-    });
-
-
-
-
-    $(document).on("click", "#sharevulnote", function(event) {
+    function publishvulnotehandler(event) {
         event.preventDefault();
         var url = $(this).attr("action");
-
+	
         $.ajax({
             url: url,
             type: "GET",
             success: function(data) {
                 approvemodal.html(data).foundation('open');
-		init_modal_markdown();
             },
-	    error: function(xhr, status) {
+            error: function(xhr, status) {
                 permissionDenied(addmodal);
             }
+        });            
+    }
 
-        });
-
-    });
+    $(document).on("click", ".publishvulnote", publishvulnotehandler)
 
     $(document).on("click", ".rmdep", function(event) {
         event.preventDefault();
@@ -1357,7 +1074,7 @@ $(document).ready(function() {
 
     if (document.getElementById('vuls_data')) {
         var data = JSON.parse(document.getElementById('vuls_data').textContent);
-	    console.log(data);
+	console.log(data);
     }
 
 
@@ -1755,11 +1472,11 @@ $(document).ready(function() {
 	}
     });
     function alertmodal(modal,msg) {
-    modal.html("<div class\"fullmodal\"><div class=\"modal-body\"><p> " +
-               msg + "</p> <div class=\"modal-footer text-right\">" +
-               "<a href=\"#\" class=\"hollow button cancel_confirm\" " +
-	       "data-close type=\"cancel\">Ok</a></div></div></div>")
-        .foundation('open');
+	modal.html("<div class\"fullmodal\"><div class=\"modal-body\"><p> " +
+		   msg + "</p> <div class=\"modal-footer text-right\">" +
+		   "<a href=\"#\" class=\"hollow button cancel_confirm\" " +
+		   "data-close type=\"cancel\">Ok</a></div></div></div>")
+            .foundation('open');
     }
     vendors_table = Tabulator.prototype.findTable("#vendors-table")[0]
     approvemodal = $("#approvenote");
@@ -1789,10 +1506,10 @@ $(document).ready(function() {
 		approvemodal.find(".modal-footer")
 		    .prepend("&nbsp;")
 		    .prepend($("<button>").addClass("button cmu")
-			    .html("Notify anyway!")
-			    .on("click",function(e) {
-				notify_vendors(e,true);
-			    }));
+			     .html("Notify anyway!")
+			     .on("click",function(e) {
+				 notify_vendors(e,true);
+			     }));
 		return;
 	    }
 	} else {
@@ -1922,101 +1639,7 @@ $(document).ready(function() {
         return "Role <i class=\"far fa-edit\"></i>";
     }
 
-    if (document.getElementById('participant_data')) {
-        var participants_data = JSON.parse(document.getElementById('participant_data').textContent);
-        console.log(data);
-    }
-
     var participants_table = null;
-
-    if (participants_data) {
-        participants_table = new Tabulator("#participant-table", {
-            data:participants_data, //set initial table data
-            layout:"fitColumns",
-	    tooltipsHeader:true,
-            selectable:true,
-	    dataEdited:function(data) {
-
-		var csrftoken=getCookie('csrftoken');
-		for (i=0; i < data.length; i++) {
-		    var url = data[i].changetype;
-		    var type = data[i].role;
-		    if (type == "Coordinator") {
-			type = "True";
-		    } else {
-			type = "False";
-		    }
-		    $.post(url, {'csrfmiddlewaretoken': csrftoken, 'coordinator': type},
-			   function(data) {
-			   })
-			.done(function() {
-			    reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
-
-			})
-		        .fail(function(d) {
-			    permissionDenied(addmodal);
-			});
-		}
-	    },
-	    placeholder: "There are no participants in this case",
-            columns:[
-                {title:"Name", field:"name", formatter:participantClickFunction},
-                {title:"Date Notified", field:"notified"},
-                {titleFormatter: roleFormatterFunction, field:"role", editor:"select", editorParams: {values: {"Coordinator":"Coordinator", "Reporter":"Reporter"}}},
-		{title:"Seen", field:"seen", formatter:participantSeenFormatter},
-		{title:"Status", field:"status", formatter: statusFormatter},
-            ],
-
-        });
-    }
-
-
-    //select row on "select all" button click
-    $("#select-all-participants").click(function(){
-        participants_table.selectRow();
-    });
-
-    //deselect row on "deselect all" button click
-    $("#deselect-all-participants").click(function(){
-        participants_table.deselectRow();
-    });
-
-
-    $(document).on("click", '#remove-participant', function(event) {
-	event.preventDefault();
-        var selectedRows = participants_table.getSelectedRows();
-	flag = true;
-	for (i=0; i < selectedRows.length; i++) {
-            while (flag == false) {
-                window.setTimeout(checkFlag, 100);
-            }
-            if (selectedRows[i].getData().rm_confirm) {
-		flag = false;
-		$.ajax({
-                    url: selectedRows[i].getData().remove_link,
-                    success: function(data) {
-			approvemodal.html(data).foundation('open');
-                    },
-		    error: function(xhr, status) {
-			permissionDenied(approvemodal);
-		    }});
-            } else {
-		$.ajax({
-                    url: selectedRows[i].getData().remove_link,
-                    success: function(data) {
-			sleep(2000);
-			reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
-                    },
-		    error: function(xhr, status) {
-			permissionDenied(approvemodal);
-		    }});
-		flag = true;
-            }
-	}
-
-        reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
-    });
-
 
     function ticketClickFunction(cell) {
 	var url_mask = cell.getRow().getData().url;
@@ -2209,5 +1832,532 @@ $(document).ready(function() {
         // Keep chainability
 	return this;
     });
+
+    function initialize_participants_tab() {
+
+        if (document.getElementById('participant_data')) {
+            var participants_data = JSON.parse(document.getElementById('participant_data').textContent);
+            console.log(data);
+        }    
+
+        $(document).on("click", '#cancelparticipant', function(event) {
+            $("#user-description").find("tr").remove();
+        });
+
+        $(document).on("click", '#notifyparticipants', function(event) {
+            event.preventDefault();
+            var vendorlist = "";
+            var selectedRows = participants_table.getSelectedRows();
+            if (selectedRows.length > 0) {
+		if (selectedRows.length > 1) {
+		    $("#error-participant-msg").html("Please only notify 1 participant at a time.");
+		    $("#error-participant").foundation('open');
+		} else {
+		    var cpid= selectedRows[0].getData().id;
+		    
+		    $.ajax({
+			url: "/vince/notify/"+cpid+"/",
+			type: "GET",
+			success: function(data) {
+			    addmodal.html(data).foundation('open');
+			    
+			},
+			error: function(xhr, status) {
+			    permissionDenied(addmodal);
+			}
+		    });
+		}
+            } else {
+		$("#error-participant-msg").html("Please choose a participant");
+		$("#error-participant").foundation('open');
+            }
+	    
+        });
+
+        function _doFocusUserStuff(event, ui) {
+            if (ui.item) {
+                var $item = ui.item;
+                $("#user").val($item.value);
+            }
+            return false;
+        }
+	
+        function _doSelectUserStuff(event, ui) {
+            if (ui.item) {
+                var $item = ui.item;
+                renderTable("#user-description", $item);
+                $("#user").val('');
+                $("#user").focus();
+            }
+            return false;
+        }
+	
+	
+        function _doFocusContactStuff(event, ui) {
+            if (ui.item) {
+                var $item = ui.item;
+                $("#contact").val($item.value);
+            }
+            return false;
+        }
+	
+        function _doSelectContactStuff(event, ui) {
+            if (ui.item) {
+                var $item = ui.item;
+                renderTable("#user-description", $item);
+                $("#contact").val('');
+                $("#contact").focus();
+            }
+            return false;
+        }
+	
+        function user_auto(data) {
+            var autocomplete = $("#user").tablecomplete({
+                minLength: 1,
+                source: data,
+                focus: _doFocusUserStuff,
+                select: _doSelectUserStuff
+		
+            });
+        }
+	
+	
+        function contact_auto(data) {
+            var autocomplete = $("#contact").tablecomplete({
+		minLength: 1,
+		source: data,
+		focus: _doFocusContactStuff,
+		select:_doSelectContactStuff
+            });
+        }
+	
+
+        var input = document.getElementById("newuser");
+        if (input) {
+            input.addEventListener("keydown", function(event) {
+		if (event.keyCode == 13) {
+		    event.preventDefault();
+		    renderTable("#user-description", {value:$("#newuser").val(), label:$("#newuser").val()});
+		    $("#newuser").val('');
+		    $("#newuser").focus();
+		}
+            });
+        }
+	
+        /*$.getJSON("/vince/api/vendors/", function(data) {
+          vend_auto(data);
+          });*/
+	
+        $.getJSON("/vince/api/users/", function(data) {
+            user_auto(data);
+        });
+	
+        $.getJSON("/vince/api/contacts/", function(data) {
+            contact_auto(data);
+        });
+	
+        $("#adduserform").submit(function(event) {
+            event.preventDefault();
+            var vendors = [];
+            var csrftoken = getCookie('csrftoken');
+            var rows = $("#user-description > tr");
+            var case_id = $(this).attr('case');
+	    
+            $.each(rows, function(index, item) {
+                vendors.push(item.cells[0].innerText);
+            });
+            var url = "/vince/addparticipant/";
+	    
+            $.post(url, {'csrfmiddlewaretoken': csrftoken, 'users': vendors,
+                         'case_id': case_id}, function(data) {
+			     reloadParticipants(case_id, participants_table);
+                         })
+                .done(function() {
+                    $("#adduser").foundation('close');
+		})
+		.fail(function(d) {
+		    permissionDenied(addmodal);
+                });
+        });
+	
+        if (participants_data) {
+            participants_table = new Tabulator("#participant-table", {
+                data:participants_data, //set initial table data
+                layout:"fitColumns",
+		tooltipsHeader:true,
+                selectable:true,
+		dataEdited:function(data) {
+		    
+		    var csrftoken=getCookie('csrftoken');
+		    for (i=0; i < data.length; i++) {
+			var url = data[i].changetype;
+			var type = data[i].role;
+			if (type == "Coordinator") {
+			    type = "True";
+			} else {
+			    type = "False";
+			}
+			$.post(url, {'csrfmiddlewaretoken': csrftoken, 'coordinator': type},
+			       function(data) {
+			       })
+			    .done(function() {
+				reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
+				
+			    })
+			    .fail(function(d) {
+				permissionDenied(addmodal);
+			    });
+		    }
+		},
+		placeholder: "There are no participants in this case",
+                columns:[
+                    {title:"Name", field:"name", formatter:participantClickFunction},
+                    {title:"Date Notified", field:"notified"},
+                    {titleFormatter: roleFormatterFunction, field:"role", editor:"select", editorParams: {values: {"Coordinator":"Coordinator", "Reporter":"Reporter"}}},
+		    {title:"Seen", field:"seen", formatter:participantSeenFormatter},
+		    {title:"Status", field:"status", formatter: statusFormatter},
+                ],
+		
+            });
+        }
+	
+        //select row on "select all" button click
+        $("#select-all-participants").click(function(){
+            participants_table.selectRow();
+        });
+	
+        //deselect row on "deselect all" button click
+        $("#deselect-all-participants").click(function(){
+            participants_table.deselectRow();
+        });
+        
+        $(document).on("click", '#remove-participant', function(event) {
+            event.preventDefault();
+            var selectedRows = participants_table.getSelectedRows();
+            flag = true;
+            for (i=0; i < selectedRows.length; i++) {
+                while (flag == false) {
+                    window.setTimeout(checkFlag, 100);
+                }
+                if (selectedRows[i].getData().rm_confirm) {
+		    flag = false;
+		    $.ajax({
+                        url: selectedRows[i].getData().remove_link,
+                        success: function(data) {
+			    approvemodal.html(data).foundation('open');
+                        },
+			error: function(xhr, status) {
+			    permissionDenied(approvemodal);
+			}});
+                } else {
+		    $.ajax({
+                        url: selectedRows[i].getData().remove_link,
+                        success: function(data) {
+			    sleep(2000);
+			    reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
+                        },
+			error: function(xhr, status) {
+			    permissionDenied(approvemodal);
+			}});
+		    flag = true;
+                }
+            }
+	    
+            reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
+        });
+
+    }
+
+    function initialize_vulnote_tab() {
+
+        function downloadvulnote(){
+            let format = $(this).data('format');
+            let JSONvulnoteurl = $('#download_json').attr('href');
+            /*jsPDF default properties ratio, xmax, ymax  */
+            let rt = 6;
+            let lineChars = 95;
+            let randClass = Math.random().toString(32).substr(2);
+            $.getJSON(JSONvulnoteurl).done(function(JSONdata){
+                if(!("content" in JSONdata)) {
+                    console.log("Error");
+                    console.log(JSONdata);
+                    return
+                }
+                let cleanText = JSONdata.content.replace(/\“/g, "\"").replace(/\”/g, "\"").replace(/\’/g, "\'").replace(/\—/g, "\-");
+                var tarea = document.createElement("textarea");
+                tarea.style.display = "none";
+                tarea.id = "ccB";
+                document.body.appendChild(tarea);
+                var simplemde = new EasyMDE({element: tarea});
+                var simpleHTML = simplemde.markdown(cleanText);
+                if (format === "html") {
+                    var link = document.createElement("a");
+                    link.download = $('#vutitle').html() + " - Notice (Draft).html";
+                    link.href = "data:text/html;charset=utf8," + encodeURIComponent(simpleHTML);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    document.body.removeChild(tarea);
+                    delete tarea;
+                    delete link;
+                    return;
+                } else if (format === "pdf") {
+                    let doc = new jsPDF();
+                    let fClass = '.' + randClass;
+                    let specialElementHandlers = {};
+                    specialElementHandlers = {
+                        [fClass]: function (e, o) {
+                            if(!('href' in e)) {
+				return false;
+                            }
+                            if(e.innerHTML == e.href) {
+				console.log(e);
+				return false;
+                            }
+                            if(e.href.indexOf("http") != 0){
+				return false;
+                            }
+                            let xid = Math.random().toString(32).substr(2);
+                            $(e).attr('id',xid);
+                            // stick the id at the beginning the innerText of the <a> element. This is to ensure that we're counting to the right instance of (for example) "Google" if
+                            // Google is mentioned multiple times in the html element that contains our current <a>:
+                            e.innerText = e.id + e.innerText;
+			    
+                            // acquire the parent of the <a> element:
+                            let m = $(e).parent();
+                            let mstringbeforexid = m.text().split(xid)[0];
+                            let wordsinmbeforexid = mstringbeforexid.replace(/\s+/g,' ').split(" ");
+			    
+                            // remove the id we put at the beginning of the innerText of the <a> element
+                            e.innerText = e.innerText.substring(e.id.length);
+			    
+                            let wordsine = e.innerText.split(" ");
+                            let widthsofar = parseInt(doc.getTextWidth(wordsinmbeforexid[0])/rt)
+                            let ycounter = 0;
+                            let x = 0;
+                            let y = 0;
+			    
+                            // this bit gets us the x and y position where the text before the <a> tag ends:
+                            for (let i = 1; i < wordsinmbeforexid.length; i++){
+				if (widthsofar + parseInt(doc.getTextWidth(" " + wordsinmbeforexid[i])/rt) < margins.width) {
+                                    widthsofar += parseInt(doc.getTextWidth(" " + wordsinmbeforexid[i])/rt);
+				} else {
+                                    ycounter++
+                                    widthsofar = parseInt(doc.getTextWidth(wordsinmbeforexid[i])/rt)
+				}
+                            }
+                            if (widthsofar != 0){
+				widthsofar += parseInt(doc.getTextWidth(" ")/rt);
+                            }
+			    
+                            // there are now two cases. Either the text of the link together with the text preceding it in the <a>'s parent exceeds the margin, or not. If not, then no word wrap affects the positioning
+                            // of the link, so we can just place the link at the found location, as follows:
+                            if (widthsofar + parseInt(doc.getTextWidth(e.innerText)/rt) < margins.width) {
+				x = margins.left + widthsofar;
+				y = o.y + ycounter * 4.3;
+				doc.link(x,y,parseInt(doc.getTextWidth(e.innerText)/rt),5,{url: e.href})
+                            } else {
+				
+				// But if the text of the link together with the text preceding it in the <a>'s parent does exceed the margin, then we have to loop through the words in the link text, as follows:
+				let widthoflinktextsofar = 0;
+				for (let i = 0; i < wordsine.length; i++) {
+				    
+                                    if (widthsofar + widthoflinktextsofar + parseInt(doc.getTextWidth(wordsine[i])/rt) <= margins.width) {
+					widthoflinktextsofar += parseInt(doc.getTextWidth(wordsine[i] + " ")/rt)
+					if (i === wordsine.length - 1) {
+                                            x = margins.left + widthsofar;
+                                            y = o.y + ycounter * 4.3;
+                                            doc.link(x,y,widthoflinktextsofar,5,{url: e.href})    
+					}
+                                    } else {
+					x = margins.left + widthsofar;
+					y = o.y + ycounter * 4.3;
+					doc.link(x,y,widthoflinktextsofar,5,{url: e.href})
+					widthsofar = 0
+					ycounter++
+					widthoflinktextsofar = parseInt(doc.getTextWidth(wordsine[i])/rt)
+					if (i === wordsine.length - 1) {
+                                            x = margins.left
+                                            y = o.y + ycounter * 4.3;
+                                            doc.link(x,y,widthoflinktextsofar,5,{url: e.href})
+					}
+                                    }
+				}
+                            }
+                            return false;
+			}
+                    }
+		    let tempdivid = 'd' + randClass;
+                    $('#' + tempdivid).remove();
+                    simpleHTML = simpleHTML.replace(/<br>\\*/ig,"</p><p>");
+                    $('body').append($('<div>')
+				     .attr('id',tempdivid).html(simpleHTML)
+				     .css('display','none'));
+                    $('#' + tempdivid + 'hr').each(function() {
+			$(this).after($("<p>").append($("<hr>")));
+			$(this).remove();
+                    });
+                    $('#' + tempdivid + ' a').addClass(randClass);
+		    $('#' + tempdivid + ' a').each(function() {
+			let el = this;
+			if(el.innerHTML == el.href) {
+                            let u = new URL(el.innerText);
+			    /* Change URL and www in URL's to avoid fromHTML autolinking */
+                            let sturl = u.host.replace(/^www\./i,'') + u.pathname;
+                            let fakeUrl =  u.protocol[0].toUpperCase() + u.protocol.substr(1) + '//'+ sturl + u.search;
+                            if(fakeUrl.length > lineChars) {
+				fakeUrl =   u.protocol[0].toUpperCase() + u.protocol.substr(1) + '//'+sturl.substr(0,lineChars - 12 - u.protocol.length) + '...';
+                            } 
+                            el.innerText = fakeUrl;
+			}
+                    });
+                    simpleHTML = $('#'+tempdivid).html();
+                    margins = {
+			bottom:10,
+			top:15,
+			left:10,
+			right:10,
+			width:170
+                    };
+                    doc.setPage(0);
+                    doc.setFont("helvetica");
+                    doc.setFontType("normal");
+                    doc.setTextColor(220,220,220);
+                    doc.setFontSize(70);
+                    doc.text("EMBARGOED", 50, doc.internal.pageSize.height - 120, null, 45); 
+                    doc.fromHTML(
+			simpleHTML,
+			margins.left,
+			margins.top,
+			{
+                            'width': margins.width,
+                            'elementHandlers': specialElementHandlers
+			},
+			function (dispose) {
+			},
+			margins
+                    );
+                    var pageCount = doc.internal.getNumberOfPages();
+                    for(i = 0; i < pageCount; i++) { 
+			doc.setPage(i);
+			// Set header
+			let amberPosition = 94.5;
+			let amberTop = 3
+			doc.setFillColor(0,0,0);
+			doc.rect(amberPosition, amberTop, 21.2, 5, 'F');
+			
+			doc.setFont("times");
+			doc.setFontType("bold");
+			doc.setFontSize(10);
+			doc.setTextColor(245, 194, 66);
+			doc.text(amberPosition,amberTop+4, "TLP:AMBER");
+			
+			doc.setFontSize(10);
+			doc.setTextColor(255,0,0);
+			doc.text(19, 12, "The information within this document is to " +
+				 "be restricted to participants’ organizations only " +
+				 "until publicly released.");
+			
+			doc.setFontSize(10);
+			doc.setTextColor(150);
+			doc.text(7, 5, "EMBARGOED");
+			doc.text(179, 5, "EMBARGOED");
+			
+			// Set footer
+			let amberBottom = 275
+			doc.setFillColor(0,0,0);
+			doc.rect(amberPosition, amberBottom, 21.2, 5, 'F');
+			
+			doc.setFont("times");
+			doc.setFontType("bold");
+			doc.setFontSize(10);
+			doc.setTextColor(245, 194, 66);
+			doc.text(amberPosition,amberBottom+4, "TLP:AMBER");
+                    }
+                    doc.save($('#vutitle').html() + " - Notice (Draft).pdf");
+                    $('#' + tempdivid).remove();
+		}
+            }).fail(function() {
+                console.log("The getJSON request didn't work for some reason.");
+            });
+        }
+
+        $('.downloadvulnote').on('click',downloadvulnote);
+	
+        $(document).on("click", "#approvevulnote", function(event) {
+            event.preventDefault();
+            var url = $(this).attr("action");
+	    
+            $.ajax({
+                url: url,
+                type: "GET",
+                success: function(data) {
+                    approvemodal.html(data).foundation('open');
+                },
+                error: function(xhr, status) {
+                    permissionDenied(addmodal);
+                }
+            });
+        });
+        
+        $(document).on("click", "#publishvulnote", publishvulnotehandler);
+        
+        $(document).on("click", "#sharevulnote", function(event) {
+            event.preventDefault();
+            var url = $(this).attr("action");
+	    
+            $.ajax({
+                url: url,
+                type: "GET",
+                success: function(data) {
+                    approvemodal.html(data).foundation('open');
+                    init_modal_markdown();
+                },
+                error: function(xhr, status) {
+                    permissionDenied(addmodal);
+                }
+		
+            });
+        });
+    };
+
+    function initialize_posts_tab() {
+        $(document).on("click", '#confirmpush', confirmpushhandler);
+        $(document).on("click", '#postremove', postremovehandler);
+        $(document).on("click", '#openpost', openposthandler);
+    };
+
+    if (tabsoughtviaurl) {
+        if (tabsoughtviaurl === "participants") {
+            initialize_participants_tab();
+        } else if (tabsoughtviaurl === "vulnote") {
+            initialize_vulnote_tab();
+        } else if (tabsoughtviaurl === "posts") {
+            initialize_posts_tab();
+        };
+    };
+
+    function initialize_tab_js(mutation) {
+        if (mutation[0]) {
+            if (mutation[0].target.getAttribute('id') === "participants"){
+                initialize_participants_tab();
+            } else if (mutation[0].target.getAttribute('id') === "vulnote") {
+                initialize_vulnote_tab();
+            } else if (mutation[0].target.getAttribute('id') === "posts") {
+                initialize_posts_tab();
+            };
+        };
+    };
+    
+    let tab_observer = new MutationObserver(initialize_tab_js);
+
+    let participants_tab = document.getElementById("participants");
+    let vulnote_tab = document.getElementById("vulnote");
+    let posts_tab = document.getElementById("posts");
+
+    tab_observer.observe(participants_tab, {childList:true});
+    tab_observer.observe(vulnote_tab, {childList:true});
+    tab_observer.observe(posts_tab, {childList:true})
+
 
 });

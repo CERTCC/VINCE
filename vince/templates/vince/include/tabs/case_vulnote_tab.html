@@ -1,0 +1,36 @@
+<div>
+	{% if vulnote %}
+	<a href="{% url 'vince:edit_vulnote' vulnote.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vul Note</button></a>
+	<ul class="dropdown menu" data-dropdown-menu="fake-dropdown-menu" role="menubar" id="download_drop">
+    	<li class="is-dropdown-submenu-parent opens-right" role="menuitem" aria-haspopup="true" data-is-click="false" aria-label="Download Options"><a href="#" class="button cmu tiny download_btn">Download</a>
+			<ul class="menu submenu is-dropdown-submenu first-sub vertical" data-submenu="" role="menu" id="download_menu">
+				<li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="{% url 'vince:download_vulnote' vulnote.id %}" id="download_json">JSON</a></li>
+				<li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="#" data-href="{% url 'vince:download_vulnote' vulnote.id %}" id="download_html" class="downloadvulnote html" data-format="html">HTML</a></li>
+				<li role="menuitem" class="is-submenu-item is-dropdown-submenu-item"><a href="#" data-href="{% url 'vince:download_vulnote' vulnote.id %}" id="download_pdf" class="downloadvulnote pdf" data-format="pdf">PDF</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	
+	<a href="{% url 'vince:changelog' vulnote.id %}"><button class="button cmu tiny"> <i class="fas fa-clock"></i> View Full History</button></a>
+	<button id="sharevulnote" class="button cmu tiny" action="{% url 'vince:sharevulnote' vulnote.id %}" {% if case.lotus_notes %}disabled{% endif %}> <i class="fas fa-share-square"></i> Share in VinceComm</button>
+	{% if vulnote.ticket_to_approve %}
+	{% if vulnote.ticket_to_approve.submitter_email != user.email %}
+	<a class="button cmu tiny" href="{% url 'vince:vulnotereviewal' vulnote.id %}"><i class="fas fa-tasks"></i> Review Vul Note</a>
+	{% endif %}
+	{% endif %}
+
+	{% if vulnote.approved %}
+	<a href="{% url 'vince:notify' case.id %}"><button class="button cmu tiny" id="publishvulnote" action="{% url 'vince:publish' vulnote.id %}" {% if vulnote.ticket_to_approve.status != 4 %}disabled{% else %}{% if not case.can_be_resolved %}disabled{% endif %}{% endif %}><i class="fas fa-bell"></i> Publish</button></a>
+	{% else %}
+	<a href="{% url 'vince:newticket' case.id %}?approval=1" id="approvalrequest"><button class="button cmu tiny"> <i class="fas fa-hands-helping"></i> Request Approval</button></a>
+	{% if user.is_superuser %}
+	<button class="button cmu tiny" id="approvevulnote" action="{% url 'vince:approvevulnote' vulnote.id %}"><i class="fas fa-thumbs-up"></i> Approve for Publishing</button>
+	{% endif %}
+
+	{% endif %}
+	{% else %}
+	<a href="{% url 'vince:create' case.id %}"> <button class="button cmu tiny"> <i class="fas fa-plus"></i> Start Vul Note </button></a>
+	{% endif %}
+      </div>
+      {% include 'vince/include/changelog.html' %}

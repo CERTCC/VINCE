@@ -51,7 +51,7 @@
       <div class="row columns">
 	<div class="searchbar">
 	  <h4>Year</h4>
-	  {% for choice in form.years.field.widget.choices %}
+	  {% for choice in form.to_list %}
 	  {% if forloop.counter0 == 5 %}
 	  <div id="hideyears">
 	    {% endif %}

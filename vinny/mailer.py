@@ -422,7 +422,6 @@ def send_templated_mail(template_name,
             raise e
         return 0
     except:
-        logger.debug("Error sending email")
-        logger.debug(traceback.format_exc())
+        logger.debug(f"Error sending email to due to error {traceback.format_exc()}")
         return
     

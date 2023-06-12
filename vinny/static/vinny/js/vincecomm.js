@@ -118,7 +118,7 @@ $(function () {
 	};
     }
 
-    function asyncLoad(fdiv,furl,fmethod,pdiv,formpost,silent) {
+    function asyncLoad(fdiv,furl,fmethod,pdiv,formpost,silent,transform) {
 	/* asyncload from furl(URL) to fdiv(Content div identifier) whose
 	   pdiv(Parent div identified) using fmethod(GET or POST)
 	   in the case of POST use the formpost(Form identified) that
@@ -158,7 +158,10 @@ $(function () {
             data: fdata,
             success: function(data) {
 		lockunlock(false,pdiv,fdiv);
-		$(fdiv).html(data);
+		if(transform && typeof(transform) == 'function')
+		    $(fdiv).html(transform(data));
+		else
+		    $(fdiv).html(data);
             },
 	    error: function() {
 		lockunlock(false,pdiv,fdiv);
@@ -198,8 +201,12 @@ $(function () {
                     pdiv = $(el).data("parentdiv");
 		let formpost = null;
 		if($(el).data("form"))
-                    formpost = $(el).data("form");	    
-		asyncLoad(fdiv,furl,fmethod,pdiv,formpost,true);
+                    formpost = $(el).data("form");
+		let transform = null;
+		if($(el).data("transform") && $(el).data("transform") in window
+		   && typeof(window[$(el).data("transform")]) == "function")
+		    transform = window[$(el).data("transform")];
+		asyncLoad(fdiv,furl,fmethod,pdiv,formpost,true,transform);
 		/* Mark download as complete */
 		$(el).attr("data-completeurl",furl);
             }

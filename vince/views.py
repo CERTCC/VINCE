@@ -3983,7 +3983,7 @@ class DownloadVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         vu_info['name'] = vulnote.current_revision.title
         vu_info['idnumber'] = vulnote.case.vuid
 
-        vu_json = json.dumps(vu_info, indent=4)
+        vu_json = json.dumps(vu_info, indent=4, default=str)
 
         json_file = ContentFile(vu_json)
         json_file.name = case.vu_vuid + ".json"
@@ -5211,6 +5211,24 @@ class CaseActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         context['allow_edit'] = True
         return context
 
+
+class CasePostsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/include/tabs/case_posts_tab.html"
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+            return has_case_read_access(self.request.user, case)
+        else:
+            return False
+
+    def get_context_data(self, **kwargs):
+        context = super(CasePostsView, self).get_context_data(**kwargs)
+        context['case'] = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+        return context
+
+
 class DashboardPostView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     login_url = "vince:login"
     template_name = 'vince/case.html'
@@ -6358,6 +6376,52 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
                 cp.delete()
 
         return JsonResponse({'response': 'success'}, status=200)
+
+class CaseParticipantsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = 'vince:login'
+    template_name = 'vince/include/tabs/case_participants_tab.html'
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+            return has_case_read_access(self.request.user, case)
+        else:
+            return False
+
+    def get_context_data(self, **kwargs):
+        context = super(CaseParticipantsView, self).get_context_data(**kwargs)
+        context['case'] = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+        context['participants'] = CaseParticipant.objects.filter(case=context['case']).order_by('user_name')
+        context['participantsjs'] = [obj.as_dict() for obj in context['participants']]
+        return context
+
+
+class CaseVulNoteView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = 'vince:login'
+    template_name = 'vince/include/tabs/case_vulnote_tab.html'
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+            return has_case_read_access(self.request.user, case)
+        else:
+            return False
+
+    def get_context_data(self, **kwargs):
+        context = super(CaseVulNoteView, self).get_context_data(**kwargs)
+        context['case'] = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+        try:
+            context['vulnote'] = context['case'].vulnote
+            context['revisions'] = VulNoteRevision.objects.filter(vulnote = context['case'].vulnote).order_by('-created')[:4]
+            if context['vulnote'].ticket_to_approve:
+                # get all approval tickets
+                context['approvaltickets'] = Ticket.objects.filter(case=context['case'], title__icontains="vulnerability note for publishing")
+                if context['vulnote'].approved:
+                    context['approved_by'] = VulNoteReview.objects.filter(vulnote__vulnote__case=context['case'], approve=True).distinct('reviewer').values_list('reviewer__usersettings__preferred_username', flat=True)
+        except:
+            # vulnote doesn't exist
+            pass
+        return context
 
 
 class ChangeParticipantType(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
@@ -8093,7 +8157,11 @@ class ContactRequestAuth(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
 
         role = UserRole.objects.filter(role="Authorizer").first()
         if role:
-            assignment = auto_assignment(role.id, exclude=req.initiated_by)
+            #Removing requested_by user for superusers
+            if req.initiated_by.is_superuser:
+                assignment = auto_assignment(role.id)
+            else:
+                assignment = auto_assignment(role.id, exclude=req.initiated_by)
             if assignment:
                 request.POST = {
                     'owner': assignment.id,
@@ -13398,7 +13466,7 @@ class CasesWithoutVendorsReport(LoginRequiredMixin, TokenMixin, UserPassesTestMi
 
 class VinceCommUserThreadView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     login_url = "vince:login"
-    template_name = "vince/include/threads.html"
+    template_name = "vince/include/tabs/vcuser_threads_tab.html"
 
     def test_func(self):
         return is_in_group_vincetrack(self.request.user)
@@ -13411,6 +13479,24 @@ class VinceCommUserThreadView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
         paginator = Paginator(threads, 10)
         context['threads'] = paginator.page(page)
         return context
+
+
+class VinceCommUserBouncesView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/include/tabs/vcuser_bounces_tab.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super(VinceCommUserBouncesView, self).get_context_data(**kwargs)
+        context['vc_user'] = User.objects.using('vincecomm').filter(id=self.kwargs['pk']).first()
+        page = self.request.GET.get('page', 1)
+        context['bounces'] = BounceEmailNotification.objects.filter(email=context['vc_user'].email)
+        #paginator = Paginator(bounces, 10)
+        #context['bounces'] = paginator.page(page)
+        return context
+
 
 class Vince2VCUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     login_url = "vince:login"
@@ -13454,7 +13540,7 @@ class VinceCommUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             #context['ticket_list'] = Ticket.objects.filter(submitter_email=context['vc_user'].username).order_by('-created')
             context['reset_mfa'] = MFAResetTicket.objects.filter(user_id=context['vc_user'].id, ticket__status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS, Ticket.IN_PROGRESS_STATUS]).exists()
             context['bounce_stats'] = get_bounce_stats(context['vc_user'].email, context['vc_user'])
-            context['bounces'] = BounceEmailNotification.objects.filter(email=context['vc_user'].email)
+            #context['bounces'] = BounceEmailNotification.objects.filter(email=context['vc_user'].email)
             try :
                 data = get_user_details(context['vc_user'].username)
                 context['PreferredMfaSetting'] = data.get('PreferredMfaSetting',"Unknown")

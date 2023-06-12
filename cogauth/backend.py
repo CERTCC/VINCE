@@ -74,7 +74,10 @@ class CognitoUser(Cognito):
     def get_user_obj(self, username=None, attribute_list=[], metadata={}, attr_map={}):
         user_attrs = cognito_to_dict(attribute_list,CognitoUser.COGNITO_ATTRS)
         django_fields = [f.name for f in CognitoUser.user_class._meta.get_fields()]
-        logger.debug(f"User attributes in Cognito is {user_attrs}")
+        log_attrs = user_attrs.copy()
+        if 'api_key' in user_attrs:
+            log_attrs['api_key'] = "RESERVED"
+        logger.debug(f"User attributes in Cognito is {log_attrs}")
         extra_attrs = {}
         # need to iterate over a copy
         for k, v in user_attrs.copy().items():

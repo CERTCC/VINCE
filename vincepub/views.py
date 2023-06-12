@@ -343,7 +343,7 @@ def va_bullhorn(value):
     if value:
         if value == "There are no additional comments at this time.":
             return False
-        elif value == f"The {settings.ORG_NAME} has no additional comments at this time.":
+        elif value == "The CERT/CC has no additional comments at this time.":
             return False
         return True
     return False
@@ -435,6 +435,23 @@ def vendor_vul_status(status, vul):
 def cvevuls(vuls):
     return vuls.filter(cve__isnull=False)
 
+def estimate_count_fast(type):
+    ''' postgres really sucks at full table counts, this is a faster version
+    see: http://wiki.postgresql.org/wiki/Slow_Counting '''
+    cursor = connection.cursor()
+    cursor.execute("select reltuples from pg_class where relname='vincepub_%s';" % type)
+    row = cursor.fetchone()
+    return int(row[0])
+
+def human_format(num):
+    num = float('{:.3g}'.format(num))
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+    return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
+
+
 class EST(tzinfo):
     def utcoffset(self, dt):
         return timedelta(hours=-5)
@@ -477,10 +494,29 @@ class PublicAPIView(generics.RetrieveAPIView, generics.GenericAPIView):
             response["Access-Control-Allow-Origin"] = request.headers.get('Origin')
         return response
 
+
+
+
+
+
+
 class PublicListAPIView(generics.ListAPIView):
     """ All public list api views will require no authentication """
     authentication_classes = []
-    permission_classes = (AllowAny,)    
+    permission_classes = (AllowAny,)
+
+
+
+class OldIndexView(generic.TemplateView):
+    template_name = 'vincepub/old_templates/index.html'
+    page = 0
+
+    def get_context_data(self, **kwargs):
+        context = super(OldIndexView, self).get_context_data(**kwargs)
+        context['pub_list'] = VUReport.objects.exclude(datefirstpublished__isnull=True).exclude(publicdate__isnull=True).order_by('-datefirstpublished')[:10]
+        context['up_list'] = VUReport.objects.exclude(dateupdated__isnull=True).exclude(datefirstpublished__isnull=True).exclude(publicdate__isnull=True).order_by('-dateupdated')[:10]
+        return context
+
 
 class VinceView(generic.TemplateView):
     template_name = 'vincepub/vince.html'
@@ -489,12 +525,12 @@ class VinceView(generic.TemplateView):
         context = super(VinceView, self).get_context_data(**kwargs)
         context['vincepage'] = 1
         return context
-
-class SearchView(generic.TemplateView):
+    
+class IndexView(generic.TemplateView):
     template_name = 'vincepub/index.html'
 
     def get_context_data(self, **kwargs):
-        context = super(SearchView, self).get_context_data(**kwargs)
+        context = super(IndexView, self).get_context_data(**kwargs)
         context['pub_list'] = VUReport.objects.order_by('-datefirstpublished')[:5]
         context['homepage'] = 1
         return context
@@ -615,6 +651,56 @@ class CVSSScoreView(generic.ListView):
         context['cvssclass'] = 'sortdesc'
         return context
 
+class HelpView(generic.TemplateView):
+    template_name = 'vincepub/help.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(HelpView, self).get_context_data(**kwargs)
+        context['guidepage'] = 3
+        return context
+
+
+class HelpFieldView(generic.TemplateView):
+    template_name = 'vincepub/fields.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(HelpFieldView, self).get_context_data(**kwargs)
+        return context
+
+class HelpPolicyView(generic.TemplateView):
+    template_name='vincepub/policy.html'
+
+class GuidanceView(generic.TemplateView):
+    template_name='vincepub/guidance.html'
+
+class DisclosureGuidanceView(generic.TemplateView):
+    template_name='vincepub/disclosure_guidance.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(DisclosureGuidanceView, self).get_context_data(**kwargs)
+        context['guidepage'] = 3
+        return context
+
+
+class AboutUsView(generic.TemplateView):
+    template_name='vincepub/aboutus.html'
+
+class DownloadPGP(generic.TemplateView):
+    template_name='vincepub/certccpgp.html'
+
+class ForVendorsView(generic.TemplateView):
+    template_name='vincepub/forvendors.html'
+
+class ForReportersView(generic.TemplateView):
+    template_name='vincepub/forreporters.html'
+
+class UnderstandingView(generic.TemplateView):
+    template_name='vincepub/understanding.html'
+
+class WhatisCVEView(generic.TemplateView):
+    template_name='vincepub/whatiscve.html'
+
+
 RE_POSTGRES_ESCAPE_CHARS = re.compile(r'[&:(|)!><]', re.UNICODE)
 RE_SPACE = re.compile(r"[\s]+", re.UNICODE)
 
@@ -642,7 +728,7 @@ def process_query(s):
             query = "&" .join("$${0}$$:*".format(word) for word in shlex.split(escape_query(s, RE_POSTGRES_ESCAPE_CHARS)))
         except Exception as f:
             logger.debug(f"Unable to escape characters in search error {f} for string {s} returning empty search")
-            return ""        
+            return ""
 
     # this is for prefix searches
     query = re.sub(r'\s+', '<->', query)
@@ -712,14 +798,14 @@ class SearchResultView(generic.ListView):
         return render(request, self.template_name, { 'object_list': results, 'total':total })
 
 
-class IndexView(generic.FormView):
-    template_name = 'vincepub/index_public.html'
+class SearchView(generic.FormView):
+    template_name = 'vincepub/search.html'
     model = VUReport
     form_class = SearchForm
     success_url = 'vincepub/searchresults.html'
 
     def get_context_data(self, **kwargs):
-        context = super(IndexView, self).get_context_data(**kwargs)
+        context = super(SearchView, self).get_context_data(**kwargs)
         search = self.request.GET.get('q', False)
         if search:
             context['form'] = self.form_class(initial={'wordSearch':search})
@@ -730,20 +816,19 @@ class IndexView(generic.FormView):
         context['updateclass'] = 'sortheader'
         context['cvssclass'] = 'sortheader'
         context['asc_or_desc'] = 'desc'
-        context['pub_list'] = VUReport.objects.order_by('-datefirstpublished')[:5]                       
-        context['homepage'] = 1 
+        context['searchpage'] = 2
         return context
 
-
     def form_invalid(self, form):
-        logger.debug(form.errors)
-
+        if hasattr(form,'errors'):
+            logger.debug(f"{self.__class__.__name__} post: {self.request.POST} errors: {form.errors}")
+        else:
+            logger.debug(f"Form invalid {self.__class__.__name__} post: {self.request.POST}")
         return super().form_invalid(form)
 
 
     def form_valid(self, form):
-        logger.debug(self.request.POST)
-
+        logger.debug(f"From valid {self.__class__.__name__} post: {self.request.POST}")
         page = self.request.GET.get('page', 1)
         if self.request.POST['datestart']:
             startdate = DateField().clean(self.request.POST['datestart'])
@@ -835,6 +920,7 @@ def quickSearch(request):
     else:
         return redirect("vincepub:search")
 
+
 class InitialReportView(generic.TemplateView):
     template_name = 'vincepub/report.html'
 
@@ -842,6 +928,151 @@ class InitialReportView(generic.TemplateView):
         context = super(InitialReportView, self).get_context_data(**kwargs)
         context['reportpage'] = 3
         return context
+
+class ExampleView(generic.TemplateView):
+    template_name = 'vincepub/example.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(ExampleView, self).get_context_data(**kwargs)
+        return context
+
+class GovReportView(generic.FormView):
+    template_name = 'vincepub/govreport.html'
+    model = GovReport
+    form_class = GovReportForm
+    success_url = 'results.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(GovReportView, self).get_context_data(**kwargs)
+        context['reportpage'] = 3
+        return context
+
+    def form_valid(self, form):
+        #Begin reCAPTCHA validation
+        recaptcha_response = self.request.POST.get('g-recaptcha-response')
+
+        data = {
+            'secret' : settings.GOOGLE_RECAPTCHA_SECRET_KEY,
+            'response': recaptcha_response
+        }
+        r = requests.post(GOOGLE_VERIFY_URL, data=data)
+        result = r.json()
+        if result['success']:
+            logger.debug("successful recaptcha validation")
+        else:
+            logger.debug("invalid recaptcha validation")
+            form._errors[forms.forms.NON_FIELD_ERRORS] = ErrorList([
+                u'Invalid reCAPTCHA.  Please try again'
+		])
+            return super().form_invalid(form)
+
+
+        # process the data in form.cleaned_data as required
+        vrf_id = get_vrf_id()
+        form.instance.vrf_id = vrf_id
+        newrequest = form.save(commit=False)
+        newrequest.save()
+        context = form.cleaned_data
+        context['vrf_id'] = vrf_id
+        # get some meta info about who submitted this
+        context['remote_addr'] = self.request.META['REMOTE_ADDR'] if 'REMOTE_ADDR' in self.request.META else "unknown"
+        context['remote_host'] = self.request.META['REMOTE_HOST'] if 'REMOTE_HOST' in self.request.META else "unknown"
+        context['http_user_agent'] = self.request.META['HTTP_USER_AGENT'] if 'HTTP_USER_AGENT' in self.request.META else "unknown"
+        context['http_referer'] = self.request.META['HTTP_REFERER'] if 'HTTP_REFERER' in self.request.META else "unknown"
+        if context['credit_release'] == 'False':
+            credit_release = 'No'
+        else:
+            credit_release = 'Yes'
+        context['date_submitted'] = datetime.now(EST()).isoformat()
+        context['product_with_vul'] = "US Government Website Vulnerability" # so we can re-use auto-ack template
+        # construct email
+        email_template = get_template("vincepub/email-no-info.txt")
+        subject = "[VRF#" + vrf_id + "] "
+        subject += "New US Gov Website Report Submission"
+        context['submission_type'] = "US Gov Website Report"
+        context["title"] = subject
+        #try:
+        #    client = boto3.client('sns', settings.AWS_REGION)
+        #    response = client.publish(
+        #        TopicArn=settings.VINCE_TRACK_SNS_ARN,
+        #        Subject=subject,
+        #        Message=html.unescape(email_template.render(context=context)))
+        #    logger.debug("Response:{}".format(response))
+        #except:
+        #    send_sns(vrf_id, "publishing to VINCE sns for gov reporting form", traceback.format_exc())
+        #    logger.debug(email_template.render(context=context))
+
+
+        s3Client = boto3.client('s3', region_name=settings.AWS_REGION, config=Config(signature_version='s3v4'))
+        attachment = context.get('user_file')
+        if attachment:
+            context['s3_file_name'] = newrequest.user_file.name
+            try:
+                # tag object with vrf id
+                rd = s3Client.put_object_tagging(Bucket=settings.VP_PRIVATE_BUCKET_NAME,
+                                                 Key=settings.VRF_PRIVATE_MEDIA_LOCATION+'/'+newrequest.user_file.name,
+                                                 Tagging={'TagSet':[{'Key': 'GOVVRF', 'Value':vrf_id}]})
+            except:
+                send_sns(vrf_id, "tagging .gov uploaded file", traceback.format_exc())
+        
+        
+        # put report in S3 bucket
+        try:
+            s3Client = boto3.client('s3', region_name=settings.AWS_REGION, config=Config(signature_version='s3v4'))
+            report_template = get_template("vincepub/email-md-dotgov.txt")
+
+            s3Client.put_object(Body=report_template.render(context=context),
+                                Bucket=settings.VP_PRIVATE_BUCKET_NAME, Key='GOV_reports/'+vrf_id+'.txt')
+        except:
+            send_sns(vrf_id, "writing gov report to s3 bucket", traceback.format_exc())
+            logger.debug(report_template.render(context=context))
+
+        context.pop('user_file')
+        logger.debug(json.dumps(context))
+        send_sns_json("gov", subject, json.dumps(context))
+
+        context['user_file'] = attachment
+
+        if 'contact_email' in context:
+            if context['contact_email'] != '':
+                autoack_email_template = get_template(settings.ACK_EMAIL_TEMPLATE)
+                sesclient = boto3.client('ses', 'us-east-1')
+                try:
+                    response = sesclient.send_email(
+                        Destination={
+                            'ToAddresses': [context['contact_email']],
+                        },
+                        Message= {
+                            'Body': {
+                                'Text': {
+                                    'Data': html.unescape(autoack_email_template.render(context=context)),
+                                    'Charset': 'UTF-8',
+                                },
+                            },
+                            'Subject': {
+                                'Charset': 'UTF-8',
+                                'Data': f'Thank you for submitting {settings.REPORT_IDENTIFIER}{vrf_id}'
+                            },
+                        },
+                        Source= f'{settings.DEFAULT_VISIBLE_NAME} DONOTREPLY <{settings.DEFAULT_FROM_EMAIL}>'
+                    )
+                except ClientError as e:
+                    logger.debug("ERROR SENDING EMAIL")
+                    send_sns(vrf_id, "sending ack email for gov report form", e.response['Error']['Message'])
+                    logger.debug(e.response['Error']['Message'])
+                except:
+                    logger.debug("ERROR SENDING EMAIL - Not a ClientError")
+                    send_sns(vrf_id, "Sending ack email for vul reporting form", traceback.format_exc())
+                    logger.debug(traceback.format_exc())
+                else:
+                    logger.debug("Email Sent! Message ID: ")
+                    logger.debug(response['MessageId'])
+
+        return render(self.request, 'vincepub/success_gov.html', {'form': form, 'vrf_id': vrf_id, 'credit_release': credit_release })
+
+    def form_invalid(self, form):
+        logger.debug(form.errors)
+        return super().form_invalid(form)
 
 
 class VulCoordRequestView(generic.FormView):
@@ -892,7 +1123,6 @@ class VulCoordRequestView(generic.FormView):
             context['coord_choice']= form.fields['why_no_attempt'].choices[int(context['why_no_attempt'])-1][1]
 
 #        context['coord_choice'] = coord_choice
-        context['vrf_id'] = f"{settings.REPORT_IDENTIFIER}{vrf_id}"
         context['vrf_date_submitted'] = datetime.now(EST()).isoformat()
         # get some meta info about who submitted this
         context['remote_addr'] = self.request.META['REMOTE_ADDR'] if 'REMOTE_ADDR' in self.request.META else "unknown"
@@ -900,6 +1130,8 @@ class VulCoordRequestView(generic.FormView):
         context['http_user_agent'] = self.request.META['HTTP_USER_AGENT'] if 'HTTP_USER_AGENT' in self.request.META else "unknown"
         context['http_referer'] = self.request.META['HTTP_REFERER'] if 'HTTP_REFERER' in self.request.META else "unknown"
         # construct email
+        #email_template = get_template("vincepub/email-md.txt")
+        email_template = get_template("vincepub/email-no-info.txt")
         context['submission_type'] = 'Vulnerability Report'
         subject = f"[{settings.REPORT_IDENTIFIER}{vrf_id}] "
         if context['product_name']:
@@ -919,7 +1151,6 @@ class VulCoordRequestView(generic.FormView):
         s3Client = boto3.client('s3', region_name=settings.AWS_REGION, config=Config(signature_version='s3v4'))
 
         attachment = context.get('user_file')
-
         if attachment:
 
             context['s3_file_name'] = newrequest.user_file.name
@@ -930,12 +1161,16 @@ class VulCoordRequestView(generic.FormView):
                                                  Tagging={'TagSet':[{'Key': 'ID', 'Value':vrf_id}]})
             except:
                 send_sns(vrf_id, "tagging uploaded file", traceback.format_exc())
+                # send_sns(vrf_id, "generating presigned url for file",  traceback.format_exc())
+                # context['errors_with_attachments'] = "Something happened with generating the attachment link or tagging the file. The file may not exist."
+
 
         if context.get('first_contact'):
             context['first_contact'] = str(context['first_contact'])
 
         context['vrf_id'] = f"{settings.REPORT_IDENTIFIER}{vrf_id}"
-            
+
+        # put report in S3 bucket
         try:
             report_template = get_template("vincepub/email-md.txt")
             fkey = f'{settings.VRF_REPORT_DIR}/{vrf_id}.txt'
@@ -945,14 +1180,14 @@ class VulCoordRequestView(generic.FormView):
             send_sns(vrf_id, "writing report to s3 bucket", traceback.format_exc())
             logger.debug(report_template.render(context=context))
 
-
-        #reset this back to just the numbers and not with the identifier                
+        #reset this back to just the numbers and not with the identifier
         context['vrf_id'] = vrf_id
         context.pop('user_file')
         send_sns_json("vul", subject, json.dumps(context))
+        # add report identifier after
 
         context['user_file'] = attachment
-
+        
         # if reporter provided an email, send an ack email
         reporter_email = context.get('contact_email')
         if reporter_email:
@@ -1028,22 +1263,10 @@ class SecurityTxtView(Buildable404View):
     build_path = '.well-known/security.txt'
     template_name = 'vincepub/security.txt'
     
+
 class VendorView(generic.ListView):
     template_name = 'vincepub/vendorinfo.html'
     model = VendorRecord
-    authentication_classes = []
-    permission_classes = (AllowAny,)    
-
-
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            response = super().retrieve(request, *args, **kwargs)
-        except Exception as e:
-            logger.debug(f"Error in creating ViewSet {e}")
-            generic_error = {"error": "Content requested either does not exist or you do not have permissions to view it!"}
-            return Response(generic_error)
-        return response    
-
 
     def get_template_names(self):
         report = VUReport.objects.filter(vuid=self.kwargs['vuid']).first()
@@ -1114,14 +1337,25 @@ class VUNoteViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = serializers.VUReportSerializer
     queryset = VUReport.objects.all()
     lookup_field = "idnumber"
+    authentication_classes = []
+    permission_classes = (AllowAny,)
 
     def get_view_name(self):
         return "Vulnerability Note Instance Details"
 
-    
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            response = super().retrieve(request, *args, **kwargs)
+        except Exception as e:
+            logger.debug(f"Error in creating ViewSet {e}")
+            generic_error = {"error": "Content requested either does not exist or you do not have permissions to view it!"}            
+            return Response(generic_error)
+        return response
+
 class VulViewAPI(PublicAPIView, mixins.ListModelMixin):
     queryset = NoteVulnerability.objects.all()
     serializer_class = serializers.VulSerializer
+
 
     def get_queryset(self):
         return NoteVulnerability.objects.all()
@@ -1152,14 +1386,13 @@ class VulViewAPI(PublicAPIView, mixins.ListModelMixin):
             serializer = serializers.VulSerializer(rv, many=True)
             return Response(serializer.data)
 
+
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
 class VUNoteViewByMonth(PublicListAPIView):
     serializer_class = serializers.VUReportSerializer
-    authentication_classes = []
-    permission_classes = (AllowAny,)
-
+ 
     def get_view_name(self):
         return "Vulnerability Notes Published by Month"
     
@@ -1171,7 +1404,6 @@ class VUNoteViewByMonth(PublicListAPIView):
 class VUNoteViewByYear(PublicListAPIView):
     serializer_class = serializers.VUReportSerializer
 
-    
     def get_queryset(self):
         year = re.sub('[^\d]','',self.kwargs['year'])
         return VUReport.objects.filter(datefirstpublished__year=year)
@@ -1214,8 +1446,6 @@ class VUNoteViewByYearSummary(VUNoteViewByYear):
 
 class VendorViewByMonth(PublicListAPIView):
     serializer_class = serializers.NewVendorRecordSerializer
-    authentication_classes = []
-    permission_classes = (AllowAny,)
 
     def get_view_name(self):
         return "Vendors By Month"
@@ -1288,7 +1518,6 @@ class VendorViewByYearSummary(VendorViewByYear):
 class VendorViewAPI(PublicAPIView, mixins.ListModelMixin):
     queryset = VendorRecord.objects.all()
     serializer_class = serializers.VendorRecordSerializer
-    permission_classes = (AllowAny,)
 
     def get_queryset(self):
         return VendorRecord.objects.all()
@@ -1309,7 +1538,7 @@ class VendorViewAPI(PublicAPIView, mixins.ListModelMixin):
 class VendorVulViewAPI(PublicAPIView, mixins.ListModelMixin):
     queryset = VendorVulStatus.objects.all()
     serializer_class = serializers.VendorVulSerializer
-    permission_classes = (AllowAny,)
+
 
     def get_queryset(self):
         return VendorRecord.objects.all()
@@ -1404,6 +1633,8 @@ def error_404(request):
     data = {}
     return render(request, 'vincepub/404.html', data, status=404)
 
+
+
 class CaseCSAFAPIView(PublicAPIView):
     serializer_class = serializers.CSAFSerializer
 
@@ -1414,6 +1645,5 @@ class CaseCSAFAPIView(PublicAPIView):
         svuid = re.sub('[^\d]','',self.kwargs['vuid'])
         vr = VUReport.objects.filter(idnumber=svuid).first()
         if not vr:
-            self.is_empty = True        
+            self.is_empty = True
         return vr
-
