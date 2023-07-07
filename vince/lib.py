@@ -1867,7 +1867,7 @@ def create_bounce_ticket(headers, bounce_info):
 
     dead_users = []
     for email in email_to:
-        if User.objects.filter(username=bemail,is_active=False):
+        if User.objects.filter(username=email,is_active=False):
             logger.debug(f"Ignoring {email} as this user is inactive")
             dead_users.append(email)
         elif (bounce_type == "Transient") and VINCE_IGNORE_TRANSIENT_BOUNCES:
@@ -1877,7 +1877,7 @@ def create_bounce_ticket(headers, bounce_info):
         email_to = list(set(email_to) - set(dead_users))
         email_to_str = ", ".join(email_to)
         if not email_to:
-            logger(f"No valid bounced recipients found all recipients are inactive")
+            logger.debug("No valid bounced recipients found all recipients are inactive")
             return
 
 
