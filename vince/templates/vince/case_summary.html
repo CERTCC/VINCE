@@ -1,18 +1,18 @@
 {% load i18n humanize ticket_to_link %}
 {{ case_tags|json_script:"case_tags" }}
 {{ case_available_tags|json_script:"case_available_tags" }}
-<div class="case-container">
+<div class="case-container" caseid="{{ case.id }}">
   <ul class="tabs" data-tabs id="case-tabs" data-deep-link="true" data-update-history="true">
     <li class="tabs-title"><a href="#details" data-tabs-target="details"> <i class="fas fa-folder-open"></i> Details</a></li>
     {% if cr %}
-    <li class="tabs-title"><a data-tabs-target="cr" href="#cr"><i class="fas fa-info-circle"></i> Original Report</a></li>
+    <li class="tabs-title"><a data-tabs-target="cr" href="#cr" class="asyncclick" data-divid="cr"><i class="fas fa-info-circle"></i> Original Report</a></li>
     {% elif ticket %}
     <li class="tabs-title"><a data-tabs-target="ticket" href="#ticket"><i class="fas fa-info-circle"></i> Ticket</a></li>
     {% else %}
-    <li class="tabs-title"><a data-tabs-target="cr" href="#cr"><i class="fas fa-info-circle"></i> Original Report</a></li>
+    <li class="tabs-title"><a data-tabs-target="noticketorcr" href="#noticketorcr" class="asyncclick" data-divid="noticketorcr"><i class="fas fa-info-circle"></i> Original Report</a></li>
     {% endif %}
     <li class="tabs-title is-active"><a aria-selected="true" data-tabs-target="tasks" href="#tasks"><i class="fas fa-list-alt"></i> Tasks</a></li>
-    <li class="tabs-title"><a data-tabs-target="vuls" href="#vuls"><i class="fas fa-skull"></i> Vuls</a></li>
+    <li class="tabs-title"><a data-tabs-target="vuls" href="#vuls" class="asyncclick" data-divid="vuls"><i class="fas fa-skull"></i> Vuls</a></li>
     <li class="tabs-title"><a data-tabs-target="vendors" href="#vendors"><i class="fas fa-users"></i> Vendors</a></li>
     <li class="tabs-title"><a data-tabs-target="posts" href="#posts" class="asyncclick" data-divid="posts"><i class="fas fa-sticky-note"></i> Posts</a></li>
     <li class="tabs-title"><a data-tabs-target="vulnote" href="#vulnote" class="asyncclick" data-divid="vulnote"><i class="fas fa-bookmark"></i> Vul Note</a></li>
@@ -24,6 +24,9 @@
       <a id="mutecase" href="{% url 'vince:mutecase' case.id %}" class="button cmu primary tiny" href="#" title="{% trans 'Mute case reminders. Do not remind me about this case' %}"><i class="fas fa-volume-mute"></i> Mute Reminders</a>
       <table class="hover unstriped fixed">
 	<tbody>
+		<tr><th width="200">{% trans "Title" %}</th>
+            <td><b>{{ case.title }}</b></td>
+          </tr>
 	  {% if case.team_owner %}
           <tr><th width="200">{% trans "Owner" %}</th>
             <td><b>{{ case.team_owner.name }}</b>  <button id="transfer" href="{% url 'vince:reqtransfer' case.id %}" class="button tiny assignme">Request Transfer</button></td>
@@ -98,34 +101,23 @@
       </table>
     </div>
     {% if cr %}
-    <div class="tabs-panel" id="cr">
-      <div class="crview">
-	{% include 'vince/cr_table.html' with table_class="hover unstriped" ticket=cr noshowdeps=1 %}
-      </div>
-    </div>
+	<div class="tabs-panel asynchronized" id="cr" href="{% url 'vince:caseoriginalreporttab' case.id %}">
+		<!-- async click loader -->
+	</div>
     {% elif ticket %}
     <div class="tabs-panel" id="ticket">
       {% include 'vince/ticket_table.html' with table_class="hover fixed unstriped" %}
     </div>
     {% else %}
-    <div class="tabs-panel" id="cr">
-      <div class="crview">
-	<div class="callout alert">
-	  <p>This case was not created from a CR or a ticket. If you would like to share details about a vulnerability in VinceComm please add a CR.</p>
+	<div class="tabs-panel asynchronized" id="noticketorcr" href="{% url 'vince:casenoticketorreporttab' case.id %}">
+		<!-- async click loader -->
 	</div>
-	<a href="{% url 'vince:newcrcase' case.id %}"><button class="button secondary">Add a CR</button></a>
-      </div>
-    </div>
     {% endif %}
     <div class="reveal large" id="largemodal" data-reveal data-close-on-click='false'></div>
     <div class="reveal small" id="smallmodal" data-reveal data-close-on-click='false'></div>
-    <div class="tabs-panel" id="vuls">
-      <p><a href="#" class="addvulmodal" caseid="{{case.id }}"><button class="button cmu tiny"><i class="fas fa-plus"></i> Add Vulnerability</button></a>&nbsp;&nbsp; <!--<a href="{% url 'vince:editvuls' case.id %}"><button class="button cmu tiny"><i class="fas fa-skull"></i> Edit Vulnerabilities</button></a>-->
-      </p>
-      {{ vulsjs|json_script:"vuls_data" }}
-      <div id="vuls-table" class="tabulator bootstrap"></div>
-      {#{% include 'vince/include/vuls.html' with edit=0 %}#}
-    </div>
+    <div class="tabs-panel asynchronized" id="vuls" href="{% url 'vince:casevulstab' case.id %}">
+		<!-- async click loader -->
+	</div>
     
     <div class="hidden" id="task_assign">
       <div class="reassign">

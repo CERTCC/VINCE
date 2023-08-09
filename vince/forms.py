@@ -118,6 +118,18 @@ class TeamSettingsForm(forms.Form):
         help_text=_('Disclosure guidance is presented to case members at first view of case'),
     )
 
+    weekly_report_boolean = forms.BooleanField(
+        required=False,
+        label=_('Include this team in weekly reports'),
+        help_text=_('Ticked if information about this team should be sent to the designated email addresses on a weekly basis.')
+    )
+
+    weekly_report_recipients = forms.CharField(
+        required=False,
+        label=_('Weekly report recipients'),
+        help_text=_("Comma separated email addresses to receive weekly reports about this team's VINCE activities.")
+    )
+
     def __init__(self, *args, **kwargs):
         super(TeamSettingsForm, self).__init__(*args, **kwargs)
 	#if setting is not set for this user, set to default
@@ -2342,6 +2354,8 @@ class ProductContactForm(forms.ModelForm):
     SECTORS = (('generic','generic'))
     if hasattr(settings,"SECTORS"):
         SECTORS = settings.SECTORS
+    else:
+        logger.warning(f"The settings.py has not been updated since v 2.0.8 for SECTORS!")
     sector = forms.MultipleChoiceField( widget = forms.CheckboxSelectMultiple, choices=SECTORS, required=False)
 
     def __init__(self, *args, **kwargs):

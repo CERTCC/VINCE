@@ -282,7 +282,7 @@ $(document).ready(function() {
 
     if (document.getElementById("user_taggs")) {
 	var tag_url = $("#user_taggs").attr("href");
-	var case_id = $('.addvulmodal').attr('caseid');
+	var case_id = $('.case-container').attr('caseid');
 	var assigned_users = JSON.parse(document.getElementById('assigned_users').textContent);
         var assignable = JSON.parse(document.getElementById('assignable').textContent);
 	var tags = [];
@@ -450,7 +450,7 @@ $(document).ready(function() {
 	var vendors = [];
 	var csrftoken = getCookie('csrftoken');
 	var rows = $("#project-description > tr");
-	var case_id = $('.addvulmodal').attr('caseid');
+	var case_id = $('.case-container').attr('caseid');
 
 	$.each(rows, function(index, item) {
 	    vendors.push(item.cells[0].innerText);
@@ -556,7 +556,7 @@ $(document).ready(function() {
 
     $(document).on("click", '.addvulmodal', function(event) {
         event.preventDefault();
-        var caseid = $(this).attr("caseid");
+        var caseid = $('.case-container').attr("caseid");
         $.ajax({
             url: "/vince/case/"+caseid+"/addvul/",
             type: "GET",
@@ -634,7 +634,7 @@ $(document).ready(function() {
 	hm.append("<h2>Start all-vendor Notifications</h2>")
 	hm.append("<h4>Do not hit Escape or click outside this window!</h4>");
 	hm.append("<p> See Javascript console log for any failures</p>");
-	let caseid = $('.addvulmodal').attr('caseid');
+	let caseid = $('.case-container').attr('caseid');
 	if(!caseid) {
 	    hm.append("<strong style='color:red'>Error no CaseID found");
 	    return false;
@@ -711,7 +711,7 @@ $(document).ready(function() {
 	hm.append("<h2>Start all-vendor Approval</h2>");
 	hm.append("<h4> Do not close this window </h4>");
 	hm.append("<p> See Javascript console log for any failures</p>");
-	let caseid = $('.addvulmodal').attr('caseid');
+	let caseid = $('.case-container').attr('caseid');
 	if(!caseid) {
             hm.append("<strong style='color:red'>Error no CaseID found");
 	    finish_modal(hm);
@@ -933,7 +933,7 @@ $(document).ready(function() {
 
         $.post(url, {'csrfmiddlewaretoken': csrftoken, 'coordinator': val},
                function(data) {
-		   reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
+		   reloadParticipants($(".case-container").attr('caseid'), participants_table);
                })
             .done(function() {
                 /*$("#assign_block").hide();
@@ -1072,10 +1072,10 @@ $(document).ready(function() {
     });
 
 
-    if (document.getElementById('vuls_data')) {
-        var data = JSON.parse(document.getElementById('vuls_data').textContent);
-	console.log(data);
-    }
+    // if (document.getElementById('vuls_data')) {
+    //     var data = JSON.parse(document.getElementById('vuls_data').textContent);
+	//     console.log(data);
+    // }
 
 
     var cellClickFunction = function(e, cell) {
@@ -1143,7 +1143,7 @@ $(document).ready(function() {
             url: "/vince/case/editvul/"+vulid+"/?noask=1",
             type: "GET",
             success: function(data) {
-		reloadVuls($(".addvulmodal").attr('caseid'), table)
+		reloadVuls($(".case-container").attr('caseid'), table)
             },
             error: function(xhr, status) {
                 permissionDenied(addmodal);
@@ -1158,7 +1158,7 @@ $(document).ready(function() {
             url: "/vince/case/editvul/"+vulid+"/?ask=1",
             type: "GET",
             success: function(data) {
-		reloadVuls($(".addvulmodal").attr('caseid'), table)
+		reloadVuls($(".case-container").attr('caseid'), table)
             },
             error: function(xhr, status) {
                 permissionDenied(addmodal);
@@ -1185,25 +1185,25 @@ $(document).ready(function() {
         return tags;
     }
 
-    if (data) {
-	var tablet = new Tabulator("#vuls-table", {
-            data:data,
-            layout:"fitColumns",
-	    placeholder: "No vulnerabilites have been added",
-	    tooltipsHeader:true,
-            columns:[
-		{title:"ID", field:"cert_id", cellClick: vulCellClick},
-                {title:"Description", field:"description", cellClick: vulCellClick},
-                {title:"CVE", field:"cve", formatter:cveFormatter, cellClick: vulCellClick},
-                {title:"CWE", field:"cwe", cellClick: vulCellClick},
-		{title:"Exploits", field:"exploits", cellClick: vulCellClick},
-                {title:"Date Added", field:"date_added", cellClick: vulCellClick},
-		{title:"Tags", field:"tags", formatter:tagFormatter, width:250, cellClick:vulCellClick},
-                {formatter:buttonFormatter, align:"center", field:"id"}
-            ],
+    // if (data) {
+	// var tablet = new Tabulator("#vuls-table", {
+    //         data:data,
+    //         layout:"fitColumns",
+	//         placeholder: "No vulnerabilites have been added",
+	//         tooltipsHeader:true,
+    //         columns:[
+	// 	        {title:"ID", field:"cert_id", cellClick: vulCellClick},
+    //             {title:"Description", field:"description", cellClick: vulCellClick},
+    //             {title:"CVE", field:"cve", formatter:cveFormatter, cellClick: vulCellClick},
+    //             {title:"CWE", field:"cwe", cellClick: vulCellClick},
+	// 	        {title:"Exploits", field:"exploits", cellClick: vulCellClick},
+    //             {title:"Date Added", field:"date_added", cellClick: vulCellClick},
+	// 	        {title:"Tags", field:"tags", formatter:tagFormatter, width:250, cellClick:vulCellClick},
+    //             {formatter:buttonFormatter, align:"center", field:"id"}
+    //         ],
 
-        });
-    }
+    //     });
+    // }
 
     function contactClickFunction(cell, formatterParams, onRendered) {
 	var val = cell.getValue();
@@ -1367,7 +1367,7 @@ $(document).ready(function() {
 	data:[],
         layout:"fitColumns",
 	selectable:true,
-	ajaxURL: "/vince/ajax_calls/case/vendors/"+$(".addvulmodal").attr('caseid')+"/",
+	ajaxURL: "/vince/ajax_calls/case/vendors/"+$(".case-container").attr('caseid')+"/",
 	ajaxProgressiveLoad:"scroll",
 	ajaxFiltering:true,
 	ajaxLoaderLoading: "<div style='display:inline-block; border:4px solid #333; border-radius:10px; background:#fff; font-weight:bold; font-size:16px; color:#000; padding:10px 20px;'>Loading Data</div>",
@@ -1396,7 +1396,7 @@ $(document).ready(function() {
 
     });
 
-    reloadVendorStats($(".addvulmodal").attr('caseid'));
+    reloadVendorStats($(".case-container").attr('caseid'));
     //select row on "select all" button click
     $("#select-all-vendors").click(function(){
 	/*vendors_table.selectRow("visible");*/
@@ -1438,7 +1438,7 @@ $(document).ready(function() {
 		// When all ajax calls has been done
 		// Do something like hide waiting images, or any else function call
 		console.log("Done removing vendors");
-		reloadVendors($(".addvulmodal").attr('caseid'), vendors_table);
+		reloadVendors($(".case-container").attr('caseid'), vendors_table);
 	    }
 	};
 
@@ -1591,7 +1591,7 @@ $(document).ready(function() {
     $(document).on("click", ".cancel_confirm", function(event) {
 	event.preventDefault();
 	approvemodal.foundation('close');
-	reloadVendors($(".addvulmodal").attr('caseid'), vendors_table);
+	reloadVendors($(".case-container").attr('caseid'), vendors_table);
     });
 
     $(document).on("submit", "#removevendorform", function(event) {
@@ -1599,7 +1599,7 @@ $(document).ready(function() {
 	$.post($(this).attr("action"), $(this).serializeArray(),
 	       function(data) {})
 	    .done(function() {
-		reloadVendors($(".addvulmodal").attr('caseid'), vendors_table);
+		reloadVendors($(".case-container").attr('caseid'), vendors_table);
 	    })
 	    .fail(function(d) {
                 permissionDenied(addmodal);
@@ -1668,7 +1668,7 @@ $(document).ready(function() {
 
     var assignable_users = JSON.parse(document.getElementById('user_data').textContent);
     tasks_table = new Tabulator("#case_tasks", {
-        ajaxURL:"/vince/ajax_calls/case/tasks/"+$(".addvulmodal").attr("caseid"),
+        ajaxURL:"/vince/ajax_calls/case/tasks/"+$(".case-container").attr("caseid"),
 	ajaxProgressiveLoad:"scroll",
         layout:"fitColumns",
 	tooltipsHeader:true,
@@ -1814,7 +1814,7 @@ $(document).ready(function() {
     });
 
     $(document).on("closed.zf.reveal", "#statusmodal", function(event) {
-	var case_id = $('.addvulmodal').attr('caseid');
+	var case_id = $('.case-container').attr('caseid');
 	reloadVendors(case_id, vendors_table);
     });
 
@@ -1833,11 +1833,38 @@ $(document).ready(function() {
 	return this;
     });
 
+    function initialize_vuls_tab() {
+        if (document.getElementById('vuls_data')) {
+            console.log('there is a vuls_data element.')
+            var data = JSON.parse(document.getElementById('vuls_data').textContent);
+            console.log(data);
+            if (data) {
+                var table = new Tabulator("#vuls-table", {
+                    data:data,
+                    layout:"fitColumns",
+                    placeholder: "No vulnerabilites have been added",
+                    tooltipsHeader:true,
+                    columns:[
+                        {title:"ID", field:"cert_id", cellClick: vulCellClick},
+                        {title:"Description", field:"description", cellClick: vulCellClick},
+                        {title:"CVE", field:"cve", formatter:cveFormatter, cellClick: vulCellClick},
+                        {title:"CWE", field:"cwe", cellClick: vulCellClick},
+                        {title:"Exploits", field:"exploits", cellClick: vulCellClick},
+                        {title:"Date Added", field:"date_added", cellClick: vulCellClick},
+                        {title:"Tags", field:"tags", formatter:tagFormatter, width:250, cellClick:vulCellClick},
+                        {formatter:buttonFormatter, align:"center", field:"id"}
+                    ],
+                });
+            }
+        }
+        
+    }
+
     function initialize_participants_tab() {
 
         if (document.getElementById('participant_data')) {
             var participants_data = JSON.parse(document.getElementById('participant_data').textContent);
-            console.log(data);
+            //console.log(data);
         }    
 
         $(document).on("click", '#cancelparticipant', function(event) {
@@ -2001,7 +2028,7 @@ $(document).ready(function() {
 			       function(data) {
 			       })
 			    .done(function() {
-				reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
+				reloadParticipants($(".case-container").attr('caseid'), participants_table);
 				
 			    })
 			    .fail(function(d) {
@@ -2054,7 +2081,7 @@ $(document).ready(function() {
                         url: selectedRows[i].getData().remove_link,
                         success: function(data) {
 			    sleep(2000);
-			    reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
+			    reloadParticipants($(".case-container").attr('caseid'), participants_table);
                         },
 			error: function(xhr, status) {
 			    permissionDenied(approvemodal);
@@ -2063,7 +2090,7 @@ $(document).ready(function() {
                 }
             }
 	    
-            reloadParticipants($(".addvulmodal").attr('caseid'), participants_table);
+            reloadParticipants($(".case-container").attr('caseid'), participants_table);
         });
 
     }
@@ -2334,6 +2361,8 @@ $(document).ready(function() {
             initialize_vulnote_tab();
         } else if (tabsoughtviaurl === "posts") {
             initialize_posts_tab();
+        } else if (tabsoughtviaurl === "vuls") {
+            initialize_vuls_tab();
         };
     };
 
@@ -2345,6 +2374,8 @@ $(document).ready(function() {
                 initialize_vulnote_tab();
             } else if (mutation[0].target.getAttribute('id') === "posts") {
                 initialize_posts_tab();
+            } else if (mutation[0].target.getAttribute('id') === "vuls") {
+                initialize_vuls_tab();
             };
         };
     };
@@ -2354,10 +2385,11 @@ $(document).ready(function() {
     let participants_tab = document.getElementById("participants");
     let vulnote_tab = document.getElementById("vulnote");
     let posts_tab = document.getElementById("posts");
+    let vuls_tab = document.getElementById("vuls");
 
     tab_observer.observe(participants_tab, {childList:true});
     tab_observer.observe(vulnote_tab, {childList:true});
-    tab_observer.observe(posts_tab, {childList:true})
-
+    tab_observer.observe(posts_tab, {childList:true});
+    tab_observer.observe(vuls_tab, {childList:true});
 
 });

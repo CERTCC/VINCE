@@ -100,6 +100,7 @@ from rest_framework.views import APIView
 import pathlib
 import mimetypes
 from django.views.decorators.cache import cache_control
+from lib.vince.utils import deepGet
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -6393,6 +6394,80 @@ class CaseParticipantsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, 
         context['case'] = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
         context['participants'] = CaseParticipant.objects.filter(case=context['case']).order_by('user_name')
         context['participantsjs'] = [obj.as_dict() for obj in context['participants']]
+        return context
+
+
+class CaseNoTicketOrReportView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = 'vince:login'
+    template_name = 'vince/include/tabs/case_no_ticket_or_report_tab.html'
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+            return has_case_read_access(self.request.user, case)
+        else:
+            return False
+
+    def get_context_data(self, **kwargs):
+        context = super(CaseNoTicketOrReportView, self).get_context_data(**kwargs)
+        context['case'] = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+        return context
+
+
+class CaseVulsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = 'vince:login'
+    template_name = 'vince/include/tabs/case_vuls_tab.html'
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+            return has_case_read_access(self.request.user, case)
+        else:
+            return False
+
+    def get_context_data(self, **kwargs):
+        context = super(CaseVulsView, self).get_context_data(**kwargs)
+        context['case'] = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+        context['vuls'] = Vulnerability.casevuls(context['case'])
+        context['vulsjs'] = [obj.as_dict() for obj in context['vuls']]
+        return context
+
+
+class CaseOriginalReportView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = 'vince:login'
+    template_name = 'vince/include/tabs/case_original_report_tab.html'
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            case = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+            return has_case_read_access(self.request.user, case)
+        else:
+            return False
+
+    def get_context_data(self, **kwargs):
+        context = super(CaseOriginalReportView, self).get_context_data(**kwargs)
+        context['case'] = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
+        #Assume we have not vrf_url unless we get one from below methods
+        context['vrf_url'] = None
+        context['vincecomm_link'] = None
+        if hasattr(context['case'],'case_request') and context['case'].case_request:
+            if hasattr(context['case'].case_request,'caserequest'):
+                context['cr'] = context['case'].case_request.caserequest
+                if hasattr(context['cr'],'vrf_id') and context['cr'].vrf_id:
+                    context['vrf_url'] = download_vrf(context['cr'].vrf_id)
+                    vc_cr = VTCaseRequest.objects.filter(vrf_id=context['cr'].vrf_id).first()
+                    if vc_cr:
+                        context['vincecomm_link'] = reverse("vinny:cr_report", args=[vc_cr.id])
+        else:
+            context['ticket'] = context['case'].case_request
+            if hasattr(context['ticket'],'vrf_id') and context['ticket'].vrf_id:
+                context['vrf_url'] = download_vrf(context['ticket'].vrf_id)        
+        context['table_class'] = "hover unstriped"
+        context['noshowdeps'] = 1
+        context['assignable'] = [ u.usersettings.preferred_username for u in User.objects.filter(is_active=True, groups__name='vince')]
+        # need this for task reassignment
+        context['assignable_users'] = User.objects.filter(is_active=True, groups__name='vince')
+        context['assignable_usersjs'] = [{0: 'Unassigned'}] + [{obj.id:obj.usersettings.preferred_username} for obj in context['assignable_users']]
         return context
 
 
@@ -13135,7 +13210,6 @@ class PrintReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         context['year'] = year
         context['monthstr'] = date(year, month, 1).strftime('%B')
         context['month'] = month
-
         context['teams'] = Group.objects.exclude(groupsettings__contact__isnull=True)
         user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
         if self.kwargs.get('pk'):
@@ -13174,6 +13248,70 @@ class PrintReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         context['fwd_reports'] = FollowUp.objects.filter(title__icontains="Successfully forwarded", date__month=month, date__year=year, ticket__queue__in=my_queues)
         return context
 
+
+class PrintWeeklyReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/printweeklyreport.html"
+
+    def test_func(self):
+        # fake this with another condition from cron, a specified secret that bypasses authentication.
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        # check if the request has the secret that confirms it comes from cron.
+        # in here, generate the html and put it into the email.
+        # use this for inspiration: https://stackoverflow.com/questions/3005080/how-to-send-html-email-with-django-with-dynamic-content-in-it
+        # 
+        if check_misconfiguration(self.request.user):
+            return redirect("vince:misconfigured")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(PrintWeeklyReportsView, self).get_context_data(**kwargs)
+        logger.debug("we are generating the context for PrintWeeklyReportsView")
+        year = int(self.kwargs['year'])
+        week = int(self.kwargs['week'])
+        weekstartdate = date.fromisocalendar(year, week, 1)
+        context['weekstartdate'] = weekstartdate
+        weekenddate = date.fromisocalendar(year, week, 7)
+        context['weekenddate'] = weekenddate
+        daterangeend = weekenddate + timedelta(days=1)
+        context['teams'] = Group.objects.exclude(groupsettings__contact__isnull=True)
+        user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
+        if self.kwargs.get('pk'):
+            context['my_team'] = Group.objects.get(id=self.kwargs.get('pk'))
+            context['teams'] = context['teams'].exclude(id=self.kwargs.get('pk'))
+        else:
+            context['my_team'] = user_groups[0]
+            context['teams'] = context['teams'].exclude(id=context['my_team'].id)
+            # this team's queues
+        my_queues = get_team_queues(context['my_team'])
+        context['newnotes'] = VulnerabilityCase.objects.filter(vulnote__date_published__range=[weekstartdate, daterangeend], team_owner=context['my_team']).exclude(vulnote__date_published__isnull=True)
+        context['updated'] = VulnerabilityCase.objects.filter(vulnote__date_last_published__range=[weekstartdate, daterangeend], team_owner=context['my_team']).exclude(vulnote__date_published__isnull=True)
+        context['ticket_emails'] = FollowUp.objects.filter(title__icontains="New Email", date__range=[weekstartdate, daterangeend], ticket__queue__in=my_queues).exclude(ticket__case__isnull=False)
+        context['case_emails'] = FollowUp.objects.filter(title__icontains="New Email", date__range=[weekstartdate, daterangeend], ticket__queue__in=my_queues).exclude(ticket__case__isnull=True)
+        context['case_emails_distinct'] = context['case_emails'].order_by('ticket__case__id').distinct('ticket__case__id').count()
+        context['total_emails'] = len(context['ticket_emails']) + len(context['case_emails'])
+        context['total_tickets'] = Ticket.objects.filter(queue__in=my_queues, created__range=[weekstartdate, daterangeend]).count()
+        context['ticket_stats'] = Ticket.objects.filter(queue__in=my_queues, created__range=[weekstartdate, daterangeend]).values('queue__title').order_by('queue__title').annotate(count=Count('queue__title')).order_by('-count')
+        context['total_closed'] = Ticket.objects.filter(queue__in=my_queues, created__range=[weekstartdate, daterangeend], status=Ticket.CLOSED_STATUS).count()
+        context['closed_ticket_stats'] = Ticket.objects.filter(queue__in=my_queues, created__range=[weekstartdate, daterangeend],status=Ticket.CLOSED_STATUS).values('close_reason').order_by('close_reason').annotate(count=Count('close_reason')).order_by('-count')
+        new_cases = VulnerabilityCase.objects.filter(created__range=[weekstartdate, daterangeend], team_owner=context['my_team']).order_by('created')
+        active_cases = VulnerabilityCase.objects.filter(status = VulnerabilityCase.ACTIVE_STATUS, created__lt=weekstartdate, team_owner=context['my_team'])
+        deactive_cases = CaseAction.objects.filter(title__icontains="changed status of case from Active to Inactive", date__range=[weekstartdate, daterangeend], case__team_owner=context['my_team']).select_related('case').order_by('case').distinct('case')
+        to_active_cases = CaseAction.objects.filter(title__icontains="changed status of case from Inactive to Active", date__range=[weekstartdate, daterangeend], case__team_owner=context['my_team']).select_related('case').order_by('case').distinct('case')
+        context.update({'case_stats': {'new_cases':new_cases,
+                                       'active_cases': active_cases,
+                                       'deactive_cases': deactive_cases,
+                                       'to_active_cases': to_active_cases}})
+        context['new_users'] = User.objects.using('vincecomm').filter(date_joined__range=[weekstartdate, daterangeend]).count()
+        context['total_users'] = User.objects.using('vincecomm').all().count()
+        vendor_group_dict = {group.name:group.user_set.count() for group in Group.objects.using('vincecomm').exclude(groupcontact__isnull=True) if group.user_set.count() > 0}
+        context['vendors'] = len(vendor_group_dict)
+        vendor_groups = Group.objects.using('vincecomm').exclude(groupcontact__isnull=True)
+        context['vendor_users'] = User.objects.using('vincecomm').filter(groups__in=vendor_groups).distinct().count()
+        context['fwd_reports'] = FollowUp.objects.filter(title__icontains="Successfully forwarded", date__range=[weekstartdate, daterangeend], ticket__queue__in=my_queues)
+        return context
 
 
 class ReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
@@ -13916,6 +14054,8 @@ class VinceTeamSettingsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
     def get_context_data(self, **kwargs):
         context = super(VinceTeamSettingsView, self).get_context_data(**kwargs)
         context['team'] = get_object_or_404(Group, id=self.kwargs['pk'])
+        logger.debug('we are loading a team settings page and the metadata is')
+        logger.debug(context['team'].groupsettings.metadata)
         initial = {}
         try:
             initial['email_phone'] = get_public_phone(context['team'].groupsettings.contact)
@@ -13936,6 +14076,10 @@ class VinceTeamSettingsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         initial['outgoing_email'] = context['team'].groupsettings.team_email or settings.DEFAULT_REPLY_EMAIL
         initial['disclosure_link'] = context['team'].groupsettings.disclosure_link
         initial['cna_email'] = context['team'].groupsettings.cna_email
+        if deepGet(context["team"].groupsettings.metadata,"reports.weekly") == "on":
+            initial['weekly_report_boolean'] = context['team'].groupsettings.metadata['reports']['weekly']
+        if deepGet(context["team"].groupsettings.metadata,"reports.recipients"):
+            initial['weekly_report_recipients'] = context['team'].groupsettings.metadata['reports']['recipients'].replace('\"', '').replace('\'', '').replace('[','').replace(']','').replace(' ', '')
         context['form'] = TeamSettingsForm(initial=initial)
         context['activity'] = Action.objects.filter(comment="Team Settings Change", user__groups__in=[context['team']]).order_by('-date')[:20]
         return context
@@ -13944,7 +14088,7 @@ class VinceTeamSettingsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
         team = get_object_or_404(Group, id=self.kwargs['pk'])
 
-        if (self.request.POST['vulnote_template'] != team.groupsettings.vulnote_template):
+        if self.request.POST.get('vulnote_template') != team.groupsettings.vulnote_template:
             team.groupsettings.vulnote_template = self.request.POST['vulnote_template']
             #create Action
             action = Action(title=f"{self.request.user.usersettings.preferred_username} edited {team.name} team's vul note template",
@@ -13952,26 +14096,50 @@ class VinceTeamSettingsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
                             comment="Team Settings Change")
             action.save()
 
-        if (self.request.POST['team_signature'] != team.groupsettings.team_signature):
+        if self.request.POST.get('team_signature') != team.groupsettings.team_signature:
             team.groupsettings.team_signature = self.request.POST['team_signature']
             action = Action(title=f"{self.request.user.usersettings.preferred_username} edited {team.name} team's email signature",
                             user=self.request.user,
                             comment="Team Settings Change")
             action.save()
 
-        if (self.request.POST['disclosure_link'] != team.groupsettings.disclosure_link):
+        if self.request.POST.get('disclosure_link') != team.groupsettings.disclosure_link:
             team.groupsettings.disclosure_link = self.request.POST['disclosure_link']
             action = Action(title=f"{self.request.user.usersettings.preferred_username} edited {team.name} team's disclosure guidance link",
                             user=self.request.user,
                             comment="Team Settings Change")
             action.save()
 
-        if (self.request.POST['cna_email'] != team.groupsettings.cna_email):
+        if self.request.POST.get('cna_email') != team.groupsettings.cna_email:
             action = Action(title=f"{self.request.user.usersettings.preferred_username} changed {team.name} team's CNA email address from {team.groupsettings.cna_email} to {self.request.POST['cna_email']}",
                             user=self.request.user,
                             comment="Team Settings Change")
             action.save()
             team.groupsettings.cna_email = self.request.POST['cna_email']
+
+        if team.groupsettings.metadata == None or type(team.groupsettings.metadata) != dict:
+            #Initialize metadata if not set
+            team.groupsettings.metadata = {"reports": {}}
+        elif deepGet(team.groupsettings.metadata,'reports') == None:
+            #initialize reports in metadata
+            team.groupsettings.metadata['reports'] = {}
+            
+        if self.request.POST.get('weekly_report_boolean') != deepGet(team.groupsettings.metadata,'reports.weekly'):
+            action = Action(title=f"{self.request.user.usersettings.preferred_username} changed {team.name} team's weekly report setting from {deepGet(team.groupsettings.metadata,'reports.weekly')} to {self.request.POST.get('weekly_report_boolean')}",
+                            user=self.request.user,
+                            comment="Team Settings Change")
+            action.save()
+            if self.request.POST.get('weekly_report_boolean') == "on":
+                team.groupsettings.metadata['reports']['weekly'] = self.request.POST['weekly_report_boolean']
+            else:
+                team.groupsettings.metadata['reports']['weekly'] = "off"
+
+        if self.request.POST.get('weekly_report_recipients') != deepGet(team.groupsettings.metadata,'reports.recipients'):
+            action = Action(title=f"{self.request.user.usersettings.preferred_username} changed {team.name} team's set of weekly report recipients from {deepGet(team.groupsettings.metadata,'reports.recipients')} to {self.request.POST.get('weekly_report_recipients')}",
+                            user=self.request.user,
+                            comment="Team Settings Change")
+            action.save()
+            team.groupsettings.metadata['reports']['recipients'] = self.request.POST['weekly_report_recipients']
 
         team.groupsettings.save()
 

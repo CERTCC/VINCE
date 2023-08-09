@@ -1,0 +1,5 @@
+<p><a href="#" class="addvulmodal" caseid="{{case.id }}"><button class="button cmu tiny"><i class="fas fa-plus"></i> Add Vulnerability</button></a>&nbsp;&nbsp; <!--<a href="{% url 'vince:editvuls' case.id %}"><button class="button cmu tiny"><i class="fas fa-skull"></i> Edit Vulnerabilities</button></a>-->
+</p>
+{{ vulsjs|json_script:"vuls_data" }}
+<div id="vuls-table" class="tabulator bootstrap"></div>
+{#{% include 'vince/include/vuls.html' with edit=0 %}#}

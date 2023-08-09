@@ -2631,7 +2631,7 @@
     "template_name": "user_verification",
     "subject": "VINCE Verification",
     "heading": "",
-    "plain_text": "Greetings,\r\n\r\nWe received a request from [EMAIL] to be associated with the [VENDOR] vendor contact within VINCE. We are reaching out to the team to ensure that this request is legitimate and that person can receive alerts on behalf of [VENDOR] before giving them access. Could a team member please confirm this? If approved, we can also make this user the administrator of the group so that they can handle future user requests and manage the team's access.\r\n\r\nRegards,\r\n\r\n[team_signature]",
+    "plain_text": "Greetings,\r\n\r\nWe received a request from [EMAIL] to be associated with the [VENDOR] vendor contact within VINCE, [https://{{ settings.VINCE_COMM_DOMAIN }}/vince](https://{{ settings.VINCE_COMM_DOMAIN }}/vince). We are reaching out to the team to ensure that this request is legitimate and that person can receive alerts on behalf of [VENDOR] before giving them access. Could a team member please confirm this? If approved, we can also make this user the administrator of the group so that they can handle future user requests and manage the team's access.\r\n\r\nRegards,\r\n\r\n[team_signature]",
     "html": "",
     "locale": "en",
     "body_only": true,
@@ -2652,6 +2652,21 @@
     "body_only": true,
     "user": 1,
     "modified": "2021-11-11T16:35:33.207Z"
+  }
+},
+{
+  "model": "vince.emailtemplate",
+  "pk": 178,
+  "fields": {
+    "template_name": "vince_weekly_report",
+    "subject": "VINCE Weekly Report",
+    "heading": "",
+    "plain_text": "{{ report }}\r\n\r\nLogin to VINCE to see the full details.",
+    "html": "<p style=\"font-family: sans-serif; font-size: 1em;\">Hello {{ username }}.</p> <p style=\"font-family: sans-serif; font-size: 1em;\">{% autoescape off %}{{ report }}{% endautoescape %}\r\n</p>\r\n\r\n<p>Login to <a href=\"{{ login_url }}\">VINCE</a> to see the full details.</p>",
+    "locale": "en",
+    "body_only": false,
+    "user": null,
+    "modified": "2021-11-11T16:35:33.152Z"
   }
 }
 ]

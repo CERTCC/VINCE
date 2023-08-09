@@ -9,4 +9,8 @@ cron:
  - name: "vtgenreminders"
    url: "/vinceworker/reminder/"
    schedule: "0 9 * * *"
-   
+ - name: "weeklyreport"
+   url: "/vinceworker/weeklyreport/"
+   schedule: "0 9 * * 1"
+
+# When we send this to prod, the schedule value for the weekly reports should be changed to "0 9 * * 1"

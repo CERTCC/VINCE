@@ -164,9 +164,8 @@ $(document).ready(function() {
     
     
     $(document).on("click", '#reassign', function(event) {
-	$("#assign_block").show();
-	$(".assigned_to").hide();
-	
+		$("#assign_block").show();
+		$(".assigned_to").hide();
     });
 
     $(document).on("click", '#editres', function(event) {
@@ -232,7 +231,7 @@ $(document).ready(function() {
     $(document).on("click", "#assign_submit", function(event) {
 	var val = $("#uassign option:selected").val();
 	var name = $("#uassign option:selected").html();
-	var url = window.location.href + "?assign="+val;
+	var url = window.location.href.replace(location.hash,"") + "?assign="+val;
 
 	if (val == "-2") {
 	    var url = window.location.href + "?autoassign=1";
@@ -261,8 +260,8 @@ $(document).ready(function() {
 		    }
 		},
 		error: function(xhr, status) {
-                    permissionDenied(adddepmodal);
-                }
+            permissionDenied(adddepmodal);
+        }
 	    });
 
 	    $("#assign_block").hide();

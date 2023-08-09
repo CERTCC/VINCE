@@ -1,5 +1,15 @@
 # VINCE Changelog
 
+Version 2.1.3  2023-08-09
+
+* More tabs on VinceTrack Case page updated for asynchronous loading.
+* Dependabot update recommendations: `cryptography` 41.0.0 to 41.0.3, `certifi` 2022.9.24 to 2023.7.22
+* Enhanced printability of VINCEComm Case pages by removing unnecessary content on print and adding more detailed title to case page
+* Remove duplicate settings.py to avoid confusion.
+* Removed option to sort large numbers of vendors alphabetically on published vulnotes, preventing JavaScript bug
+* Introduced code that automatically schedules weekly reports on VINCE statistics to be sent via email to appropriate recipients
+
+
 Version 2.1.2  2023-06-09
 
 * VinceTrack CaseView,VinceCommUserView updated for Asynchronous calls for tab-based browsing.
