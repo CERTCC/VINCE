@@ -125,29 +125,36 @@ function asyncLoad(fdiv,furl,fmethod,pdiv,formpost,silent,transform) {
 	    fdata = $(formpost).serialize();
     }
     lockunlock(true,pdiv,fdiv);
+	console.log('furl is ')
+	console.log(furl)
+	console.log('fmethod is ')
+	console.log(fmethod)
+	console.log('fdata is ')
+	console.log(fdata)
     window.txhr = $.ajax({
         url : furl,
         type: fmethod,
         data: fdata,
         success: function(data) {
-	    lockunlock(false,pdiv,fdiv);
-	    if(transform && typeof(transform) == 'function')
-		$(fdiv).html(transform(data)).foundation();
-	    else
-		$(fdiv).html(data).foundation();
-        },
-	error: function() {
-	    lockunlock(false,pdiv,fdiv);
-	    console.log(arguments);
-	    /* The var silent is no longer being used */
-	    $(fdiv).html("Content failed to be collected for display! "+
+	    	lockunlock(false,pdiv,fdiv);
+	    	if(transform && typeof(transform) == 'function')
+				$(fdiv).html(transform(data)).foundation();
+	    	else
+				$(fdiv).html(data).foundation();
+			console.log($(fdiv))
+        	},
+		error: function() {
+		    lockunlock(false,pdiv,fdiv);
+		    console.log(arguments);
+	    	/* The var silent is no longer being used */
+	    	$(fdiv).html("Content failed to be collected for display! "+
 			 "See console log for details.");
-	},
-	complete: function() {
-	    /* Just safety net */
-	    lockunlock(false,pdiv,fdiv);
-	    window.txhr = null;
-	}
+		},
+		complete: function() {
+	    	/* Just safety net */
+		    lockunlock(false,pdiv,fdiv);
+		    window.txhr = null;
+		}
     });
 }
 
@@ -249,6 +256,18 @@ function finish_modal(hm) {
     hm.append("<p>Operation complete, you may close this window</p>");
 }
 
+function checkemail(vemails) { 
+	let emails = vemails.split(",");
+	let remail = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
+	for(let i = 0; i < emails.length; i++) {
+		if(!remail.test(emails[i])) {
+			alert("Email entry " + emails[i] + " is invalid! \n" + "Enter valid email address before submitting.");
+			return false;
+		}
+	}
+	return true;
+	}
+
 $(function () {
 
     /*$('span[title]').qtip({
@@ -267,7 +286,7 @@ $(function () {
       tooltipClass: 'tooltipster-default'
       });
     */
-
+	  
 	var tabIDsoughtviaurl = $(location).prop('hash').substr(1);
 	
 	if (tabIDsoughtviaurl){

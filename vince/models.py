@@ -66,6 +66,32 @@ QUEUE_TYPE = (
     (OTHER_QUEUE, _('Other Queue'))
 )
 
+class OldJSONField(JSONField):
+    """ This was due to legacy support in Django 2.2. from_db_value
+    should be explicitily sepcified when extending JSONField """
+
+    def db_type(self, connection):
+        return 'json'
+
+    def from_db_value(self, value, expression, connection):
+        return value
+
+# Create your models here.
+GROUP_TYPE = (
+    ('srmail', 'SRMail List'),
+    ('vendorlist', 'Vendor Contact List')
+    )
+
+STATUS_TYPE = (
+    ('Active', 'Active'),
+    ('Inactive', 'Inactive'),
+    ('Unknown', 'Unknown')
+)
+
+MEMBER_TYPE = (
+    ('Organization', 'Organization'),
+    ('Person', 'Person'),
+    ('Group', 'Group'))
 
 
 class GroupSettings(models.Model):
@@ -125,6 +151,13 @@ class GroupSettings(models.Model):
     contacts_write = models.BooleanField(
         help_text=_('Does this group have permissions to add/edit VINCE contacts'),
         default=True)
+    
+    metadata = OldJSONField(
+        # weekly: True means that the group should have weekly reports.
+        help_text=_('Extensible, currently used to specify report settings like {"weekly": True, "recipients": ["email1@example.com","email2@example.com"]}'),
+        blank=True,
+        null=True
+    )
 
     def _get_triage(self):
         #get cr wueue
@@ -133,33 +166,6 @@ class GroupSettings(models.Model):
 
     triage = property(_get_triage)
 
-
-class OldJSONField(JSONField):
-    """ This was due to legacy support in Django 2.2. from_db_value
-    should be explicitily sepcified when extending JSONField """
-
-    def db_type(self, connection):
-        return 'json'
-
-    def from_db_value(self, value, expression, connection):
-        return value
-
-# Create your models here.
-GROUP_TYPE = (
-    ('srmail', 'SRMail List'),
-    ('vendorlist', 'Vendor Contact List')
-    )
-
-STATUS_TYPE = (
-    ('Active', 'Active'),
-    ('Inactive', 'Inactive'),
-    ('Unknown', 'Unknown')
-)
-
-MEMBER_TYPE = (
-    ('Organization', 'Organization'),
-    ('Person', 'Person'),
-    ('Group', 'Group'))
 
 #### CONTACTS MODELS ####
 

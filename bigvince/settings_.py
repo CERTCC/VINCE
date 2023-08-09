@@ -56,7 +56,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "2.1.2"
+VERSION = "2.1.3"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -69,6 +69,8 @@ if VINCE_DEV_SYSTEM == '1':
     VINCE_DEV_SYSTEM = "title-dev"
     
 LOCALSTACK=os.environ.get('LOCALSTACK')
+
+TERMS_URL = os.environ.get('TERMS_URL',"https://docs.aws.amazon.com/cognito/latest/developerguide/data-protection.html")
 
 GOOGLE_SITE_KEY = os.environ.get('GOOGLE_SITE_KEY')
 

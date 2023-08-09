@@ -10,10 +10,11 @@
       padding: 10px;
       }
     </style>
-  <title>Report for {{ monthstr }} {{ year }}</title>
+  <title>{{ weekstartdate }} to {{ weekenddate }}</title>
   </head>
   <body>
-    <h2>Report for {{ monthstr }} {{ year }}</h2>
+    <h2>{{ weekstartdate }} to {{ weekenddate }}</h2>
+
 
     <h3>Vulnerability Notes</h3>
     <table>
@@ -253,7 +254,7 @@
     <h3>Users</h3>
     <table>
       <tr>
-        <th>Users Registered {{ monthstr }} {{ year }}</th>
+        <th>Users Registered</th>
         <th>{{ new_users }}</th>
       </tr>
       <tr>
@@ -269,6 +270,7 @@
         <th>{{ vendor_users }}</th>
       </tr>
     </table>
+
 
   </body>
   </html>

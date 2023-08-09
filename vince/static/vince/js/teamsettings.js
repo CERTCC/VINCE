@@ -38,8 +38,16 @@ $(document).ready(function() {
 
     window.addEventListener('beforeunload', onBeforeUnload);
 
-    $('form').submit(function () {
+    $('#teamform').submit(function () {
 	window.removeEventListener('beforeunload', onBeforeUnload);
+	let submittedemail = $('#id_weekly_report_recipients').val();
+	if ($('#id_weekly_report_boolean').is(':checked')) {
+	    if(!submittedemail) {
+		alert("Email field is required when weekly report is enabled");
+		return false;
+	    }
+	}
+	return checkemail(submittedemail);
     });
 
     var simplemde = new EasyMDE({element: $("#id_vulnote_template")[0],

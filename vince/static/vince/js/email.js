@@ -88,20 +88,10 @@ $(document).ready(function() {
 
     window.addEventListener('beforeunload', onBeforeUnload);
 
-    $('form').submit(function () {
+    $('#emailForm').submit(function () {
         window.removeEventListener('beforeunload', onBeforeUnload);
-    });
-    $('#emailform').on('submit', function() {
-	let emails = $('input[name="to"]').val().split(",");
-	let remail = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
-	for(let i = 0; i < emails.length; i++) {
-	    if(!remail.test(emails[i])) {
-		alert("Email entry " + emails[i] + " is invalid! \n" +
-		     "Enter valid email address before submitting.");
-		return false;
-	    }
-	}
-	return true;
+        let submittedemail = $('input[name="to"]').val()
+        return checkemail(submittedemail)
     });
     
     var options = {}

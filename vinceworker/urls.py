@@ -42,10 +42,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url
-from vinceworker.views import ingest_vulreport, send_daily_digest, generate_reminders
+from vinceworker.views import ingest_vulreport, send_daily_digest, generate_reminders, send_weekly_report
 
 urlpatterns = [
     url(r'^ingest-vulreport/$', ingest_vulreport, name='ingest_vulreport'),
     url(r'^daily/$', send_daily_digest, name='daily_digest'),
     url(r'^reminder/$', generate_reminders, name="reminders"),
+    url(r'^weeklyreport/$', send_weekly_report, name='weeklyreport'),
 ]

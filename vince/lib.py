@@ -34,7 +34,9 @@ import pkgutil
 import encodings
 import boto3
 import hashlib
-from django.db.models import Q, Count
+from django.db import models
+from django.db.models import Q, Count, F
+from django.db.models.functions import Cast
 # from django.utils import six
 from dateutil import parser
 # from django.utils.safestring import mark_safe
@@ -43,11 +45,13 @@ from django.core.files import File
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from django.utils.encoding import smart_text
+from django.template.loader import render_to_string, get_template
 from vince.models import VulnerabilityCase
 # from vince.models import Attachment, EmailTemplate, ArtifactAttachment, TicketArtifact
 from vince.models import *
 from vinny.models import Message, Case, Post, PostRevision, VinceCommContact, GroupContact, CaseMember, CaseMemberStatus, CaseStatement, CaseVulnerability, VTCaseRequest, VinceCommCaseAttachment, ReportAttachment, VinceCommInvitedUsers, CRFollowUp, VCVUReport, VendorAction, VendorStatusChange, CaseCoordinator, ContactInfoChange, CaseViewed, CaseVulExploit, CaseVulCVSS, CoordinatorSettings, VINCEEmailNotification
-from vince.mailer import send_newticket_mail, send_daily_digest_mail, send_reset_mfa_email, get_mail_content
+from vince.mailer import send_newticket_mail, send_daily_digest_mail, send_reset_mfa_email, get_mail_content, send_weekly_report_mail
+from .permissions import *
 import email
 import email.header
 import traceback
@@ -2672,6 +2676,68 @@ def publish_vul_note(vu_dict, key):
     s3client = boto3.client('s3', region_name=settings.AWS_REGION)
     s3client.put_object(Body=json.dumps(vu_dict), Bucket=settings.S3_UPDATE_BUCKET_NAME, Key=key)
 
+# input would be teamid and emails as an array
+def prepare_and_send_weekly_report():
+
+    # get time info
+    context = {}
+    oneweekago = date.today() - timedelta(days=7)
+    year = oneweekago.isocalendar()[0]
+    week = oneweekago.isocalendar()[1]
+    weekstartdate = date.fromisocalendar(year, week, 1)
+    context['weekstartdate'] = weekstartdate
+    weekenddate = date.fromisocalendar(year, week, 7)
+    context['weekenddate'] = weekenddate
+    daterangeend = weekenddate + timedelta(days=1)
+
+    # examine the GroupSettings model, looking for groups that have weekly="on"
+    groupsplussettings = GroupSettings.objects.annotate(n=Cast(F("metadata__reports__weekly"),models.TextField())).filter(n__icontains="on")
+    logger.debug(groupsplussettings)
+
+    # for each groupplussettings with weekly="on", identify recipients, gather data needed for the report, render the template with the data, and send it to send_weekly_report_email
+    recipients = []
+    groupid = 0
+    for groupplussettings in groupsplussettings:
+
+        # get recipients data as a list
+        recipients = groupplussettings.metadata["reports"]["recipients"].split(',')
+
+        # gather data needed for the report
+        groupid = groupplussettings.group.id
+        my_team = Group.objects.get(id=groupid)
+        context['my_team'] = my_team
+        my_queues = get_team_queues(context['my_team'])
+        context['newnotes'] = VulnerabilityCase.objects.filter(vulnote__date_published__range=[weekstartdate, daterangeend], team_owner=context['my_team']).exclude(vulnote__date_published__isnull=True)
+        context['updated'] = VulnerabilityCase.objects.filter(vulnote__date_last_published__range=[weekstartdate, daterangeend], team_owner=context['my_team']).exclude(vulnote__date_published__isnull=True)
+        context['ticket_emails'] = FollowUp.objects.filter(title__icontains="New Email", date__range=[weekstartdate, daterangeend], ticket__queue__in=my_queues).exclude(ticket__case__isnull=False)
+        context['case_emails'] = FollowUp.objects.filter(title__icontains="New Email", date__range=[weekstartdate, daterangeend], ticket__queue__in=my_queues).exclude(ticket__case__isnull=True)
+        context['case_emails_distinct'] = context['case_emails'].order_by('ticket__case__id').distinct('ticket__case__id').count()
+        context['total_emails'] = len(context['ticket_emails']) + len(context['case_emails'])
+        context['total_tickets'] = Ticket.objects.filter(queue__in=my_queues, created__range=[weekstartdate, daterangeend]).count()
+        context['ticket_stats'] = Ticket.objects.filter(queue__in=my_queues, created__range=[weekstartdate, daterangeend]).values('queue__title').order_by('queue__title').annotate(count=Count('queue__title')).order_by('-count')
+        context['total_closed'] = Ticket.objects.filter(queue__in=my_queues, created__range=[weekstartdate, daterangeend], status=Ticket.CLOSED_STATUS).count()
+        context['closed_ticket_stats'] = Ticket.objects.filter(queue__in=my_queues, created__range=[weekstartdate, daterangeend],status=Ticket.CLOSED_STATUS).values('close_reason').order_by('close_reason').annotate(count=Count('close_reason')).order_by('-count')
+        new_cases = VulnerabilityCase.objects.filter(created__range=[weekstartdate, daterangeend], team_owner=context['my_team']).order_by('created')
+        active_cases = VulnerabilityCase.objects.filter(status = VulnerabilityCase.ACTIVE_STATUS, created__lt=weekstartdate, team_owner=context['my_team'])
+        deactive_cases = CaseAction.objects.filter(title__icontains="changed status of case from Active to Inactive", date__range=[weekstartdate, daterangeend], case__team_owner=context['my_team']).select_related('case').order_by('case').distinct('case')
+        to_active_cases = CaseAction.objects.filter(title__icontains="changed status of case from Inactive to Active", date__range=[weekstartdate, daterangeend], case__team_owner=context['my_team']).select_related('case').order_by('case').distinct('case')
+        context.update({'case_stats': {'new_cases':new_cases,
+                                        'active_cases': active_cases,
+                                        'deactive_cases': deactive_cases,
+                                        'to_active_cases': to_active_cases}})
+        context['new_users'] = User.objects.using('vincecomm').filter(date_joined__range=[weekstartdate, daterangeend]).count()
+        context['total_users'] = User.objects.using('vincecomm').all().count()
+        vendor_group_dict = {group.name:group.user_set.count() for group in Group.objects.using('vincecomm').exclude(groupcontact__isnull=True) if group.user_set.count() > 0}
+        context['vendors'] = len(vendor_group_dict)
+        vendor_groups = Group.objects.using('vincecomm').exclude(groupcontact__isnull=True)
+        context['vendor_users'] = User.objects.using('vincecomm').filter(groups__in=vendor_groups).distinct().count()
+        context['fwd_reports'] = FollowUp.objects.filter(title__icontains="Successfully forwarded", date__range=[weekstartdate, daterangeend], ticket__queue__in=my_queues)
+
+        # render the template with the data
+        html_content = render_to_string('vince/printweeklyreport.html', context) + ""
+
+        # send it to mailer.py for final pre-processing
+        send_weekly_report_mail(recipients, my_team, html_content)
 
 def send_vt_daily_digest(user):
 

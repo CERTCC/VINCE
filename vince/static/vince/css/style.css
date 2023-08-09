@@ -5063,6 +5063,11 @@ h3 span.helptooltip, h4 span.helptooltip {
     }
 }
 
+@media print {
+    div#offCanvasLeft, div#offCanvasLeft1, div#TRoffCanvasLeft, div#TRoffCanvasLeft1, div#offCanvas { display: none !important; }
+    #header { display: none; }
+}
+
 .bar-graph .percent span {
     font-size: 1.875rem;
 }

@@ -32,15 +32,16 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404
 import json
 from vince.apps import VinceTrackConfig
-from vince.models import VinceSQS, TicketQueue, FollowUp, CaseRequest, AdminPGPEmail, Contact, ContactGroup, EmailContact, PhoneContact, ContactPgP, GroupMember, VendorNotification, VTDailyNotification
+from vince.models import VinceSQS, TicketQueue, FollowUp, CaseRequest, AdminPGPEmail, Contact, ContactGroup, EmailContact, PhoneContact, ContactPgP, GroupMember, VendorNotification, VTDailyNotification, GroupSettings
 import os
 import boto3
 import traceback
 from django.conf import settings
 from django.template.loader import get_template
 from django.forms.models import model_to_dict
+
 from vince.forms import TicketForm, CreateCaseRequestForm
-from vince.lib import update_vendor_status, update_vendor_view_status, create_ticket, create_case_post_action, create_action, process_s3_download, add_case_artifact, update_case_request, create_ticket_from_email_s3, update_vendor_status_statement, create_bounce_ticket, send_vt_daily_digest, generate_vt_reminders, reset_user_mfa
+from vince.lib import update_vendor_status, update_vendor_view_status, create_ticket, create_case_post_action, create_action, process_s3_download, add_case_artifact, update_case_request, create_ticket_from_email_s3, update_vendor_status_statement, create_bounce_ticket, send_vt_daily_digest, generate_vt_reminders, reset_user_mfa, prepare_and_send_weekly_report
 from vinny.lib import send_post_email, send_usermention_notification
 from django.contrib.auth.models import User
 from vinny.models import PostRevision
@@ -81,8 +82,12 @@ def vince_retrieve_submission(cr, vrf, attachment):
 
     logger.debug(cr.request_type)
 
-    filename = f"{settings.VRF_REPORT_DIR}/{vrf}.txt"
-
+    if cr.request_type == CaseRequest.GOV_FORM:
+        logger.debug("THIS IS A GOV FORM!")
+        filename = "GOV_reports/%s.txt" % vrf
+    else:
+        filename = f"{settings.VRF_REPORT_DIR}/{vrf}.txt"
+    
     obj = s3.Object(settings.VP_PRIVATE_BUCKET_NAME, filename)
 
     message = None
@@ -112,6 +117,18 @@ def vince_retrieve_submission(cr, vrf, attachment):
             logger.debug(obj.content_type)
             attach_object = process_s3_download(followup, attachment, obj.content_length, obj.content_type)
 
+        if cr.request_type == CaseRequest.GOV_FORM:
+            emails = AdminPGPEmail.objects.filter(active=True)
+            report_template = get_template('vince/email-fwd-dotgov.txt')
+            for email in emails:
+                rv = send_encrypted_mail(email, cr.vrf_subject, report_template.render(context=model_to_dict(cr)), attach_object)
+                if rv:
+                    fup = FollowUp(ticket=cr, title=f"Error forwarding encrypted email to {email.email}", comment=rv)
+                    fup.save()
+                    continue
+                fup = FollowUp(ticket=cr, title=f"Successfully forwarded email to {email.email}")
+                fup.save()
+            
         send_newticket_mail(followup=followup, files=None, user=None)
 
     except:
@@ -145,6 +162,23 @@ def send_daily_digest(request):
             send_vt_daily_digest(u)
 
         return JsonResponse({'response':'success'}, status=200)
+
+
+@csrf_exempt
+def send_weekly_report(request):
+    logger.debug("vinceworker send_weekly_report view triggered")
+
+    if request.method == 'POST':
+        taskname = request.META.get('HTTP_X_AWS_SQSD_TASKNAME')
+        logger.debug(taskname)
+        logger.debug(request.META.get('HTTP_X_AWS_SQSD_SCHEDULED_AT'))
+        if taskname != 'weeklyreport':
+            return HttpResponse(status=404)
+
+        prepare_and_send_weekly_report()
+
+        return JsonResponse({'response':'success'}, status=200)
+
 
 @csrf_exempt
 def generate_reminders(request):
@@ -268,7 +302,22 @@ def ingest_vulreport(request):
                         email_msg = create_ticket_from_email_s3(data["receipt"]["action"].get("objectKey"), data["receipt"]["action"].get("bucketName"))
                         return JsonResponse({'response':'success'}, status=200)
             data['submission_type'] = 'web'
-            data['queue'] = vulqueue.id
+
+            if data.get('affected_website'):
+                logger.debug("THIS IS A GOV FORM")
+                data['request_type'] = CaseRequest.GOV_FORM
+                data['queue'] = govqueue.id
+                data['product_name'] = data['affected_website']
+            elif data.get('ics_impact') and (data.get('ics_impact') == True):
+                #is there an ICS queue?
+                icsqueue = TicketQueue.objects.filter(title='INL-CR').first()
+                if icsqueue:
+                    data['queue'] = icsqueue.id
+                else:
+                    data['queue'] = vulqueue.id
+            else:
+                data['queue'] = vulqueue.id
+
             cr = CaseRequestSerializer(data=data)
             if (cr.is_valid()):
                 cr = cr.save()
@@ -457,8 +506,12 @@ def write_srmail(request):
                 x.delete()
                 
             all_vendor_contacts = Contact.objects.filter(active=True, vendor_type='Vendor')
-            for c in all_vendor_contacts:
-                mem = GroupMember.objects.update_or_create(contact=c, group=all_vendor_contact_group)
+            for c in all_vendor_contacts.exclude(groupmember__group = all_vendor_contact_group):
+                try:
+                    mem = GroupMember.objects.update_or_create(contact=c, group=all_vendor_contact_group)
+                    logger.debug(f"Contact {c} needs to be added to all_vendors group")
+                except Exception as e:
+                    logger.debug(f"Contact {c} failed to be added to  all_vendors group error {e}")
 
         #write all the groups
         groups = ContactGroup.objects.order_by("srmail_peer_name")
@@ -512,7 +565,23 @@ def write_srmail(request):
 
                 emails = EmailContact.objects.filter(contact=contact, status=True)
                 for email in emails:
-                    email_str = srmail + "\t"+email.email_function+"\t" + email.email + "\t" + email.name + "\n"
+                    if not email.email:
+                        logger.warn(f"Email field missing for Contact {email}")
+                        continue
+                    email_changed = ""
+                    if not email.email_function:
+                        email.email_function = "TO"
+                        email_changed += "Field email.email_function is missing "
+                    if not email.name:
+                        email.name = email.email
+                        email_changed += "Field email.name is missing "
+                    email_str = srmail + "\t" + email.email_function + "\t" + email.email + "\t" + email.name + "\n"
+                    if email_changed != "":
+                        try:
+                            email.save()
+                            logger.debug(f"Updated email metadata for Contact {email} with {email_changed}")
+                        except Exception as e:
+                            logger.warning(f"Could not update email missing information {email_changed} for Contact {email} error {e}")
                     f.write(email_str.encode('ascii', 'ignore').decode('ascii'))
                 phones = PhoneContact.objects.filter(contact=contact)
                 for phone in phones:

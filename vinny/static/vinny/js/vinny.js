@@ -55,6 +55,10 @@ function initTooltipster(element, umProfileStore, displayUserCard) {
 $(document).ready(function() {
     /*$('.tooltippy').tooltipster({
 	maxWidth:200});*/
+
+	if (document.getElementById('case_title').innerHTML) {
+		document.title = "VINCE - " + document.getElementById('case_title').innerHTML
+	}
     
     var simplemde = new SimpleMDE({element: $("#id_content")[0],
 				 renderingConfig: {

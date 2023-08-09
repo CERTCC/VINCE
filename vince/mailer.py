@@ -1194,6 +1194,25 @@ def send_daily_digest_mail(user, text):
         html=html
     )
 
+def send_weekly_report_mail(recipients, my_team, html_content):
+    subject = f'VINCE Weekly Activity'
+
+    context = {
+        'my_team': my_team,
+        'subject': subject,
+        'report': html_content,
+        'login_url': f"{settings.SERVER_NAME}"
+    }
+
+    send_templated_mail(
+        'vince_weekly_report_email',
+        context,
+        recipients=recipients,
+        fail_silently=True,
+        files=None,
+        html=True
+    )
+
 def send_email_to_all(to_group, subject, content, from_user, ticket):
     if to_group == '1':
         # get all vendors = get all groups with contacts

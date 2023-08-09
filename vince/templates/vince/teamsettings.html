@@ -34,7 +34,8 @@
 <div class="user_admin_options">
   <div class="row">
     <div class="large-8 columns">
-      <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      <form method="post" id="teamform" enctype="multipart/form-data">
+	{% csrf_token %}
 	{% if form.errors %}
 	<div class="callout alert">
           {% if form.errors.items|length == 1 %}Please correct the error below.{% else %}Please correct the errors below.{% endif %}
