@@ -36,33 +36,9 @@
     
         </div>
         <div class="large-3 medium-4 small-12 columns">
-        <button class="button default dropdown menu float-right" data-dropdown-menu type="button" data-toggle="wanttomenu" aria-haspopup="true" aria-expanded="false" id="iwanttobutton">
-            I want to</button>
-        <div class="dropdown-pane hoverable bottom" id="wanttomenu" data-dropdown data-hover="true" data-hover-pane="true">
-            <ul class="menu vertical">
-        {% if vincecomm_link %}
-        <li><a class="dropdown-item" href="{{ vincecomm_link }}">View in VinceComm</a></li>
-        {% endif %}
-        <li><a class="dropdown-item" id="quickclose" href="#comment">{% trans "Quick close ticket" %}</a></li>
-        <li><a class="dropdown-item" id="assignteam" href="{% url 'vince:assignteam' cr.id %}">{% trans "Assign new team" %}</a></li>
-        <li><a class="dropdown-item" href="#comment">{% trans "Comment" %}</a></li>
-        <li><a class="dropdown-item" href="#comment">{% trans "Change Status" %}</a></li>
-        {% if cr %}
-        <li><a class="dropdown-item" href="{% url 'vince:edit' cr.id %}">{% trans "Edit Ticket" %}</a></li>
-        {% if cr.on_hold %}
-        <li><a class="dropdown-item" href="{% url 'vince:unhold' cr.id %}">{% trans "Unhold Ticket" %}</a></li>
-        {% else %}
-        <li><a class="dropdown-item" href="{% url 'vince:hold' cr.id %}">{% trans "Hold Ticket" %}</a></li>
-            {% endif %}
-        <li><a class="dropdown-item" href="{% url 'vince:editcr' cr.id %}">{% trans "Edit Submission" %}</a></li>
-        <li><a class="dropdown-item adddependency" action="{% url 'vince:adddep' cr.id %}">{% trans "Add Dependency" %}</a></li>
-        {% if case %}{% else %}
-        <li><a class="dropdown-item" data-open="deleteticket">{% trans "Delete this Ticket" %}</a></li>
-        {% endif %}
-        <li><a class="dropdown-item" id="encrypttkt" href="{% url 'vince:encrypt' cr.id %}">{% trans "Encrypt and Send" %}</a></li>
-        {% endif %}
-            </ul>
-        </div>
+            <a class="button cmu small-only-expanded primary float-right" href="{% url 'vince:ticket' pk=cr.id %}">View and Modify Ticket</a>
+        <!-- <button class="button default dropdown menu float-right" data-dropdown-menu type="button" data-toggle="wanttomenu" aria-haspopup="true" aria-expanded="false" id="iwanttobutton">
+            I want to</button> -->
         </div>
     </div>
     
