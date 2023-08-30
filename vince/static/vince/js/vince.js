@@ -286,6 +286,78 @@ $(function () {
       tooltipClass: 'tooltipster-default'
       });
     */
+
+	// The following 70 lines or so is a rough draft that needs substantial work for getting parts of the case & ticket pages to refresh automatically.
+
+	// let periodBetweenInactivityChecks = 10000;
+	// let autorefreshInterval = 60000;
+	// let time = new Date().getTime();
+	
+	// $(document.body).bind("mousemove keypress", function(e) {
+	// 	time = new Date().getTime();
+	// });
+	
+	// function autorefresh() {
+	// 	console.log('autorefresh is starting')
+    //     let request = new XMLHttpRequest();
+    //     request.open('GET', location.href.replace(location.hash,""));
+    //     request.onload = function () {
+    //         if (request.response){
+    //             let retrievedHTML = request.response;
+    //             const parser = new DOMParser();
+    //             const parsedHTML = parser.parseFromString(retrievedHTML, "text/html");
+    //             $('.shouldautorefresh').each(function() {
+    //                 current_id = $(this).attr("id");
+    //                 html_to_inject = parsedHTML.querySelectorAll("[id='"+current_id+"']")[0].innerHTML
+    //                 if ($(this).html() != html_to_inject) {
+    //                     console.log('we are replacing the html')
+    //                     $(this).html(html_to_inject)
+    //                 }
+    //             });
+    //         }
+    //     };
+    //     request.send();
+
+
+
+		// The below code is for if we want to prevent refreshing the page when there is content in the comment box.
+
+		// inputText = document.getElementById("commentBox").value;
+		// if (inputText == "") {
+		// 	console.log('inputText is empty')
+		// 	if (new Date().getTime() - time >= autorefreshInterval) {
+		// 		location.reload(true);
+		// 	} else {
+		// 		setTimeout(autorefresh, periodBetweenInactivityChecks);
+		// 	}
+		// }
+
+	// }
+	
+	// if ($('.shouldautorefresh')[0]){
+	// 	setTimeout(autorefresh, autorefreshInterval);
+	// }
+
+	// This works like a charm, but the above might be better:
+
+	// let autorefreshInterval = 60000
+
+    // function autorefresh(){
+    //     inputText = document.getElementById("commentBox").value
+	// 	if (inputText == ''){
+	// 		$.get(location.href,function(retrievedHTML) {
+	// 			const parser = new DOMParser();
+	// 			const parsedHTML = parser.parseFromString(retrievedHTML, "text/html");
+	// 			if (!parsedHTML.isEqualNode(document)) {
+	// 				location.reload()
+	// 			}
+	// 		})
+	// 	}
+    // };
+
+    // if ($('.shouldautorefresh')[0]){
+    //     setInterval(autorefresh, autorefreshInterval);
+    // }
 	  
 	var tabIDsoughtviaurl = $(location).prop('hash').substr(1);
 	

@@ -1,5 +1,13 @@
 # VINCE Changelog
 
+Version 2.1.4  2023-08-30
+
+* Automated annual update to VINCE copyright date in footer
+* Dependabot update recommendations: `django` 3.2.19 to 3.2.20
+* Replaced malfunctioning dropdown menu in original report tab on VINCETrack case page with link to case request ticket
+* Added functionality to VINCE Comm status page for muting & unmuting cases, with alerts responding to selected affectedness status
+* Set up periodic autorefresh feature for the VINCE Track Triage page
+
 Version 2.1.3  2023-08-09
 
 * More tabs on VinceTrack Case page updated for asynchronous loading.
