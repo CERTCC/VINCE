@@ -322,28 +322,28 @@
     {% if vendors %}
     <div class="participant_type type_vendors">
       <div class="row column">
-	<h4>Vendors
-	  <nav role="navigation" class="cdown" id="vendorfilter">
-	    <ul>
-	      <li><a><i class="fas fa-filter"></i></a>
-		<ul class="dropdown">
-		  <li class="affected" data-class="alert">
-		    <i class="fas fa-check"></i>
-		    Affected(<span class="count"></span>)
-		  </li>
-		  <li class="not_affected" data-class="success">
-		    <i class="fas fa-check"></i>
-		    Not Affected(<span class="count"></span>)
-		  </li>
-		  <li class="all">
-		    <i class="fas fa-check"></i>
-		    All(<span class="count"></span>)
-		  </li>
-		</ul>
-	      </li>
-	    </ul>
-	  </nav>
-	</h4>
+	      <h4>Vendors
+	        <nav role="navigation" class="cdown" id="vendorfilter">
+	          <ul>
+	            <li><a><i class="fas fa-filter"></i></a>
+                <ul class="dropdown">
+                  <li class="affected" data-class="alert">
+                    <i class="fas fa-check"></i>
+                    Affected(<span class="count"></span>)
+                  </li>
+                  <li class="not_affected" data-class="success">
+                    <i class="fas fa-check"></i>
+                    Not Affected(<span class="count"></span>)
+                  </li>
+                  <li class="all">
+                    <i class="fas fa-check"></i>
+                    All(<span class="count"></span>)
+                  </li>
+                </ul>
+	            </li>
+	          </ul>
+	        </nav>
+	      </h4>
       </div>
       {% if simulation %}
       {% elif user.is_staff %}
@@ -357,19 +357,23 @@
       {% if forloop.counter0 == 5 %}
       <div id="hidevendors">
 	{% endif %}
+
+
       {% if vendor.group.groupcontact.contact.vendor_name %}
       <div class="participant type_vendor">
-	<div class="participant-pic">
+	      <div class="participant-pic">
 	  {% autoescape off %}{{ vendor|grouplogo:"profile-pic" }}{% endautoescape %}
-	</div>
-	<div class="participant-info"><span class="participant-name"><a href="{{ vendor.group.groupcontact.url }}{{ case.id }}" class="vendor-participant">{{ vendor.group.groupcontact.contact.vendor_name }}</a></span>
+	      </div>
+	    <div class="participant-info"><span class="participant-name"><a href="{{ vendor.group.groupcontact.url }}{{ case.id }}" class="vendor-participant">{{ vendor.group.groupcontact.contact.vendor_name }}</a></span>
 	  {% if vendor.share_status %}
-	  <a href="{% url 'vinny:statement' case.id vendor.id %}" class="openmodal {% show_status_class vendor.get_general_status %}" data-open="modal" title="View Statement">{% show_status vendor.get_general_status %}</a>
+	      <a href="{% url 'vinny:statement' case.id vendor.id %}" class="openmodal {% show_status_class vendor.get_general_status %}" data-open="modal" title="View Statement">{% show_status vendor.get_general_status %}</a>
 	  {% endif %}
-	</div>
+	    </div>
 	
       </div>
       {% endif %}
+
+
       {% empty %}
       <div class="participant">
 	<p><i>No vendors have been added</i></p>
@@ -379,7 +383,7 @@
       </div>
       <div class="row column moreless" data-asyncdivid="hidevendors"  data-parentdivclass="type_vendors" data-rowdivclass="type_vendor" data-href="{% url 'vinny:loadvendors' case.id %}" data-batchcount="20">
         <div id="moreVendors" class="asyncshowall">
-	  <a id="moreVendor" href="#"> SHOW ALL [<span id="vendorcount" class="showallcount">{{num_vendors}}</span>]</a>
+	        <a id="moreVendor" href="#"> SHOW ALL [<span id="vendorcount" class="showallcount">{{num_vendors}}</span>]</a>
         </div>
         <div id="lessVendors" class="asyncshowless" data-asyncdivid="hidevendors"><a href="#" id="lessVendor">>SHOW LESS</a>
         </div>

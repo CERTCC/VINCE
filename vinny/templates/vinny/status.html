@@ -34,9 +34,11 @@
       <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
       {% endfor %}
       
-      {% if vuls|length > 1 %}
+      
       <div class="row">
-	<div class="large-8 columns medium-12">
+		
+	<div class="large-2 columns medium-12">
+		{% if vuls|length > 1 %}
 	  <div id="select-all-menu">
 	    <ul class="dropdown menu" data-dropdown-menu>
 	      <li class="is-dropdown-submenu-parent">
@@ -49,12 +51,22 @@
 	      </li>
 	    </ul>
 	  </div>
+	  {% endif %}
 	</div>
-	<div class="large-4 columns medium-12  text-center">
+	<div id="mute_alert" class="callout alert large-6 columns medium-12" style="visibility: hidden">
+		<p style="padding-right: 1.5rem">
+			Since you are <span id="suggest_mute">not </span>potentially affected by these vulnerabilities, you may want to <span id="suggest_unmute">un</span>mute this case.
+		</p>
+		<button id="close_mute_alert_button" class="close-button" aria-label="Dismiss alert" type="button">
+			<span aria-hidden="true">&times;</span>
+	  </button>
+	</div>
+	  <div class="large-4 columns medium-12  text-center">
 	  <h3>Recent Activity</h3>
 	</div>
+	
       </div>
-      {% endif %}
+
     </div>
     <div class="row">
       <div class="large-8 columns">
@@ -65,27 +77,27 @@
 	    {% for vul in vuls %}
 	    <li>
 	      <div class="row">
-		<div class="large-4 medium-4 columns">
-		  <b><a href="{% url 'vinny:vuldetail' vul.id %}">{{ vul.vul }}</a></b> 
-		</div>
-		<div class="large-3 medium-3 columns">
-		  <select name="status_{{vul.id}}" autocomplete="off">
-		    {% with s1=status|vulstatus:vul %}
+		  	<div class="large-4 medium-4 columns">
+		  		<b><a href="{% url 'vinny:vuldetail' vul.id %}">{{ vul.vul }}</a></b> 
+		  	</div>
+			<div class="large-3 medium-3 columns">
+		  		<select name="status_{{vul.id}}" class="affected_status_select" autocomplete="off">
+		    		{% with s1=status|vulstatus:vul %}
                     <option value="unknown" {% if s1 == 3 %} selected {% endif %}>Unknown</option>
                     <option value="affected" {% if s1 == 1 %} selected {% endif %}>Affected</option>
                     <option value="unaffected" {% if s1 == 2 %} selected {% endif %}>Not Affected</option>
-		    {% endwith %}
-		  </select>
-		</div>
+		    		{% endwith %}
+		  		</select>
+			</div>
 	      <div class="large-3 medium-3 columns text-center">
 		
 		{% if checkvuls|length > 1 %}
-		{% if vendor_id %}
-		<a href="{% url 'vinny:providestmt' vul.id vendor_id %}" class="providestatement" title="Provide a statement for this specific vulnerability">
-		  {% else %}
-		  <a href="{% url 'vinny:providestmt' vul.id %}" class="providestatement" title="Provide a statement for this specific vulnerability">
+			{% if vendor_id %}
+				<a href="{% url 'vinny:providestmt' vul.id vendor_id %}" class="providestatement" title="Provide a statement for this specific vulnerability">
+		  	{% else %}
+		  		<a href="{% url 'vinny:providestmt' vul.id %}" class="providestatement" title="Provide a statement for this specific vulnerability">
 		    {% endif %}
-		  <button class="primary button" id="stmtbutton{{vul.id}}">{% if status|has_statement:vul %}Edit Statement{% else %}Provide Statement{% endif %}</button></a>
+		  	<button class="primary button" id="stmtbutton{{vul.id}}">{% if status|has_statement:vul %}Edit Statement{% else %}Provide Statement{% endif %}</button></a>
 		{% else %}
 		{% if status|vulapproved:vul %}<span class="label success">Approved</span>
                 {% else %}<span class="label warning">Pending Approval</span>
@@ -119,12 +131,39 @@
 	  
 	  {% if field.name == "share" %}
 	  <div class="switch small">
-            {% render_field form.share class="switch-input" %}
-            <label class="switch-paddle" for="{{ form.share.auto_id }}">
+
+			<!-- <label class="tswitch" for="{{ form.share.auto_id }}">
+				<span class="show-for-sr">Share?</span>
+				<span class="switch-active" aria-hidden="true">Yes</span>
+				<span class="switch-inactive" aria-hidden="true">No</span>
+			  </label> -->
+  
+			<!-- original code -->
+            <!-- <label class="switch-paddle" for="{{ form.share.auto_id }}">
               <span class="show-for-sr">Share?</span>
               <span class="switch-active" aria-hidden="true">Yes</span>
               <span class="switch-inactive" aria-hidden="true">No</span>
-            </label>
+            </label> -->
+
+			<label class="tswitch" for="{{ form.share.auto_id }}">
+				<span class="show-for-sr">Share?</span>
+				{% render_field form.share class="switch-input" %}
+				<span class="tslider round"></span>
+			</label>
+	  </div>
+	  {% elif field.name == "mute_case" %}
+	  <div class="switch small">
+            <!-- <label class="switch-paddle" for="{{ form.mute_case.auto_id }}">
+              <span class="show-for-sr">Mute Case?</span>
+              <span class="switch-active" aria-hidden="true">Yes</span>
+              <span class="switch-inactive" aria-hidden="true">No</span>
+            </label> -->
+
+			<label class="tswitch" for="{{ form.mute_case.auto_id }}">
+				<span class="show-for-sr">Mute Case?</span>
+				{% render_field form.mute_case %}
+				<span class="tslider round"></span>
+			</label>
 	  </div>
 	  {% else %}
           {{ field }}
@@ -133,6 +172,12 @@
 	{% endfor %}
       </div>
 
+	<!-- <div id="mute_case_checkbox_wrapper" class="form-group">
+		<label for="mute_case_checkbox">Mute Case</label>
+		<small class="form-text text-muted">Turn off post notifications for this case only. You will still receive important notifications from the coordination team or if you are tagged in the case discussion.</small>
+		<input type="checkbox" name="mute_case_checkbox" id="mute_case_checkbox">
+	</div> -->
+		
 
       <div class="row column">
 	<input type="submit" class="primary button" value="Save">

@@ -50,6 +50,11 @@ function initTooltipster(element, umProfileStore, displayUserCard) {
     });
 }
 
+function onBeforeUnload(e) {
+    e.preventDefault();
+    e.returnValue = '';
+    return;
+}
 
 
 $(document).ready(function() {
@@ -102,7 +107,16 @@ $(document).ready(function() {
 
     $(document).on("click", ".cancelform", function(event) {
 	event.preventDefault();
-	simplemde.value("");
+	var answer = window.confirm("Are you sure? Changes you made may not be saved.");
+	if (answer) {
+		console.log('The user is sure.')
+		simplemde.value("");
+	}
+	else {
+		console.log('The user decided not to leave after all.')
+	}
+
+	
     });
 
 
@@ -345,6 +359,7 @@ $(document).ready(function() {
     var simplemdeedit = null;
     
     $(document).on("submit", ".editpostform", function(event) {
+	window.removeEventListener('beforeunload', onBeforeUnload);
 	event.preventDefault();
 	var url = $(this).attr("action");
 	var csrftoken = getCookie('csrftoken');
@@ -382,6 +397,13 @@ $(document).ready(function() {
 					    });
 	    }
 	});
+
+	setTimeout(function() {
+		console.log('the timeout has been set')
+		edit_block.attr("tabindex",-1).focus();
+	}, 100);
+
+	window.addEventListener('beforeunload', onBeforeUnload);
 
     });
 
@@ -542,7 +564,7 @@ $(document).ready(function() {
         }
     });
 */
-    
+
     $(document).on("click", ".loadmore", function(event) {
 	var $form = $("#postform");
         var url = $form.attr( "action" );

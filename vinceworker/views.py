@@ -227,7 +227,7 @@ def ingest_vulreport(request):
                         attributes['ReportType'] = body_data['MessageAttributes'].get('ReportType').get('Value')
                     if body_data['MessageAttributes'].get('Message'):
                         attributes['Message'] = body_data['MessageAttributes'].get('Message').get('Value')
-            govqueue = TicketQueue.objects.filter(title="GOV").first()
+            cisaqueue = TicketQueue.objects.filter(title="CISA-General").first()
             vulqueue = TicketQueue.objects.filter(title="CR").first()
             
         except Exception:
@@ -306,7 +306,7 @@ def ingest_vulreport(request):
             if data.get('affected_website'):
                 logger.debug("THIS IS A GOV FORM")
                 data['request_type'] = CaseRequest.GOV_FORM
-                data['queue'] = govqueue.id
+                data['queue'] = cisaqueue.id
                 data['product_name'] = data['affected_website']
             elif data.get('ics_impact') and (data.get('ics_impact') == True):
                 #is there an ICS queue?

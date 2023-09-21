@@ -1,5 +1,13 @@
 # VINCE Changelog
 
+Version 2.1.5  2023-09-21
+
+* Enhanced operation of VINCEComm case discussion section, moving focus to editable div when the user chooses to edit a post
+* Added dropdown menu to VINCETrack quicksearch bar, optimizing search by enabling swifter specification of advanced search settings
+* Replaced certain switch-paddle checkboxes on VINCE forms with tswitch UI to make them easier to use
+* Fixed bug that generated duplicates in the list of vendors on certain VINCEComm case pages
+
+
 Version 2.1.4  2023-08-30
 
 * Automated annual update to VINCE copyright date in footer
