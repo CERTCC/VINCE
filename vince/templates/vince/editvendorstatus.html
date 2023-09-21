@@ -80,11 +80,10 @@
             <div class="large-8 columns">-->
 	      {% if field.name == "share" %}
               <div class="switch small">
-		{% render_field form.share class="switch-input" %}
-		<label class="switch-paddle" for="{{ form.share.auto_id }}">
-                  <span class="show-for-sr">Share?</span>
-                  <span class="switch-active" aria-hidden="true">Yes</span>
-                  <span class="switch-inactive" aria-hidden="true">No</span>
+		<label class="tswitch" for="{{ form.share.auto_id }}">
+			<span class="show-for-sr">Share?</span>
+			{% render_field form.share class="switch-input" %}
+			<span class="tslider round"></span>
 		</label>
               </div>
               {% else %}

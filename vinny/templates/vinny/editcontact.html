@@ -113,12 +113,19 @@
 		  <td>
 		    <label>Public?</label>
 		    <div class="switch small">
-		      {% render_field subform.public class="switch-input" %}
-		      <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+				<label class="tswitch" for="{{ subform.public.auto_id }}">
+					<span class="show-for-sr">Public?</span>
+					{% render_field subform.public class="switch-input" %}
+					<span class="tslider round"></span>
+				</label>
+
+			<!-- original code was as below. put DTL 'render_field...' right before label if reverting to this version -->
+		      <!-- <label class="switch-paddle" for="{{ subform.public.auto_id }}">
 			<span class="show-for-sr">Public?</span>
 			<span class="switch-active" aria-hidden="true">Yes</span>
 			<span class="switch-inactive" aria-hidden="true">No</span>
-		      </label>
+		      </label> -->
+
 		    </div>
 		  </td>
 		  <td>{{ subform.email.label_tag }} {% if subform.id %}{{ subform.DELETE }}{% endif %}
@@ -148,13 +155,21 @@
 		  <td width="100">
 		    <label>Public?</label>
 		    <div class="switch small">
-		      {% render_field subform.public class="switch-input" %}
-		      <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+
+			  <label class="tswitch" for="{{ subform.public.auto_id }}">
+				<span class="show-for-sr">Public?</span>
+				{% render_field subform.public class="switch-input" %}
+				<span class="tslider round"></span>
+			</label>
+
+			<!-- original code was as below. put DTL 'render_field...' right before label if reverting to this version -->
+			<!-- <label class="switch-paddle" for="{{ subform.public.auto_id }}">
 			<span class="show-for-sr">Public?</span>
 			<span class="switch-active" aria-hidden="true">Yes</span>
 			<span class="switch-inactive" aria-hidden="true">No</span>
-		      </label>
-		    </div>
+		      </label> -->
+
+			</div>
 		  </td>
 		  <!--<td>
 		      <label for="pgp_protocol">PGP Protocol:</label>
@@ -206,12 +221,20 @@
 		      <div class="large-2 medium-2 columns form-group">
 			<label>Public?</label>
 			<div class="switch small">
-			  {% render_field subform.public class="switch-input" %}	      
-			  <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+
+				<label class="tswitch" for="{{ subform.public.auto_id }}">
+					<span class="show-for-sr">Public?</span>
+					{% render_field subform.public class="switch-input" %}
+					<span class="tslider round"></span>
+				</label>
+
+				<!-- original code was as below. put DTL 'render_field...' right before label if reverting to this version -->
+			  <!-- <label class="switch-paddle" for="{{ subform.public.auto_id }}">
 			    <span class="show-for-sr">Public?</span>
 			    <span class="switch-active" aria-hidden="true">Yes</span>
 			    <span class="switch-inactive" aria-hidden="true">No</span>
-			  </label>
+			  </label> -->
+
 			</div>
 		      </div>
 		      <div class="large-6 columns">
@@ -298,11 +321,19 @@
 		    <label>Public?</label>
 		    <div class="switch small">
 		      {% render_field subform.public class="switch-input" %}
-		      <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+
+			  <label class="tswitch" for="{{ subform.public.auto_id }}">
+				<span class="show-for-sr">Public?</span>
+				{% render_field subform.public class="switch-input" %}
+				<span class="tslider round"></span>
+			</label>
+
+			<!-- original code was as below. put DTL 'render_field...' right before label if reverting to this version -->
+		      <!-- <label class="switch-paddle" for="{{ subform.public.auto_id }}">
 			<span class="show-for-sr">Public?</span>
 			<span class="switch-active" aria-hidden="true">Yes</span>
 			<span class="switch-inactive" aria-hidden="true">No</span>
-		      </label>
+		      </label> -->
 		    </div>
 		  </td>
 		  <td>
@@ -344,12 +375,19 @@
 		  <td>
 		    <label>Public?</label>
 		    <div class="switch small">
-		      {% render_field subform.public class="switch-input" %}
-		      <label class="switch-paddle" for="{{ subform.public.auto_id }}">
+
+			  <label class="tswitch" for="{{ subform.public.auto_id }}">
+				<span class="show-for-sr">Public?</span>
+				{% render_field subform.public class="switch-input" %}
+				<span class="tslider round"></span>
+			</label>
+
+			<!-- original code was as below. put DTL 'render_field...' right before label if reverting to this version -->
+		      <!-- <label class="switch-paddle" for="{{ subform.public.auto_id }}">
 			<span class="show-for-sr">Public?</span>
 			<span class="switch-active" aria-hidden="true">Yes</span>
 			<span class="switch-inactive" aria-hidden="true">No</span>
-		      </label>
+		      </label> -->
 		    </div>
 		  </td>
 		  <td><div class="required">{{ subform.url.label_tag }}</div>

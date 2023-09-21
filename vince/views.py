@@ -1446,6 +1446,7 @@ class AttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
 
 def quickSearch(request):
     input = request.GET.get('searchbar', False)
+    facet = request.GET.get('facet', 'All')
     if input == False:
         #try again for backwards compatibility with old kb
         input = request.GET.get('query', False)
@@ -1456,10 +1457,31 @@ def quickSearch(request):
                     input = keywords[1]
 
     if input:
-        response = redirect("vince:search")
-        input=input.replace('#', '%23')
-        response['Location'] += '?q='+input
-        return response
+        if facet == "Contacts":
+            response = redirect("vince:searchcontacts")
+            input=input.replace('#', "%23")
+            response['Location'] += '?q='+input
+            return response
+        if facet == "Users":
+            response = redirect("vince:searchcontacts")
+            input=input.replace('#', "%23")
+            response['Location'] += '?q='+input+'&facet='+facet
+            return response
+        if facet == "Cases":
+            response = redirect("vince:casesearch")
+            input=input.replace('#', "%23")
+            response['Location'] += '?q='+input
+            return response
+        if facet == "Tickets":
+            response = redirect("vince:ticketsearch")
+            input=input.replace('#', "%23")
+            response['Location'] += '?q='+input
+            return response
+        else:
+            response = redirect("vince:search")
+            input=input.replace('#', '%23')
+            response['Location'] += '?q='+input+'&facet='+facet
+            return response
     else:
         return redirect("vince:search")
 
@@ -1591,6 +1613,7 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
         my_queues = get_r_queues(self.request.user)
 
         if facet == "All":
+            logger.debug('VINCE thinks we are searching All')
             ticket_results = Ticket.objects.search(search_query).filter(queue__in=my_queues)
             tkttags = TicketTag.objects.filter(ticket__queue__in=my_queues, tag__in=search_tags).values_list('ticket__id', flat=True)
             if ticket_results and tkttags:
@@ -1639,6 +1662,7 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
 
 
         elif facet == "Tickets":
+            logger.debug('VINCE thinks we are searching Tickets')
             ticket_results = Ticket.objects.search(search_query).filter(queue__in=my_queues)
             tkttags = TicketTag.objects.filter(ticket__queue__in=my_queues, tag__in=search_tags).values_list('ticket__id', flat=True)
             if ticket_results and tkttags:
@@ -1650,6 +1674,7 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
             activities = Ticket.objects.filter(id__in=activity_results)
             ticket_results = ticket_results | tkt_title | activities
         elif facet == "Contacts":
+            logger.debug('VINCE thinks we are searching Contacts')
             vince_user_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
             user_contacts = list(vince_user_results.values_list('user__email', flat=True))
             email_contacts = EmailContact.objects.filter(contact__vendor_type="Contact", email__in=user_contacts).values_list('contact__id', flat=True)
@@ -1665,6 +1690,7 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
 
             group_results = ContactGroup.objects.filter(Q(name__icontains=search_term) | Q(srmail_peer_name__icontains=search_term))
         elif facet == "Cases":
+            logger.debug('VINCE thinks we are searching Cases')
             case_results = VulnerabilityCase.objects.search(search_query)
             casetags = CaseTag.objects.filter(tag__in=search_tags).values_list('case__id', flat=True)
             if case_results and	casetags:
@@ -1681,6 +1707,7 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
                 case_results = case_results | vnote_cases
 
         elif facet == "Vuls":
+            logger.debug('VINCE thinks we are searching Vuls')
             vul_results = Vulnerability.objects.search(search_query)
             cve_results = CVEAllocation.objects.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],
                                                       params=[search_query])
@@ -1688,7 +1715,8 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
             if vultags:
                 vultags = Vulnerability.objects.filter(id__in=vultags)
                 vul_results = vul_results | vultags
-        elif facet == "Vince":
+        elif facet == "Users":
+            logger.debug('VINCE thinks we are searching Users')
             vince_user_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
 
         if tktsearch:
@@ -1952,6 +1980,10 @@ class TicketFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView
         team = self.request.GET.get('team')
         if team:
             initial['team'] = team
+
+        q = self.request.GET.get('q')
+        if q:
+            initial['wordSearch'] = q
         form = TicketFilterForm(initial=initial)
         form.fields['queue'].choices = [
             (q.id, q.title) for q in readable_queues]
@@ -2334,6 +2366,10 @@ class CaseFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
                 initial['status'] = []
             else:
                 initial['status'] = [VulnerabilityCase.ACTIVE_STATUS]
+
+        q = self.request.GET.get('q')
+        if q:
+            initial['wordSearch'] = q
 
         form = CaseFilterForm(initial=initial)
 
@@ -8640,7 +8676,7 @@ class ContactsResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
         vince_results = []
 
         if search_query:
-            if facet == "All":
+            if facet == "Contacts":
                 vince_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
                 user_contacts = list(vince_results.values_list('user__email', flat=True))
                 email_contacts = EmailContact.objects.filter(contact__vendor_type="Contact", email__in=user_contacts).values_list('contact__id', flat=True)
@@ -8657,7 +8693,7 @@ class ContactsResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
 
             elif facet == "Groups":
                 group_results = ContactGroup.objects.filter(Q(name__icontains=search_term) | Q(srmail_peer_name__icontains=search_term))
-            elif facet == "Contacts":
+            elif facet == "Vendors":
                 email_results = EmailContact.objects.filter(Q(email__icontains=search_term) | Q(name__icontains=search_term)).values_list('contact', flat=True)
                 emails = Contact.objects.filter(id__in=email_results)
                 contact_results = Contact.objects.search(search_query)
@@ -8668,7 +8704,7 @@ class ContactsResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                 else:
                     contact_results = contact_results | emails
 
-            elif facet == "VINCE":
+            elif facet == "Users":
                 vince_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
         else:
             if facet == "All":
@@ -14981,8 +15017,8 @@ class submitCVE5JSON(LoginRequiredMixin, UserPassesTestMixin, APIView):
             cve_id = cve.cve_name.upper()
             if cve_id.find("CVE-") < 0:
                 cve_id = f"CVE-{cve_id}"
-            cve = cve_lib.show_cve_id(cve_id)
-            if 'state' in cve and cve['state'] == "PUBLISHED":
+            cver = cve_lib.show_cve_id(cve_id)
+            if 'state' in cver and cver['state'] == "PUBLISHED":
                 ret = cve_lib.update_published(cve_id,cve_json)
             else:
                 ret = cve_lib.publish(cve_id,cve_json)

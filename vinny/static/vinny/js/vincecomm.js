@@ -346,62 +346,83 @@ $(function () {
     });
 
     async function asyncshowall(adiv,clicked) {
-	let dad = $(adiv).parent();
-	if(clicked) {
-	    $(adiv).hide();	    
-	    dad.find('.asyncshowless').show();
-	}
-	let data = dad.data(); 
-	if('asyncdivid' in data) {
-	    let asyncdiv = $('#' + data.asyncdivid);
-	    if(clicked)
-		asyncdiv.show();
-	    let href = data.href;
-	    let rowdiv = data.rowdivclass;
-	    let pdiv = data.parentdivclass;
-	    let total = parseInt(dad.find('.showallcount').html());
-	    let batch = parseInt(data.batchcount);
-	    if(isNaN(batch))
-		batch = 20;
-	    let count = $('.'+data.parentdivclass + ' .' +
-			  data.rowdivclass).length;
-	    let maxloop = 1000;
-	    let loop = 0;
-	    let nav = $('.'+pdiv).find("nav.cdown");
-	    /* Hide the filter till all the rows are loaded */
-	    if(count < total)
-		$(nav).hide();
-	    while ( count < total) {
-		if(loop > maxloop) {
-		    console.log("Breaking due to too many loops");
-		    break;
+		let dad = $(adiv).parent();
+		if(clicked) {
+			$(adiv).hide();	    
+			dad.find('.asyncshowless').show();
 		}
-		loop++;
-		let hurl = href + "?start=" + String(count-1) + 
-		    "&end=" + String(count + batch); 
-	        
-		await $.get(hurl).done(function(w) {
-		    asyncdiv.append(w);
-		    count = $('.'+data.parentdivclass +
-			      ' .' + data.rowdivclass).length;
-		});
-	    }
-	    if(count >= total) {
-		console.log("Activate the filter button");
-		if(nav)
-		    activate_navli(nav[0]);
-		$(nav).show();
-	    }
-	}
+		let data = dad.data(); 
+		if('asyncdivid' in data) {
+			let asyncdiv = $('#' + data.asyncdivid);
+			if(clicked){
+				asyncdiv.show();
+			}
+			let href = data.href;
+			let rowdiv = data.rowdivclass;
+			let pdiv = data.parentdivclass;
+			let total = parseInt(dad.find('.showallcount').html());
+			let batch = parseInt(data.batchcount);
+			if(isNaN(batch)){
+				batch = 20;
+			}
+			let maxloop = 1000;
+			let loop = 0;
+			let nav = $('.'+pdiv).find("nav.cdown");
+			/* Hide the filter till all the rows are loaded */
+			if($('.' + data.parentdivclass + ' .' + data.rowdivclass).length < total){
+				$(nav).hide();
+			}
+
+			function getNextBatch() {
+				if(loop > maxloop) {
+					console.log("Breaking due to too many loops");
+					return;
+				};
+				loop++;
+
+				count = $('.'+data.parentdivclass + ' .' + data.rowdivclass).length
+				if (count == total){
+					return;
+				};
+
+				$.ajax({
+					url: href + "?start=" + String(count) + "&end=" + String(count + batch),
+					method: 'GET',
+					async: true,
+					success: function(data) {
+						if (!$.trim(data)){
+							console.log('no further data received')
+							return
+						}
+						asyncdiv.append(data);
+						getNextBatch();
+
+					},
+					error: function(error){
+						console.error('Error', error);
+					}
+				});
+			}
+			getNextBatch();
+
+
+			if($('.' + data.parentdivclass + ' .' + data.rowdivclass).length >= total) {
+				console.log("Activate the filter button");
+				if(nav){
+					activate_navli(nav[0]);
+				}
+				$(nav).show();
+			}
+		}
     }
     
     $('.asyncshowall').each(function(_,adiv) {
-	$(adiv).on('click',function(e) {
-	    asyncshowall(adiv,true);
+		$(adiv).on('click',function(e) {
+		    asyncshowall(adiv,true);
             e.preventDefault();
-	    e.stopPropagation();
-	});
-	asyncshowall(adiv,false);
+	    	e.stopPropagation();
+		});
+		asyncshowall(adiv,false);
     });
 
     $('.asyncshowless').on('click',function(e) {

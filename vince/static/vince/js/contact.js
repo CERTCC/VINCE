@@ -51,33 +51,38 @@ function nextResults(page) {
 
 }
 
-var txhr = null;
+let txhr = null;
 
 function searchContacts() {
-    var url = $("#searchform").attr("action");
+    let url = $("#searchform").attr("action");
     $("#loader").replaceWith("<div class='loading_gif'></div>");
     $("#id_page").val("1");
-    var facet = $(".search-menu .menu li .menu-active").text();
+
+    let q = $("#search_vector").val()
+    let facet = $(".search-menu .menu li .menu-active").text();
+
     if (history.pushState) {
-        var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?q=' + $("#search_vector").val() + "&facet=" + facet;
+        let newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?q=' + $("#search_vector").val() + "&facet=" + facet;
         window.history.pushState({path:newurl},'',newurl);
     }
-    var data = $('#searchform').serialize() + "&facet=" + facet;
+    let data = $('#searchform').serialize() + "&facet=" + facet;
     if(window.txhr && 'abort' in window.txhr) {
         txhr.abort();
     }
     lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
     txhr = $.ajax({
-	url: url,
-	type: "GET",
-	data: data,
-	success: function(data) {
-	    $("#searchresults").html(data);
-	    $(document).foundation();
-	    txhr = null;
-	},
-	error: function() {
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+        url: url,
+        type: "GET",
+        data: data,
+        success: function(data) {
+            if (q == $("#search_vector").val() && facet == $(".search-menu .menu li .menu-active").text()) {
+                $("#searchresults").html(data);
+                $(document).foundation();
+                txhr = null;
+            }
+        },
+        error: function() {
+            lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
             console.log(arguments);
             alert("Search failed or canceled! See console log for details.");
         },
@@ -102,6 +107,22 @@ $(document).ready(function() {
         nextResults(page);
     });
 
+    let params = new URL(window.location.href).searchParams;
+    let facetsoughtviaurl = params.get('facet')
+
+    if (facetsoughtviaurl) {
+        $(".search-menu .menu li a").each(function() {
+            if (facetsoughtviaurl == $(this).text()) {
+                $(this).addClass("menu-active");
+            } else {
+                $(this).removeClass("menu-active");
+            }
+        });
+        if ($(".menu-active").length == 0) {
+            $(".default-active").addClass("menu-active")
+        }
+    }
+
     searchContacts();
 
     $(".search-menu .menu li").on("click", "a", function(event) {
@@ -109,7 +130,7 @@ $(document).ready(function() {
             $(this).children().removeClass("menu-active");
         });
         $(this).toggleClass("menu-active");
-	event.preventDefault();
+	    event.preventDefault();
         searchContacts();
 
     });

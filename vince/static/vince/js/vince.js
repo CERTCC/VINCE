@@ -258,7 +258,8 @@ function finish_modal(hm) {
 
 function checkemail(vemails) { 
 	let emails = vemails.split(",");
-	let remail = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
+	/* Increase email domain length to RFC limit of 63 */
+    let remail = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,63})?$/;
 	for(let i = 0; i < emails.length; i++) {
 		if(!remail.test(emails[i])) {
 			alert("Email entry " + emails[i] + " is invalid! \n" + "Enter valid email address before submitting.");
@@ -266,7 +267,7 @@ function checkemail(vemails) {
 		}
 	}
 	return true;
-	}
+}
 
 $(function () {
 
