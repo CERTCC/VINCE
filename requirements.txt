@@ -75,7 +75,7 @@ six==1.16.0
 soupsieve==2.3.2.post1
 sqlparse==0.4.4
 typing_extensions==4.4.0
-urllib3==1.26.12
+urllib3==1.26.17
 vine==5.0.0
 watchtower==3.0.0
 webencodings==0.5.1
