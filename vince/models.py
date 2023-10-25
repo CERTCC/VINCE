@@ -55,17 +55,6 @@ logger = logging.getLogger(__name__)
 
 logger.setLevel(logging.DEBUG)
 
-GENERAL_TICKET_QUEUE = 1
-CASE_REQUEST_QUEUE = 2
-CASE_TASK_QUEUE = 3
-OTHER_QUEUE = 4
-QUEUE_TYPE = (
-    (GENERAL_TICKET_QUEUE, _('General Ticket')),
-    (CASE_REQUEST_QUEUE, _('Case Request Queue')),
-    (CASE_TASK_QUEUE, _('Case Task Queue')),
-    (OTHER_QUEUE, _('Other Queue'))
-)
-
 class OldJSONField(JSONField):
     """ This was due to legacy support in Django 2.2. from_db_value
     should be explicitily sepcified when extending JSONField """
@@ -161,7 +150,7 @@ class GroupSettings(models.Model):
 
     def _get_triage(self):
         #get cr wueue
-        queue = TicketQueue.objects.filter(queue_type=2, team=self.group).first()
+        queue = TicketQueue.objects.filter(queue_type=TicketQueue.CASE_REQUEST_QUEUE, team=self.group).first()
         return queue
 
     triage = property(_get_triage)
@@ -539,6 +528,17 @@ class TicketQueue(models.Model):
     a queue for each of Accounts, Pre-Sales, and Support.
     """
 
+    GENERAL_TICKET_QUEUE = 1
+    CASE_REQUEST_QUEUE = 2
+    CASE_TASK_QUEUE = 3
+    OTHER_QUEUE = 4
+    QUEUE_TYPE = (
+        (GENERAL_TICKET_QUEUE, _('General Ticket')),
+        (CASE_REQUEST_QUEUE, _('Case Request Queue')),
+        (CASE_TASK_QUEUE, _('Case Task Queue')),
+        (OTHER_QUEUE, _('Other Queue'))
+    )
+    
     title = models.CharField(_('Title'),
                              max_length=100)
 
@@ -1924,6 +1924,11 @@ class CaseRequest(Ticket):
     vendor_communication = models.TextField(blank=True, null=True)
     product_name = models.CharField(max_length=500)
     product_version = models.CharField(max_length=100, blank=True, null=True)
+    metadata = OldJSONField(
+        help_text=_('Extensible, currently used to specify relevance to AI/ML systems'),
+        blank=True,
+        null=True
+    )
     ics_impact = models.BooleanField(default=False)
     vul_description = models.TextField(blank=True, null=True)
     vul_exploit = models.TextField(blank=True, null=True)

@@ -119,6 +119,17 @@
         </div>
     
         <div class="row">
+            <div class="large-12 columns">
+              {% if ticket.ai_ml_system %}
+              <b>AI/ML: This vulnerability is related to AI/ML systems.</b>
+              {% else %}
+              <b>AI/ML:</b> No indication of a relationship to AI/ML systems.
+              {% endif %}
+            </div>
+          </div>
+        
+
+        <div class="row">
         <div class="large-4 columns">
             <label for="reporter">Affected Vendor</label>
             {{ cr.vendor_name }} <br/>

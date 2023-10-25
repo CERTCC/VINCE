@@ -79,23 +79,27 @@ def get_r_queues(user):
     queues = QueuePermissions.objects.filter(group__in=user_groups, group_read=True).values_list('queue', flat=True)
     return queues
 
-def get_case_case_queue(case):
-    groups = CasePermissions.objects.filter(case=case, group_write=True).exclude(group__groupsettings__contact__isnull=True).values_list('group', flat=True)
-    qperm = QueuePermissions.objects.filter(group__in=groups, group_write=True, queue__queue_type=3).first()
-    if qperm:
-        return qperm.queue
+def get_case_case_queue(case, user=None):
+    if user:
+        groups = CasePermissions.objects.filter(case=case, group_write=True,group__in=user.groups.all()).exclude(group__groupsettings__contact__isnull=True).values_list('group', flat=True)
+    else:
+        groups = CasePermissions.objects.filter(case=case, group_write=True).exclude(group__groupsettings__contact__isnull=True).values_list('group', flat=True)
+    if groups:
+        qperm = QueuePermissions.objects.filter(group__in=groups, group_write=True, queue__queue_type=TicketQueue.CASE_TASK_QUEUE).first()
+        if qperm:
+            return qperm.queue
     return TicketQueue.objects.get(slug='case')
 
 def get_user_case_queue(user):
     user_groups = user.groups.exclude(groupsettings__contact__isnull=True)
-    perms = QueuePermissions.objects.filter(group__in=user_groups, group_read=True, group_write=True, queue__queue_type=3).first()
+    perms = QueuePermissions.objects.filter(group__in=user_groups, group_read=True, group_write=True, queue__queue_type=TicketQueue.CASE_TASK_QUEUE).first()
     if perms:
         return perms.queue
     return TicketQueue.objects.get(slug='case')
 
 def get_user_gen_queue(user):
     user_groups = user.groups.exclude(groupsettings__contact__isnull=True)
-    perms = QueuePermissions.objects.filter(group__in=user_groups, group_read=True, group_write=True, queue__queue_type=1).first()
+    perms = QueuePermissions.objects.filter(group__in=user_groups, group_read=True, group_write=True, queue__queue_type=TicketQueue.GENERAL_TICKET_QUEUE).first()
     if perms:
         return perms.queue
     return TicketQueue.objects.get(slug='gen')
@@ -112,14 +116,14 @@ def get_vendor_queue(user):
 
 def get_user_cr_queue(user):
     user_groups = user.groups.exclude(groupsettings__contact__isnull=True)
-    perms = QueuePermissions.objects.filter(group__in=user_groups, group_read=True, group_write=True, queue__queue_type=2).first()
+    perms = QueuePermissions.objects.filter(group__in=user_groups, group_read=True, group_write=True, queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE).first()
     if perms:
         return perms.queue
     return TicketQueue.objects.get(slug='cr')
 
 def get_all_cr_queue(user):
     user_groups = user.groups.exclude(groupsettings__contact__isnull=True)
-    perms = QueuePermissions.objects.filter(group__in=user_groups, group_read=True, group_write=True, queue__queue_type=2).values_list('queue', flat=True)
+    perms = QueuePermissions.objects.filter(group__in=user_groups, group_read=True, group_write=True, queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE).values_list('queue', flat=True)
     if perms:
         return TicketQueue.objects.filter(id__in=perms)
     return None

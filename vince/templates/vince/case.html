@@ -37,8 +37,8 @@
   </div>
 </div>
 
-{{ assigned_users|json_script:"assigned_users" }}
-{{ assignable|json_script:"assignable" }}
+{{ assigned_ordered_pairs|json_script:"assigned_ordered_pairs" }}
+{{ assignable_ordered_pairs|json_script:"assignable_ordered_pairs" }}
 {{ artifactsjs|json_script:"artifacts" }}
 
 <div id="assigned_users" href="{% url 'vince:taguser' case.id %}">{{ case_assigned_to }}</div>
@@ -69,7 +69,7 @@
 </div>
 
 <div class="row">
-  <div class="large-12 columns shouldautorefresh" id="case_summary_wrapper_div">
+  <div class="large-12 columns" id="case_summary_wrapper_div">
     {% include 'vince/case_summary.html' %}
   </div>
 </div>
@@ -85,7 +85,7 @@
   </div>
 </div>
 <div class="row">
-  <div class="large-12 columns shouldautorefresh" id="case_artifacts_wrapper_div">
+  <div class="large-12 columns" id="case_artifacts_wrapper_div">
     {% include 'vince/include/artifacts.html' with show_ticket_info=True form=artifact_form %}
   </div>
 </div>

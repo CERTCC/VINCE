@@ -397,6 +397,7 @@ def update_vinny_cr(instance):
         vtcr.vendor_communication = cr.vendor_communication
         vtcr.product_name = cr.product_name
         vtcr.ics_impact = cr.ics_impact
+        vtcr.metadata = cr.metadata
         vtcr.product_version = cr.product_version
         vtcr.vul_description = cr.vul_description
         vtcr.vul_exploit = cr.vul_exploit
@@ -1678,7 +1679,7 @@ def parse_attachment(message_part):
 
 def create_ticket_for_error_email(filename, bucket, queue=None, from_email=None, body=None, cert_id=None, case=None):
     if queue == None:
-        queue = TicketQueue.objects.filter(queue_type=1, from_email=bucket).first()
+        queue = TicketQueue.objects.filter(queue_type=TicketQueue.GENERAL_TICKET_QUEUE, from_email=bucket).first()
 
     if len(body) > 5000:
         #truncate long bodies
@@ -2176,7 +2177,7 @@ def create_ticket_from_email(filename, body, bucket):
     logger.debug(rq)
     
     #this is the default queue - the general queue for this bucket
-    queue = TicketQueue.objects.filter(from_email=bucket, queue_type=1).first()
+    queue = TicketQueue.objects.filter(from_email=bucket, queue_type=TicketQueue.GENERAL_TICKET_QUEUE).first()
     if queue == None:
         # this is misconfigured!
         send_error_sns("ticket queues", "misconfiguration",

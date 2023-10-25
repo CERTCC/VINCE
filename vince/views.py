@@ -2289,9 +2289,7 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
 
         if 'team' in self.request.POST:
             teamlist = self.request.POST.getlist('team')
-            groups = Group.objects.filter(id__in=teamlist)
-            cases = list(CaseAssignment.objects.filter(assigned__groups__in=groups).values_list('case', flat=True))
-            res = res.filter(id__in=cases)
+            res = res.filter(team_owner__in=teamlist)
 
         if 'changes_to_publish' in self.request.POST:
             res = res.filter(vulnote__date_published__isnull=False,changes_to_publish=True)
@@ -2473,7 +2471,7 @@ class AssignTicketNewTeam(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, F
                 if CasePermissions.objects.filter(case=ticket.case, group=new_group, group_read=True, group_write=True).exists():
                     logger.debug(f"new_group {new_group} has access to case {ticket.case}")
                     # this case can be read/write by the group - so change it to appropriate case queue
-                    new_queue = QueuePermissions.objects.filter(queue__queue_type=2, group__in=[new_group], group_read=True, group_write=True).first()
+                    new_queue = QueuePermissions.objects.filter(queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE, group__in=[new_group], group_read=True, group_write=True).first()
                     if new_queue:
                         ticket.queue = new_queue.queue
                         tqa = True
@@ -2494,7 +2492,7 @@ class AssignTicketNewTeam(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, F
             #this group doesn't have access to the case or this doesn't belong to a case
             # put this in General queue
             if not tqa:
-                new_queue = QueuePermissions.objects.filter(queue__queue_type=1, group__in=[new_group], group_read=True, group_write=True).first()
+                new_queue = QueuePermissions.objects.filter(queue__queue_type=TicketQueue.GENERAL_TICKET_QUEUE, group__in=[new_group], group_read=True, group_write=True).first()
                 if new_queue:
                     ticket.queue = new_queue.queue
                     ticket.assigned_to = None
@@ -2818,7 +2816,7 @@ class CreateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Form
         form = TicketForm(initial=initial_data)
 
         if case:
-            queue = get_case_case_queue(case)
+            queue = get_case_case_queue(case, self.request.user)
             form.fields['queue'].choices = [(queue.id, queue.title)]
         else:
             form.fields['queue'].choices = [('', '--------')] + [
@@ -2881,7 +2879,7 @@ class CreateNewCaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMix
                 context['other_teams'] = user_groups.exclude(id=user_groups[0].id)
                 user_groups=[user_groups[0]]
 
-        queue = TicketQueue.objects.filter(queuepermissions__group__in=user_groups, queuepermissions__group_write=True, queue_type=2).first()
+        queue = TicketQueue.objects.filter(queuepermissions__group__in=user_groups, queuepermissions__group_write=True, queue_type=TicketQueue.CASE_REQUEST_QUEUE).first()
 
         if queue == None:
             context['misconfiguration'] = 1
@@ -3153,7 +3151,7 @@ class CreateNewCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             if ticket.queue.team:
                 if self.request.user.groups.filter(id=ticket.queue.team.id).exists():
                     #get case queue for this team
-                    ticket.queue = TicketQueue.objects.filter(queue_type=3, team=ticket.queue.team).first()
+                    ticket.queue = TicketQueue.objects.filter(queue_type=TicketQueue.CASE_TASK_QUEUE, team=ticket.queue.team).first()
                     # if it returns none, then try the default
                     if ticket.queue == None:
                         ticket.queue = get_user_case_queue(self.request.user)
@@ -4354,6 +4352,10 @@ class CaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
     def get_context_data(self, **kwargs):
         context = super(CaseRequestView, self).get_context_data(**kwargs)
         context['ticket'] = get_object_or_404(CaseRequest, id=self.kwargs['pk'])
+        if deepGet(context["ticket"].metadata,"ai_ml_system") == True:
+            context['ai_ml_system'] = True
+        else:
+            context['ai_ml_system'] = False
         user_groups = context['ticket'].queue.queuepermissions_set.filter(group_read=True, group_write=True).values_list('group', flat=True)
         if context['ticket'].assigned_to:
             context['assignable_users'] = User.objects.filter(is_active=True, groups__in=user_groups).order_by(User.USERNAME_FIELD).exclude(id=context['ticket'].assigned_to.id)
@@ -5647,7 +5649,7 @@ def _transfer_case(case, new_group):
 
     #get CR queue permissions of new_group and assign same case permssions to case
 
-    qp = QueuePermissions.objects.filter(queue__queue_type=2, queue__team=new_group)
+    qp = QueuePermissions.objects.filter(queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE, queue__team=new_group)
     for x in qp:
         cp = CasePermissions.objects.update_or_create(group=x.group, case=case,
                                                       defaults = {'group_read':x.group_read,
@@ -5751,7 +5753,7 @@ class RequestCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                                     case = case,
                                     description = f"Case Request Transfer Reason: {form.cleaned_data['reason']}\r\n\r\n"\
                                     f"Link to case: {settings.SERVER_NAME}{case_url}\r\n\r\n"\
-                                    f"Accept Transfer: {settings.SERVER_NAME}{case_accept_url}")
+                                    f"Accept or Reject Transfer Request: {settings.SERVER_NAME}{case_accept_url}")
                     if ca:
                         ticket.assigned_to = ca.assigned
                     ticket.save()
@@ -5803,7 +5805,7 @@ class RequestCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                                     case = case,
                                     description = f"Case Request Transfer Reason: {form.cleaned_data['reason']}\r\n\r\n"\
                                     f"Link to case: {settings.SERVER_NAME}{case_url}\r\n"\
-                                    f"Accept Transfer: {settings.SERVER_NAME}{case_accept_url}")
+                                    f"Accept or Reject Transfer Request: {settings.SERVER_NAME}{case_accept_url}")
                     if ca:
                         ticket.assigned_to = ca.assigned
                     ticket.save()
@@ -5828,9 +5830,9 @@ class RequestCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                 else:
                     #this is most likely the person assigned to the case
                     #trying to hand off to another team
-                    new_queue = QueuePermissions.objects.filter(queue__queue_type=1, group__in=[new_group], group_read=True, group_write=True).first()
+                    new_queue = QueuePermissions.objects.filter(queue__queue_type=TicketQueue.GENERAL_TICKET_QUEUE, group__in=[new_group], group_read=True, group_write=True).first()
                     if new_queue == None:
-                        new_queue = QueuePermissions.objects.filter(queue__queue_type=2, group__in=[new_group], group_read=True, group_write=True).first()
+                        new_queue = QueuePermissions.objects.filter(queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE, group__in=[new_group], group_read=True, group_write=True).first()
                     if new_queue:
                         ticket = Ticket(title=f"Case Transfer Request for {case.vu_vuid}",
                                         submitter_email=self.request.user.email,
@@ -5838,7 +5840,7 @@ class RequestCaseTransferView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                                         queue = new_queue.queue,
                                         description = f"Case Request Transfer Reason: {form.cleaned_data['reason']}\r\n\r\n"\
                                         f"Link to case: {settings.SERVER_NAME}{case_url}\r\n\r\n"\
-                                        f"Accept Transfer: {settings.SERVER_NAME}{case_accept_url}")
+                                        f"Accept or Reject Transfer Request: {settings.SERVER_NAME}{case_accept_url}")
                         ticket.save()
                         fup = FollowUp(ticket=ticket,
                                        title=f"Case Transfer Requested. Request to transfer to {new_group.name}",
@@ -5906,8 +5908,18 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         context['ticket_list'] = Ticket.objects.filter(case=context['case'])
         #context['ticketsjs'] = [ obj.as_dict() for obj in context['ticket_list'] ]
         users = CaseAssignment.objects.filter(case=context['case'])
-        context['assigned_users'] = [ u.assigned.usersettings.preferred_username for u in users]
-        context['assignable'] = [ u.usersettings.preferred_username for u in User.objects.filter(is_active=True, groups__name='vince')]
+        # context['assigned_users'] = [ u.assigned.usersettings.preferred_username for u in users]
+        assigned_ordered_pairs = []
+        context['assigned_ordered_pairs'] = []
+        for u in users:
+            assigned_ordered_pairs.append({'label': u.assigned.usersettings.preferred_username, 'value': u.assigned.email})
+        context['assigned_ordered_pairs'] = assigned_ordered_pairs
+        # context['assignable'] = [ u.usersettings.preferred_username for u in User.objects.filter(is_active=True, groups__name='vince')]
+        assignable_ordered_pairs = []
+        context['assignable_ordered_pairs'] = []
+        for u in User.objects.filter(is_active=True, groups__name='vince'):
+            assignable_ordered_pairs.append({'label': u.usersettings.preferred_username, 'value': u.email})
+        context['assignable_ordered_pairs'] = assignable_ordered_pairs
         user_groups= self.request.user.groups.exclude(groupsettings__contact__isnull=True)
         context['case_tags'] = [tag.tag for tag in context['case'].casetag_set.all()]
         context['case_available_tags'] = [tag.tag for tag in TagManager.objects.filter(tag_type=3).filter(Q(team__in=user_groups)|Q(team__isnull=True)).exclude(tag__in=context['case_tags']).order_by('tag').distinct('tag')]
@@ -6362,7 +6374,7 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
         logger.debug(f"{self.__class__.__name__} post: {request.POST}")
         if (int(request.POST['state']) == 1):
             #get case
-            user = User.objects.filter(usersettings__preferred_username=request.POST['tag']).first()
+            user = User.objects.filter(email=request.POST['tag']).first()
             if user:
                 ca = CaseAction(case=case,
                                 title=f"User {user.usersettings.preferred_username} assigned to case",
@@ -6373,6 +6385,7 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
                                             case=case)
                 assignment.save()
             else:
+                logger.debug(f"there was an error when trying to add {request.POST['tag']} to the case")
                 return JsonResponse({'error': 'User does not exist'}, status=401)
 
             #is this user a part of one of the caseparticipants - otherwise add them
@@ -6394,7 +6407,7 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
 
         else:
             # delete user from case
-            user = User.objects.filter(usersettings__preferred_username=request.POST['tag']).first()
+            user = User.objects.filter(email=request.POST['tag']).first()
             if user:
                 ca = CaseAction(case=case,
                                 title=f"User {user.usersettings.preferred_username} removed from case assignment",

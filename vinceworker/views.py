@@ -281,7 +281,6 @@ def ingest_vulreport(request):
                 
         try:
             data = json.loads(body_data['Message'])
-            logger.debug(data)
             if "notificationType" in data:
                 #this is a bounce or a complaint
                 if data['notificationType'] in ["Bounce", "Complaint"]:
@@ -308,7 +307,7 @@ def ingest_vulreport(request):
                 data['request_type'] = CaseRequest.GOV_FORM
                 data['queue'] = cisaqueue.id
                 data['product_name'] = data['affected_website']
-            elif data.get('ics_impact') and (data.get('ics_impact') == True):
+            elif data.get('ics_impact') and (data.get('ics_impact') == True) and not (data.get("metadata") and data["metadata"].get("ai_ml_system") and data["metadata"].get("ai_ml_system") == True):
                 #is there an ICS queue?
                 icsqueue = TicketQueue.objects.filter(title='INL-CR').first()
                 if icsqueue:

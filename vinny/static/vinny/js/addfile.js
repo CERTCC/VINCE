@@ -59,9 +59,9 @@ $(document).ready(function() {
     });
 
     $(document).on("submit", '#uploadfile', function(event) {
-	if( document.getElementById("id_attachment").files.length == 0) {
-	    event.preventDefault();
-	}
-    });
+        if( document.getElementById("id_attachment").files.length == 0) {
+            event.preventDefault();
+        }
+    })
 
 });

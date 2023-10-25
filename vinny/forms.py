@@ -677,6 +677,12 @@ class VulStatementForm(forms.Form):
 
 
 class StatementForm(forms.Form):
+    mute_case = forms.BooleanField(
+        label=_('Mute Case'),
+        help_text=_('Turn off post notifications for this case only. You will still receive important notifications from the coordination team or if you are tagged in the case discussion.'),
+        required=False)
+    
+
     share = forms.BooleanField(
         label=_('Share status and statement pre-publication'),
         help_text=_('Checking this box will share your status and statement privately with all of the other participants in this case until the vulnerability note becomes publicly available.'),
@@ -704,6 +710,7 @@ class StatementForm(forms.Form):
         help_text=_('The coordination team may add additional text about the vendor statements and status.'),
         required=False
     )
+
 
 class CaseRoleForm(forms.Form):
     owner = forms.MultipleChoiceField(
@@ -1105,6 +1112,10 @@ class CaseRequestForm(forms.ModelForm):
 
     ics_impact = forms.BooleanField(
         label='Significant ICS/OT impact?',
+        required=False)
+    
+    ai_ml_system = forms.BooleanField(
+        label='Related to AI/ML systems?',
         required=False)
     
     vul_description = forms.CharField(

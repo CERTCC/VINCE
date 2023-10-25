@@ -283,84 +283,82 @@ $(function () {
 	loadiftarget($(e.target).closest('form'),e);
     },1000));
     $('.asyncform input').not('.asyncdelaysearch').on("change",function(e) {
-	loadiftarget($(e.target).closest('form'),e);
+		loadiftarget($(e.target).closest('form'),e);
     });
     $('.select_all_checkbox').on('click',function(e) {
-	$(e.target).closest('.select_all_group')
-	    .find('input[type="checkbox"]')
-	    .prop('checked',$(e.target).prop('checked'));
+		$(e.target).closest('.select_all_group')
+			.find('input[type="checkbox"]')
+			.prop('checked',$(e.target).prop('checked'));
     });
     function filter_navli(e) {
-	let li = $(e.currentTarget || e.target || e.srcElement);
-	li.parent().find('.fa-check').css('opacity',0);
-	li.find('.fa-check').css('opacity',1);
-	let rowdiv = li.closest('div.row');
-	let statusd = "[" + li.html() + "]";
-	if(rowdiv.find('.statusd_view').length) {
-	    rowdiv.find('.statusd_view').html(statusd);
-	} else {
-	    rowdiv.append($('<div>').addClass('statusd_view').html(statusd));
-	}
-	rowdiv.find('.statusd_view i').addClass('fa-filter');
-	let partdiv = li.closest('.participant_type');
-	let all = partdiv.find('.participant').not('.pheader');
-	let moreless = partdiv.find(".moreless");
-	let data = moreless.data();
-	if('asyncdivid' in data)
-	    $('#' + data.asyncdivid).show()
-	if(li.hasClass('all')) {
-	    all.show();
-	    moreless.show();
-            let all_count = all.length
-	    li.find('.count').html(all_count);
-	} else {
-	    all.hide();
-	    moreless.hide();
-	    let aclass = $(li).data('class');
-	    all.find('.'+aclass).closest('.participant').show()
-	}
+		let li = $(e.currentTarget || e.target || e.srcElement);
+		li.parent().find('.fa-check').css('opacity',0);
+		li.find('.fa-check').css('opacity',1);
+		let rowdiv = li.closest('div.row');
+		let statusd = "[" + li.html() + "]";
+		if(rowdiv.find('.statusd_view').length) {
+			rowdiv.find('.statusd_view').html(statusd);
+		} else {
+			rowdiv.append($('<div>').addClass('statusd_view').html(statusd));
+		}
+		rowdiv.find('.statusd_view i').addClass('fa-filter');
+		let partdiv = li.closest('.participant_type');
+		let all = partdiv.find('.participant').not('.pheader');
+		let moreless = partdiv.find(".moreless");
+		let data = moreless.data();
+		if('asyncdivid' in data){
+			$('#' + data.asyncdivid).show()
+		}
+		if(li.hasClass('all')) {
+			all.show();
+			moreless.show();
+			let all_count = all.length;
+			li.find('.count').html(all_count);
+		} else {
+			all.hide();
+			moreless.hide();
+			let aclass = $(li).data('class');
+			all.find('.'+aclass).closest('.participant').show();
+		}
     }
     function activate_navli(nav) {
-	let partdiv = $(nav).closest('.participant_type');
-	let all = partdiv.find('.participant').not('.pheader');
-	let all_count = all.length;
-	
-	$(nav).find('li li').each(function(_,li) {
-	    $(li).off('click');
-	    $(li).on('click',filter_navli);
-	    if($(li).hasClass('all')) {
-		$(li).find('.count').html(all_count);
-		$(li).find('.fa-check').css('opacity',1);
-	    } else {
-		let aclass = $(li).data('class');
-		if(aclass) {
-		    let count = partdiv.find('.'+aclass).length;
-		    $(li).find('.count').html(count);
-		}
-		$(li).find('.fa-check').css('opacity',0);		
-	    }
-	})
+		let partdiv = $(nav).closest('.participant_type');
+		let all = partdiv.find('.participant').not('.pheader');
+		let all_count = all.length;	
+		$(nav).find('li li').each(function(_,li) {
+			$(li).off('click');
+			$(li).on('click',filter_navli);
+			if($(li).hasClass('all')) {
+				$(li).find('.count').html(all_count);
+				$(li).find('.fa-check').css('opacity',1);
+			} else {
+				let aclass = $(li).data('class');
+				if(aclass) {
+					let count = partdiv.find('.'+aclass).length;
+					$(li).find('.count').html(count);
+				}
+				$(li).find('.fa-check').css('opacity',0);		
+			}
+		})
     }
     $('nav.cdown').each(function(_,nav) {
-	activate_navli(nav);
+		activate_navli(nav);
     });
 
-    async function asyncshowall(adiv,clicked) {
+    function asyncshowall(adiv,clicked) {
 		let dad = $(adiv).parent();
 		if(clicked) {
-			$(adiv).hide();	    
+			$(adiv).hide();
 			dad.find('.asyncshowless').show();
 		}
-		let data = dad.data(); 
+		let data = dad.data();
 		if('asyncdivid' in data) {
 			let asyncdiv = $('#' + data.asyncdivid);
 			if(clicked){
 				asyncdiv.show();
 			}
 			let href = data.href;
-			let rowdiv = data.rowdivclass;
 			let pdiv = data.parentdivclass;
-			let total = parseInt(dad.find('.showallcount').html());
 			let batch = parseInt(data.batchcount);
 			if(isNaN(batch)){
 				batch = 20;
@@ -369,29 +367,24 @@ $(function () {
 			let loop = 0;
 			let nav = $('.'+pdiv).find("nav.cdown");
 			/* Hide the filter till all the rows are loaded */
-			if($('.' + data.parentdivclass + ' .' + data.rowdivclass).length < total){
-				$(nav).hide();
-			}
+			$(nav).hide();
 
-			function getNextBatch() {
+
+			async function getNextBatch() {
+				count = $('.'+data.parentdivclass + ' .' + data.rowdivclass).length
+
 				if(loop > maxloop) {
 					console.log("Breaking due to too many loops");
 					return;
 				};
 				loop++;
 
-				count = $('.'+data.parentdivclass + ' .' + data.rowdivclass).length
-				if (count == total){
-					return;
-				};
-
-				$.ajax({
+				await $.ajax({
 					url: href + "?start=" + String(count) + "&end=" + String(count + batch),
 					method: 'GET',
 					async: true,
 					success: function(data) {
 						if (!$.trim(data)){
-							console.log('no further data received')
 							return
 						}
 						asyncdiv.append(data);
@@ -402,17 +395,13 @@ $(function () {
 						console.error('Error', error);
 					}
 				});
-			}
-			getNextBatch();
 
-
-			if($('.' + data.parentdivclass + ' .' + data.rowdivclass).length >= total) {
-				console.log("Activate the filter button");
 				if(nav){
 					activate_navli(nav[0]);
+					$(nav).show();
 				}
-				$(nav).show();
 			}
+			getNextBatch();
 		}
     }
     

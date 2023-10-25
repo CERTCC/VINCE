@@ -516,7 +516,7 @@ def send_updatecase_mail(action, new_user=None):
         # cut a new ticket to alert
         if case.team_owner:
             tq = get_team_queues(case.team_owner)
-            queue = tq.filter(queue_type=2).first()
+            queue = tq.filter(queue_type=TicketQueue.CASE_REQUEST_QUEUE).first()
         else:
             queue = get_case_case_queue(case)
 

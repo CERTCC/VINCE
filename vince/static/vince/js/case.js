@@ -128,10 +128,11 @@ function reloadArtifacts(case_id) {
 
 function reloadParticipants(case_id, tablet) {
     $.ajax({
-	url: "/vince/ajax_calls/case/participants/"+case_id+"/",
+	    url: "/vince/ajax_calls/case/participants/"+case_id+"/",
         success: function(data) {
-	    tablet.replaceData(data);
-        }});
+	        tablet.replaceData(data);
+        }
+    });
 }
 
 function reload_case_activity() {
@@ -140,7 +141,7 @@ function reload_case_activity() {
         url: url,
         success: function(data) {
             $("#timeline").html(data);
-	    /* reload plugins */
+	        /* reload plugins */
             $(document).foundation();
         }
     });
@@ -226,28 +227,28 @@ function getDate( element ) {
 }
 
 function auto(data, taggle, tag_url, modal) {
+    // This sets up the dropdown where you can select options as you type.
     var container = taggle.getContainer();
     var input = taggle.getInput();
     $(input).autocomplete({
-	source: data,
-	appendTo:container,
-	position: { at: "left bottom", of: container },
-	select: function(event, data) {
-	    event.preventDefault();
-	    if (event.which === 1) {
-		taggle.add(data.item.value);
-		var csrftoken = getCookie('csrftoken');
-                $.post(tag_url,
-                       {'state': 1, 'add_tag': 1, 'csrfmiddlewaretoken': csrftoken, 'tag':data.item.value }, function(d) {
-			   reload_case_activity();
-                       })
-                    .fail(function(d) {
-                        alert("An error occurred while trying to add this tag.");
-                        taggle.remove(data.item.value);
-                    });
+    	source: data,
+        appendTo: container,
+        position: { at: "left bottom", of: container },
+        select: function(event, data) {
+            event.preventDefault();
+            if (event.which === 1) {
+                taggle.add(data.item.value);
+                var csrftoken = getCookie('csrftoken');
+                $.post(tag_url, {'state': 1, 'add_tag': 1, 'csrfmiddlewaretoken': csrftoken, 'tag':data.item.value }, function(d) {
+			        reload_case_activity();
+                })
+                .fail(function(d) {
+                    alert("An error occurred while trying to add this tag.");
+                    taggle.remove(data.item.value);
+                });
 
-	    }
-	}
+            }
+        }
     });
 }
 
@@ -281,53 +282,88 @@ $(document).ready(function() {
     }
 
     if (document.getElementById("user_taggs")) {
-	var tag_url = $("#user_taggs").attr("href");
-	var case_id = $('.case-container').attr('caseid');
-	var assigned_users = JSON.parse(document.getElementById('assigned_users').textContent);
-        var assignable = JSON.parse(document.getElementById('assignable').textContent);
-	var tags = [];
-	var taggle2 =  new Taggle('user_taggs', {
-	    tags: assigned_users,
+        var tag_url = $("#user_taggs").attr("href");
+        var case_id = $('.case-container').attr('caseid');
+        var assigned_ordered_pairs = JSON.parse(document.getElementById('assigned_ordered_pairs').textContent);
+        var assigned_users_emails = []
+        for (let i = 0; i < assigned_ordered_pairs.length; i++){
+            assigned_users_emails.push(assigned_ordered_pairs[i]['value'])
+        }
+        var assignable_ordered_pairs = JSON.parse(document.getElementById('assignable_ordered_pairs').textContent);
+        var assignable_emails = []
+        for (let i = 0; i < assignable_ordered_pairs.length; i++){
+            assignable_emails.push(assignable_ordered_pairs[i]['value'])
+        }
+        var taggle2 =  new Taggle('user_taggs', {
+    	    tags: assigned_users_emails,
             duplicateTagClass: 'bounce',
-	    preserveCase: true,
-            allowedTags: assignable,
-	    placeholder: ["Tag a user..."],
-	    onTagAdd: function(event, tag) {
-		if (event) {
-		    var csrftoken = getCookie('csrftoken');
-		    var tag_url = $("#user_taggs").attr("href");
-		    $.post(tag_url,
-			   {'state': 1, 'csrfmiddlewaretoken': csrftoken, 'tag':tag }, function(data) {
-			       reload_case_activity();
-			       /*reload participants, because this will add a participant */
-			       reloadParticipants(case_id, participants_table);
-			   })
-			.fail(function(data) {
-			    permissionDenied(addmodal);
-			    taggle2.remove(tag);
-			});
-		}
-	    },
-	    onBeforeTagRemove: function(event, tag) {
-		if (event) {
-		    var tag_url = $("#user_taggs").attr("href");
-		    var csrftoken = getCookie('csrftoken');
-		    var jqxhr = $.post(tag_url,
-				       {'state': 0, 'csrfmiddlewaretoken': csrftoken, 'tag':tag}, function(data) {
-					   reload_case_activity();
-					   /*reload participants, because this will rm a participant */
-					   reloadParticipants(case_id, participants_table);
-				       })
-			.fail(function(data) {
-			    permissionDenied(addmodal);
-			    taggle2.add(tag);
-			});
-		}
-		return true;
-	    },
-	});
+            preserveCase: true,
+            allowedTags: assignable_emails,
+            placeholder: ["Tag a user..."],
+            tagFormatter: function(li) {
+                spanElement = li.querySelector('.taggle_text')
+                inputElement = li.querySelector('input')
+                inputElementValue = li.querySelector('input').value
+                // find the element whose value = the current input, then change the spanElement innerHTML to the label in that element.
+                let objectWithThisEmail = assignable_ordered_pairs.filter(function checkit(object){
+                    if (object['value'] == inputElement.value){
+                        return object
+                    }
+                })[0]
+                spanElement.setAttribute('title', spanElement.innerHTML)
+                spanElement.innerHTML = objectWithThisEmail['label']
+                return li;
+            },
+    	    onTagAdd: function(event, tag) {
+                // to be clear, tag is the value of the input element, not the text in the span element.
+	        	if (event) {
+                    var csrftoken = getCookie('csrftoken');
+                    var tag_url = $("#user_taggs").attr("href");
+        		    $.post(tag_url, {'state': 1, 'csrfmiddlewaretoken': csrftoken, 'tag':tag }, function(data) {
+                        reload_case_activity();
+                        // reload participants, because this will add a participant. now that the participants tab laods async, 
+                        // we only want to do this if the participants table has loaded
+                        if (participants_table){
+                            reloadParticipants(case_id, participants_table);
+                        }
+			        })
+                    .fail(function(data) {
+                        permissionDenied(addmodal);
+                        taggle2.remove(tag);
+                    });
+	    	    }
+	        },
+            onBeforeTagRemove: function(event, tag) {
+                // to be clear, tag is the value of the input element, not the text in the span element.
+                if (event) {
+                    var tag_url = $("#user_taggs").attr("href");
+                    var csrftoken = getCookie('csrftoken');
+                    var jqxhr = $.post(tag_url, {'state': 0, 'csrfmiddlewaretoken': csrftoken, 'tag':tag}, function(data) {
+                        reload_case_activity();
+                        // reload participants, because this will add a participant. now that the participants tab laods async, 
+                        // we only want to do this if the participants table has loaded
+                        if (participants_table){
+                            reloadParticipants(case_id, participants_table);
+                        }
+                    })
+                    .fail(function(data) {
+                        permissionDenied(addmodal);
+                        taggle2.add(tag);
+                    });
+                }
+                return true;
+            },
+	    });
 
-	auto(assignable, taggle2, tag_url, addmodal);
+        let assignable_ordered_pairs_with_emails = assignable_ordered_pairs.map(function(originalOrderedPair){
+            newOrderedPair = {}
+            newOrderedPair['label'] = originalOrderedPair['label'] + ' [' + originalOrderedPair['value'] + ']'
+            newOrderedPair['value'] = originalOrderedPair['value']
+            return newOrderedPair
+        })
+
+
+	    auto(assignable_ordered_pairs_with_emails, taggle2, tag_url, addmodal);
 
     }
 
@@ -337,7 +373,7 @@ $(document).ready(function() {
         var case_tags = JSON.parse(document.getElementById('case_tags').textContent);
         var case_avail_tags = JSON.parse(document.getElementById('case_available_tags').textContent);
         var tags = [];
-	var case_tag_url = $("#case_taggs").attr("href");
+	    var case_tag_url = $("#case_taggs").attr("href");
         var casetaggle =  new Taggle('case_taggs', {
             tags: case_tags,
 	    tagFormatter: function(li) {
@@ -352,7 +388,7 @@ $(document).ready(function() {
             placeholder: ["Tag this case..."],
 	    onTagAdd: function(event, tag) {
                 if (event) {
-		    var case_tag_url = $("#case_taggs").attr("href");
+		            var case_tag_url = $("#case_taggs").attr("href");
                     var csrftoken = getCookie('csrftoken');
                     $.post(case_tag_url,
                            {'add_tag': 1, 'csrfmiddlewaretoken': csrftoken, 'tag':tag }, function(data) {
@@ -933,6 +969,7 @@ $(document).ready(function() {
 
         $.post(url, {'csrfmiddlewaretoken': csrftoken, 'coordinator': val},
                function(data) {
+                console.log('#type_submit has been clicked')
 		   reloadParticipants($(".case-container").attr('caseid'), participants_table);
                })
             .done(function() {
@@ -1997,6 +2034,7 @@ $(document).ready(function() {
 	    
             $.post(url, {'csrfmiddlewaretoken': csrftoken, 'users': vendors,
                          'case_id': case_id}, function(data) {
+                            console.log('#adduserform has been submitted')
 			     reloadParticipants(case_id, participants_table);
                          })
                 .done(function() {
@@ -2011,40 +2049,36 @@ $(document).ready(function() {
             participants_table = new Tabulator("#participant-table", {
                 data:participants_data, //set initial table data
                 layout:"fitColumns",
-		tooltipsHeader:true,
+		        tooltipsHeader:true,
                 selectable:true,
-		dataEdited:function(data) {
-		    
-		    var csrftoken=getCookie('csrftoken');
-		    for (i=0; i < data.length; i++) {
-			var url = data[i].changetype;
-			var type = data[i].role;
-			if (type == "Coordinator") {
-			    type = "True";
-			} else {
-			    type = "False";
-			}
-			$.post(url, {'csrfmiddlewaretoken': csrftoken, 'coordinator': type},
-			       function(data) {
-			       })
-			    .done(function() {
-				reloadParticipants($(".case-container").attr('caseid'), participants_table);
-				
-			    })
-			    .fail(function(d) {
-				permissionDenied(addmodal);
-			    });
-		    }
-		},
-		placeholder: "There are no participants in this case",
+		        dataEdited:function(data) {
+                    var csrftoken=getCookie('csrftoken');
+                    for (i=0; i < data.length; i++) {
+                        var url = data[i].changetype;
+                        var type = data[i].role;
+                        if (type == "Coordinator") {
+                            type = "True";
+                        } else {
+                            type = "False";
+                        }
+                        $.post(url, {'csrfmiddlewaretoken': csrftoken, 'coordinator': type}, function(data) {})
+                        .done(function() {
+                            console.log('the participants table has just been loaded')
+                            reloadParticipants($(".case-container").attr('caseid'), participants_table);
+                        })
+                        .fail(function(d) {
+                            permissionDenied(addmodal);
+                        });
+                    }
+                },
+        		placeholder: "There are no participants in this case",
                 columns:[
                     {title:"Name", field:"name", formatter:participantClickFunction},
                     {title:"Date Notified", field:"notified"},
                     {titleFormatter: roleFormatterFunction, field:"role", editor:"select", editorParams: {values: {"Coordinator":"Coordinator", "Reporter":"Reporter"}}},
-		    {title:"Seen", field:"seen", formatter:participantSeenFormatter},
-		    {title:"Status", field:"status", formatter: statusFormatter},
+		            {title:"Seen", field:"seen", formatter:participantSeenFormatter},
+		            {title:"Status", field:"status", formatter: statusFormatter},
                 ],
-		
             });
         }
 	
@@ -2067,29 +2101,33 @@ $(document).ready(function() {
                     window.setTimeout(checkFlag, 100);
                 }
                 if (selectedRows[i].getData().rm_confirm) {
-		    flag = false;
-		    $.ajax({
+                    flag = false;
+                    $.ajax({
                         url: selectedRows[i].getData().remove_link,
                         success: function(data) {
-			    approvemodal.html(data).foundation('open');
+                            approvemodal.html(data).foundation('open');
                         },
-			error: function(xhr, status) {
-			    permissionDenied(approvemodal);
-			}});
+                        error: function(xhr, status) {
+                            permissionDenied(approvemodal);
+                        }
+                    });
                 } else {
-		    $.ajax({
+		            $.ajax({
                         url: selectedRows[i].getData().remove_link,
                         success: function(data) {
-			    sleep(2000);
-			    reloadParticipants($(".case-container").attr('caseid'), participants_table);
+                            sleep(2000);
+                            console.log('remove-participant has just been clicked')
+                            reloadParticipants($(".case-container").attr('caseid'), participants_table);
                         },
-			error: function(xhr, status) {
-			    permissionDenied(approvemodal);
-			}});
-		    flag = true;
+        			    error: function(xhr, status) {
+			                permissionDenied(approvemodal);
+			            }
+                    });
+		            flag = true;
                 }
             }
 	    
+            console.log('remove-participant has just been clicked and is almost finished processing')
             reloadParticipants($(".case-container").attr('caseid'), participants_table);
         });
 

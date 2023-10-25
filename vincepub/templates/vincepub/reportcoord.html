@@ -139,6 +139,11 @@
               <label for="id_ics_impact">{{ form.ics_impact.label }} <a class="questiontip notlink" href="#" title="Does this vulnerability report significantly affect industrial control systems (ICS) or operation technology (OT)?"><i class="fas fa-question-circle"></i></a></label>
               {% render_field form.ics_impact class="check-sameline" %}
             </div>
+
+		<div class="form-group checkbox-sameline">
+			  <label for="ai_ml_system">{{ form.ai_ml_system.label }} <a class="questiontip notlink" href="#" title="Is this vulnerability report related to artificial intelligence (AI) or machine learning (ML) systems?"><i class="fas fa-question-circle"></i></a></label>
+			  {% render_field form.ai_ml_system class="check-sameline" %}
+			</div>
 	    
             <div class="form-group">
 	      <label for="id_vul_description">What is the vulnerability? <span class="required">*</span></label>

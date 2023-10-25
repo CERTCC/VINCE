@@ -59,6 +59,17 @@ import mimetypes
 from django.dispatch import Signal
 import io
 from lib.vince import utils as vinceutils
+from django.db.models import JSONField
+
+class OldJSONField(JSONField):
+    """ This was due to legacy support in Django 2.2. from_db_value
+    should be explicitily sepcified when extending JSONField """
+
+    def db_type(self, connection):
+        return 'json'
+
+    def from_db_value(self, value, expression, connection):
+        return value
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -748,6 +759,11 @@ class VTCaseRequest(models.Model):
     vendor_communication = models.TextField(blank=True, null=True)
     product_name = models.CharField(max_length=500)
     product_version = models.CharField(max_length=100, blank=True, null=True)
+    metadata = OldJSONField(
+        help_text=_('Extensible, currently used to specify relevance to AI/ML systems'),
+        blank=True,
+        null=True
+    )
     ics_impact = models.BooleanField(default=False)
     vul_description = models.TextField(blank=True, null=True)
     vul_exploit = models.TextField(blank=True, null=True)

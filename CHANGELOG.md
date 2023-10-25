@@ -1,5 +1,17 @@
 # VINCE Changelog
 
+Version 2.1.6  2023-10-25
+
+* Fixed bug that interfered in certain circumstances with the operation of the vendor filter button on the VINCEComm case page
+* Dependabot update recommendations: `urllib3` 1.26.12 to 1.26.18
+* Fixed bug that obstrcuted case assignment process for VINCETrack users with identical preferred usernames
+* Adjusted code for asynchronous loading on ticket page to ensure it works on all ticket pages, including case request tickets
+* Set up periodic autorefresh feature for VINCE Track ticket page
+* Reformulated misleading UI labels for case transfer request process
+* Resolved Issue by simpifying/correcting search code & disambiguating labels in report views
+* Added AI/ML systems checkbox to public & VINCE Comm vul report form, routing of AI/ML-related tickets
+
+
 Version 2.1.5  2023-09-21
 
 * Enhanced operation of VINCEComm case discussion section, moving focus to editable div when the user chooses to edit a post
