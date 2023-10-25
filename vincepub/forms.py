@@ -301,7 +301,15 @@ class VulCoordForm(forms.ModelForm):
     ics_impact = forms.BooleanField(
         label='Significant ICS/OT impact?',
         required=False)
+
+    ai_ml_system = forms.BooleanField(
+        label='Related to AI/ML systems?',
+        required=False)
     
+    metadata = forms.CharField(
+        required=False
+    )
+
     vul_description = forms.CharField(
         max_length=20000, 
         label='What is the vulnerability?', 

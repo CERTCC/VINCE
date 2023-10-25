@@ -963,7 +963,7 @@ class GovReportView(generic.FormView):
             logger.debug("invalid recaptcha validation")
             form._errors[forms.forms.NON_FIELD_ERRORS] = ErrorList([
                 u'Invalid reCAPTCHA.  Please try again'
-		])
+		    ])
             return super().form_invalid(form)
 
 
@@ -1111,10 +1111,14 @@ class VulCoordRequestView(generic.FormView):
 
         # process the data in form.cleaned_data as required
         vrf_id = get_vrf_id()
+        context = form.cleaned_data
+        if context['ai_ml_system'] == True:
+            context['metadata'] = {"ai_ml_system": True}
+        else:
+            context['metadata'] = {"ai_ml_system": False}
         form.instance.vrf_id = vrf_id
         newrequest = form.save(commit=False)
         newrequest.save()
-        context = form.cleaned_data
         coord_choice=[]
         context['vrf_id']=vrf_id
         for selection in context['coord_status']:
@@ -1122,7 +1126,7 @@ class VulCoordRequestView(generic.FormView):
         if context['why_no_attempt']:
             context['coord_choice']= form.fields['why_no_attempt'].choices[int(context['why_no_attempt'])-1][1]
 
-#        context['coord_choice'] = coord_choice
+        # context['coord_choice'] = coord_choice
         context['vrf_date_submitted'] = datetime.now(EST()).isoformat()
         # get some meta info about who submitted this
         context['remote_addr'] = self.request.META['REMOTE_ADDR'] if 'REMOTE_ADDR' in self.request.META else "unknown"
@@ -1223,6 +1227,8 @@ class VulCoordRequestView(generic.FormView):
             else:
                 logger.debug("Email Sent! Message ID: "),
                 logger.debug(response['MessageId'])
+        # log the report
+        logger.debug(f'Without signing in first, a user has submitted a report with the following info: {context}')
         # redirect to a new URL
         return render(self.request, 'vincepub/success.html', context)
 

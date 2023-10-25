@@ -67,8 +67,8 @@
 </div>
 <hr>
 
-<div id="ticket_activity" href="{% url 'vince:ticket_activity' ticket.id %}">
-{% include 'vince/ticket_activity.html' %}
+<div id="ticket_activity" href="{% url 'vince:ticket_activity' ticket.id %}" class="asyncload autoload asyncrefresh shouldautorefresh" onmutate="update">
+  <!-- Load this async -->  
 </div>
 
 <hr>

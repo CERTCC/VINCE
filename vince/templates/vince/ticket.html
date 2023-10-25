@@ -57,7 +57,7 @@
 </div>
 {% if messages %}
 <div class="row">
-  <div class="large-12 columns">
+  <div class="large-12 columns" id="ticket_messages_wrapper_div">
     {% for message in messages %}
     <div class="callout {{ message.tags }}">{{ message }}</div>
     {% endfor %}
@@ -65,7 +65,7 @@
 </div>
 {% endif %}
 <div class="row" id="ticket-info">
-  <div class="large-12 columns">
+  <div class="large-12 columns" id="ticket_table_wrapper_div">
     {% include 'vince/ticket_table.html' with show_taggle=1 %}
   </div>
 </div>
@@ -81,13 +81,13 @@
    </div>
 </div>
 <div class="row">
-  <div class="large-12 columns">
+  <div class="large-12 columns" id="ticket_artifacts_wrapper_div">
     {% include 'vince/include/artifacts.html' with empty_message="No artifacts have been created for this ticket" %}
   </div>
 </div>
 
 <hr>
-<div id="ticket_activity" href="{% url 'vince:ticket_activity' ticket.id %}" class="asyncload autoload asyncrefresh" onmutate="update">
+<div id="ticket_activity" href="{% url 'vince:ticket_activity' ticket.id %}" class="asyncload autoload asyncrefresh shouldautorefresh" onmutate="update">
 <!-- Load this async -->
 </div>
 <hr>

@@ -58,6 +58,7 @@
 	 <tr><td>Product Affected</td><td>{{ product_name }}</td></tr>
 	 <tr><td>Product Version</td><td>{{ product_version }}</td></tr>
 	 <tr><td>Significant ICS/OT impact?</td><td>{{ ics_impact }}</td></tr>
+	 <tr><td>Related to AI/ML systems?</td><td>{{ ai_ml_system }}</td></tr>
 	 <tr><td>Description of vulnerability</td><td>{{ vul_description }}</td></tr>
 	 <tr><td>How does an attacker exploit this vulnerability?</td><td>{{ vul_exploit }}</td></tr>
 	 <tr><td>What is the impact of this vulnerability?</td><td>{{ vul_impact }}</td></tr>
@@ -146,7 +147,8 @@
        
      </div>
    </div>
-   <div class="large-4 medium-4 columns">
+<div class="large-4 medium-4 columns">
+  {% include "vincepub/reportsidebar.html" %}
    </div>
 </div>
 {% endblock %}

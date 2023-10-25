@@ -125,12 +125,6 @@ function asyncLoad(fdiv,furl,fmethod,pdiv,formpost,silent,transform) {
 	    fdata = $(formpost).serialize();
     }
     lockunlock(true,pdiv,fdiv);
-	console.log('furl is ')
-	console.log(furl)
-	console.log('fmethod is ')
-	console.log(fmethod)
-	console.log('fdata is ')
-	console.log(fdata)
     window.txhr = $.ajax({
         url : furl,
         type: fmethod,
@@ -141,7 +135,6 @@ function asyncLoad(fdiv,furl,fmethod,pdiv,formpost,silent,transform) {
 				$(fdiv).html(transform(data)).foundation();
 	    	else
 				$(fdiv).html(data).foundation();
-			console.log($(fdiv))
         	},
 		error: function() {
 		    lockunlock(false,pdiv,fdiv);
@@ -288,36 +281,56 @@ $(function () {
       });
     */
 
-	// The following 70 lines or so is a rough draft that needs substantial work for getting parts of the case & ticket pages to refresh automatically.
-
 	// let periodBetweenInactivityChecks = 10000;
-	// let autorefreshInterval = 60000;
+	let autorefreshInterval = 60000;
 	// let time = new Date().getTime();
 	
 	// $(document.body).bind("mousemove keypress", function(e) {
 	// 	time = new Date().getTime();
 	// });
 	
-	// function autorefresh() {
-	// 	console.log('autorefresh is starting')
-    //     let request = new XMLHttpRequest();
-    //     request.open('GET', location.href.replace(location.hash,""));
-    //     request.onload = function () {
-    //         if (request.response){
-    //             let retrievedHTML = request.response;
-    //             const parser = new DOMParser();
-    //             const parsedHTML = parser.parseFromString(retrievedHTML, "text/html");
-    //             $('.shouldautorefresh').each(function() {
-    //                 current_id = $(this).attr("id");
-    //                 html_to_inject = parsedHTML.querySelectorAll("[id='"+current_id+"']")[0].innerHTML
-    //                 if ($(this).html() != html_to_inject) {
-    //                     console.log('we are replacing the html')
-    //                     $(this).html(html_to_inject)
-    //                 }
-    //             });
-    //         }
-    //     };
-    //     request.send();
+	function autorefresh() {
+
+		let autorefreshers = document.querySelectorAll('.shouldautorefresh');
+
+		for (let i = 0; i < autorefreshers.length; i++) {
+			if (autorefreshers[i].classList.contains('asyncload')) {
+				asyncLoad(autorefreshers[i])
+			}
+		}
+	
+
+		// this code is a rough draft, requiring serious revision, of what might work if we want to reload page sections that do not have '.asyncload'
+
+		// console.log('autorefresh is starting')
+        // let request = new XMLHttpRequest();
+		// console.log('we are GETting from ' + location.href.replace(location.hash,""))
+        // request.open('GET', location.href.replace(location.hash,""));
+        // request.onload = function () {
+        //     if (request.response){
+        //         let retrievedHTML = request.response;
+		// 		console.log('retrievedHTML is ')
+		// 		console.log(retrievedHTML)
+        //         const parser = new DOMParser();
+        //         const parsedHTML = parser.parseFromString(retrievedHTML, "text/html");
+        //         $('.shouldautorefresh').each(function() {
+        //             current_id = $(this).attr("id");
+		// 			console.log('current_id is ')
+		// 			console.log(current_id)
+        //             html_to_inject = parsedHTML.querySelectorAll("[id='"+current_id+"']")[0].innerHTML
+		// 			console.log('html_to_inject is')
+		// 			console.log(html_to_inject)
+		// 			console.log('$(this).html() is')
+		// 			console.log($(this).html())
+		// 			console.log('it is ' + ($(this).html() != html_to_inject) + ' that $(this).html() is not equal to html_to_inject')
+        //             if ($(this).html() != html_to_inject) {
+        //                	console.log('we are replacing the html')
+        //                 $(this).html(html_to_inject)
+        //             }
+        //         });
+        //     }
+        // };
+        // request.send();
 
 
 
@@ -333,32 +346,11 @@ $(function () {
 		// 	}
 		// }
 
-	// }
+	}
 	
-	// if ($('.shouldautorefresh')[0]){
-	// 	setTimeout(autorefresh, autorefreshInterval);
-	// }
-
-	// This works like a charm, but the above might be better:
-
-	// let autorefreshInterval = 60000
-
-    // function autorefresh(){
-    //     inputText = document.getElementById("commentBox").value
-	// 	if (inputText == ''){
-	// 		$.get(location.href,function(retrievedHTML) {
-	// 			const parser = new DOMParser();
-	// 			const parsedHTML = parser.parseFromString(retrievedHTML, "text/html");
-	// 			if (!parsedHTML.isEqualNode(document)) {
-	// 				location.reload()
-	// 			}
-	// 		})
-	// 	}
-    // };
-
-    // if ($('.shouldautorefresh')[0]){
-    //     setInterval(autorefresh, autorefreshInterval);
-    // }
+	if ($('.shouldautorefresh')[0]){
+		setInterval(autorefresh, autorefreshInterval);
+	}
 	  
 	var tabIDsoughtviaurl = $(location).prop('hash').substr(1);
 	
@@ -409,83 +401,74 @@ $(function () {
         return false;
     });
     function post_content_refresh(ctx) {
-	/* This function runs on all divs that can use SHOW_MORE
-	   and SHOW_LESS*/
-	if(!ctx) 
-	    ctx = document.body;
-	var lines = 12; 
-	var buttonspacing = 0; 
-	var buttonside = 'left'; 
-	var animationspeed = 1000;
-	var lineheight = 0;
-	if ($('.text_content',ctx).css("line-height")) {
-	    lineheight = $('.text_content',ctx).css("line-height").
-		replace("px", "");
-	}
-	var startheight = lineheight * lines;
-	var shortheight = $('.textheightshort',ctx).css('max-height');
-	var buttonheight =  $('.showfull',ctx).height();
-	$('div.long_text_container',ctx).css(
-	    {'padding-bottom' : (buttonheight + buttonspacing ) });
+		/* This function runs on all divs that can use SHOW_MORE
+		and SHOW_LESS*/
+		if(!ctx) {
+			ctx = document.body;
+		}
+		var lines = 12;
+		var buttonspacing = 0;
+		var buttonside = 'left';
+		var animationspeed = 1000;
+		var lineheight = 0;
+		if ($('.text_content',ctx).css("line-height")) {
+			lineheight = $('.text_content',ctx).css("line-height").
+			replace("px", "");
+		}
+		var startheight = lineheight * lines;
+		var shortheight = $('.textheightshort',ctx).css('max-height');
+		var buttonheight =  $('.showfull',ctx).height();
+		$('div.long_text_container',ctx).css({'padding-bottom' : (buttonheight + buttonspacing ) });
 
-	if(buttonside == 'right'){
-            $('.showfull',ctx).css(
-		{'bottom' : (buttonspacing / 2), 'right' : buttonspacing });
-	} else{
-	    $('.showfull',ctx).css(
-		{'bottom' : (buttonspacing / 2), 'left' : buttonspacing });
-	}
+		if(buttonside == 'right'){
+			$('.showfull',ctx).css({'bottom' : (buttonspacing / 2), 'right' : buttonspacing });
+		} else{
+			$('.showfull',ctx).css({'bottom' : (buttonspacing / 2), 'left' : buttonspacing });
+		}
 
-	$('.moretext',ctx).on('click', function(){
-            var newheight = $(this).parent('div.long_text_container').
-		find('div.text_content').height();
-            $(this).parent('div.long_text_container').
-		find('div.text_container').
-		animate({'max-height' : newheight }, animationspeed );
-            $(this).hide().siblings('.lesstext').show();
-            $(this).next().next('.scrollnext').fadeIn();
+		$('.moretext',ctx).on('click', function(){
+			var newheight = $(this).parent('div.long_text_container').find('div.text_content').height();
+			$(this).parent('div.long_text_container').find('div.text_container').animate({'max-height' : newheight }, animationspeed );
+			$(this).hide().siblings('.lesstext').show();
+			$(this).next().next('.scrollnext').fadeIn();
 
-	});
+		});
 
-	$('.lesstext',ctx).on('click', function(){
-	    var shortelem = $(this).parent('div.long_text_container').
-		find('div.text_container').hasClass('textheightshort');
-	    var newheight = startheight;
-	    if (shortelem) {
-		newheight = shortheight;
-	    }
-            var h = $(this).parent('div.long_text_container').
-		find('div.text_content').height();
-            $(this).parent('div.long_text_container').
-		find('div.text_container').
-		animate({'max-height' : newheight }, animationspeed );
-            $(this).hide().siblings('.moretext').show();
-            $(this).next('.scrollnext').fadeOut();
-	});
+		$('.lesstext',ctx).on('click', function(){
+			var shortelem = $(this).parent('div.long_text_container').find('div.text_container').hasClass('textheightshort');
+			var newheight = startheight;
+			if (shortelem) {
+				newheight = shortheight;
+			}
+			var h = $(this).parent('div.long_text_container').find('div.text_content').height();
+			$(this).parent('div.long_text_container').find('div.text_container').animate({'max-height' : newheight }, animationspeed );
+			$(this).hide().siblings('.moretext').show();
+			$(this).next('.scrollnext').fadeOut();
+		});
 
-	$('div.long_text_container',ctx).each(function(){
-	    var elm = $(this).find('div.text_content');
-            if( elm.height() > $(this).find('div.text_container').height()){
-		$(this).find('.showfull.moretext').show();
+		$('div.long_text_container',ctx).each(function(){
+			var elm = $(this).find('div.text_content');
+			if( elm.height() > $(this).find('div.text_container').height()){
+				$(this).find('.showfull.moretext').show();
 
-            }
-	});
+			}
+		});
     }
     /* Run post_content_refresh once and then on any divs that are
        dynamically generated */
     post_content_refresh();
     function mutation_refresh(mu,ob) {
-	console.log(arguments);
-	if(mu.length && mu[0].target) {
-	    if($(mu[0].target).attr("onmutate")) {
-		post_content_refresh(mu[0].target);
-	    }
-	}
+		console.log(arguments);
+		if(mu.length && mu[0].target) {
+			if($(mu[0].target).attr("onmutate")) {
+				post_content_refresh(mu[0].target);
+			}
+		}
     }
     $('.asyncrefresh').each(function() {
-	console.log(arguments);
-	let ob = new MutationObserver(mutation_refresh);
-	ob.observe(this,{childList:true});
+		console.log(arguments);
+		let ob = new MutationObserver(mutation_refresh);
+		ob.observe(this,{childList:true});
     });
     $(document).keyup(function(e) {
         if (e.key === "Escape") {
@@ -499,7 +482,7 @@ $(function () {
     /* All asyncload class div with autoload should be populated async on
        document.ready()  */
     $('div.asyncload.autoload').each(function(_,fdiv) {
-	asyncLoad(fdiv);
+		asyncLoad(fdiv);
     });
     /* Create async onclick loaders via buttons if any */
     $('.asyncclick').on("click", clickAsyncLoad);

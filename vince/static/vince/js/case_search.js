@@ -60,7 +60,7 @@ var txhr = null;
 
 function searchTickets(e) {
     if (e) {
-	e.preventDefault();
+	    e.preventDefault();
     }
     $("#id_page").val("1");
     var url = "/vince/case/results/";
@@ -69,44 +69,48 @@ function searchTickets(e) {
     }
     lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
     txhr = $.ajax({
-	url: url,
-	type: "POST",
-	data: $('#searchform').serialize(),
-	success: function(data) {
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
- 	    $("#searchresults").html(data);
-	},
-	error: function() {
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
-	    console.log(arguments);
-	    alert("Search failed or canceled! See console log for details.");
-	},
-	complete: function() {
-	    /* Just safety net */
-	    lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
-	    window.txhr = null;
- 	}
-     });
+        url: url,
+        type: "POST",
+        data: $('#searchform').serialize(),
+        success: function(data) {
+            lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+            $("#searchresults").html(data);
+        },
+        error: function() {
+            lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+            console.log(arguments);
+            alert("Search failed or canceled! See console log for details.");
+        },
+        complete: function() {
+            /* Just safety net */
+            lockunlock(false,'div.mainbody,div.vtmainbody','#searchresults');
+            window.txhr = null;
+        }
+    });
 }
 
 $(document).ready(function() {
     
+    // dead code:
     $(document).on("click", '.search_page', function(event) {
-	var page = $(this).attr('next');
-	nextPage(page);
+    	var page = $(this).attr('next');
+	    nextPage(page);
     });
 
+    // dead code:
     $(document).on("click", '.search_notes', function(event) {
-	var page = $(this).attr('next');
-	nextTickets(page);
+	    var page = $(this).attr('next');
+	    nextTickets(page);
     });
     
+    // this is it:
     var input = document.getElementById("id_wordSearch");
-    input.addEventListener("keydown", function(event) {
-	if (event.keyCode == 13) {
+        input.addEventListener("keydown", function(event) {
+	    if (event.keyCode == 13) {
             searchTickets(event);
-	}
+	    }
     });
+    // so when you press enter, you trigger searchTickets (above) with the data in #searchform
 
     var form = document.getElementById('searchform');
     if (form.attachEvent) {

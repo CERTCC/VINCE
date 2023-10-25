@@ -2542,6 +2542,8 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         except:
             logger.debug("Vendor name ordering failed error: {e}")
             context['vendors'] = CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False).order_by("group__name")
+        for vendor in context['vendors']:
+            logger.debug(vendor)
         context['num_vendors'] = context['vendors'].count()
 
 #        context['participants'] = User.objects.filter(groups__name=case.vuid)
@@ -2663,9 +2665,16 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
                     p = Paginator(posts, posts_after)
                     context['posts'] = p.page(1)
                     context['paginate_by'] = posts_after
-
-        cviewed, created = CaseViewed.objects.update_or_create(case=case, user=self.request.user,
+        try:
+            cviewed, created = CaseViewed.objects.update_or_create(case=case, user=self.request.user,
                                                                defaults={'date_viewed':timezone.now})
+        except:
+            c = CaseViewed.objects.filter(case=case, user=self.request.user)
+            if c.count > 1:
+                # here we will put code for deleting all of the entries but one.
+                pass
+            pass
+
         if created:
             # if just created, this is the first time user is viewing case
             # show vul disclosure policy
@@ -2836,7 +2845,7 @@ class ViewStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
         case = get_object_or_404(Case, id=self.kwargs['pk'])
         # add the extra _my_group_for_case because reporters/participants shouldn't
         # provide a status
-        return _is_my_case(self.request.user, self.kwargs['pk']) and _my_group_for_case(self.request.user, case) and PendingTestMixin.test_func(self)
+        return self.request.user.is_superuser or (_is_my_case(self.request.user, self.kwargs['pk']) and _my_group_for_case(self.request.user, case) and PendingTestMixin.test_func(self))
 
     def dispatch(self, request, *args, **kwargs):
         if self.kwargs.get('vendor_id'):
@@ -2865,7 +2874,45 @@ class ViewStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
         affected = []
         unaffected=[]
         unknown=[]
+        user = self.request.user
+        settings = user.vinceprofile.settings
         try:
+            if 'mute_case' in self.request.POST:
+                # the user wants to mute the case
+                if user.vinceprofile.settings.get('muted_cases'):
+                    # the user already has muted cases
+                    muted_cases = user.vinceprofile.settings['muted_cases']
+                    if case.id in muted_cases:
+                        # the user already has this case muted, so there's nothing to do:
+                        pass
+                    else:
+                        # the user has muted cases but this isn't one of them yet, so we add it to muted_cases:
+                        muted_cases.append(case.id)
+                        settings.update({'muted_cases': muted_cases})
+                        user.vinceprofile.settings = settings
+                        user.vinceprofile.save()
+                else:
+                    # the user has no muted cases yet, so we create muted_cases and include the current case:
+                    settings.update({'muted_cases': [case.id]})
+                    user.vinceprofile.settings = settings
+                    user.vinceprofile.save()
+            else:
+                # the user wants the case not to be muted.
+                if user.vinceprofile.settings.get('muted_cases'):
+                    # the user already has muted cases
+                    muted_cases = user.vinceprofile.settings['muted_cases']
+                    if case.id in muted_cases:
+                        # the user has this case muted, so we have to remove it from muted_cases:
+                        muted_cases.remove(case.id)
+                        settings.update({'muted_cases': muted_cases})
+                        user.vinceprofile.settings = settings
+                        user.vinceprofile.save()
+                    else:
+                        #this case is not muted, so there's nothing to do:
+                        pass
+                else:
+                    # the user has no muted cases yet, and doesn't want to add any at this time, so there's nothing to do:
+                    pass
             for k,v in self.request.POST.items():
                 if k.startswith('status'):
                     vul_id = int(k.split('_')[1])
@@ -2875,6 +2922,7 @@ class ViewStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
                         unaffected.append(vul_id)
                     else:
                         unknown.append(vul_id)
+
         except Exception as e:
             logger.debug(f"Error in {self.__class__.__name__} for form processing error: {e}")
             pass
@@ -2937,9 +2985,19 @@ class ViewStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
 
         context['status'] = CaseMemberStatus.objects.filter(vulnerability__in=context['vuls'], member=member)
 
+        user = self.request.user
+        muted = ''
+        if user.vinceprofile.settings.get('muted_cases'):
+            if case.id in user.vinceprofile.settings['muted_cases']:
+                muted = 'on'
+
+        logger.debug('currently muted is')
+        logger.debug(muted)
+
         stmt = CaseStatement.objects.filter(case = case, member=member).first()
+
         if stmt:
-            initial={'statement':stmt.statement, 'references':stmt.references, 'share': stmt.share, 'addendum':stmt.addendum}
+            initial={'mute_case':muted, 'statement':stmt.statement, 'references':stmt.references, 'share': stmt.share, 'addendum':stmt.addendum}
         else:
             initial={}
         
@@ -2950,7 +3008,7 @@ class ViewStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
             #actions = VendorAction.objects.filter(case=case, member=member).values_list('id', flat=True)
             context['activity'] = VendorStatusChange.objects.filter(action__in=actions).order_by("-action__created")[:15]
         context['form'] = StatementForm(initial=initial)
-        
+
         return context
 
 class AddStatement(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
@@ -3499,6 +3557,13 @@ class EditContactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                         old.delete()
                         continue
                     else:
+                        #Does this email already exist?
+                        oe = VinceCommEmail.objects.filter(contact=self.contact, email=cd['email']).first()
+                        if oe:
+                            messages.error(
+                                self.request,
+                                _("The email you are attempting to add is already associated with this contact. Personal emails should be modified by a group admin on the <a href=\""+reverse("vinny:admin")+"\">User Management</a> page."))
+                            return redirect("vinny:contact")
                         changes.extend(contact_update.change_email_contact(self.contact, old, cd, self.request.user))
                 else:
                     #Does this email already exist?
@@ -3739,6 +3804,9 @@ class CRView(LoginRequiredMixin, TokenMixin, PendingTestMixin, UserPassesTestMix
         context['unread_msg_count'] = 0
         context['crpage'] = 1
         context['report'] = VTCaseRequest.objects.filter(id=self.kwargs['pk']).first()
+        logger.debug(f"context['report'] is {context['report']}")
+        logger.debug(f"vinceutils.deepGet(context['report'].metadata,'ai_ml_system') is {vinceutils.deepGet(context['report'].metadata,'ai_ml_system')}")
+        context['ai_ml_system'] = vinceutils.deepGet(context['report'].metadata,'ai_ml_system')
         context['attachments'] = ReportAttachment.objects.filter(action__cr=context['report'])
         if hasattr(context['report'], "case"):
             context['case_permission'] = _is_my_case(self.request.user, context['report'].case.id)
@@ -3855,11 +3923,15 @@ class ReportView(LoginRequiredMixin, TokenMixin, generic.FormView):
 
         # process the data in form.cleaned_data as required                                                 
         vrf_id = get_vrf_id()
+        context = form.cleaned_data
+        if context['ai_ml_system'] == True:
+            context['metadata'] = {"ai_ml_system": True}
+        else:
+            context['metadata'] = {"ai_ml_system": False}
         form.instance.vrf_id = vrf_id
         newrequest = form.save(commit=False)
         newrequest.user = self.request.user
         newrequest.save()
-        context = form.cleaned_data
         coord_choice=[]
         context['vrf_id']=vrf_id
         context['vc_id'] = newrequest.id
@@ -3958,6 +4030,9 @@ class ReportView(LoginRequiredMixin, TokenMixin, generic.FormView):
                 send_sns(vrf_id, "Sending ack email for vul reporting form", "something")
             else:
                 logger.debug(f"Email Sent! Message ID: {response['MessageId']}")
+        # log the report
+        logger.debug(f'{self.request.user} has submitted a report with the following info: {context}')
+        # redirect to a new URL
         return render(self.request, 'vincepub/success.html', context)
 
     def form_invalid(self, form):
