@@ -223,6 +223,11 @@ class VulCoordRequest(models.Model):
     product_name = models.CharField(max_length=100)
     product_version = models.CharField(max_length=100)
     ics_impact = models.BooleanField(default=False)
+    metadata = OldJSONField(
+        help_text=_('Extensible, currently used to specify relevance to AI/ML systems'),
+        blank=True,
+        null=True
+    )    
     vul_description = models.TextField()
     vul_exploit = models.TextField()
     vul_impact = models.TextField()
