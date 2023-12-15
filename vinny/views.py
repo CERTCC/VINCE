@@ -2672,7 +2672,11 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
             c = CaseViewed.objects.filter(case=case, user=self.request.user)
             if c.count > 1:
                 # here we will put code for deleting all of the entries but one.
-                pass
+                dups = list(l.order_by('date_viewed').values_list('pk',flat=True))
+                #Remove the latest element off the duplicates
+                last = dups.pop()
+                #Delete all the duplicates with this user as the constraint to be safe
+                CaseViewed.objects.filter(pk__in=dups, user=self.request.user).delete()
             pass
 
         if created:
@@ -2990,9 +2994,6 @@ class ViewStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormVi
         if user.vinceprofile.settings.get('muted_cases'):
             if case.id in user.vinceprofile.settings['muted_cases']:
                 muted = 'on'
-
-        logger.debug('currently muted is')
-        logger.debug(muted)
 
         stmt = CaseStatement.objects.filter(case = case, member=member).first()
 

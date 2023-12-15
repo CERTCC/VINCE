@@ -50,7 +50,7 @@ from vince.models import VulnerabilityCase
 # from vince.models import Attachment, EmailTemplate, ArtifactAttachment, TicketArtifact
 from vince.models import *
 from vinny.models import Message, Case, Post, PostRevision, VinceCommContact, GroupContact, CaseMember, CaseMemberStatus, CaseStatement, CaseVulnerability, VTCaseRequest, VinceCommCaseAttachment, ReportAttachment, VinceCommInvitedUsers, CRFollowUp, VCVUReport, VendorAction, VendorStatusChange, CaseCoordinator, ContactInfoChange, CaseViewed, CaseVulExploit, CaseVulCVSS, CoordinatorSettings, VINCEEmailNotification
-from vince.mailer import send_newticket_mail, send_daily_digest_mail, send_reset_mfa_email, get_mail_content, send_weekly_report_mail
+from vince.mailer import send_newticket_mail, send_daily_digest_mail, send_reset_mfa_email, get_mail_content, send_weekly_report_mail, send_alert_email
 from .permissions import *
 import email
 import email.header
@@ -63,6 +63,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 from vince.settings import VINCE_ASSIGN_TRIAGE, VINCE_IGNORE_TRANSIENT_BOUNCES
 from vince.permissions import get_case_case_queue, get_user_case_queue, get_user_gen_queue
+from lib.vince.utils import deepGet
 
 def md5_file(f):
     hash_md5 = hashlib.md5()
@@ -2681,14 +2682,12 @@ def publish_vul_note(vu_dict, key):
 def prepare_and_send_weekly_report():
 
     # get time info
-    context = {}
+    
     oneweekago = date.today() - timedelta(days=7)
     year = oneweekago.isocalendar()[0]
     week = oneweekago.isocalendar()[1]
     weekstartdate = date.fromisocalendar(year, week, 1)
-    context['weekstartdate'] = weekstartdate
     weekenddate = date.fromisocalendar(year, week, 7)
-    context['weekenddate'] = weekenddate
     daterangeend = weekenddate + timedelta(days=1)
 
     # examine the GroupSettings model, looking for groups that have weekly="on"
@@ -2699,6 +2698,15 @@ def prepare_and_send_weekly_report():
     recipients = []
     groupid = 0
     for groupplussettings in groupsplussettings:
+        context = {}
+        context['weekstartdate'] = weekstartdate
+        context['weekenddate'] = weekenddate
+
+        # This is just for testing:
+        # weekstartdate = date.today()
+        # daterangeend = weekstartdate + timedelta(days=1)
+        # context['weekstartdate'] = weekstartdate
+        # context['weekenddate'] = weekstartdate + timedelta(days=1)
 
         # get recipients data as a list
         recipients = groupplussettings.metadata["reports"]["recipients"].split(',')
@@ -2726,6 +2734,38 @@ def prepare_and_send_weekly_report():
                                         'active_cases': active_cases,
                                         'deactive_cases': deactive_cases,
                                         'to_active_cases': to_active_cases}})
+        if groupid == 1:
+            ai_ml_boolean = False
+            # looks like this works:
+            context['total_ai_ml_crs'] = CaseRequest.objects.annotate(n=Cast(F("metadata__ai_ml_system"),models.TextField())).filter(n__icontains="True", queue__in=my_queues, created__range=[weekstartdate, daterangeend]).count()
+            if context['total_ai_ml_crs'] > 0:
+                ai_ml_boolean = True
+            ai_ml_new_cases = 0
+            ai_ml_active_cases = 0
+            ai_ml_deactive_cases = 0
+            ai_ml_to_active_cases = 0
+            for case in new_cases:
+                if deepGet(case,'case_request.caserequest.metadata.ai_ml_system') == True:
+                    ai_ml_new_cases += 1
+                    ai_ml_boolean = True
+            for case in active_cases:
+                if deepGet(case,'case_request.caserequest.metadata.ai_ml_system') == True:
+                    ai_ml_active_cases += 1
+                    ai_ml_boolean = True
+            for case in deactive_cases:
+                if deepGet(case.case,'case_request.caserequest.metadata.ai_ml_system') == True:
+                    ai_ml_deactive_cases += 1
+                    ai_ml_boolean = True
+            for case in to_active_cases:
+                if deepGet(case.case,'case_request.caserequest.metadata.ai_ml_system') == True:
+                    ai_ml_to_active_cases += 1
+                    ai_ml_boolean = True
+            context.update({'ai_ml_case_stats': {'ai_ml_new_cases':ai_ml_new_cases,
+                                'ai_ml_active_cases': ai_ml_active_cases,
+                                'ai_ml_deactive_cases': ai_ml_deactive_cases,
+                                'ai_ml_to_active_cases': ai_ml_to_active_cases}})
+            context['total_ai_ml_activity'] = context['total_ai_ml_crs'] + ai_ml_new_cases
+            context['ai_ml_boolean'] = ai_ml_boolean
         context['new_users'] = User.objects.using('vincecomm').filter(date_joined__range=[weekstartdate, daterangeend]).count()
         context['total_users'] = User.objects.using('vincecomm').all().count()
         vendor_group_dict = {group.name:group.user_set.count() for group in Group.objects.using('vincecomm').exclude(groupcontact__isnull=True) if group.user_set.count() > 0}
@@ -2733,12 +2773,20 @@ def prepare_and_send_weekly_report():
         vendor_groups = Group.objects.using('vincecomm').exclude(groupcontact__isnull=True)
         context['vendor_users'] = User.objects.using('vincecomm').filter(groups__in=vendor_groups).distinct().count()
         context['fwd_reports'] = FollowUp.objects.filter(title__icontains="Successfully forwarded", date__range=[weekstartdate, daterangeend], ticket__queue__in=my_queues)
+        logger.debug(f'the context for the weekly reports email currently underway is {context}')
 
         # render the template with the data
         html_content = render_to_string('vince/printweeklyreport.html', context) + ""
 
         # send it to mailer.py for final pre-processing
         send_weekly_report_mail(recipients, my_team, html_content)
+
+def prepare_and_send_alert_email(cr):
+    logger.debug('prepare_and_send_alert_email has been correctly triggered')
+    recipients = ['gstrom@cert.org', 'gstrom@cert.org']
+    crlink = f"{settings.SERVER_NAME}{reverse('vince:cr', args=[cr.id])}"
+    logger.debug(f'crlink is {crlink}')
+    send_alert_email(recipients, crlink)
 
 def send_vt_daily_digest(user):
 

@@ -544,8 +544,10 @@ def autocomplete_casevendors(request, pk):
 
     paginator = Paginator(vendors, size)
 
-    vendorsjs = [obj.as_dict() for obj in paginator.page(page)]
-    #vendorsjs = [obj.as_dict() for obj in vendors]
+    # Until Nov 8 2023, we had this pagination calculated on the backend. Now, we calculate it using Tabulator ('pagination: "local"') in vince/case.js.
+    # With corresponding changes in case.js, this can be reversed by switching back to vendorsjs = [obj.as_dict() for obj in paginator.page(page)] here.
+    # vendorsjs = [obj.as_dict() for obj in paginator.page(page)]
+    vendorsjs = [obj.as_dict() for obj in vendors]
 
     alert_tags = list(TagManager.objects.filter(tag_type=2, alert_on_add=True).values_list('tag', flat=True))
     logger.debug(f"ALERT TAGS: {alert_tags}")
@@ -1613,7 +1615,6 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
         my_queues = get_r_queues(self.request.user)
 
         if facet == "All":
-            logger.debug('VINCE thinks we are searching All')
             ticket_results = Ticket.objects.search(search_query).filter(queue__in=my_queues)
             tkttags = TicketTag.objects.filter(ticket__queue__in=my_queues, tag__in=search_tags).values_list('ticket__id', flat=True)
             if ticket_results and tkttags:
@@ -1662,7 +1663,6 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
 
 
         elif facet == "Tickets":
-            logger.debug('VINCE thinks we are searching Tickets')
             ticket_results = Ticket.objects.search(search_query).filter(queue__in=my_queues)
             tkttags = TicketTag.objects.filter(ticket__queue__in=my_queues, tag__in=search_tags).values_list('ticket__id', flat=True)
             if ticket_results and tkttags:
@@ -1674,7 +1674,6 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
             activities = Ticket.objects.filter(id__in=activity_results)
             ticket_results = ticket_results | tkt_title | activities
         elif facet == "Contacts":
-            logger.debug('VINCE thinks we are searching Contacts')
             vince_user_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
             user_contacts = list(vince_user_results.values_list('user__email', flat=True))
             email_contacts = EmailContact.objects.filter(contact__vendor_type="Contact", email__in=user_contacts).values_list('contact__id', flat=True)
@@ -1690,7 +1689,6 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
 
             group_results = ContactGroup.objects.filter(Q(name__icontains=search_term) | Q(srmail_peer_name__icontains=search_term))
         elif facet == "Cases":
-            logger.debug('VINCE thinks we are searching Cases')
             case_results = VulnerabilityCase.objects.search(search_query)
             casetags = CaseTag.objects.filter(tag__in=search_tags).values_list('case__id', flat=True)
             if case_results and	casetags:
@@ -1707,7 +1705,6 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
                 case_results = case_results | vnote_cases
 
         elif facet == "Vuls":
-            logger.debug('VINCE thinks we are searching Vuls')
             vul_results = Vulnerability.objects.search(search_query)
             cve_results = CVEAllocation.objects.extra(where=["search_vector @@ (to_tsquery('english', %s))=true"],
                                                       params=[search_query])
@@ -1716,7 +1713,6 @@ class AllResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
                 vultags = Vulnerability.objects.filter(id__in=vultags)
                 vul_results = vul_results | vultags
         elif facet == "Users":
-            logger.debug('VINCE thinks we are searching Users')
             vince_user_results = VinceProfile.objects.using('vincecomm').filter(Q(user__first_name__icontains=search_term) | Q(user__last_name__icontains=search_term) | Q(preferred_username__icontains=search_term) | Q(user__email__icontains=search_term))
 
         if tktsearch:
@@ -2714,7 +2710,7 @@ class CreateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Form
 
         ticket = form.save(user=self.request.user)
         queue = TicketQueue.objects.get(id=form.cleaned_data['queue'])
-        if queue.queue_type == CASE_REQUEST_QUEUE:
+        if queue.queue_type == TicketQueue.CASE_REQUEST_QUEUE:
             return redirect("vince:newcr", ticket.id)
 
         return HttpResponseRedirect(ticket.get_absolute_url())
@@ -3689,6 +3685,10 @@ class VulNoteReviewDetail(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         context['case'] = review.vulnote.vulnote.case
         context['review'] = review
         #get reviews for this ticket:
+        if not review.date_complete or not review.complete:
+            review.complete = True
+            review.date_complete = review.ticket.modified
+            review.save()
         if review.ticket:
             context['reviews'] = VulNoteReview.objects.filter(ticket=review.ticket, complete=True, date_complete__lte=review.date_complete).exclude(id=review.id).order_by('-date_complete')
             if context['reviews']:
@@ -4352,6 +4352,8 @@ class CaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
     def get_context_data(self, **kwargs):
         context = super(CaseRequestView, self).get_context_data(**kwargs)
         context['ticket'] = get_object_or_404(CaseRequest, id=self.kwargs['pk'])
+        logger.debug("context['ticket'] is")
+        logger.debug(context['ticket'])
         if deepGet(context["ticket"].metadata,"ai_ml_system") == True:
             context['ai_ml_system'] = True
         else:
@@ -5229,7 +5231,7 @@ class EditCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.
         return context
 
 
-class CaseActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+class CaseTimelineView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     login_url = "vince:login"
     template_name = "vince/include/case_timeline.html"
 
@@ -5241,7 +5243,7 @@ class CaseActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             return False
 
     def get_context_data(self, **kwargs):
-        context = super(CaseActivityView, self).get_context_data(**kwargs)
+        context = super(CaseTimelineView, self).get_context_data(**kwargs)
         context['case'] = get_object_or_404(VulnerabilityCase, id=self.kwargs['pk'])
         ca = Action.objects.select_related('caseaction').filter(caseaction__case=context['case'])
         ta = Action.objects.select_related('followup').filter(followup__ticket__case=context['case'])
@@ -5959,12 +5961,12 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
             # vulnote doesn't exist
             pass
 
-        context['vuls'] = Vulnerability.casevuls(context['case'])
-        context['vulsjs'] = [obj.as_dict() for obj in context['vuls']]
+        # context['vuls'] = Vulnerability.casevuls(context['case'])
+        # context['vulsjs'] = [obj.as_dict() for obj in context['vuls']]
         context['vendors'] = VulnerableVendor.casevendors(context['case']).order_by('contact__vendor_name')
-        context['vendorgroups'] = VulnerableVendor.casevendors(context['case']).exclude(from_group__isnull=True).distinct('from_group')
-        context['participants'] = CaseParticipant.objects.filter(case=context['case']).order_by('user_name')
-        context['participantsjs'] = [obj.as_dict() for obj in context['participants']]
+        # context['vendorgroups'] = VulnerableVendor.casevendors(context['case']).exclude(from_group__isnull=True).distinct('from_group')
+        # context['participants'] = CaseParticipant.objects.filter(case=context['case']).order_by('user_name')
+        # context['participantsjs'] = [obj.as_dict() for obj in context['participants']]
 
         vc_case = Case.objects.filter(vince_id=context['case'].id).first()
         if vc_case:
@@ -5978,7 +5980,7 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
                                      key=lambda x: normalize_time(x,'created'),
                                      reverse=True)[:10]
 
-        # this is all done asych now...
+        # this is all done async now...
         vc_case_participants = CaseMember.objects.filter(case=vc_case, participant__isnull=False)
         form = CaseCommunicationsFilterForm()
         form.fields['vendor'].choices = [
@@ -6355,8 +6357,15 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
 
     def	test_func(self):
         if is_in_group_vincetrack(self.request.user):
-            case = get_object_or_404(VulnerabilityCase, id=self.kwargs['case_id'])
-            return has_case_write_access(self.request.user, case)
+            if self.kwargs.get('case_id'):
+                case = get_object_or_404(VulnerabilityCase, id=self.kwargs['case_id'])
+                logger.debug(f"self.kwargs['case_id'] is {self.kwargs['case_id']}")
+                return has_case_write_access(self.request.user, case)
+            else:
+                if self.request.POST.get('alert'):
+                    return self.request.user.is_superuser
+                else:
+                    pass
         else:
             return False
 
@@ -6370,62 +6379,68 @@ class TagUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Templ
         return JsonResponse({'response': 'success', 'case_assigned_to': assignments, 'assignable_users': assignable_users}, status=200)
 
     def post(self, request, *args, **kwargs):
-        case = get_object_or_404(VulnerabilityCase, id=self.kwargs['case_id'])
-        logger.debug(f"{self.__class__.__name__} post: {request.POST}")
-        if (int(request.POST['state']) == 1):
-            #get case
-            user = User.objects.filter(email=request.POST['tag']).first()
-            if user:
-                ca = CaseAction(case=case,
-                                title=f"User {user.usersettings.preferred_username} assigned to case",
-                                user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
-                ca.save()
-                #do this after the case action, so the assignee doesn't get 2 emails
-                assignment = CaseAssignment(assigned=user,
-                                            case=case)
-                assignment.save()
+        if self.kwargs.get('case_id'):
+            case = get_object_or_404(VulnerabilityCase, id=self.kwargs['case_id'])
+            logger.debug(f"{self.__class__.__name__} post: {request.POST}")
+            if (int(request.POST['state']) == 1):
+                #get case
+                user = User.objects.filter(email=request.POST['tag']).first()
+                if user:
+                    ca = CaseAction(case=case,
+                                    title=f"User {user.usersettings.preferred_username} assigned to case",
+                                    user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
+                    ca.save()
+                    #do this after the case action, so the assignee doesn't get 2 emails
+                    assignment = CaseAssignment(assigned=user,
+                                                case=case)
+                    assignment.save()
+                else:
+                    logger.debug(f"there was an error when trying to add {request.POST['tag']} to the case")
+                    return JsonResponse({'error': 'User does not exist'}, status=401)
+
+                #is this user a part of one of the caseparticipants - otherwise add them
+                contacts = user.groups.exclude(groupsettings__contact__isnull=True).values_list('groupsettings__contact__id', flat=True)
+                cps = CaseParticipant.objects.filter(case=case).filter(Q(user_name=user.email)|Q(contact__in=contacts))
+                logger.debug(f"Checking Case participants for {case} which is {cps}")
+                if not cps:
+                    #this user isn't a part of any of the CaseParticipants, so add them now
+                    cp, created = CaseParticipant.objects.update_or_create(case=case,
+                                                                user_name=user.email,
+                                                                defaults = {'coordinator':True,
+                                                                            'added_by':self.request.user,
+                                                                            'added_to_case':timezone.now(),
+                                                                            'status':"Notified"})
+                    add_participant_vinny_case(case, cp)
+
+
+                send_updatecase_mail(ca, user)
+
             else:
-                logger.debug(f"there was an error when trying to add {request.POST['tag']} to the case")
-                return JsonResponse({'error': 'User does not exist'}, status=401)
+                # delete user from case
+                user = User.objects.filter(email=request.POST['tag']).first()
+                if user:
+                    ca = CaseAction(case=case,
+                                    title=f"User {user.usersettings.preferred_username} removed from case assignment",
+                                    user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
+                    ca.save()
+                    assignment = CaseAssignment.objects.filter(assigned=user, case=case)
+                    if assignment:
+                        assignment.delete()
+                else:
+                    return JsonResponse({'error': 'User does not exist'}, status=401)
 
-            #is this user a part of one of the caseparticipants - otherwise add them
-            contacts = user.groups.exclude(groupsettings__contact__isnull=True).values_list('groupsettings__contact__id', flat=True)
-            cps = CaseParticipant.objects.filter(case=case).filter(Q(user_name=user.email)|Q(contact__in=contacts))
-            logger.debug(f"Checking Case participants for {case} which is {cps}")
-            if not cps:
-                #this user isn't a part of any of the CaseParticipants, so add them now
-                cp, created = CaseParticipant.objects.update_or_create(case=case,
-                                                              user_name=user.email,
-                                                              defaults = {'coordinator':True,
-                                                                          'added_by':self.request.user,
-                                                                          'added_to_case':timezone.now(),
-                                                                          'status':"Notified"})
-                add_participant_vinny_case(case, cp)
+                #was this user a one off assignment (ie not a part of the team of coordinators?
+                cp = CaseParticipant.objects.filter(case=case, user_name=user.email, coordinator=True).first()
+                if cp:
+                    remove_participant_vinny_case(case, cp)
+                    cp.delete()
 
-
-            send_updatecase_mail(ca, user)
-
+            return JsonResponse({'response': 'success'}, status=200)
         else:
-            # delete user from case
-            user = User.objects.filter(email=request.POST['tag']).first()
-            if user:
-                ca = CaseAction(case=case,
-                                title=f"User {user.usersettings.preferred_username} removed from case assignment",
-                                user=self.request.user, action_type=CaseAction.lookup('VinceTrack'))
-                ca.save()
-                assignment = CaseAssignment.objects.filter(assigned=user, case=case)
-                if assignment:
-                    assignment.delete()
-            else:
-                return JsonResponse({'error': 'User does not exist'}, status=401)
+            if request.POST.get('alert'):
+                logger.debug(f"There is an alert value and it is {request.POST.get('alert')}")
+            return JsonResponse({'response': 'success'}, status=200)
 
-            #was this user a one off assignment (ie not a part of the team of coordinators?
-            cp = CaseParticipant.objects.filter(case=case, user_name=user.email, coordinator=True).first()
-            if cp:
-                remove_participant_vinny_case(case, cp)
-                cp.delete()
-
-        return JsonResponse({'response': 'success'}, status=200)
 
 class CaseParticipantsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     login_url = 'vince:login'
@@ -6510,7 +6525,13 @@ class CaseOriginalReportView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
         else:
             context['ticket'] = context['case'].case_request
             if hasattr(context['ticket'],'vrf_id') and context['ticket'].vrf_id:
-                context['vrf_url'] = download_vrf(context['ticket'].vrf_id)        
+                context['vrf_url'] = download_vrf(context['ticket'].vrf_id)
+        
+        # if deepGet(context["ticket"].metadata,"ai_ml_system") == True:
+        #     context['ai_ml_system'] = True
+        # else:
+        #     context['ai_ml_system'] = False
+
         context['table_class'] = "hover unstriped"
         context['noshowdeps'] = 1
         context['assignable'] = [ u.usersettings.preferred_username for u in User.objects.filter(is_active=True, groups__name='vince')]
@@ -12570,7 +12591,7 @@ class AddVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
         if self.request.META.get('HTTP_REFERER') and is_safe_url(self.request.META.get('HTTP_REFERER'),set(settings.ALLOWED_HOSTS),True):
             return HttpResponseRedirect(self.request.META.get('HTTP_REFERER')+"#vuls")
 
-        return redirect("vince:editvuls", case.id)
+        return redirect('vince:case', case.id)
 
     def form_invalid(self, form):
         logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
@@ -14242,6 +14263,38 @@ class VinceContactReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                 emails = EmailContact.objects.filter(email__in=all_users, email_function__in=['EMAIL', 'REPLYTO']).values_list('contact__id', flat=True)
                 context['results'] = Contact.objects.filter(active=True, id__in=emails)
         return context
+
+
+# This is a rough draft of a view for managing alert emails that would be sent to different groups of people under various circumstances:
+#
+# class ManageAlertsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+#     login_url = "vince:login"
+#     template_name = "vince/manage_alerts.html"
+
+#     def test_func(self):
+#         return is_in_group_vincetrack(self.request.user) and self.request.user.is_superuser
+
+#     def get_context_data(self, **kwargs):
+#         context = super(ManageAlertsView, self).get_context_data(**kwargs)
+#         context['alerts'] = [
+#             {
+#                 'label': 'AI/ML Systems',
+#                 'name_for_html_id': 'ai_ml_systems',
+#                 'help_text': 'Recipients of this alert will receive email notifications whenever a vulnerability report related to AI/ML systems is submitted.',
+#                 'current_recipients': ['gstrom@cert.org'],
+#                 'eligible_recipients': ['gstrom@cert.org', 'gstrom@sei.cmu.edu'],
+#             },
+#             {
+#                 'label': 'Rotwang',
+#                 'name_for_html_id': 'rotwang',
+#                 'help_text': 'Recipients of this alert will receive email notifications whenever a vulnerability report related to Metropolis is submitted.',
+#                 'current_recipients': ['gstrom@cert.org'],
+#                 'eligible_recipients': ['gstrom@cert.org', 'gstrom@sei.cmu.edu'],
+#             },
+
+#         ]
+#         # context['alertsjs'] = [obj.as_dict() for obj in context['alerts']]
+#         return context
 
 
 class CreateNewVinceUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):

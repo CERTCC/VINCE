@@ -1,11 +1,5 @@
 {% load i18n humanize %}
 {% load widget_tweaks %}
-<div class="row">
-  <div class="large-12 columns">
-    <h3 class="section-title">{% trans "Activity" %}</h3>
-  </div>
-</div>
-
 <form type="post" id="filterform" action="{% url 'vince:commfilter' case.id %}">
   {% csrf_token %}
   <div class="row">
@@ -124,13 +118,5 @@
     {% endif %}
   </div>
 </form>
-<div class="row">
-  <div class="large-12 columns">
-    <div class="article-row-section">
-      <div class="article-row-section-inner" id="timeline">
-	{% include 'vince/include/case_timeline.html' %}
-      </div>
-    </div>
-  </div>
-</div>
+
 

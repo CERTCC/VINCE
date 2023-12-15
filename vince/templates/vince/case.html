@@ -94,9 +94,22 @@
 
 <div class="row">
   <div class="large-12 columns">
-    <div class="shouldautorefresh" id="case_activity" href="{% url 'vince:case_activity' case.id %}">
-
+    <div class="shouldautorefresh" id="case_activity" >
+      <div class="row">
+        <div class="large-12 columns">
+          <h3 class="section-title">{% trans "Activity" %}</h3>
+        </div>
+      </div>      
       {% include 'vince/include/case_activity.html' %}
+      <div class="row">
+        <div class="large-12 columns">
+          <div class="article-row-section">
+            <div class="article-row-section-inner" id="timeline" href="{% url 'vince:case_timeline' case.id %}">
+              {% include 'vince/include/case_timeline.html' %}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

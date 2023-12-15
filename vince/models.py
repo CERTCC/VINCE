@@ -4618,3 +4618,26 @@ class BounceEmailNotification(models.Model):
         default = False)
 
     
+class VinceAlerts(models.Model):
+    unique_id = models.AutoField(
+        primary_key=True,
+    )
+
+    trigger = models.TextField(
+        blank=False,
+        null=False,
+        default='CaseRequest.metadata.ai_ml_system',
+        unique=True,
+    )
+
+    alert_recipients = models.TextField(
+        blank=False,
+        null=False,
+    )
+
+    metadata = OldJSONField(
+        # This is where someday we will add "alert_type", which has the information about whether the email should include all info from the vul report or just a link
+        # or maybe something else
+        blank=True,
+        null=True,
+    )

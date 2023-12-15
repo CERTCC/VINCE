@@ -32,7 +32,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404
 import json
 from vince.apps import VinceTrackConfig
-from vince.models import VinceSQS, TicketQueue, FollowUp, CaseRequest, AdminPGPEmail, Contact, ContactGroup, EmailContact, PhoneContact, ContactPgP, GroupMember, VendorNotification, VTDailyNotification, GroupSettings
+from vince.models import VinceSQS, TicketQueue, FollowUp, CaseRequest, AdminPGPEmail, Contact, ContactGroup, EmailContact, PhoneContact, ContactPgP, GroupMember, VendorNotification, VTDailyNotification, GroupSettings, VinceAlerts
 import os
 import boto3
 import traceback
@@ -41,7 +41,7 @@ from django.template.loader import get_template
 from django.forms.models import model_to_dict
 
 from vince.forms import TicketForm, CreateCaseRequestForm
-from vince.lib import update_vendor_status, update_vendor_view_status, create_ticket, create_case_post_action, create_action, process_s3_download, add_case_artifact, update_case_request, create_ticket_from_email_s3, update_vendor_status_statement, create_bounce_ticket, send_vt_daily_digest, generate_vt_reminders, reset_user_mfa, prepare_and_send_weekly_report
+from vince.lib import update_vendor_status, update_vendor_view_status, create_ticket, create_case_post_action, create_action, process_s3_download, add_case_artifact, update_case_request, create_ticket_from_email_s3, update_vendor_status_statement, create_bounce_ticket, send_vt_daily_digest, generate_vt_reminders, reset_user_mfa, prepare_and_send_weekly_report, prepare_and_send_alert_email
 from vinny.lib import send_post_email, send_usermention_notification
 from django.contrib.auth.models import User
 from vinny.models import PostRevision
@@ -77,6 +77,8 @@ def send_sns(vul_id, issue, error):
 
 
 def vince_retrieve_submission(cr, vrf, attachment):
+    logger.debug('the new cr is')
+    logger.debug(cr)
 
     s3 = boto3.resource('s3', region_name=settings.AWS_REGION)
 
@@ -130,6 +132,12 @@ def vince_retrieve_submission(cr, vrf, attachment):
                 fup.save()
             
         send_newticket_mail(followup=followup, files=None, user=None)
+
+        if cr.metadata: 
+            if cr.metadata["ai_ml_system"] and cr.metadata["ai_ml_system"] == True:
+                logger.debug('the code acknowledges that cr.metadata and cr.metadata["ai_ml_system"] and cr.metadata["ai_ml_system"] == True is true')
+                if VinceAlerts.objects.filter(trigger="CaseRequest.metadata.ai_ml_system"):
+                    prepare_and_send_alert_email(cr, 'ai_ml_system')
 
     except:
         logger.debug(traceback.format_exc())

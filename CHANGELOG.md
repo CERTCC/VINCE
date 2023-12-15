@@ -1,5 +1,23 @@
 # VINCE Changelog
 
+
+Version 2.1.9  2023-12-07
+
+* Dependabot update recommendations: `cryptography` 41.0.3 to 41.0.6
+* Fixed bug that prevented "Add Vulnerability" button from rerouting user to appropriate pages upon submission
+* Integrated custom metrics into weekly reports on VINCE activity
+
+Version 2.1.8  2023-11-08
+
+* Dependabot update recommendations: `django` 3.2.20 to 3.2.23
+* Restructured vendors tab on VINCE Track case page so that vendors table is paginated rather than indefinitely scrollable
+
+Version 2.1.7  2023-10-30
+
+* Added customization of MFA
+* Added code to catch and correct Vul Note Reviews with data omissions that led to page load failures in certain circumstances
+
+
 Version 2.1.6  2023-10-25
 
 * Fixed bug that interfered in certain circumstances with the operation of the vendor filter button on the VINCEComm case page

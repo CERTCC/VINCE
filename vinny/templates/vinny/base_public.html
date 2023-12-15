@@ -93,6 +93,9 @@
 	    </div><!--topbar-->
 	  </div>
 	</header><!--header -->
+
+
+
 	<div class="off-canvas-wrapper">
 	  {% include 'vinny/offcanvas.html' %}
 	  <div class="off-canvas-content" data-off-canvas-content>
@@ -121,7 +124,7 @@
                     <div class="bottom-footer__copyright">
 		      <ul class="vertical menu medium-text-right text-left ul_nobullet">
 			<li>
-			  <div>© 2022 {{ ORG_NAME }}</div></li>
+			  <div>© {% now "Y" %} {{ ORG_NAME }}</div></li>
                         <li><div><a href="#" target="_blank" rel="nopener">Terms of Use</a></div></li>
 			<li><div><a href="#" target="_blank" rel="nopener">Vulnerability Disclosure Policy</a></div></li>
 			<li><div><span class="font-weight-bold">V.{{ VERSION }}</span></div></li>
