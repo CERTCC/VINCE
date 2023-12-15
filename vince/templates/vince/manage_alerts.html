@@ -1,0 +1,47 @@
+{% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "Manage Alerts" %}{% endblock %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>Manage Alerts</h2>
+    </div>
+    <div class="large-6 columns text-right">
+      
+    </div>
+  </div>
+</div>
+
+{{ alertsjs|json_script:"alerts_data" }}
+
+<table class="hover unstriped fixed">
+	<tbody>
+
+    {% for alert in alerts %}
+
+      <tr>
+        <th>{% trans alert.label %}</th>
+        <td>{% trans alert.help_text %}</td>
+      </tr>
+
+      <tr>
+        <th>{% trans "Recipients" %}</th>
+        <td id="{{ alert.name_for_html_id }}">
+          <div href="{% url 'vince:taguser' %}" class="alert-taggle taggle_input custom martie" id="{{ alert.name_for_html_id }}_recipients"></div>
+        </td>
+      </tr>
+
+      <p></p>
+
+    {% endfor %}
+
+	</tbody>
+</table>
+
+
+<div class="reveal small" id="smallmodal" data-reveal data-close-on-click='false'></div>
+
+{% endblock %}

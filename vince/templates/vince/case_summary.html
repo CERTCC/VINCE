@@ -13,7 +13,7 @@
     {% endif %}
     <li class="tabs-title is-active"><a aria-selected="true" data-tabs-target="tasks" href="#tasks"><i class="fas fa-list-alt"></i> Tasks</a></li>
     <li class="tabs-title"><a data-tabs-target="vuls" href="#vuls" class="asyncclick" data-divid="vuls"><i class="fas fa-skull"></i> Vuls</a></li>
-    <li class="tabs-title"><a data-tabs-target="vendors" href="#vendors"><i class="fas fa-users"></i> Vendors</a></li>
+    <li class="tabs-title" id="vendors-li"><a data-tabs-target="vendors" href="#vendors"><i class="fas fa-users"></i> Vendors</a></li>
     <li class="tabs-title"><a data-tabs-target="posts" href="#posts" class="asyncclick" data-divid="posts"><i class="fas fa-sticky-note"></i> Posts</a></li>
     <li class="tabs-title"><a data-tabs-target="vulnote" href="#vulnote" class="asyncclick" data-divid="vulnote"><i class="fas fa-bookmark"></i> Vul Note</a></li>
     <li class="tabs-title"><a data-tabs-target="participants" href="#participants" class="asyncclick" data-divid="participants"><i class="fas fa-users"></i> Participants</a></li>
@@ -168,6 +168,7 @@
 	  <div class="large-9 medium-12 small-12 columns">
 		<button class="button cmu tiny" id="addnewvendor" href="{% url 'vince:addvendor' %}"> <i class="fas fa-plus"></i> Add Vendor </button>
 		<!--<a href="{% url 'vince:editvendorlist' case.id %}"><button class="button cmu tiny"><i class="fas fa-pencil-alt"></i> Edit Vendor</button></a>-->
+		<button class="button cmu tiny" id="select-page"> Select Page </button>
 		<button class="button cmu tiny" id="select-all-vendors"> Select All </button>
 		<button class="button cmu tiny" id="deselect-all-vendors"> Deselect All </button>
 		<button class="button cmu tiny" id="remove-vendor"> <i class="fas fa-trash"></i> Remove Vendor </button>
@@ -180,6 +181,7 @@
 		<a class="button cmu tiny" href="{% url 'vinny:groupchatcase' vc_case.id %}">Start Group Thread</a>
 		{% endif %}
 	  </div>
+	  <div class="large-9 medium-12 small-12 columns" id="selected_count"></div>
 	  <div class="large-3 small-12 medium-12 columns large-text-right">
 		{% if vendorgroups %}
 		{% for g in vendorgroups %}

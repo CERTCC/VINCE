@@ -85,10 +85,26 @@ function reloadVendorStats(case_id) {
 	}});
 }
 
+function ajaxVendorData(tablet){
+    $.ajax({
+        url: "/vince/ajax_calls/case/vendors/"+$(".case-container").attr('caseid')+"/",
+        type: "GET",
+        success: function(data) {
+            tablet.setData(data['data']);
+            return data['data']
+        },
+        error: function() {
+            permissionDenied(addmodal);
+        }
+    });
+}
 
+function loadVendors(tablet){
+    tablet.setData(ajaxVendorData(tablet))
+}
 
 function reloadVendors(case_id, tablet) {
-    tablet.replaceData();
+    tablet.replaceData(ajaxVendorData(tablet));
     /*$.ajax({
       url: "/vince/ajax_calls/case/vendors/"+case_id+"/",
       success: function(data) {
@@ -96,6 +112,17 @@ function reloadVendors(case_id, tablet) {
       }});*/
 
     reloadVendorStats(case_id);
+}
+
+function updateSelectedCount(tablet){
+    let selectedRows = tablet.getSelectedRows();
+    if (selectedRows.length == 0){
+        $("#selected_count").html('')
+    } else if (selectedRows.length == 1) {
+        $("#selected_count").html('1 vendor selected')
+    } else {
+        $("#selected_count").html(selectedRows.length + ' vendors selected')
+    }
 }
 
 function reloadVuls(case_id, table) {
@@ -136,7 +163,7 @@ function reloadParticipants(case_id, tablet) {
 }
 
 function reload_case_activity() {
-    var url = $("#case_activity").attr("href");
+    var url = $("#timeline").attr("href");
     $.ajax({
         url: url,
         success: function(data) {
@@ -682,8 +709,7 @@ $(document).ready(function() {
 		  "[<span class='cpage'>0</span>] of " +
 		  "<span class='tpage'>2</span> </h5>");
 	while (i <= max) {
-	    url = 'https://vince.cert.org/vince/ajax_calls/case/vendors/'+
-		caseid+'/?page='+String(i);
+	    url = 'https://vince.cert.org/vince/ajax_calls/case/vendors/' + caseid+'/?page='+String(i);
 	    hm.find('.cpage').html(String(i));
             await $.get(url,function(d) {
 		if(d.last_page)
@@ -738,6 +764,7 @@ $(document).ready(function() {
 	    }
 	}
 	hm.append("</ul></div>");
+    updateSelectedCount(vendors_table);
 	finish_modal(hm);
     }
 
@@ -794,6 +821,7 @@ $(document).ready(function() {
 	    }
 
 	});
+    updateSelectedCount(vendors_table)
 	finish_modal(hm);
     }
 
@@ -1401,54 +1429,90 @@ $(document).ready(function() {
 
     var vendors_table = new Tabulator("#vendors-table", {
         //data:vendors_data, //set initial table data
-	data:[],
+	    data:[],
         layout:"fitColumns",
-	selectable:true,
-	ajaxURL: "/vince/ajax_calls/case/vendors/"+$(".case-container").attr('caseid')+"/",
-	ajaxProgressiveLoad:"scroll",
-	ajaxFiltering:true,
-	ajaxLoaderLoading: "<div style='display:inline-block; border:4px solid #333; border-radius:10px; background:#fff; font-weight:bold; font-size:16px; color:#000; padding:10px 20px;'>Loading Data</div>",
-	tooltipsHeader:true,
-	placeholder: "No vendors.",
-	selectableCheck:function(row){
+	    selectable:true,
+        // ajaxURL: "/vince/ajax_calls/case/vendors/"+$(".case-container").attr('caseid')+"/",
+        // ajaxProgressiveLoad:"scroll",
+        pagination: "local",
+        paginationSize:20,
+        rowClick:function(e, row){
+            updateSelectedCount(vendors_table);
+        },
+        ajaxFiltering:true,
+        ajaxLoaderLoading: "<div style='display:inline-block; border:4px solid #333; border-radius:10px; background:#fff; font-weight:bold; font-size:16px; color:#000; padding:10px 20px;'>Loading Data</div>",
+        tooltipsHeader:true,
+        placeholder: "No vendors.",
+        selectableCheck:function(row){
             //row - row component
             return row.getData().tagged == false; //allow selection of untagged rows
-	},
+    	},
         columns:[
             {title:"Vendor", field:"vendor", formatter:contactClickFunction, tooltip:vendorToolTipFunction, width:200, headerFilter:"input"},
             {title:"Status", field:"status", formatter: "link", formatterParams:statusClickFunction, headerFilter:"input"},
-	    {titleFormatter:vendornotifiedFormatterFunction, field:"contact_date", editor:dateEditor, cellEdited: function(cell) {
+	        {titleFormatter:vendornotifiedFormatterFunction, field:"contact_date", editor:dateEditor, cellEdited: function(cell) {
                 var csrftoken = getCookie('csrftoken');
                 $.post(cell.getRow().getData().edit_date_url,
-                       {'csrfmiddlewaretoken': csrftoken, 'new_date':cell.getRow().getData().contact_date},
-	               function(data) {
-			   approvemodal.html(data).foundation('open');
-		       });
-	    }},
+                    {'csrfmiddlewaretoken': csrftoken, 'new_date':cell.getRow().getData().contact_date},
+	                function(data) {
+			            approvemodal.html(data).foundation('open');
+		            });
+	        }},
             {title:"Seen", field:"seen", formatter: eyeFormatter, width:100},
             {title:"Approved", field:"user_approved", formatter: appFormatter},
             {title:"Statement", field:"statement", formatter:stmtFormatter},
-	    {title:"Emails", field:"vendor_notification", formatter: vendorNotificationFormatter},
+	        {title:"Emails", field:"vendor_notification", formatter: vendorNotificationFormatter},
         ],
 
     });
 
+    loadVendors(vendors_table);
+
     reloadVendorStats($(".case-container").attr('caseid'));
+
+    //select row on "select page" button click
+    $('#select-page').click(function(){
+        let rows = vendors_table.getRows(true); // returns array of all the currently filtered/sorted elements 
+        let currentPage = vendors_table.getPage(); // returns the current page 
+        let pageSize = vendors_table.getPageSize(); // returns the current number of items per page
+        let start = (currentPage - 1) * pageSize; //start index
+        // figure out end index, taking into account last page may not be full
+        if (rows.length < currentPage * pageSize) {
+            end = start + (rows.length % pageSize);
+        } else {
+            end = start + pageSize;
+        }
+        
+        for (let index = start; index < end; index++) {
+            rows[index].select();
+        }
+    	// vendors_table.selectRow("visible");
+	    let selectedRows = vendors_table.getSelectedRows();
+        for (i=0; i < selectedRows.length; i++) {
+	        if (selectedRows[i].getData().tagged) {
+		        vendors_table.deselectRow(selectedRows[i]);
+	        }
+    	}
+        updateSelectedCount(vendors_table);
+    });
+
     //select row on "select all" button click
     $("#select-all-vendors").click(function(){
-	/*vendors_table.selectRow("visible");*/
-	vendors_table.selectRow('active');
-	var selectedRows = vendors_table.getSelectedRows();
+    	/*vendors_table.selectRow("visible");*/
+	    vendors_table.selectRow('active');
+	    var selectedRows = vendors_table.getSelectedRows();
         for (i=0; i < selectedRows.length; i++) {
-	    if (selectedRows[i].getData().tagged) {
-		vendors_table.deselectRow(selectedRows[i]);
-	    }
-	}
+	        if (selectedRows[i].getData().tagged) {
+		        vendors_table.deselectRow(selectedRows[i]);
+	        }
+    	}
+        updateSelectedCount(vendors_table);
     });
 
     //deselect row on "deselect all" button click
     $("#deselect-all-vendors").click(function(){
-	vendors_table.deselectRow();
+	    vendors_table.deselectRow();
+        updateSelectedCount(vendors_table);
     });
 
     var flag = false;
@@ -1476,6 +1540,7 @@ $(document).ready(function() {
 		// Do something like hide waiting images, or any else function call
 		console.log("Done removing vendors");
 		reloadVendors($(".case-container").attr('caseid'), vendors_table);
+        updateSelectedCount(vendors_table);
 	    }
 	};
 
@@ -1602,15 +1667,15 @@ $(document).ready(function() {
     });
 
     $(document).on("submit", "#case-edit-form", function(event) {
-	event.preventDefault();
-	$.post($(this).attr("action"), $(this).serializeArray(),
-	       function(data) {
-		   reload_case_activity();
-	       })
+	    event.preventDefault();
+	    $.post($(this).attr("action"), $(this).serializeArray(),
+	        function(data) {
+		        reload_case_activity();
+	        })
 	    .fail(function(d) {
-                permissionDenied(addmodal);
-            });
-	approvemodal.foundation('close');
+            permissionDenied(addmodal);
+        });
+	    approvemodal.foundation('close');
     });
 
 
@@ -1872,9 +1937,9 @@ $(document).ready(function() {
 
     function initialize_vuls_tab() {
         if (document.getElementById('vuls_data')) {
-            console.log('there is a vuls_data element.')
+            // console.log('there is a vuls_data element.')
             var data = JSON.parse(document.getElementById('vuls_data').textContent);
-            console.log(data);
+            // console.log(data);
             if (data) {
                 var table = new Tabulator("#vuls-table", {
                     data:data,

@@ -237,6 +237,9 @@
       {% endfor %}
     </table>
     {% endif %}
+
+    
+
     {% if total_closed %}
     <h3>Tickets Closed</h3>
     <table>
@@ -251,6 +254,32 @@
       {% endfor %}
     </table>
     {% endif %}
+
+    {% if my_team.name == "CERT/CC" %}
+      {% if ai_ml_boolean %}
+        <h3>AI/ML Activity</h3>
+        <table>
+          <tr>
+            <td>AI/ML Case Requests</td><td>{{ total_ai_ml_crs }}</td>
+          </tr>
+          <tr>
+            <td>New AI/ML Cases</td><td>{{ ai_ml_case_stats.ai_ml_new_cases}}</td>
+          </tr>
+          <tr>
+            <td>Pre-existing Active AI/ML Cases</td><td>{{ ai_ml_case_stats.ai_ml_active_cases}}</td>
+          </tr>
+          <tr>
+            <td>Deactivated AI/ML Cases</td><td>{{ ai_ml_case_stats.ai_ml_deactive_cases}}</td>
+          </tr>
+          <tr>
+            <td>Reactivated AI/ML Cases</td><td>{{ ai_ml_case_stats.ai_ml_to_active_cases}}</td>
+          </tr>
+        </table>
+      {% else %}
+        <h3>No AI/ML Activity</h3>
+      {% endif %}
+    {% endif %}
+
     <h3>Users</h3>
     <table>
       <tr>

@@ -930,4 +930,104 @@ $(function () {
 	    console.log(arguments);
 	});
     }
+
+	let addmodal = $("#smallmodal");
+
+	function auto(data, taggle, tag_url, alert_name, modal) {
+		// This sets up the dropdown where you can select options as you type.
+		var container = taggle.getContainer();
+		var input = taggle.getInput();
+		$(input).autocomplete({
+			source: data,
+			appendTo: container,
+			position: { at: "left bottom", of: container },
+			select: function(event, data) {
+				event.preventDefault();
+				if (event.which === 1) {
+					taggle.add(data.item.value);
+					var csrftoken = getCookie('csrftoken');
+					$.post(tag_url, {'state': 1, 'alert': alert_name, 'add_tag': 1, 'csrfmiddlewaretoken': csrftoken, 'tag':data.item.value }, function(d) {
+					})
+					.fail(function(d) {
+						alert("An error occurred while trying to add this tag.");
+						taggle.remove(data.item.value);
+					});
+				}
+			}
+		});
+	}
+
+
+	if (document.getElementsByClassName("alert-taggle")) {
+		let tag_url = '';
+		let alert_taggle_divs = document.getElementsByClassName("alert-taggle");
+		let alert_name = '';
+		let alert_recipients_div = '';
+		for (let i = 0; i < alert_taggle_divs.length; i++){
+			// get the alert name
+			alert_name = alert_taggle_divs[i].parentElement.id;
+			alert_recipients_div = alert_taggle_divs[i].id;
+			tag_url = $("#" + alert_recipients_div).attr("href");
+			// create a new taggle
+			let taggle = new Taggle(alert_recipients_div, {
+				tags: ['gstrom@cert.org'],
+				duplicateTagClass: 'bounce',
+				preserveCase: true,
+				allowedTags: ['gstrom@cert.org', 'gstrom@sei.cmu.edu'],
+				// this tagFormatter business will be useful once we're actually receiving our desired data from a database:
+				// tagFormatter: function(li) {
+				// 	spanElement = li.querySelector('.taggle_text')
+				// 	inputElement = li.querySelector('input')
+				// 	inputElementValue = li.querySelector('input').value
+				// 	// find the element whose value = the current input, then change the spanElement innerHTML to the label in that element.
+				// 	let objectWithThisEmail = assignable_ordered_pairs.filter(function checkit(object){
+				// 		if (object['value'] == inputElement.value){
+				// 			return object
+				// 		}
+				// 	})[0]
+				// 	spanElement.setAttribute('title', spanElement.innerHTML)
+				// 	spanElement.innerHTML = objectWithThisEmail['label']
+				// 	return li;
+				// },
+				onTagAdd: function(event, tag) {
+					// to be clear, tag is the value of the input element, not the text in the span element.
+					if (event) {
+						let csrftoken = getCookie('csrftoken');
+						$.post(tag_url, {'state': 1, 'alert': alert_name, 'csrfmiddlewaretoken': csrftoken, 'tag':tag }, function(data) {
+						})
+						.fail(function(data) {
+							permissionDenied(addmodal);
+							taggle.remove(tag);
+						});
+					}
+				},
+	            onBeforeTagRemove: function(event, tag) {
+					// to be clear, tag is the value of the input element, not the text in the span element.
+					if (event) {
+						let csrftoken = getCookie('csrftoken');
+						let jqxhr = $.post(tag_url, {'state': 0, 'alert': alert_name, 'csrfmiddlewaretoken': csrftoken, 'tag':tag}, function(data) {
+						})
+						.fail(function(data) {
+							permissionDenied(addmodal);
+							taggle.add(tag);
+						});
+					}
+					return true;
+				},
+			})
+
+			let assignable = ['gstrom@cert.org', 'gstrom@sei.cmu.edu']
+
+			auto(assignable, taggle, tag_url, alert_name, addmodal);
+		}
+
+        // let assignable_ordered_pairs_with_emails = assignable_ordered_pairs.map(function(originalOrderedPair){
+        //     newOrderedPair = {}
+        //     newOrderedPair['label'] = originalOrderedPair['label'] + ' [' + originalOrderedPair['value'] + ']'
+        //     newOrderedPair['value'] = originalOrderedPair['value']
+        //     return newOrderedPair
+        // })
+    }
+
+
 });

@@ -724,6 +724,8 @@ def send_templated_mail(template_name,
             bcc = list(set(bcc) - set(bouncers))
             recipients = list(set(recipients) - set(bouncers))
     except Exception as e:
+        # Note: if the following error turns up in the logs, that does not mean that anything is malfunctioning. It may just mean that the line "bcc = list(set(bcc) - set(bouncers))"
+        # above failed because no bouncers were found, which is what is supposed to happen.
         logger.debug(f"Could not execute query against bounce list error {e}")
         
     if replyto:
@@ -1206,6 +1208,24 @@ def send_weekly_report_mail(recipients, my_team, html_content):
 
     send_templated_mail(
         'vince_weekly_report_email',
+        context,
+        recipients=recipients,
+        fail_silently=True,
+        files=None,
+        html=True
+    )
+
+def send_alert_email(recipients, crlink):
+    subject = 'VINCE Alert'
+
+    context = {
+        'crlink': crlink,
+        'subject': subject,
+        'login_url': f"{settings.SERVER_NAME}"
+    }
+
+    send_templated_mail(
+        'ai_ml_system_email',
         context,
         recipients=recipients,
         fail_silently=True,
