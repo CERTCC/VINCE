@@ -90,8 +90,8 @@ VINCE Configuration
 
 Before you can use VINCE, you must do some basic configuration.  Most of this can be done via the Django admin views.
 
-1. Visit ``http://vince.yoursite.com/vince/create/contact/`` and add 1 contact for each of your coordination team(s)
-2. Visit ``http://vince.yoursite.com/admin/`` and add a Group(s). The required "vince" group has already been added if you ran the command loadinitialdata. Anyone that should have access to VINCETrack will belong in the "vince" group.  The additional groups that you add should be the names of the coordination teams that will be working in VINCE and will determine access to queues, tickets, etc.  Under Group Settings, choose the Contact you added in step 1.  Decide if this team should have certain permissions such as:
+1. Visit ``http://vince.example.com/vince/create/contact/`` and add 1 contact for each of your coordination team(s)
+2. Visit ``http://vince.example.com/admin/`` and add a Group(s). The required "vince" group has already been added if you ran the command loadinitialdata. Anyone that should have access to VINCETrack will belong in the "vince" group.  The additional groups that you add should be the names of the coordination teams that will be working in VINCE and will determine access to queues, tickets, etc.  Under Group Settings, choose the Contact you added in step 1.  Decide if this team should have certain permissions such as:
 
 * Publish - the ability to publish vulnerability notes
 * Contact Read - the ability to read Contact information (this can be changed at the user level, but will be the default for a user when they are added to this team.)
