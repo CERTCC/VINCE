@@ -14,3 +14,4 @@ cron:
    schedule: "0 9 * * 1"
 
 # When we send this to prod, the schedule value for the weekly reports should be changed to "0 9 * * 1"
+# For testing, the schedule value for the weekly reports can be changed to "*/5 * * * *" so that it runs every 5 minutes

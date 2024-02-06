@@ -4178,6 +4178,26 @@ input:checked ~ .switch-paddle {
     border-top: none !important;
 }
 
+.tabulator-paginator label {
+    display: inline-block !important;
+}
+
+.tabulator-paginator select {
+    width: auto !important;
+}
+
+.tabulator-col {
+    vertical-align: top !important;
+}
+
+.tabulator-page:disabled {
+    display: none !important;
+}
+
+/* select.tabulator-page-size:last {
+    content: "All"
+} */
+
 .list-row {
     display: -webkit-flex;
     display: -ms-flexbox;
@@ -5809,4 +5829,9 @@ span.label a {
 #download_menu > li > a:hover {
     text-decoration: none;
     background-color: #f06060;
+}
+
+
+.coordination_preference_wrapper_div {
+    display: none;
 }

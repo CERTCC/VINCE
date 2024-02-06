@@ -112,10 +112,18 @@
 	      <td>Product Version</td>
 	      <td>{% render_field form.product_version class="form-control caseinput" %}</td>
 	    </tr>
-            <tr>
-              <td>Significant ICS/OT impact?</td>
-              <td>{% render_field form.ics_impact class="form-control caseinput" %}</td>
-            </tr>
+		<tr>
+			<td>Significant ICS/OT impact?</td>
+			<td>{% render_field form.ics_impact class="form-control caseinput" %}</td>
+		</tr>
+		<tr>
+			<td>Related to AI/ML systems?</td>
+			{% if ai_ml_system %}
+				<td>{% render_field form.ai_ml_system class="form-control caseinput" checked="checked" %}</td>
+			{% else %}
+				<td>{% render_field form.ai_ml_system class="form-control caseinput" %}</td>
+			{% endif %}
+		</tr>
 	    <tr>
 	      <td>Vulnerability Description</td>
 	      <td>{% render_field form.vul_description class="form-control caseinput" %}</td>

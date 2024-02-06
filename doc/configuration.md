@@ -27,8 +27,8 @@ Required
 * S3_UPDATE_BUCKET_NAME S3 bucket name (auto-generated).  Used when publishing vulnerability notes
 * S3_KB_SHARED_BUCKET_NAME the name of the S3 bucket used for vul notes
 * AWS_COGNITO_APP_ID app ID for Cognito user pool
-* AWS_COGNITO_ADMIN_GROUP the name of the Cognito group that, if available, will promote users to "staff members" which gives them access to the Admin interface. This will also be the group that receives general messages (not case-specific messages) through VINCEComm. If this group is not configured properly, sending messages will not work. AWS_COGNTIO_ADMIN_GROUP should be one of the groups listed in AWS_COGNITO_VINCETRACK_GROUPS if set.
-* AWS_COGNITO_SUPERUSER_GROUP the name of the Cognito group that, if available, will promote users to "superuser" which gives them access to the Admin interface, delete capability, as well as additional view access. 
+* AWS_COGNITO_ADMIN_GROUP the name of the Cognito group that, if available, will promote users to "staff members" which gives them access to the Admin interface
+* AWS_COGNITO_SUPERUSER_GROUP the name of the Cognito group that, if available, will promote users to "superuser" which gives them access to the Admin interface, delete capability, as well as additional view access.
 * AWS_COGNITO_REGION the region where the Cognito user pool is configured
 * AWS_COGNITO_USER_POOL_ID the ID for the Cognito user pool
 * AWS_SECRET_MANAGER set to True to use secret manager
@@ -90,8 +90,8 @@ VINCE Configuration
 
 Before you can use VINCE, you must do some basic configuration.  Most of this can be done via the Django admin views.
 
-1. Visit ``http://vince.yoursite.com/vince/create/contact/ and add 1 contact for each of your coordination team(s)
-2. Visit ``http://vince.yoursite.com/admin/`` and add a Group(s). The required "vince" group has already been added if you ran the command loadinitialdata. The name of the Group should match the name in COGNITO_VINCETRACK_GROUPS. Anyone that should have access to VINCETrack will belong in the "vince" group.  The additional groups that you add should be the names of the coordination teams that will be working in VINCE and will determine access to queues, tickets, etc.  Under Group Settings, choose the Contact you added in step 1.  Decide if this team should have certain permissions such as:
+1. Visit ``http://vince.yoursite.com/vince/create/contact/`` and add 1 contact for each of your coordination team(s)
+2. Visit ``http://vince.yoursite.com/admin/`` and add a Group(s). The required "vince" group has already been added if you ran the command loadinitialdata. Anyone that should have access to VINCETrack will belong in the "vince" group.  The additional groups that you add should be the names of the coordination teams that will be working in VINCE and will determine access to queues, tickets, etc.  Under Group Settings, choose the Contact you added in step 1.  Decide if this team should have certain permissions such as:
 
 * Publish - the ability to publish vulnerability notes
 * Contact Read - the ability to read Contact information (this can be changed at the user level, but will be the default for a user when they are added to this team.)

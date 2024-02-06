@@ -1623,6 +1623,7 @@ a.fa {
 }
 .fa-facebook-square {
     color: #3B5998;
+    visibility: hidden !important;
 }
 
 /* Twitter */
@@ -1633,6 +1634,7 @@ a.fa {
 
 .fa-twitter-square {
    color: #55ACEE;
+   visibility: hidden !important;
 }
 
 .fa-print {
@@ -2218,8 +2220,9 @@ input[type=submit].ghost:focus {
     margin-left: 0px;
 }
 
-#custom-print-button, #custom-tweet-button, #custom-facebook-button, #custom-share-button{
+#custom-print-button, #custom-tweet-button, #custom-facebook-button {
   display: inline-block;
+  vertical-align: bottom;
   padding: 2px 5px 2px 10px;
 }
 
@@ -2403,6 +2406,38 @@ table {
 #footer .social .itunes {
     background-position: -178px 0;
     border-radius: 50%; }
+
+#custom-share-button {
+  display: none;
+}
+
+.social-options a i {
+  display: hidden;
+}
+
+a.popup-facebook, a.popup-twitter {
+  height: 33px;
+  width: 33px;
+  background-image: url("../images/sprites-social.png");
+  background-repeat: no-repeat;
+  background-size: auto 100%;
+  content: '';
+  display: inline-block;
+}
+
+a.popup-facebook:hover, a.popup-twitter:hover {
+  border-bottom: none;
+  opacity: 0.5;  
+}
+
+a.popup-facebook {
+  background-position: -2px 0;
+}
+
+a.popup-twitter {
+  background-position: -34px 0;
+}
+
 
 .required_form_field {
     border: 2px dashed #B00;

@@ -1,5 +1,13 @@
 # VINCE Changelog
 
+Version 2.1.10 2024-01-31
+
+* Dependabot update recommendations: `pycryptodome` 3.15.0 to 3.19.1
+* Reconfigured vendors tab on VINCE Track case page to provide more fine-tuned pagination options & fix bugs in filter fields.
+* Fixed bug preventing info categorizing cases as related to AI/ML systems from displaying properly on original report tab
+* Fixed bug preventing VINCE Track users from removing members from custom groups
+* Added functionality for marking a case as related to AI/ML systems in the form for editing a case request
+* Refactored code for generating link to VINCE Comm case request page from VINCE Track, which was failing in certain cases
 
 Version 2.1.9  2023-12-07
 
