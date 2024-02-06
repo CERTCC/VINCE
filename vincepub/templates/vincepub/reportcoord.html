@@ -304,6 +304,17 @@
               {% render_field form.comments class="form-control" %}
             </div>
 	    <div id="charnum_comment"></div>
+	    <br/>
+
+		<div class="coordination_preference_wrapper_div">
+	    <h3 class="subtitle">Coordination Preference</h3>
+		<div class="form-group checkbox-sameline">
+			<label for="cisa_please">CISA Coordination <a class="questiontip notlink" href="#" title="If you tick this box, your case request will be coordinated by CISA, an agency of the US Federal Government"><i class="fas fa-question-circle"></i></a></label>
+			{% render_field form.cisa_please class="check-sameline" %}
+		  </div>
+		  <br/>
+		</div>
+
 
 	    <div class="g-recaptcha" data-sitekey="{{ GOOGLE_SITE_KEY }}" data-size="invisible" data-callback="formSubmit"></div>
 

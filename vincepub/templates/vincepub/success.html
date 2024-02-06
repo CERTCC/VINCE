@@ -25,7 +25,7 @@
        {% if user.is_authenticated %}
        <p class="text-center"><a href="{% url 'vinny:reports' %}" class="button vulupload">View my reports</a></p>
        {% endif %}
-       <h3 class="subtitle">Vulnerability Information</h3>       
+       <h3 class="subtitle">Vulnerability Information</h3>
        <table class="unstriped">
 	 <tr>
 	   <td>Have you attempted to contact the vendor?</td>
@@ -125,6 +125,7 @@
 	 <tr><td>Private Comments</td><td>{{ comments }}</td></tr>
 	 {% endif %}
        </table>
+	</div>
 	 
        <!--{% for field in form %}
 	 {% if field.value %}

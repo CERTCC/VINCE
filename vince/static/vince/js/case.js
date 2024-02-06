@@ -85,33 +85,20 @@ function reloadVendorStats(case_id) {
 	}});
 }
 
-function ajaxVendorData(tablet){
-    $.ajax({
-        url: "/vince/ajax_calls/case/vendors/"+$(".case-container").attr('caseid')+"/",
-        type: "GET",
-        success: function(data) {
-            tablet.setData(data['data']);
-            return data['data']
-        },
-        error: function() {
-            permissionDenied(addmodal);
-        }
-    });
-}
+async function ajaxVendorData(){
+    let data
 
-function loadVendors(tablet){
-    tablet.setData(ajaxVendorData(tablet))
-}
+    try {
+        data = await $.ajax({
+            url: "/vince/ajax_calls/case/vendors/"+$(".case-container").attr('caseid')+"/",
+            type: "GET",    
+        })
 
-function reloadVendors(case_id, tablet) {
-    tablet.replaceData(ajaxVendorData(tablet));
-    /*$.ajax({
-      url: "/vince/ajax_calls/case/vendors/"+case_id+"/",
-      success: function(data) {
+        return data;
 
-      }});*/
-
-    reloadVendorStats(case_id);
+    } catch (error) {
+        permissionDenied(addmodal);
+    }
 }
 
 function updateSelectedCount(tablet){
@@ -134,9 +121,11 @@ function reloadVuls(case_id, table) {
 }
 
 function reloadVendorsNotify(case_id) {
+    console.log('the case_id provided to reloadVendorsNotify is ' + case_id)
     $.ajax({
         url: "/vince/casevendor/"+case_id+"/notify/",
         success: function(data) {
+            console.log('reloadVendorsNotify has just run, and the data is ' + data)
             $(".vendorlist").html(data);
 	    /* reload plugins */
             $(document).foundation();
@@ -321,6 +310,17 @@ $(document).ready(function() {
         for (let i = 0; i < assignable_ordered_pairs.length; i++){
             assignable_emails.push(assignable_ordered_pairs[i]['value'])
         }
+        let emailarray = []
+        for (let i = 0; i < assignable_ordered_pairs.length; i++) {
+            emailarray.push(assignable_ordered_pairs[i].value)
+        }
+        
+        let assigned_or_assignable_ordered_pairs = assignable_ordered_pairs
+        for (let i = 0; i < assigned_ordered_pairs.length; i++){
+          if (!emailarray.includes(assigned_ordered_pairs[i].value)){
+            assigned_or_assignable_ordered_pairs.push(assigned_ordered_pairs[i])
+          }
+        }                
         var taggle2 =  new Taggle('user_taggs', {
     	    tags: assigned_users_emails,
             duplicateTagClass: 'bounce',
@@ -330,9 +330,10 @@ $(document).ready(function() {
             tagFormatter: function(li) {
                 spanElement = li.querySelector('.taggle_text')
                 inputElement = li.querySelector('input')
+
                 inputElementValue = li.querySelector('input').value
                 // find the element whose value = the current input, then change the spanElement innerHTML to the label in that element.
-                let objectWithThisEmail = assignable_ordered_pairs.filter(function checkit(object){
+                let objectWithThisEmail = assigned_or_assignable_ordered_pairs.filter(function checkit(object){
                     if (object['value'] == inputElement.value){
                         return object
                     }
@@ -508,42 +509,43 @@ $(document).ready(function() {
     var largemodal = $("#largemodal");
 
     $(document).on("submit", '#addvendorform', function(event) {
-	event.preventDefault();
-	var reload = $(this).attr("reload");
-	var vendors = [];
-	var csrftoken = getCookie('csrftoken');
-	var rows = $("#project-description > tr");
-	var case_id = $('.case-container').attr('caseid');
+        event.preventDefault();
+        var reload = $(this).attr("reload");
+        var vendors = [];
+        var csrftoken = getCookie('csrftoken');
+        var rows = $("#project-description > tr");
+        var case_id = $('.case-container').attr('caseid');
 
-	$.each(rows, function(index, item) {
-	    vendors.push(item.cells[0].innerText);
-	});
-	var url = $(this).attr("action");
+        $.each(rows, function(index, item) {
+            vendors.push(item.cells[0].innerText);
+        });
+    	var url = $(this).attr("action");
 
-	$.post(url, {'csrfmiddlewaretoken': csrftoken, 'vendors': vendors,
-		     'case_id': case_id}, function(data) {
-			 if (reload == "list") {
-			     reloadVendors(case_id, vendors_table);
-			 } else {
-			     reloadVendorsNotify(case_id);
-			 }
-			 /*remove rows in table */
-			 $("#project-description").find("tr").remove();
+	    $.post(url, 
+            {'csrfmiddlewaretoken': csrftoken, 'vendors': vendors, 'case_id': case_id}, function(data) {
+                if (reload == "list") {
+                    loadAndShowVendorsTable();
+                    // reloadVendors(case_id, vendors_table);
+                } else {
+                    reloadVendorsNotify(case_id);
+                }
+                /*remove rows in table */
+                $("#project-description").find("tr").remove();
 
-		     })
-	    .fail(function(xhr, status, error) {
-		var data = xhr.responseText;
-		try {
-		    var jsonResponse = JSON.parse(data);
-		    console.log(jsonResponse);
-		    addmodal.foundation('close');
-		    addmodal.html("<div class\"fullmodal\"><div class=\"modal-body\"><p>Error: "+jsonResponse['message']+"</p> <div class=\"modal-footer text-right\"><a href=\"#\" class=\"hollow button cancel_confirm\" data-close type=\"cancel\">Ok</a></div></div></div>").foundation('open');
-		} catch (e) {
-		    permissionDenied(addmodal);
-		}
-	    })
+            })
+	        .fail(function(xhr, status, error) {
+                var data = xhr.responseText;
+                try {
+                    var jsonResponse = JSON.parse(data);
+                    console.log(jsonResponse);
+                    addmodal.foundation('close');
+                    addmodal.html("<div class\"fullmodal\"><div class=\"modal-body\"><p>Error: "+jsonResponse['message']+"</p> <div class=\"modal-footer text-right\"><a href=\"#\" class=\"hollow button cancel_confirm\" data-close type=\"cancel\">Ok</a></div></div></div>").foundation('open');
+                } catch (e) {
+                    permissionDenied(addmodal);
+                }
+    	    })
             .done(function() {
-		addmodal.foundation('close');
+	        	addmodal.foundation('close');
             });
     });
 
@@ -1362,7 +1364,12 @@ $(document).ready(function() {
 
     $(document).on("click", ".notnotified", function(event) {
 	event.preventDefault();
-	vendors_table.setFilter("contact_date", "=", "false");
+    vendors_table.clearFilter();
+	//vendors_table.setFilter("contact_date", "=", "null");
+
+    vendors_table.setFilter(function(data){
+        return !data.contact_date;
+    })
     });
 
     $(document).on("click", ".allvendors", function(event) {
@@ -1399,7 +1406,10 @@ $(document).ready(function() {
 
     $(document).on("click", ".reqapproval", function(event) {
         event.preventDefault();
-        vendors_table.setFilter("reqapproval", "=", "true");
+        // vendors_table.setFilter("reqapproval", "=", "true");
+        vendors_table.setFilter(function(data){
+            return !!data.reqapproval;
+        });
     });
 
     $(document).on("click", ".vendorsnousers", function(event) {
@@ -1410,7 +1420,13 @@ $(document).ready(function() {
 
     $(document).on("click", ".vendorapproved", function(event) {
 	event.preventDefault();
-	vendors_table.setFilter("approved", "=", "true");
+    vendors_table.clearFilter();
+	//vendors_table.setFilter("approved", "=", "true");
+
+    // we're trying this:
+    vendors_table.setFilter(function(data){
+        return !!data.approved;
+    });
     });
 
     function custom3(data, filterParams) {
@@ -1419,56 +1435,114 @@ $(document).ready(function() {
 
     $(document).on("click", ".vendorsseen", function(event) {
 	event.preventDefault();
-	vendors_table.setFilter("seen", "=", "true");
+	// vendors_table.setFilter("seen", "=", "true");
+
+    vendors_table.setFilter(function(data){
+        return !!data.seen;
+    });
     });
 
     $(document).on("click", ".vendorsresponded", function(event) {
         event.preventDefault();
-        vendors_table.setFilter("statement_date", "!=", "false");
+        // vendors_table.setFilter("statement_date", "!=", "false");
+        vendors_table.setFilter(function(data){
+            return !!data.statement_date;
+        });
     });
 
-    var vendors_table = new Tabulator("#vendors-table", {
-        //data:vendors_data, //set initial table data
-	    data:[],
-        layout:"fitColumns",
-	    selectable:true,
-        // ajaxURL: "/vince/ajax_calls/case/vendors/"+$(".case-container").attr('caseid')+"/",
-        // ajaxProgressiveLoad:"scroll",
-        pagination: "local",
-        paginationSize:20,
-        rowClick:function(e, row){
-            updateSelectedCount(vendors_table);
-        },
-        ajaxFiltering:true,
-        ajaxLoaderLoading: "<div style='display:inline-block; border:4px solid #333; border-radius:10px; background:#fff; font-weight:bold; font-size:16px; color:#000; padding:10px 20px;'>Loading Data</div>",
-        tooltipsHeader:true,
-        placeholder: "No vendors.",
-        selectableCheck:function(row){
-            //row - row component
-            return row.getData().tagged == false; //allow selection of untagged rows
-    	},
-        columns:[
-            {title:"Vendor", field:"vendor", formatter:contactClickFunction, tooltip:vendorToolTipFunction, width:200, headerFilter:"input"},
-            {title:"Status", field:"status", formatter: "link", formatterParams:statusClickFunction, headerFilter:"input"},
-	        {titleFormatter:vendornotifiedFormatterFunction, field:"contact_date", editor:dateEditor, cellEdited: function(cell) {
-                var csrftoken = getCookie('csrftoken');
-                $.post(cell.getRow().getData().edit_date_url,
-                    {'csrfmiddlewaretoken': csrftoken, 'new_date':cell.getRow().getData().contact_date},
-	                function(data) {
-			            approvemodal.html(data).foundation('open');
-		            });
-	        }},
-            {title:"Seen", field:"seen", formatter: eyeFormatter, width:100},
-            {title:"Approved", field:"user_approved", formatter: appFormatter},
-            {title:"Statement", field:"statement", formatter:stmtFormatter},
-	        {title:"Emails", field:"vendor_notification", formatter: vendorNotificationFormatter},
-        ],
 
-    });
+    let vendors_table;
+    async function createVendorsTable() {
+        let data = await ajaxVendorData()
+        let vendors_data = data['data']
+        let vendors_total = vendors_data.length
+        let pageSizeOptionsArray = []
+        for (let x = 20; x < 100 && x < vendors_total; x += 20) {
+            pageSizeOptionsArray.push(x)
+        }
+        pageSizeOptionsArray.push(vendors_total)
 
-    loadVendors(vendors_table);
+        vendors_table = new Tabulator("#vendors-table", {
+            data:vendors_data,
+            layout:"fitColumns",
+            selectable:true,
+            pagination: "local",
+            paginationSize: vendors_total,
+            paginationSizeSelector: pageSizeOptionsArray,
+            rowClick:function(e, row){
+                updateSelectedCount(vendors_table);
+            },
+            tooltipsHeader:true,
+            placeholder: "No vendors.",
+            selectableCheck:function(row){
+                //row - row component
+                return row.getData().tagged == false; //allow selection of untagged rows
+            },
+            columns:[
+                {title:"Vendor", field:"vendor", formatter:contactClickFunction, tooltip:vendorToolTipFunction, width:200, headerFilter:"input"},
+                {title:"Status", field:"status", formatter: "link", formatterParams:statusClickFunction, headerFilter:"input"},
+                {titleFormatter:vendornotifiedFormatterFunction, field:"contact_date", editor:dateEditor, cellEdited: function(cell) {
+                    var csrftoken = getCookie('csrftoken');
+                    $.post(cell.getRow().getData().edit_date_url,
+                        {'csrfmiddlewaretoken': csrftoken, 'new_date':cell.getRow().getData().contact_date},
+                        function(data) {
+                            approvemodal.html(data).foundation('open');
+                        });
+                }},
+                {title:"Seen", field:"seen", formatter: eyeFormatter, width:100},
+                {title:"Approved", field:"approved", formatter: appFormatter},
+                {title:"Statement", field:"statement", formatter:stmtFormatter},
+                {title:"Emails", field:"vendor_notification", formatter: vendorNotificationFormatter},
+            ],
 
-    reloadVendorStats($(".case-container").attr('caseid'));
+        });
+
+
+        reloadVendorStats($(".case-container").attr('caseid'));
+        updateSelectedCount(vendors_table)
+
+        // this code is for when we eventually decide to make the data in casevendors.html 
+        // derive via javascript from the same source as the data used by the table: 
+
+        // let allVendors = document.getElementById('total_num_vendors');
+        // allVendors.innerHTML = vendors_total;
+
+        // const total_num_notified_vendors = vendors_data.filter(function(item){
+        //     if (item.contact_date) {
+        //       return true;
+        //     } else {
+        //       return false;
+        //     }
+        // });
+        
+        // let notifiedVendors = document.getElementByid('total_num_notified_vendors')
+        // notifiedVendors.innerHTML(total_num_notified_vendors)
+
+        // const total_num_userless_vendors = vendors_data.filter(function(item){
+        //     if (item.users == 0) {
+        //       return true;
+        //     } else {
+        //       return false;
+        //     }
+        // });
+
+        // let userlessVendors = document.getElementById('total_num_userless_vendors');
+        // userlessVendors.innerHTML(total_num_userless_vendors)
+
+        return data
+    };
+
+    async function loadAndShowVendorsTable(){
+        $("#vendors-table").hide()
+        $("#vendors-table-loading-div").show()
+        let data = await createVendorsTable();
+        $("#vendors-table-loading-div").hide()
+        $("#vendors-table").show()
+    }
+    
+    loadAndShowVendorsTable();
+
+    ($(".case-container").attr('caseid'));
 
     //select row on "select page" button click
     $('#select-page').click(function(){
@@ -1539,8 +1613,9 @@ $(document).ready(function() {
 		// When all ajax calls has been done
 		// Do something like hide waiting images, or any else function call
 		console.log("Done removing vendors");
-		reloadVendors($(".case-container").attr('caseid'), vendors_table);
-        updateSelectedCount(vendors_table);
+        loadAndShowVendorsTable();
+		// reloadVendors($(".case-container").attr('caseid'), vendors_table);
+        // updateSelectedCount(vendors_table);
 	    }
 	};
 
@@ -1693,15 +1768,17 @@ $(document).ready(function() {
     $(document).on("click", ".cancel_confirm", function(event) {
 	event.preventDefault();
 	approvemodal.foundation('close');
-	reloadVendors($(".case-container").attr('caseid'), vendors_table);
-    });
+	loadAndShowVendorsTable();
+	// reloadVendors($(".case-container").attr('caseid'), vendors_table);
+});
 
     $(document).on("submit", "#removevendorform", function(event) {
 	event.preventDefault();
 	$.post($(this).attr("action"), $(this).serializeArray(),
 	       function(data) {})
 	    .done(function() {
-		reloadVendors($(".case-container").attr('caseid'), vendors_table);
+        loadAndShowVendorsTable();
+		// reloadVendors($(".case-container").attr('caseid'), vendors_table);
 	    })
 	    .fail(function(d) {
                 permissionDenied(addmodal);
@@ -1916,8 +1993,9 @@ $(document).ready(function() {
     });
 
     $(document).on("closed.zf.reveal", "#statusmodal", function(event) {
-	var case_id = $('.case-container').attr('caseid');
-	reloadVendors(case_id, vendors_table);
+	// var case_id = $('.case-container').attr('caseid');
+    loadAndShowVendorsTable();
+	// reloadVendors(case_id, vendors_table);
     });
 
 
@@ -1937,9 +2015,7 @@ $(document).ready(function() {
 
     function initialize_vuls_tab() {
         if (document.getElementById('vuls_data')) {
-            // console.log('there is a vuls_data element.')
             var data = JSON.parse(document.getElementById('vuls_data').textContent);
-            // console.log(data);
             if (data) {
                 var table = new Tabulator("#vuls-table", {
                     data:data,
@@ -1966,7 +2042,6 @@ $(document).ready(function() {
 
         if (document.getElementById('participant_data')) {
             var participants_data = JSON.parse(document.getElementById('participant_data').textContent);
-            //console.log(data);
         }    
 
         $(document).on("click", '#cancelparticipant', function(event) {

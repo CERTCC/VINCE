@@ -24,6 +24,7 @@
       <h2>Ticket [{{ ticket.queue }}-{{ ticket.id }}] {% if ticket.case %}<a href="{% url 'vince:case' ticket.case.id %}">({{ ticket.case.vu_vuid }})</a>{% endif %}  {% autoescape off %}{{ ticket.get_status_html }} {% if ticket.get_status_display == "Closed" %}{{ ticket.get_close_status_html }}{% endif %}{% endautoescape %}</h2>
     </div>
     <div class="large-4 columns text-right">
+      <a href="{% url 'vince:initcontactverify' %}" class="button primary small"><i class="fas fa-suitcase"></i> Vendor Association</a>
       {% if ticket.case %}
       <a href="{% url 'vince:case' ticket.case.id %}" class="button primary small"><i class="fas fa-suitcase"></i> View case</a>
       {% if vincecomm_link %}
