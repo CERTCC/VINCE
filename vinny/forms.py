@@ -569,6 +569,10 @@ class UploadDocumentForm(forms.ModelForm):
         required=True, label=_("Attach File"), widget=forms.FileInput(attrs={"class": "vulupload"})
     )
 
+    # we will add ', widget=forms.HiddenInput()' in the fullness of time.
+
+    comment = forms.CharField(max_length=20000, required=False)
+
     def __init__(self, *args, **kwargs):
         self.case = kwargs.pop("case")
         self.user = kwargs.pop("user")

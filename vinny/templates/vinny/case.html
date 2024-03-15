@@ -244,6 +244,7 @@
 	
 	
 	<div class="secondary callout" id="post_reply">
+    <div class="hidden" id="preexistingcomment">{% if preexistingcomment %}{{preexistingcomment}}{% endif %}</div>
 	  <form method="post" id="postform" action="{% url 'vinny:post' case.id %}">{% csrf_token %}
 	    <div class="row">
               <div class="large-12 columns">

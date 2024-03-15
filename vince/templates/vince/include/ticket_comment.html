@@ -10,7 +10,7 @@
 	    <label for='commentBox'>{% trans "Comment / Resolution" %}</label>
 	    <small class='form-text text-muted'>{% trans "If you are closing this ticket, the text entered below will become the resolution for this ticket. To replace the resolution, you must first reopen this ticket, and then resolve the ticket with a new resolution. All comments are internal VINCETrack notes." %}</small>
 	    
-	    <textarea rows='8' cols='70' name='comment' id='commentBox' {% if case %}required{% endif %}></textarea>
+	    <textarea rows='8' cols='70' name='comment' id='commentBox' {% if case %}required{% endif %}>{% if preexistingcomment %}{{ preexistingcomment }}{% endif %}</textarea>
           </div>
 	  {% if case %}{% else %}
           <div class="form-group">

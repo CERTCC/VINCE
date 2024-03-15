@@ -280,15 +280,15 @@ class CreateVulNote(forms.Form):
         if self.case.team_owner:
             if self.case.team_owner.groupsettings.vulnote_template:
                 if self.case.get_assigned_to:
-                    self.fields[
-                        "content"
-                    ].initial = f"{self.case.team_owner.groupsettings.vulnote_template}This document was written by {self.case.get_assigned_to}.\r\n"
+                    self.fields["content"].initial = (
+                        f"{self.case.team_owner.groupsettings.vulnote_template}This document was written by {self.case.get_assigned_to}.\r\n"
+                    )
                 else:
                     self.fields["content"].initial = f"{self.case.team_owner.groupsettings.vulnote_template}.\r\n"
         elif self.case.get_assigned_to:
-            self.fields[
-                "content"
-            ].initial = f"{VULNOTE_TEMPLATE}This document was written by {self.case.get_assigned_to}.\r\n"
+            self.fields["content"].initial = (
+                f"{VULNOTE_TEMPLATE}This document was written by {self.case.get_assigned_to}.\r\n"
+            )
 
 
 class VulNoteReviewForm(forms.Form):
@@ -598,6 +598,8 @@ class AddArtifactForm(forms.ModelForm):
         widget=forms.RadioSelect(attrs={"class": "ul_nobullet horizontal_bullet"}),
         required=False,
     )
+
+    comment = forms.CharField(max_length=20000, widget=forms.HiddenInput(), required=False)
 
     def __init__(self, *args, **kwargs):
         super(AddArtifactForm, self).__init__(*args, **kwargs)
@@ -1977,6 +1979,20 @@ class InitContactForm(forms.ModelForm):
         except:
             raise forms.ValidationError("Invalid Ticket Selection. Use only numeric ID of Ticket.")
 
+    # def clean_email(self):
+    #     email = self.cleaned_data["email"]
+    #     logger.debug(f"email is {email}")
+    #     internal = self.cleaned_data["internal"]
+    #     logger.debug(f"internal is {internal}")
+    #     if email in [None, "", "None"] and internal:
+    #         logger.debug("we have reached the if block in which email is none and internal is truey")
+    #         return
+    #     try:
+    #         logger.debug("we have passed the if block in which email is none and internal is truey")
+    #         return email
+    #     except:
+    #         raise forms.ValidationError("Unacceptable email value.")
+
 
 class ContactForm(forms.ModelForm):
     vtype = forms.ChoiceField(
@@ -2558,10 +2574,10 @@ class StatementForm(forms.Form):
     share = forms.BooleanField(
         label=_("Share status and statement pre-publication"),
         help_text=(
-            "Checking this box will share your status and statement with all"
-            " vendors and participants in this case before the vulnerability note is published."
+            "If this box is ticked, then the vendor has decided to share their status with respect to this case"
         ),
         required=False,
+        disabled=True,
     )
 
     statement = forms.CharField(
