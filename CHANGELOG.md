@@ -1,5 +1,14 @@
 # VINCE Changelog
 
+Version 2.1.11 2024-03-14
+
+* Dependabot update recommendations: `cryptography` 41.0.6 to 42.0.4 and `django` from 3.2.23 to 3.2.24 
+* Added code to ensure comments entered into comment box will be preserved when user uploads a file
+* Fixed filters above vendor table in vendor tab of case page to ensure consistency with data in vendor table
+* Added logging to make it easier to track user deactivation & MFA resetting processes
+* Fixed case vendor status edit page to prevent inadvertent alteration of vendor share status from VINCE Track
+
+
 Version 2.1.10 2024-01-31
 
 * Dependabot update recommendations: `pycryptodome` 3.15.0 to 3.19.1
