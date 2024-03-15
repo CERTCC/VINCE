@@ -2712,3 +2712,17 @@ pre code {
 .coordination_preference_wrapper_div {
   display: none;
 }
+
+.announcement-banner {
+  background-color: #b00;
+  color: #fefefe;
+  font-size: 1.5em;
+  padding-left: 20px;
+  padding-right: 20px;
+  border-top-style: solid;
+}
+
+.announcement-banner .announcement-banner-link {
+  text-decoration: underline;
+  color: #fefefe;
+}

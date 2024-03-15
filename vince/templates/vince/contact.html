@@ -175,6 +175,11 @@
 	    <p>To change email type, remove email and re-add email with desired type.</p>
 	  </span>
 	    
+	  {% for email in object.emailcontact_set.all %}
+	  <div class="emaillog">
+		{{ email }}
+	  </div>
+	  {% endfor %}
 	  <div class="row">
 	    <div class="large-12 columns">
 	      <table class="hover usermgmt">

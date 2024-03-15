@@ -65,6 +65,11 @@ $(document).ready(function() {
 		document.title = "VINCE - " + document.getElementById('case_title').innerHTML
 	}
     
+	let preexistingcomment = ""
+	if ($("#preexistingcomment").html()){
+		preexistingcomment = $("#preexistingcomment").html()
+	}
+
     var simplemde = new SimpleMDE({element: $("#id_content")[0],
 				 renderingConfig: {
 				     singleLineBreaks: false,
@@ -82,10 +87,11 @@ $(document).ready(function() {
 					     }],
 				   placeholder: "Ask a question or post a reply. Use @ to tag someone in your post.",
 				   autoDownloadFontAwesome: false,
+				   initialValue: preexistingcomment
 				  });
     
     /* blank content on reload */
-    simplemde.value("");
+    // simplemde.value("");
 
     // user mentions support
     simplemde.codemirror.on("keyup", function (cm, event) {
@@ -148,14 +154,18 @@ $(document).ready(function() {
     
     var $uploadmodal = $("#upload-file");
     $(document).on("click", ".uploadfile", function(event) {
-	event.preventDefault();
-	$.ajax({
-	    url: $(this).attr('href'),
-	    type: "GET",
-	    success: function(resp) {
-		$uploadmodal.html(resp).foundation('open');
-	    }
-	});
+		event.preventDefault();
+		$.ajax({
+			url: $(this).attr('href'),
+			type: "GET",
+			success: function(resp) {
+				$uploadmodal.html(resp).foundation('open');
+				console.log(simplemde.value())
+				let preexistingcomment = simplemde.value()
+				$("#id_comment").val(simplemde.value());
+				console.log($("#id_comment").val())
+			}
+		});
     });
     function update_dropdown(dtrack,pk) {
 	if((!pk) && ('group_id' in dtrack)) {
@@ -313,6 +323,7 @@ $(document).ready(function() {
 	// Get some values from elements on the page:
 	event.preventDefault();
 	var content = simplemde.value();
+	console.log(content)
 	if (content == "") {
 	    return false;
 	}

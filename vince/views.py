@@ -628,6 +628,7 @@ def autocomplete_casevendors(request, pk):
     size = request.GET.get("size", 20)
     vendors = VulnerableVendor.casevendors(case).order_by("vendor")
     user_filter = False
+    logger.debug(request.GET)
     for key in request.GET:
         if "field" in key:
             field = request.GET[key]
@@ -668,6 +669,7 @@ def autocomplete_casevendors(request, pk):
     # With corresponding changes in case.js, this can be reversed by switching back to vendorsjs = [obj.as_dict() for obj in paginator.page(page)] here.
     # vendorsjs = [obj.as_dict() for obj in paginator.page(page)]
     vendorsjs = [obj.as_dict() for obj in vendors]
+    logger.debug(f"vendorsjs is {vendorsjs}")
 
     alert_tags = list(TagManager.objects.filter(tag_type=2, alert_on_add=True).values_list("tag", flat=True))
     logger.debug(f"ALERT TAGS: {alert_tags}")
@@ -2393,6 +2395,9 @@ class AddCaseArtifactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, F
 
     def form_valid(self, form):
         # logger.debug("IN FORM AVALID")
+        comment = form.cleaned_data["comment"]
+        if comment:
+            self.request.session["preexistingcomment"] = comment
         case = get_object_or_404(VulnerabilityCase, id=self.kwargs["pk"])
         artifact = form.save(case=case, user=self.request.user)
         tags = self.request.POST.getlist("taggles[]")
@@ -2437,6 +2442,9 @@ class AddTicketArtifactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         return context
 
     def form_valid(self, form):
+        comment = form.cleaned_data["comment"]
+        if comment:
+            self.request.session["preexistingcomment"] = comment
         ticket = get_object_or_404(Ticket, id=self.kwargs["pk"])
         artifact = form.save(ticket=ticket, user=self.request.user)
         tags = self.request.POST.getlist("taggles[]")
@@ -3224,9 +3232,9 @@ class CreateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Form
             if "approval" in self.request.GET:
                 initial_data["title"] = f"Approve Case {case.vu_vuid} vulnerability note for publishing"
                 link_to_review = reverse("vince:vulnotereviewal", args=[case.vulnote.id])
-                initial_data[
-                    "body"
-                ] = f"Please proofread vul note for publishing ASAP.\r\n\r\n{settings.SERVER_NAME}{link_to_review}"
+                initial_data["body"] = (
+                    f"Please proofread vul note for publishing ASAP.\r\n\r\n{settings.SERVER_NAME}{link_to_review}"
+                )
                 initial_data["priority"] = 2
                 initial_data["due_date"] = datetime.now() + timedelta(days=3)
                 initial_data["vulnote_approval"] = 1
@@ -4871,9 +4879,10 @@ class CaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
 
     def get_context_data(self, **kwargs):
         context = super(CaseRequestView, self).get_context_data(**kwargs)
+        if self.request.session.get("preexistingcomment"):
+            context["preexistingcomment"] = self.request.session.get("preexistingcomment")
+            del self.request.session["preexistingcomment"]
         context["ticket"] = get_object_or_404(CaseRequest, id=self.kwargs["pk"])
-        logger.debug("context['ticket'] is")
-        logger.debug(context["ticket"])
         if deepGet(context["ticket"].metadata, "ai_ml_system") == True:
             context["ai_ml_system"] = True
         else:
@@ -5110,6 +5119,9 @@ class TicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
 
     def get_context_data(self, **kwargs):
         context = super(TicketView, self).get_context_data(**kwargs)
+        if self.request.session.get("preexistingcomment"):
+            context["preexistingcomment"] = self.request.session.get("preexistingcomment")
+            del self.request.session["preexistingcomment"]
         user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
         context["auto_assign"] = UserRole.objects.filter(Q(group__in=user_groups) | Q(group__isnull=True)).count()
         context["ticketpage"] = 1
@@ -6577,6 +6589,9 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
 
     def get_context_data(self, **kwargs):
         context = super(CaseView, self).get_context_data(**kwargs)
+        if self.request.session.get("preexistingcomment"):
+            context["preexistingcomment"] = self.request.session.get("preexistingcomment")
+            del self.request.session["preexistingcomment"]
         context["case"] = get_object_or_404(VulnerabilityCase, id=self.kwargs["pk"])
         # Assume we have not vrf_url unless we get one from below methods
         context["vrf_url"] = None
@@ -9232,9 +9247,9 @@ class MessageAdminAddUser(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
                     "[team_signature]", team_sig
                 )
             else:
-                context[
-                    "msg_body"
-                ] = "A 'vendor_admin_user_request' template has not been created. Please add a template or fill in the message to send the admin"
+                context["msg_body"] = (
+                    "A 'vendor_admin_user_request' template has not been created. Please add a template or fill in the message to send the admin"
+                )
 
         return context
 
@@ -15401,6 +15416,7 @@ class VinceCommRemoveUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
         if user:
             user.is_active = False
             user.save()
+            logger.debug(f"{self.request.user} has made {user} inactive")
             check_ga = None
             groups = user.groups.all()
             for group in groups:
@@ -15435,6 +15451,7 @@ class VinceCommRemoveUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                     fup = FollowUp(
                         user=self.request.user, ticket=tkt, title="VINCE user removed due to permanent bounce"
                     )
+                    logger.debug(f"{self.request.user} has made {user} inactive due to permanent bounce")
                     fup.save()
             # close any bounces that may be associated with this user
             bn = BounceEmailNotification.objects.filter(email=user.email, action_taken=False)
@@ -17224,9 +17241,9 @@ class VulReserveCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             context["action"] = reverse("vince:reservecve", args=[context["vul"].id])
             try:
                 if cve.cvereservation:
-                    context[
-                        "error"
-                    ] = f"A CVE has already been reserved for this vulnerability by { cve.user_reserved.usersettings.preferred_username }"
+                    context["error"] = (
+                        f"A CVE has already been reserved for this vulnerability by { cve.user_reserved.usersettings.preferred_username }"
+                    )
             except:
                 pass
         else:
@@ -17240,9 +17257,9 @@ class VulReserveCVEView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
 
         if len(accounts) == 0:
             cvelink = reverse("vince:cve_dashboard")
-            context[
-                "error"
-            ] = f"There are no available CVE Services accounts for your team. Configure account in <a href='{cvelink}'>CVE Services</a>"
+            context["error"] = (
+                f"There are no available CVE Services accounts for your team. Configure account in <a href='{cvelink}'>CVE Services</a>"
+            )
 
         context["form"] = CVEReserveForm(initial={"count": 1})
         context["form"].fields["account"].choices = [(g.id, f"{g.team.name} ({g.email})") for g in accounts]

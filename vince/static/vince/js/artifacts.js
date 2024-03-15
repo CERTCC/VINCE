@@ -217,9 +217,10 @@ $(document).ready(function() {
             type: "GET",
             success: function(data) {
                 modal.html(data).foundation('open');
-		init_tags();
+                $("#id_comment").val($("#commentBox").val());
+        		init_tags();
             },
-	    error: function(xhr, status) {
+	        error: function(xhr, status) {
                 permissionDenied(modal);
             }
         });

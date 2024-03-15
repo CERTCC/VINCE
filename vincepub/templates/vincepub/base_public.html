@@ -41,6 +41,7 @@
     <script src="https://www.google.com/recaptcha/api.js"></script>
   </head>
   <body>
+	<div class="announcement-banner">ATTENTION: VINCE web interface and API interfaces will be down for maintenance from 1200 EDT on Tuesday, March 19, 2024, until no later than 0900 EDT Wednesday, March 20, 2024.</div>
     <div class="off-canvas-wrapper">
       <div class="off-canvas position-right" id="offCanvas" data-off-canvas data-transition="overlap" data-auto-focus="false">
 	<!-- Close button -->
@@ -187,7 +188,7 @@
 	  </div>
 	  <div class="row">
 	    <div class="large-12 columns">
-              <small>©2021 {{ ORG_NAME }}</small>
+              <small>©{% now "Y" %} {{ ORG_NAME }}</small>
 	    </div>
 	  </div>
 	</div>
@@ -202,6 +203,7 @@
 	    </p>
 	    
 	  </div>
+	  <!--<a class="contact-button hollow button large expanded" href="https://www.sei.cmu.edu/contact-us/">Contact Us</a>-->
 	</div>
       </div>
     </div>

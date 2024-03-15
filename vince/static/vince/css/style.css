@@ -141,6 +141,19 @@ h1.vince_login_logo {
     font-weight: 700;
 }
 
+.announcement-banner {
+    background-color: #b00;
+    color: #fefefe;
+    font-size: 1.5em;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.announcement-banner .announcement-banner-link {
+    text-decoration: underline;
+    color: #fefefe;
+}
+
 .site-wrapper {
 /*    display: flex;
     flex-direction: column;*/
@@ -1417,7 +1430,7 @@ div.homelink a {
     background-color: #282829;
     border-right: 1px solid #c2c2c2;
     color: #f1f1f2;
-    padding-top:130px;
+    padding-top:195px;
 
 }
 
@@ -1425,7 +1438,7 @@ div.homelink a {
     background-color: #f1f1f2;
     border-right: 1px solid #c2c2c2;
     color: #4d4d4f;
-    padding-top:150px;
+    padding-top:225px;
 }
 
 /*.position-left.reveal-for-medium ~ .off-canvas-content {

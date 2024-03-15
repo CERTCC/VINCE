@@ -75,16 +75,6 @@ function initTooltipster(element, umProfileStore, displayUserCard) {
 }
 
 
-function reloadVendorStats(case_id) {
-
-    $.ajax({
-	url: "/vince/casevendor/"+case_id+"/",
-        success: function(data) {
-    	    $("#vendorlist").html(data);
-	    $(document).foundation();
-	}});
-}
-
 async function ajaxVendorData(){
     let data
 
@@ -1408,11 +1398,11 @@ $(document).ready(function() {
         event.preventDefault();
         // vendors_table.setFilter("reqapproval", "=", "true");
         vendors_table.setFilter(function(data){
-            return !!data.reqapproval;
+            return (!!data.statement_date && !data.approved);
         });
     });
 
-    $(document).on("click", ".vendorsnousers", function(event) {
+    $(document).on("click", ".vendorswithnousers", function(event) {
         event.preventDefault();
 
         vendors_table.setFilter("users", "=", "0");
@@ -1450,11 +1440,59 @@ $(document).ready(function() {
         });
     });
 
+    function populateFiltersWithValues(data){
+
+        let total_notified_vendors = 0
+        let total_vendors_no_users = 0
+        let total_vendors_seen = 0
+        let total_vendors_responded = 0
+        let total_vendors_approved = 0
+        let total_vendors_requiring_approval = 0
+
+        for (let i = 0; i < data.length; i++){
+            if (data[i].contact_date){
+                total_notified_vendors++
+            }
+            
+            if (data[i].users == 0) {
+                total_vendors_no_users++
+            }
+            if (data[i].seen) {
+                total_vendors_seen++
+            }
+            if (data[i].statement_date){
+                total_vendors_responded++
+                if (!data[i].approved){
+                    total_vendors_requiring_approval++
+                }
+            }
+            if (data[i].approved) {
+                total_vendors_approved++
+            }
+
+        }
+
+        $('#total_vendors').html(data.length)
+        $('#total_notified_vendors').html(total_notified_vendors)
+        if (total_notified_vendors < data.length) {
+            $('.notnotified').css({color:'red'})
+        }
+        $('#vendorswithnousers').html(total_vendors_no_users)
+        if (total_vendors_no_users == 0){
+            $('.vendorswithnousers').css({display: 'none'})
+        }
+        $('#vendorsseen').html(total_vendors_seen)
+        $('#vendorsresponded').html(total_vendors_responded)
+        $('#vendorapproved').html(total_vendors_approved)
+        $('#reqapproval').html(total_vendors_requiring_approval)
+
+    }
 
     let vendors_table;
     async function createVendorsTable() {
         let data = await ajaxVendorData()
         let vendors_data = data['data']
+        populateFiltersWithValues(vendors_data)
         let vendors_total = vendors_data.length
         let pageSizeOptionsArray = []
         for (let x = 20; x < 100 && x < vendors_total; x += 20) {
@@ -1498,45 +1536,19 @@ $(document).ready(function() {
         });
 
 
-        reloadVendorStats($(".case-container").attr('caseid'));
         updateSelectedCount(vendors_table)
-
-        // this code is for when we eventually decide to make the data in casevendors.html 
-        // derive via javascript from the same source as the data used by the table: 
-
-        // let allVendors = document.getElementById('total_num_vendors');
-        // allVendors.innerHTML = vendors_total;
-
-        // const total_num_notified_vendors = vendors_data.filter(function(item){
-        //     if (item.contact_date) {
-        //       return true;
-        //     } else {
-        //       return false;
-        //     }
-        // });
-        
-        // let notifiedVendors = document.getElementByid('total_num_notified_vendors')
-        // notifiedVendors.innerHTML(total_num_notified_vendors)
-
-        // const total_num_userless_vendors = vendors_data.filter(function(item){
-        //     if (item.users == 0) {
-        //       return true;
-        //     } else {
-        //       return false;
-        //     }
-        // });
-
-        // let userlessVendors = document.getElementById('total_num_userless_vendors');
-        // userlessVendors.innerHTML(total_num_userless_vendors)
 
         return data
     };
 
     async function loadAndShowVendorsTable(){
         $("#vendors-table").hide()
+        $("#vendorlist").hide()
         $("#vendors-table-loading-div").show()
         let data = await createVendorsTable();
+
         $("#vendors-table-loading-div").hide()
+        $("#vendorlist").show()
         $("#vendors-table").show()
     }
     

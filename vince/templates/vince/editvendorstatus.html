@@ -13,95 +13,88 @@
 
 
 <div class="app-top-panel">
-  <div class="row">
-    <div class="large-8 columns">
-      <h2>Case <a href="{{ case.get_absolute_url }}"> {{ case.get_vuid }}</a> {{ vendor.vendor }} Status </h2>
-    </div>
-    <div class="large-4 columns text-right"><a class="button cmu" href="{% url 'vinny:vincase' case.id %}">View in VinceComm</a></div>
-  </div>
+	<div class="row">
+    	<div class="large-8 columns">
+      		<h2>Case <a href="{{ case.get_absolute_url }}"> {{ case.get_vuid }}</a> {{ vendor.vendor }} Status </h2>
+    	</div>
+    	<div class="large-4 columns text-right"><a class="button cmu" href="{% url 'vinny:vincase' case.id %}">View in VinceComm</a></div>
+  	</div>
 </div>
 
 <div class="row column">
-{% for message in messages %}
 
+{% for message in messages %}
 <div class="callout success">{% if message.tags %}{% endif %}{{ message }}</div>
 {% endfor %}
+
 </div>
 
 <div class="row cert_message">
-  <div class="large-12 columns">
-    <div class="row column">
-      <form method="post" id="updatestatus" action="{% url 'vince:editvendorstatus' vendor.id %}"> 
-	{% csrf_token %}
-      <div class="status">
-	{% if vuls %}
-	<table class="unstriped">
-	<thead>
-	  <tr>
-	    <td></td>
-	    <td class="text-right">Affected <input id="select_all_affected" type="checkbox" name="allaffected"></td>
-	    <td class="text-right">Not Affected <input id="select_all_not" type="checkbox" name="notaffected"></td>
-	    <td class="text-right">Unknown <input id="select_all_unknown" type="checkbox" name="allunknown"></td>
-	    <td class="text-right"></td>
-	  </tr>
-	</thead>
-	<tbody>
-	  {% for vul in vuls %}
-	  <tr>
-	    <td>{% if vul.cve %}{{ vul.cve }}<br/>{% endif %}{{ vul.description }}</td>
-	    {% with s1=status|vendorstatus:vul %}
-	    <td class="text-right"><input type="checkbox" class="check vul{{vul.id}}" name="affected" value="{{ vul.id }}" title="Affected" {% if s1.status == 1 %} checked {% endif %}></td>
-	    <td class="text-right"><input type="checkbox" class="check vul{{vul.id}}" name="unaffected" value="{{ vul.id }}" title="Unaffected" {% if s1.status == 2 %} checked {% endif %}></td>
-	    <td class="text-right"><input type="checkbox" class="check vul{{vul.id}}" name="unknown" value="{{ vul.id }}" title="Unknown" {% if s1.status == 3 %} checked {% endif %}></td>
-	    {% endwith %}
-	    {% if vuls|length > 1 %}
-	    <td class="text-right"><button data-open="editstatement" action="{% url 'vince:getvulstmt' vendor.id vul.id %}" class="editstmt button">Edit Statement</button></td>
-	    {% endif %}
-	  </tr>
-	  {% endfor %}
-	</tbody>
-	</table>
-	{% else %}
-	<div class="callout alert">This case does not have a vulnerability defined. You must define a vulnerability before choosing vendor status.</div>
-	{% endif %}
-      </div>
-      <div class="reveal small" id="editstatement" data-reveal></div>
+  	<div class="large-12 columns">
+		<div class="row column">
+			<form method="post" id="updatestatus" action="{% url 'vince:editvendorstatus' vendor.id %}"> 
+				{% csrf_token %}
+				<div class="status">
+					{% if vuls %}
+						<table class="unstriped">
+							<thead>
+								<tr>
+									<td></td>
+									<td class="text-right">Affected <input id="select_all_affected" type="checkbox" name="allaffected"></td>
+									<td class="text-right">Not Affected <input id="select_all_not" type="checkbox" name="notaffected"></td>
+									<td class="text-right">Unknown <input id="select_all_unknown" type="checkbox" name="allunknown"></td>
+									<td class="text-right"></td>
+								</tr>
+							</thead>
+							<tbody>
+								{% for vul in vuls %}
+									<tr>
+										<td>{% if vul.cve %}{{ vul.cve }}<br/>{% endif %}{{ vul.description }}</td>
+										{% with s1=status|vendorstatus:vul %}
+											<td class="text-right"><input type="checkbox" class="check vul{{vul.id}}" name="affected" value="{{ vul.id }}" title="Affected" {% if s1.status == 1 %} checked {% endif %}></td>
+											<td class="text-right"><input type="checkbox" class="check vul{{vul.id}}" name="unaffected" value="{{ vul.id }}" title="Unaffected" {% if s1.status == 2 %} checked {% endif %}></td>
+											<td class="text-right"><input type="checkbox" class="check vul{{vul.id}}" name="unknown" value="{{ vul.id }}" title="Unknown" {% if s1.status == 3 %} checked {% endif %}></td>
+										{% endwith %}
+										{% if vuls|length > 1 %}
+											<td class="text-right"><button data-open="editstatement" action="{% url 'vince:getvulstmt' vendor.id vul.id %}" class="editstmt button">Edit Statement</button></td>
+										{% endif %}
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					{% else %}
+						<div class="callout alert">This case does not have a vulnerability defined. You must define a vulnerability before choosing vendor status.</div>
+					{% endif %}
+				</div>
+				<div class="reveal small" id="editstatement" data-reveal></div>
 
-      <div class="statement">
-	{% for field in form %}
-	<div class="row">
-          <div class="form-group">
-            <div class="large-6 columns">
-              <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %}
-		<span class='required'>*</span>{% endif %}</label>
-	      {% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
-              {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
-            <!--</div>
-            <div class="large-8 columns">-->
-	      {% if field.name == "share" %}
-              <div class="switch small">
-		<label class="tswitch" for="{{ form.share.auto_id }}">
-			<span class="show-for-sr">Share?</span>
-			{% render_field form.share class="switch-input" %}
-			<span class="tslider round"></span>
-		</label>
-              </div>
-              {% else %}
-	      {{ field }}
-	      {% endif %}
-            </div>
-          </div>
-	</div>
-	{% endfor %}
-      </div>
+				<div class="statement">
+					{% for field in form %}
+						<div class="row">
+							<div class="form-group">
+								<div class="large-6 columns">
+									<label for='id_{{ field.name }}'>
+										{% trans field.label %}
+										{% if field.field.required %}
+											<span class='required'>*</span>
+										{% endif %}
+									</label>
+									{% if field.help_text %}<small class='form-text text-muted'>{% trans field.help_text %}</small>{% endif %}
+									{% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+										{{ field }}
+								</div>
+							</div>
+						</div>
+					{% endfor %}
+				</div>
 
 
-      <div class="row column">
-	<input type="submit" class="primary button" value="Submit">
-	<a href="{% url 'vince:case' case.id %}#vendors" class="button secondary">Cancel</a>
-      </div>
-      </form>
-    </div>
-  </div>
+				<div class="row column">
+					<input type="submit" class="primary button" value="Submit">
+					<a href="{% url 'vince:case' case.id %}#vendors" class="button secondary">Cancel</a>
+				</div>
+			</form>
+    	</div>
+  	</div>
 </div>
 {% endblock %}
