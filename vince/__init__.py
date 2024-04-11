@@ -27,9 +27,11 @@
 # DM21-1126
 ########################################################################
 from __future__ import absolute_import, unicode_literals
-#from .celery import app as celery_app
+import django
 
-#__all__ = ['celery_app']
 
-default_app_config = 'vince.apps.VinceTrackConfig'
+# from .celery import app as celery_app
 
+# __all__ = ['celery_app']
+if django.VERSION < (3, 2):
+    default_app_config = "vince.apps.VinceTrackConfig"

@@ -48,11 +48,11 @@
 <div class="row">
   <div class="large-12 columns">
     <label for="resolution">{% trans "Ticket Resolution" %}
-    {% ifequal ticket.get_status_display "Resolved" %}
+    {% if ticket.get_status_display == "Resolved" %}
     <a href='?close'>
       <button type="button"
               class="button assignme alert tiny">{% trans "Accept and Close" %}</button>
-    </a>{% else %} <a href="{% url 'vince:editres' ticket.id %}" id="editres" title="edit resolution"><i class="fas fa-edit"></i></a>{% endifequal %}</label>
+    </a>{% else %} <a href="{% url 'vince:editres' ticket.id %}" id="editres" title="edit resolution"><i class="fas fa-edit"></i></a>{% endif %}</label>
     {{ ticket.resolution|force_escape|smarter_urlize:75|linebreaksbr }}
   </div>
 </div>

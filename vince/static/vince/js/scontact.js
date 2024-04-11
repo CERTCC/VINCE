@@ -430,31 +430,31 @@ $(document).ready(function() {
         });
 
     $(document).on("submit", "#addemailform", function(event) {
-	event.preventDefault();
-	var url = $("#addemailform").attr("action");
-	$.ajax({
+        event.preventDefault();
+        var url = $("#addemailform").attr("action");
+        $.ajax({
             url: url,
             type: "POST",
-	    data: $("#addemailform").serialize(),
+            data: $("#addemailform").serialize(),
             success: function(data) {
-		console.log(data);
-		if (data['ticket']) {
-		    location.href = data['ticket'];
-		}
-		else if (data['refresh']) {
-		    window.location.reload(true);
-		} else if (data['msg_body']){
-		    $("#vendor-results").html("<p><b>" + data['text'] + " Or <a href=\""+ data['email_link'] + "\">Request Authorization via Email</a></b></p>")
+                console.log(data);
+                if (data['ticket']) {
+                    location.href = data['ticket'];
+                }
+                else if (data['refresh']) {
+                    window.location.reload(true);
+                } else if (data['msg_body']){
+                    $("#vendor-results").html("<p><b>" + data['text'] + " Or <a href=\""+ data['email_link'] + "\">Request Authorization via Email</a></b></p>")
                     $("#id_msg").val(data['msg_body']);
                     $("#msgvendor").removeClass("hidden");
-		} else {
-		    $("#vendor-results").html("<p><b><span class=\"error\">" + data['text'] +"</span></b></p>");
-		    if (data['bypass']) {
-			$("#vendor-results").append("<p><a href=\"" + data['bypass'] + "\">Request Internal Validation for this Email</a></p>");
-		    }
-		}
+                } else {
+                    $("#vendor-results").html("<p><b><span class=\"error\">" + data['text'] +"</span></b></p>");
+                    if (data['bypass']) {
+                        $("#vendor-results").append("<p><a href=\"" + data['bypass'] + "\">Request Internal Validation for this Email</a></p>");
+                    }
+                }
             }
-	});
+        });
     });
 
 });

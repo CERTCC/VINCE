@@ -32,7 +32,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin, UserPass
 from django.forms.utils import ErrorList
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.utils.decorators import method_decorator
 from django.core.exceptions import PermissionDenied
 
@@ -75,7 +75,7 @@ import logging
 import traceback
 from boto3.exceptions import Boto3Error
 from botocore.exceptions import ClientError, ParamValidationError
-from django.utils.http import is_safe_url
+from django.utils.http import url_has_allowed_host_and_scheme as is_safe_url
 from django.http.response import JsonResponse
 from bigvince.utils import get_cognito_url, get_cognito_pool_url
 from vinny.models import VinceCommEmail

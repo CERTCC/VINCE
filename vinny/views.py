@@ -50,7 +50,7 @@ from django.http import (
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core import serializers
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.utils import timezone
 from django.db.models import Case as DBCase
 import pytz

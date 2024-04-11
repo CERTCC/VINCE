@@ -57,7 +57,13 @@ function getEmails(e, taggle) {
             for (let i=0; i< emails.length; i++) {
                 taggle.add(emails[i]);
             }
-    	}
+    	},
+        error: function(){
+            console.log("ajax was erroneous")
+        },
+        complete: function(){
+            console.log("ajax was completed")
+        }
     });
 }
 
@@ -104,6 +110,8 @@ $(document).ready(function() {
     });
 
     $.getJSON("/vince/ajax_calls/search/", function(data) {
+        console.log('the data entered into getJSON is');
+        console.log(data);
 	    contact_auto(data);
     });
 
@@ -180,12 +188,13 @@ $(document).ready(function() {
     //             }
     //         }
     //     }
-    //   });
+    // });
 
-    //   let user_to_verify_field = document.getElementById('id_user');
+    // let user_to_verify_field = document.getElementById('id_user');
 
-    //   let temporarily_allowed_email = ""
-    //   user_to_verify_field.addEventListener('change', function() {
+    // let temporarily_allowed_email = ""
+    // user_to_verify_field.addEventListener('change', function() {
+    //     // remove whatever email was previously allowed as a result of this event listener:
     //     let currently_allowed_emails = taggle.settings.allowedTags
     //     for (let i=0; i < currently_allowed_emails.length; i++){
     //         if (currently_allowed_emails[i] == temporarily_allowed_email){
@@ -193,13 +202,14 @@ $(document).ready(function() {
     //             taggle.remove(temporarily_allowed_email)
     //         }
     //     }
+    //     // allow the new email and add it to the list of taggles:
     //     temporarily_allowed_email = user_to_verify_field.value
     //     currently_allowed_emails.push(temporarily_allowed_email)
     //     if (internal_verification_checkbox.checked){
     //         taggle.settings.allowedTags = currently_allowed_emails;
     //         taggle.add(temporarily_allowed_email);
     //     }
-    //   });
+    // });
 
 
 });

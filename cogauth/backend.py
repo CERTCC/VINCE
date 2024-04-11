@@ -33,6 +33,7 @@ from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
+
 try:
     from django.utils.six import iteritems
 except:
@@ -48,51 +49,52 @@ import requests
 from vinny.models import VinceAPIToken
 from rest_framework import exceptions
 from rest_framework.authentication import BaseAuthentication, TokenAuthentication, get_authorization_header
-from django.utils.encoding import smart_text
-from django.utils.translation import ugettext as _
+from django.utils.encoding import smart_str as smart_text
+from django.utils.translation import gettext as _
 from bigvince.utils import get_cognito_url, get_cognito_pool_url
 import traceback
 from lib.vince import utils as vinceutils
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
 
 
 class CognitoUser(Cognito):
 
     user_class = get_user_model()
 
-    COGNITO_ATTRS = getattr(settings, 'COGNITO_ATTR_MAPPING',
-                            { 'username': 'username',
-                              'email':'email',
-                              'given_name' : 'first_name',
-                              'family_name':'last_name',
-                              'locale':'country'
-                              }
-                            )
+    COGNITO_ATTRS = getattr(
+        settings,
+        "COGNITO_ATTR_MAPPING",
+        {
+            "username": "username",
+            "email": "email",
+            "given_name": "first_name",
+            "family_name": "last_name",
+            "locale": "country",
+        },
+    )
 
     def get_user_obj(self, username=None, attribute_list=[], metadata={}, attr_map={}):
-        user_attrs = cognito_to_dict(attribute_list,CognitoUser.COGNITO_ATTRS)
+        user_attrs = cognito_to_dict(attribute_list, CognitoUser.COGNITO_ATTRS)
         django_fields = [f.name for f in CognitoUser.user_class._meta.get_fields()]
         log_attrs = user_attrs.copy()
-        if 'api_key' in user_attrs:
-            log_attrs['api_key'] = "RESERVED"
+        if "api_key" in user_attrs:
+            log_attrs["api_key"] = "RESERVED"
         logger.debug(f"User attributes in Cognito is {log_attrs}")
         extra_attrs = {}
         # need to iterate over a copy
         for k, v in user_attrs.copy().items():
             if k not in django_fields:
-                extra_attrs.update({k: user_attrs.pop(k, None) })
-        if getattr(settings, 'COGNITO_CREATE_UNKNOWN_USERS', True):
-            user, created = CognitoUser.user_class.objects.update_or_create(
-                username=username,
-                defaults=user_attrs)
+                extra_attrs.update({k: user_attrs.pop(k, None)})
+        if getattr(settings, "COGNITO_CREATE_UNKNOWN_USERS", True):
+            user, created = CognitoUser.user_class.objects.update_or_create(username=username, defaults=user_attrs)
             if user:
                 if settings.VINCE_NAMESPACE == "vinny":
                     try:
                         for k, v in extra_attrs.items():
                             setattr(user.vinceprofile, k, v)
-                            #logger.debug(f"{k}:{v}")
+                            # logger.debug(f"{k}:{v}")
                         user.vinceprofile.save()
                     except Exception as e:
                         logger.debug(f"Vinceprofile probably doesn't exist for user {username}, error returned {e}")
@@ -120,12 +122,13 @@ class CognitoUser(Cognito):
                 except Exception as e:
                     logger.debug(f"vinceprofile probably does not exist for {username}, returned error is {e}")
                 try:
-                    for	k, v in	extra_attrs.items():
+                    for k, v in extra_attrs.items():
                         setattr(user.usersettings, k, v)
                     user.usersettings.save()
                 except:
                     logger.debug(f"usersettings probably doesn't exist for {username}")
         return user
+
 
 class CognitoAuthenticate(ModelBackend):
     def authenticate(self, request, username=None, password=None):
@@ -135,115 +138,122 @@ class CognitoAuthenticate(ModelBackend):
                 settings.COGNITO_USER_POOL_ID,
                 settings.COGNITO_APP_ID,
                 user_pool_region=settings.COGNITO_REGION,
-                access_key=getattr(settings, 'AWS_ACCESS_KEY_ID', None),
-                secret_key=getattr(settings, 'AWS_SECRET_ACCESS_KEY', None),
-                username=username)
+                access_key=getattr(settings, "AWS_ACCESS_KEY_ID", None),
+                secret_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
+                username=username,
+            )
 
             try:
                 logger.debug(f"trying to authenticate {username} from IP {ip}")
                 cognito_user.authenticate(password)
             except ForceChangePasswordException:
-                request.session['FORCEPASSWORD']=True
-                request.session['username']=username
+                request.session["FORCEPASSWORD"] = True
+                request.session["username"] = username
                 return None
             except SoftwareTokenException as e:
-                request.session['MFAREQUIRED']= "SOFTWARE_TOKEN_MFA"
-                request.session['username']=username
-                request.session['MFASession']=cognito_user.session
-                request.session['DEVICE_NAME'] = str(e)
+                request.session["MFAREQUIRED"] = "SOFTWARE_TOKEN_MFA"
+                request.session["username"] = username
+                request.session["MFASession"] = cognito_user.session
+                request.session["DEVICE_NAME"] = str(e)
                 request.session.save()
                 return None
             except SMSMFAException:
-                request.session['MFAREQUIRED']="SMS_MFA"
-                request.session['username']=username
-                request.session['MFASession']=cognito_user.session
+                request.session["MFAREQUIRED"] = "SMS_MFA"
+                request.session["username"] = username
+                request.session["MFASession"] = cognito_user.session
                 request.session.save()
                 return None
             except (Boto3Error, ClientError) as e:
-                error_code = e.response['Error']['Code']
+                error_code = e.response["Error"]["Code"]
                 logger.debug(f"error authenticating user {username} error: {e} {error_code} from IP {ip}")
                 if error_code == "PasswordResetRequiredException":
                     logger.debug(f"reset password needed for {username} from IP {ip}")
-                    request.session['RESETPASSWORD']=True
-                    request.session['username']=username
+                    request.session["RESETPASSWORD"] = True
+                    request.session["username"] = username
                     return None
                 if error_code == "UserNotConfirmedException":
                     logger.debug(f"User {username} did not confirm their account from IP {ip}")
-                    #get user
+                    # get user
                     user = User.objects.filter(username=username).first()
                     if user:
-                        request.session['NOTCONFIRMED'] = True
-                        request.session['CONFIRM_ID'] = user.id
+                        request.session["NOTCONFIRMED"] = True
+                        request.session["CONFIRM_ID"] = user.id
                     return None
-                if error_code in [ 'NotAuthorizedException', 'UserNotFoundException']:
+                if error_code in ["NotAuthorizedException", "UserNotFoundException"]:
                     return None
                 else:
                     return None
-        elif request.session.get('ACCESS_TOKEN'):
+        elif request.session.get("ACCESS_TOKEN"):
             # no password means we are either getting the code and trading it in
             # for tokens or we already have tokens - in which case we just need to get
             # the user and return
 
-            client= boto3.client('cognito-idp',
-             endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION) 
-            user = client.get_user(AccessToken=request.session['ACCESS_TOKEN'])
+            client = boto3.client("cognito-idp", endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
+            user = client.get_user(AccessToken=request.session["ACCESS_TOKEN"])
             # the username returned is the unique id, which doesn't help us since we use
             # emails for username - so get email and return CognitoUser
-            email = list(filter(lambda email: email['Name'] == 'email', user['UserAttributes']))[0]['Value']
-            username=email
+            email = list(filter(lambda email: email["Name"] == "email", user["UserAttributes"]))[0]["Value"]
+            username = email
             cognito_user = CognitoUser(
                 settings.COGNITO_USER_POOL_ID,
                 settings.COGNITO_APP_ID,
                 user_pool_region=settings.COGNITO_REGION,
-                access_key=getattr(settings, 'AWS_ACCESS_KEY_ID', None),
-                secret_key=getattr(settings, 'AWS_SECRET_ACCESS_KEY', None),
-                username=username)
-            
-            cognito_user.access_token= request.session['ACCESS_TOKEN']
-            cognito_user.refresh_token = request.session['REFRESH_TOKEN']
+                access_key=getattr(settings, "AWS_ACCESS_KEY_ID", None),
+                secret_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
+                username=username,
+            )
+
+            cognito_user.access_token = request.session["ACCESS_TOKEN"]
+            cognito_user.refresh_token = request.session["REFRESH_TOKEN"]
 
         else:
-            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+            headers = {"Content-Type": "application/x-www-form-urlencoded"}
             data = {
-                'grant_type': 'authorization_code',
-                'client_id': settings.COGNITO_APP_ID,
-                'redirect_uri':settings.COGNITO_REDIRECT_TO,
-                'code': username
+                "grant_type": "authorization_code",
+                "client_id": settings.COGNITO_APP_ID,
+                "redirect_uri": settings.COGNITO_REDIRECT_TO,
+                "code": username,
             }
-            r = requests.post(settings.COGNITO_OAUTH_URL, headers=headers,data=data)
-            if not(r == None or (r.status_code != requests.codes.ok)):
+            r = requests.post(settings.COGNITO_OAUTH_URL, headers=headers, data=data)
+            if not (r == None or (r.status_code != requests.codes.ok)):
                 rj = r.json()
-                access_token = rj['access_token']
-                refresh_token = rj['refresh_token']
-                id_token=rj['id_token']
+                access_token = rj["access_token"]
+                refresh_token = rj["refresh_token"]
+                id_token = rj["id_token"]
 
-                u = Cognito(settings.COGNITO_USER_POOL_ID, settings.COGNITO_APP_ID,
-                            user_pool_region=settings.COGNITO_REGION,
-                            id_token=id_token, refresh_token=refresh_token,
-                            access_token=access_token)
+                u = Cognito(
+                    settings.COGNITO_USER_POOL_ID,
+                    settings.COGNITO_APP_ID,
+                    user_pool_region=settings.COGNITO_REGION,
+                    id_token=id_token,
+                    refresh_token=refresh_token,
+                    access_token=access_token,
+                )
 
                 u.check_token()
-                
-                client= boto3.client('cognito-idp',
-             endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION)
+
+                client = boto3.client(
+                    "cognito-idp", endpoint_url=get_cognito_url(), region_name=settings.COGNITO_REGION
+                )
                 user = client.get_user(AccessToken=access_token)
-                username = user['Username']
+                username = user["Username"]
                 cognito_user = CognitoUser(
                     settings.COGNITO_USER_POOL_ID,
                     settings.COGNITO_APP_ID,
                     user_pool_region=settings.COGNITO_REGION,
-                    access_key=getattr(settings, 'AWS_ACCESS_KEY_ID', None),
-                    secret_key=getattr(settings, 'AWS_SECRET_ACCESS_KEY', None),
-                    username=username)
-                
-                cognito_user.verify_token(id_token, 'id_token', 'id')
-                cognito_user.access_token= access_token
+                    access_key=getattr(settings, "AWS_ACCESS_KEY_ID", None),
+                    secret_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
+                    username=username,
+                )
+
+                cognito_user.verify_token(id_token, "id_token", "id")
+                cognito_user.access_token = access_token
                 cognito_user.refresh_token = refresh_token
-                cognito_user.token_type = rj['token_type']
-                
+                cognito_user.token_type = rj["token_type"]
+
             else:
                 return None
-            
+
         # now we have a cognito user - set session variables and return
         if cognito_user:
             user = cognito_user.get_user()
@@ -253,10 +263,10 @@ class CognitoAuthenticate(ModelBackend):
             return None
 
         if user:
-            request.session['ACCESS_TOKEN'] = cognito_user.access_token
-            request.session['ID_TOKEN'] = cognito_user.id_token
-            request.session['REFRESH_TOKEN'] = cognito_user.refresh_token
-            #request.session.save()
+            request.session["ACCESS_TOKEN"] = cognito_user.access_token
+            request.session["ID_TOKEN"] = cognito_user.id_token
+            request.session["REFRESH_TOKEN"] = cognito_user.refresh_token
+            # request.session.save()
 
         logger.info(f"USER {user} is authenticated from ip {ip}")
         return user
@@ -267,10 +277,10 @@ class CognitoAuthenticateAPI(ModelBackend):
     def authenticate(self, request):
         """For rest_framework if successfully authenticated using CognitoAuth
         the response wil include a tuple (request.user,request.auth)
-        In case of Session based authentications 
+        In case of Session based authentications
         request.user will be a Django User instance.
         request.auth will be None.
-        https://www.django-rest-framework.org/api-guide/authentication/        
+        https://www.django-rest-framework.org/api-guide/authentication/
         """
         try:
             ip = vinceutils.get_ip(request)
@@ -280,12 +290,10 @@ class CognitoAuthenticateAPI(ModelBackend):
                 return user, None
             else:
                 logger.warn(f"Failed API authentication using session for User {user} from IP {ip}")
-                raise exceptions.AuthenticationFailed(_('Invalid API session attempted'))
+                raise exceptions.AuthenticationFailed(_("Invalid API session attempted"))
         except Exception as e:
             logger.warn(f"Failed API authentication for session error is {e}")
-            raise exceptions.AuthenticationFailed(_('Invalid API no session or token header was provided'))
-
-
+            raise exceptions.AuthenticationFailed(_("Invalid API no session or token header was provided"))
 
 
 class HashedTokenAuthentication(TokenAuthentication):
@@ -295,12 +303,14 @@ class HashedTokenAuthentication(TokenAuthentication):
     HTTP header, prepended with the string "Token ".  For example:
         Authorization: Token 401f7ac837da42b97f613d789819ff93537bee6a
     """
+
     model = VinceAPIToken
 
     def get_model(self):
         if self.model is not None:
             return self.model
         from rest_framework.authtoken.models import Token
+
         return Token
 
     """
@@ -308,36 +318,36 @@ class HashedTokenAuthentication(TokenAuthentication):
     * key -- The string identifying the token
     * user -- The user to which the token belongs
     """
+
     def authenticate(self, request):
         ip = vinceutils.get_ip(request)
-        setattr(self,"ip",ip)
+        setattr(self, "ip", ip)
         return super(HashedTokenAuthentication, self).authenticate(request)
 
-        
     def authenticate_credentials(self, key):
-        if hasattr(self,'ip'):
+        if hasattr(self, "ip"):
             ip = self.ip
         else:
             ip = "Unknown"
         model = self.get_model()
         hashed_key = make_password(key, settings.SECRET_KEY)
         try:
-            token = model.objects.select_related('user').get(key=hashed_key)
+            token = model.objects.select_related("user").get(key=hashed_key)
         except model.DoesNotExist:
             logger.warn(f"Failed API auth for token that does not exist {key} from IP {ip}")
-            raise exceptions.AuthenticationFailed(_('Invalid token.'))
+            raise exceptions.AuthenticationFailed(_("Invalid token."))
         except Exception as e:
             logger.warn(f"Failed API auth for token Error {e} from IP {ip}")
-            raise exceptions.AuthenticationFailed(_('Unknown Token error.'))
-            
+            raise exceptions.AuthenticationFailed(_("Unknown Token error."))
+
         if not token.user.is_active:
             logger.warn(f"Failed API auth for {token.user} user is inactive or deleted from IP {ip}")
-            raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
+            raise exceptions.AuthenticationFailed(_("User inactive or deleted."))
 
         logger.info(f"Success user {token.user} is authenticated using API Token from IP {ip}")
         return (token.user, token)
 
-    
+
 class JSONWebTokenAuthentication(BaseAuthentication):
     """Token based authentication using the JSON Web Token standard."""
 
@@ -355,7 +365,7 @@ class JSONWebTokenAuthentication(BaseAuthentication):
         except TokenError:
             raise exceptions.AuthenticationFailed()
         logger.debug(f"JSONWeb returned payload is {jwt_payload}")
-        username=jwt_payload['email']
+        username = jwt_payload["email"]
         user = User.objects.get(username=username)
         return (user, jwt_token)
 
@@ -369,14 +379,10 @@ class JSONWebTokenAuthentication(BaseAuthentication):
             msg = _("Invalid Authorization header. No credentials provided.")
             raise exceptions.AuthenticationFailed(msg)
         elif len(auth) > 2:
-            msg = _(
-                "Invalid Authorization header. Credentials string "
-                "should not contain spaces."
-            )
+            msg = _("Invalid Authorization header. Credentials string " "should not contain spaces.")
             raise exceptions.AuthenticationFailed(msg)
 
         return auth[1]
-
 
     def get_token_validator(self, request):
         return TokenValidator(
@@ -384,13 +390,10 @@ class JSONWebTokenAuthentication(BaseAuthentication):
             settings.COGNITO_USER_POOL_ID,
             settings.COGNITO_APP_ID,
         )
-    
+
     def authenticate_header(self, request):
         """
         Method required by the DRF in order to return 401 responses for authentication failures, instead of 403.
         More details in https://www.django-rest-framework.org/api-guide/authentication/#custom-authentication.
         """
         return "Bearer: api"
-    
-    
-            

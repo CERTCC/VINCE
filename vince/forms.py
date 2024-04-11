@@ -55,7 +55,7 @@ from vince.settings import DEFAULT_USER_SETTINGS, VULNOTE_TEMPLATE
 from vince.permissions import get_user_gen_queue
 import traceback
 import os
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str as smart_text
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -1978,20 +1978,6 @@ class InitContactForm(forms.ModelForm):
             return ticket
         except:
             raise forms.ValidationError("Invalid Ticket Selection. Use only numeric ID of Ticket.")
-
-    # def clean_email(self):
-    #     email = self.cleaned_data["email"]
-    #     logger.debug(f"email is {email}")
-    #     internal = self.cleaned_data["internal"]
-    #     logger.debug(f"internal is {internal}")
-    #     if email in [None, "", "None"] and internal:
-    #         logger.debug("we have reached the if block in which email is none and internal is truey")
-    #         return
-    #     try:
-    #         logger.debug("we have passed the if block in which email is none and internal is truey")
-    #         return email
-    #     except:
-    #         raise forms.ValidationError("Unacceptable email value.")
 
 
 class ContactForm(forms.ModelForm):
