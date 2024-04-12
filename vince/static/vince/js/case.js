@@ -1264,7 +1264,7 @@ $(document).ready(function() {
 
     function contactClickFunction(cell, formatterParams, onRendered) {
 	var val = cell.getValue();
-	if (cell.getRow().getData().users == 0) {
+	if (cell.getRow().getData().users == false) {
 	    val = "<i class=\"fas fa-exclamation-circle warning\"></i>  " + val
 	}
 	if (cell.getRow().getData().alert_tags.length) {
@@ -1280,7 +1280,7 @@ $(document).ready(function() {
 	    return "This Vendor is tagged with an ALERT Tag: " + cell.getRow().getData().alert_tags[0]
 	}
 
-	if (cell.getRow().getData().users == 0) {
+	if (cell.getRow().getData().users == false) {
 	    return "This vendor does not have any VINCE Users";
 	} else {
 	    return "This vendor has VINCE Users";
@@ -1391,7 +1391,7 @@ $(document).ready(function() {
     }
 
     function customNouserfilter(data, filterParams) {
-	return (data.users == 0);
+	return (data.users == false);
     }
 
     $(document).on("click", ".reqapproval", function(event) {
@@ -1405,7 +1405,9 @@ $(document).ready(function() {
     $(document).on("click", ".vendorswithnousers", function(event) {
         event.preventDefault();
 
-        vendors_table.setFilter("users", "=", "0");
+        vendors_table.setFilter(function(data){
+            return !data.users;
+        });
     });
 
     $(document).on("click", ".vendorapproved", function(event) {
@@ -1454,7 +1456,7 @@ $(document).ready(function() {
                 total_notified_vendors++
             }
             
-            if (data[i].users == 0) {
+            if (data[i].users == false) {
                 total_vendors_no_users++
             }
             if (data[i].seen) {
@@ -1492,6 +1494,7 @@ $(document).ready(function() {
     async function createVendorsTable() {
         let data = await ajaxVendorData()
         let vendors_data = data['data']
+        console.log(vendors_data)
         populateFiltersWithValues(vendors_data)
         let vendors_total = vendors_data.length
         let pageSizeOptionsArray = []

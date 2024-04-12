@@ -27,6 +27,7 @@
 # DM21-1126
 ########################################################################
 from __future__ import absolute_import, unicode_literals
+import django
 
-default_app_config = 'vinny.apps.VinceCommConfig'
-
+if django.VERSION < (3, 2):
+    default_app_config = "vinny.apps.VinceCommConfig"

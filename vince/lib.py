@@ -46,7 +46,7 @@ from datetime import date, datetime, timedelta
 from django.core.files import File
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str as smart_text
 from django.template.loader import render_to_string, get_template
 from vince.models import VulnerabilityCase
 

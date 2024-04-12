@@ -280,8 +280,8 @@
 <div class="row">
   <div class="large-12 columns">
     {% if ticket.resolution %}
-    {% trans "Resolution" %}{% ifequal ticket.get_status_display "Resolved" %} <a href='?close'><button type="button" class="btn btn-warning btn-xs">{% trans "Accept and Close" %}</button></a>
-    {% endifequal %}<br/>
+    {% trans "Resolution" %}{% if ticket.get_status_display == "Resolved" %} <a href='?close'><button type="button" class="btn btn-warning btn-xs">{% trans "Accept and Close" %}</button></a>
+    {% endif %}<br/>
     {{ ticket.resolution|force_escape|urlizetrunc:50|linebreaksbr }}
     {% endif %}
   </div>

@@ -99,7 +99,7 @@ from django.template.defaulttags import register
 from django.urls import reverse
 from django.forms.utils import ErrorList
 from django.utils.decorators import method_decorator
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.generic.edit import FormView, FormMixin
@@ -167,7 +167,7 @@ from boto3.exceptions import Boto3Error
 from bigvince.storage_backends import PrivateMediaStorage
 from vince.settings import VULNOTE_TEMPLATE
 from collections import OrderedDict
-from django.utils.http import is_safe_url
+from django.utils.http import url_has_allowed_host_and_scheme as is_safe_url
 from django.utils import timezone
 from lib.vince import utils as vinceutils
 from rest_framework.views import APIView
@@ -625,10 +625,10 @@ def calendar_events(request):
 def autocomplete_casevendors(request, pk):
     case = get_object_or_404(VulnerabilityCase, id=pk)
     page = request.GET.get("page", 1)
-    size = request.GET.get("size", 20)
+    size = request.GET.get("size", 0)
     vendors = VulnerableVendor.casevendors(case).order_by("vendor")
     user_filter = False
-    logger.debug(request.GET)
+    logger.debug(f"in autocomplete_casevendors, request.GET is {request.GET}")
     for key in request.GET:
         if "field" in key:
             field = request.GET[key]
@@ -663,29 +663,33 @@ def autocomplete_casevendors(request, pk):
         elif field == "users":
             user_filter = True
 
+    if size < 1:
+        size = vendors.count()
     paginator = Paginator(vendors, size)
 
     # Until Nov 8 2023, we had this pagination calculated on the backend. Now, we calculate it using Tabulator ('pagination: "local"') in vince/case.js.
     # With corresponding changes in case.js, this can be reversed by switching back to vendorsjs = [obj.as_dict() for obj in paginator.page(page)] here.
     # vendorsjs = [obj.as_dict() for obj in paginator.page(page)]
-    vendorsjs = [obj.as_dict() for obj in vendors]
-    logger.debug(f"vendorsjs is {vendorsjs}")
+
+    vendorsjs = []
 
     alert_tags = list(TagManager.objects.filter(tag_type=2, alert_on_add=True).values_list("tag", flat=True))
     logger.debug(f"ALERT TAGS: {alert_tags}")
-    for vjs in vendorsjs:
+    for vendor in paginator.page(page):
+        vjs = vendor.as_dict()
+        vendorsjs.append(vjs)
         cid = vjs["contact_id"]
         vc_contact = VinceCommContact.objects.using("vincecomm").filter(vendor_id=cid).first()
         if vc_contact:
             groupcontact = GroupContact.objects.using("vincecomm").filter(contact=vc_contact).first()
             if groupcontact:
-                count = User.objects.using("vincecomm").filter(groups=groupcontact.group).count()
-                vjs.update({"users": count})
+                hasusers = User.objects.using("vincecomm").filter(groups=groupcontact.group).exists()
+                vjs.update({"users": hasusers})
                 # check alert tags
                 if vjs["alert_tags"] and alert_tags:
                     vjs["alert_tags"] = list(set(vjs["alert_tags"]) & set(alert_tags))
                 continue
-        vjs.update({"users": 0})
+        vjs.update({"users": False})
         # check alert tags
         if vjs["alert_tags"] and alert_tags:
             vjs["alert_tags"] = list(set(vjs["alert_tags"]) & set(alert_tags))
@@ -9402,6 +9406,7 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
         # do we have a user verficiation template?
         initial = {}
         if self.kwargs.get("pk"):
+            logger.debug(f"ContactVerifyInit has a pk and it is {self.kwargs.get('pk')}")
             contact = get_object_or_404(Contact, id=self.kwargs.get("pk"))
             initial["contact"] = contact.vendor_name
             # get emails for this contact
@@ -9430,12 +9435,15 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             ca = ContactAssociation.objects.filter(ticket=ticket).first()
             if ca:
                 context["ca"] = ca
+                initial["contact"] = ca.contact.vendor_name
 
         tmpl = EmailTemplate.objects.filter(template_name="user_verification").first()
         if tmpl:
             team_sig = get_team_sig(self.request.user)
             initial["email_body"] = tmpl.plain_text.replace("[team_signature]", team_sig)
             initial["subject"] = tmpl.subject
+            logger.debug(f"initial is {initial}")
+            logger.debug(f"context is {context}")
             if context.get("ca"):
                 context["form"] = InitContactForm(initial=initial, instance=context["ca"])
             else:
@@ -14941,9 +14949,16 @@ class ReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
             context["show_next"] = 1
         elif year < datetime.now().year:
             context["show_next"] = 1
-        context["total_tickets"] = Ticket.objects.filter(
-            queue__in=my_queues, created__year=year, created__month=month
-        ).count()
+
+        ticketdata = Ticket.objects.filter(queue__in=my_queues, created__year=year, created__month=month).aggregate(
+            total_tickets=Count("id"), total_closed=Count("id", filter=Q(status=Ticket.CLOSED_STATUS))
+        )
+        logger.debug(f"ticketdata is {ticketdata}")
+        context["total_tickets"] = ticketdata["total_tickets"]
+        context["total_closed"] = ticketdata["total_closed"]
+        # context["total_tickets"] = Ticket.objects.filter(
+        #     queue__in=my_queues, created__year=year, created__month=month
+        # ).count()
         context["ticket_stats"] = (
             Ticket.objects.filter(queue__in=my_queues, created__year=year, created__month=month)
             .values("queue__title")
@@ -14951,9 +14966,9 @@ class ReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
             .annotate(count=Count("queue__title"))
             .order_by("-count")
         )
-        context["total_closed"] = Ticket.objects.filter(
-            queue__in=my_queues, created__year=year, created__month=month, status=Ticket.CLOSED_STATUS
-        ).count()
+        # context["total_closed"] = Ticket.objects.filter(
+        #     queue__in=my_queues, created__year=year, created__month=month, status=Ticket.CLOSED_STATUS
+        # ).count()
         context["closed_ticket_stats"] = (
             Ticket.objects.filter(
                 queue__in=my_queues, created__year=year, created__month=month, status=Ticket.CLOSED_STATUS
@@ -15063,6 +15078,7 @@ class ReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
             title__icontains="Successfully forwarded", ticket__queue__in=my_queues, date__month=month, date__year=year
         )
 
+        logger.debug(f"ReportsView context is {context}")
         return context
 
 

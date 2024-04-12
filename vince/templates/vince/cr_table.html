@@ -69,12 +69,12 @@
 <div class="row">
   <div class="large-12 columns">
     <label for="resolution">{% trans "Ticket Resolution" %}
-      {% ifequal ticket.get_status_display "Resolved" %}
+      {% if ticket.get_status_display == "Resolved" %}
       
     <a href='?close'>
       <button type="button"
               class="button assignme alert tiny">{% trans "Accept and Close" %}</button>
-    </a>{% else %} {% if noshowdeps %}{% else %}<a href="{% url 'vince:editres' ticket.id %}" id="editres" title="edit resolution"><i class="fas fa-edit"></i></a>{% endif %}{% endifequal %}</label>
+    </a>{% else %} {% if noshowdeps %}{% else %}<a href="{% url 'vince:editres' ticket.id %}" id="editres" title="edit resolution"><i class="fas fa-edit"></i></a>{% endif %}{% endif %}</label>
     {{ ticket.resolution|force_escape|smarter_urlize:75|linebreaksbr }}
   </div>
 </div>
@@ -101,20 +101,33 @@
     <div class="large-3 columns align-middle">
       <label for="Assigned to">Assigned to</label>
       <span id="assign_block">
-	<div id="user_assign">
+	      <div id="user_assign">
           <select name="user_assign" id="uassign">
             {% if auto_assign %}
-            <option value="-2">Auto Assign</option>
+              <option value="-2">Auto Assign</option>
             {% endif %}
-	    {% ifequal ticket.get_assigned_to _('Unassigned') %}
-	    {% else %}
-            <option value="{{ ticket.assigned_to.id }}">{{ ticket.get_assigned_to }}</option>
-	    {% endifequal %}
+	          {% if ticket.get_assigned_to == _('Unassigned') %}
+      	    {% else %}
+              <option value="{{ ticket.assigned_to.id }}">{{ ticket.get_assigned_to }}</option>
+	          {% endif %}
             {% for user in assignable_users %}
-            <option value="{{user.id}}">{{ user.usersettings.preferred_username }}</option>
+              <option value="{{user.id}}">{{ user.usersettings.preferred_username }}</option>
             {% endfor %}
             <option value="0">Unassign</option>
-          </select><button type="button" id="assign_submit"><i class="fas fa-check"></i></button><button type="button" id="assign_cancel"><i class="fas fa-times"></i></button></div></span><span class="assigned_to">  <span class="assigned_to_name">{{ ticket.get_assigned_to }}</span> <strong><button type="button" id="reassign" class="button default tiny assignme"><i class="far fa-hand-paper"></i>&nbsp;{% trans "Reassign" %}</button></strong>
+          </select>
+          <button type="button" id="assign_submit">
+            <i class="fas fa-check"></i>
+          </button>
+          <button type="button" id="assign_cancel">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </span>
+      <span class="assigned_to">  
+        <span class="assigned_to_name">{{ ticket.get_assigned_to }}</span> 
+        <strong>
+          <button type="button" id="reassign" class="button default tiny assignme"><i class="far fa-hand-paper"></i>&nbsp;{% trans "Reassign" %}</button>
+        </strong>
       </span>
     </div>
     <div class="large-3 columns">

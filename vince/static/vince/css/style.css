@@ -1425,12 +1425,13 @@ div.homelink a {
     width:100%;
 }
 
+/* when putting up an announcement-banner, change padding-top for the following two selectors to 195 and 225 respectively: */
 
 #TRoffCanvasLeft {
     background-color: #282829;
     border-right: 1px solid #c2c2c2;
     color: #f1f1f2;
-    padding-top:195px;
+    padding-top:130px;
 
 }
 
@@ -1438,7 +1439,7 @@ div.homelink a {
     background-color: #f1f1f2;
     border-right: 1px solid #c2c2c2;
     color: #4d4d4f;
-    padding-top:225px;
+    padding-top:150px;
 }
 
 /*.position-left.reveal-for-medium ~ .off-canvas-content {

@@ -14,11 +14,12 @@ import mimetypes
 from fs import path
 from django.apps import apps
 from django.conf import settings
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str as smart_text
 from bakery import DEFAULT_GZIP_CONTENT_TYPES
 from django.test.client import RequestFactory
 from bakery.management.commands import get_s3_client
 from django.views.generic import RedirectView, TemplateView
+
 try:
     from django.core.urlresolvers import reverse, NoReverseMatch
 except ImportError:  # Starting with Django 2.0, django.core.urlresolvers does not exist anymore
@@ -30,6 +31,7 @@ class BuildableMixin(object):
     """
     Common methods we will use in buildable views.
     """
+
     fs_name = apps.get_app_config("bakery").filesystem_name
     fs = apps.get_app_config("bakery").filesystem
 
@@ -74,7 +76,7 @@ class BuildableMixin(object):
         Writes out the provided HTML to the provided path.
         """
         logger.debug("Building to {}{}".format(self.fs_name, target_path))
-        with self.fs.open(smart_text(target_path), 'wb') as outfile:
+        with self.fs.open(smart_text(target_path), "wb") as outfile:
             outfile.write(six.binary_type(html))
             outfile.close()
 
@@ -84,14 +86,10 @@ class BuildableMixin(object):
         for gzipping.
         """
         # First check if gzipping is allowed by the global setting
-        if not getattr(settings, 'BAKERY_GZIP', False):
+        if not getattr(settings, "BAKERY_GZIP", False):
             return False
         # Then check if the content type of this particular file is gzippable
-        whitelist = getattr(
-            settings,
-            'GZIP_CONTENT_TYPES',
-            DEFAULT_GZIP_CONTENT_TYPES
-        )
+        whitelist = getattr(settings, "GZIP_CONTENT_TYPES", DEFAULT_GZIP_CONTENT_TYPES)
         return mimetypes.guess_type(path)[0] in whitelist
 
     def gzip_file(self, target_path, html):
@@ -109,18 +107,14 @@ class BuildableMixin(object):
 
         # Write GZIP data to an in-memory buffer
         data_buffer = six.BytesIO()
-        kwargs = dict(
-            filename=path.basename(target_path),
-            mode='wb',
-            fileobj=data_buffer
-        )
+        kwargs = dict(filename=path.basename(target_path), mode="wb", fileobj=data_buffer)
         if float(sys.version[:3]) >= 2.7:
-            kwargs['mtime'] = 0
+            kwargs["mtime"] = 0
         with gzip.GzipFile(**kwargs) as f:
             f.write(six.binary_type(html))
 
         # Write that buffer out to the filesystem
-        with self.fs.open(smart_text(target_path), 'wb') as outfile:
+        with self.fs.open(smart_text(target_path), "wb") as outfile:
             outfile.write(data_buffer.getvalue())
             outfile.close()
 
@@ -139,6 +133,7 @@ class BuildableTemplateView(TemplateView, BuildableMixin):
         template_name:
             The name of the template you would like Django to render.
     """
+
     @property
     def build_method(self):
         return self.build
@@ -152,15 +147,16 @@ class BuildableTemplateView(TemplateView, BuildableMixin):
         self.build_file(path, self.get_content())
 
     def get_build_path(self):
-        return six.text_type(self.build_path).lstrip('/')
+        return six.text_type(self.build_path).lstrip("/")
 
 
 class Buildable404View(BuildableTemplateView):
     """
     The default Django 404 page, but built out.
     """
-    build_path = '404.html'
-    template_name = '404.html'
+
+    build_path = "404.html"
+    template_name = "404.html"
 
 
 class BuildableRedirectView(RedirectView, BuildableMixin):
@@ -177,6 +173,7 @@ class BuildableRedirectView(RedirectView, BuildableMixin):
             The URL where redirect will send the user. Operates
             in the same way as the standard generic RedirectView.
     """
+
     permanent = True
 
     def get_content(self):
@@ -196,10 +193,7 @@ class BuildableRedirectView(RedirectView, BuildableMixin):
         return self.build
 
     def build(self):
-        logger.debug("Building redirect from %s to %s" % (
-            self.build_path,
-            self.get_redirect_url()
-        ))
+        logger.debug("Building redirect from %s to %s" % (self.build_path, self.get_redirect_url()))
         self.request = self.create_request(self.build_path)
         path = os.path.join(settings.BUILD_DIR, self.build_path)
         self.prep_directory(self.build_path)
@@ -223,19 +217,16 @@ class BuildableRedirectView(RedirectView, BuildableMixin):
         return url
 
     def post_publish(self, bucket):
-        logger.debug("Adding S3 redirect header from {} to in {} to {}".format(
-            self.build_path,
-            bucket.name,
-            self.get_redirect_url()
-        ))
+        logger.debug(
+            "Adding S3 redirect header from {} to in {} to {}".format(
+                self.build_path, bucket.name, self.get_redirect_url()
+            )
+        )
         s3_client, s3_resource = get_s3_client()
         s3_client.copy_object(
-            ACL='public-read',
+            ACL="public-read",
             Bucket=bucket.name,
-            CopySource={
-                 'Bucket': bucket.name,
-                 'Key': self.build_path
-            },
+            CopySource={"Bucket": bucket.name, "Key": self.build_path},
             Key=self.build_path,
-            WebsiteRedirectLocation=self.get_redirect_url()
+            WebsiteRedirectLocation=self.get_redirect_url(),
         )

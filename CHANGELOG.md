@@ -1,8 +1,19 @@
 # VINCE Changelog
 
+CHANGELOG
+VINCE Coordination platform code
+
+Version 3.0.0 2024-04-10
+
+* Made the Vendor Association button to track and  populate ticket id & (if appropriate) vendor name.
+* Upgraded `Django` 4.2 - Django 3 is end-of-life
+* Restructured code for preparing vendors table data on VINCE Track case page so as to reduce load time
+* Refactored certain queries for the VINCE Track reports page in support of the long term goal of reducing its load time
+
+
 Version 2.1.11 2024-03-14
 
-* Dependabot update recommendations: `cryptography` 41.0.6 to 42.0.4 and `django` from 3.2.23 to 3.2.24 
+* Dependabot update recommendations: `cryptography` 41.0.6 to 42.0.4 and `django` from 3.2.23 to 3.2.24
 * Added code to ensure comments entered into comment box will be preserved when user uploads a file
 * Fixed filters above vendor table in vendor tab of case page to ensure consistency with data in vendor table
 * Added logging to make it easier to track user deactivation & MFA resetting processes

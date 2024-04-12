@@ -7,19 +7,15 @@ import multiprocessing
 from django.conf import settings
 from multiprocessing.pool import ThreadPool
 from bakery import DEFAULT_GZIP_CONTENT_TYPES
-from bakery.management.commands import (
-    BasePublishCommand,
-    get_s3_client,
-    get_bucket_page
-)
+from bakery.management.commands import BasePublishCommand, get_s3_client, get_bucket_page
 
-# Filesystem                                                            
+# Filesystem
 import fs
 from fs import path
 from fs import copy
 from fs_s3fs import S3FS
 from fs.copy import copy_file
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str as smart_text
 
 from django.apps import apps
 
@@ -32,16 +28,19 @@ except ImportError:  # Starting with Django 2.0, django.core.urlresolvers does n
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 class Command(BasePublishCommand):
     help = "Syncs the build directory with Amazon s3 bucket"
 
     # Default permissions for the files published to s3
-    DEFAULT_ACL = 'public-read'
+    DEFAULT_ACL = "public-read"
 
     # Error messages we might use below
     build_missing_msg = "Build directory does not exist. Cannot publish something before you build it."
     build_unconfig_msg = "Build directory unconfigured. Set BUILD_DIR in settings.py or provide it with --build-dir"
-    bucket_unconfig_msg = "Bucket unconfigured. Set AWS_BUCKET_NAME in settings.py or provide it with --aws-bucket-name"
+    bucket_unconfig_msg = (
+        "Bucket unconfigured. Set AWS_BUCKET_NAME in settings.py or provide it with --aws-bucket-name"
+    )
     views_unconfig_msg = "Bakery views unconfigured. Set BAKERY_VIEWS in settings.py or provide a list as arguments."
 
     def add_arguments(self, parser):
@@ -49,57 +48,57 @@ class Command(BasePublishCommand):
             "--build-dir",
             action="store",
             dest="build_dir",
-            default='',
-            help="Specify the path of the build directory. Will use settings.BUILD_DIR by default."
+            default="",
+            help="Specify the path of the build directory. Will use settings.BUILD_DIR by default.",
         )
         parser.add_argument(
             "--aws-bucket-name",
             action="store",
             dest="aws_bucket_name",
-            default='',
-            help="Specify the AWS bucket to sync with. Will use settings.AWS_BUCKET_NAME by default."
+            default="",
+            help="Specify the AWS bucket to sync with. Will use settings.AWS_BUCKET_NAME by default.",
         )
         parser.add_argument(
             "--aws-bucket-prefix",
             action="store",
             dest="aws_bucket_prefix",
-            default='',
-            help="Specify a prefix for the AWS bucket keys to sync with. None by default."
+            default="",
+            help="Specify a prefix for the AWS bucket keys to sync with. None by default.",
         )
         parser.add_argument(
             "--force",
             action="store_true",
             dest="force",
             default="",
-            help="Force a republish of all items in the build directory"
+            help="Force a republish of all items in the build directory",
         )
         parser.add_argument(
             "--dry-run",
             action="store_true",
             dest="dry_run",
             default="",
-            help="Display the output of what would have been uploaded removed, but without actually publishing."
+            help="Display the output of what would have been uploaded removed, but without actually publishing.",
         )
         parser.add_argument(
             "--no-delete",
             action="store_true",
             dest="no_delete",
             default=False,
-            help=("Keep files in S3, even if they do not exist in the build directory.")
+            help=("Keep files in S3, even if they do not exist in the build directory."),
         )
         parser.add_argument(
             "--no-pooling",
             action="store_true",
             dest="no_pooling",
             default=False,
-            help=("Run uploads one by one rather than pooling them to run concurrently.")
+            help=("Run uploads one by one rather than pooling them to run concurrently."),
         )
         parser.add_argument(
             "--s3fs",
             action="store_true",
             dest="s3fs",
             default=False,
-            help=("Use s3fs to do copy, which is required for certain filesystems (like MemoryFS)")
+            help=("Use s3fs to do copy, which is required for certain filesystems (like MemoryFS)"),
         )
 
     def handle(self, *args, **options):
@@ -162,25 +161,22 @@ class Command(BasePublishCommand):
                 logger.debug("Deleting %s keys" % self.deleted_files)
                 if self.verbosity > 0:
                     self.stdout.write("Deleting %s keys" % self.deleted_files)
-                self.batch_delete_s3_objects(
-                    self.deleted_file_list,
-                    self.aws_bucket_name
-                )
+                self.batch_delete_s3_objects(self.deleted_file_list, self.aws_bucket_name)
 
         # Run any post publish hooks on the views
-        if not hasattr(settings, 'BAKERY_VIEWS'):
+        if not hasattr(settings, "BAKERY_VIEWS"):
             raise CommandError(self.views_unconfig_msg)
         for view_str in settings.BAKERY_VIEWS:
             view = get_callable(view_str)()
-            if hasattr(view, 'post_publish'):
-                getattr(view, 'post_publish')(self.bucket)
+            if hasattr(view, "post_publish"):
+                getattr(view, "post_publish")(self.bucket)
 
         # We're finished, print the final output
         elapsed_time = time.time() - self.start_time
         msg = "Publish completed, %d uploaded and %d deleted files in %.2f seconds" % (
             self.uploaded_files,
             self.deleted_files,
-            elapsed_time
+            elapsed_time,
         )
         logger.info(msg)
         if self.verbosity > 0:
@@ -195,59 +191,55 @@ class Command(BasePublishCommand):
         """
         Configure all the many options we'll need to make this happen.
         """
-        self.verbosity = int(options.get('verbosity'))
+        self.verbosity = int(options.get("verbosity"))
 
         # Will we be gzipping?
-        self.gzip = getattr(settings, 'BAKERY_GZIP', False)
+        self.gzip = getattr(settings, "BAKERY_GZIP", False)
 
         # And if so what content types will we be gzipping?
-        self.gzip_content_types = getattr(
-            settings,
-            'GZIP_CONTENT_TYPES',
-            DEFAULT_GZIP_CONTENT_TYPES
-        )
+        self.gzip_content_types = getattr(settings, "GZIP_CONTENT_TYPES", DEFAULT_GZIP_CONTENT_TYPES)
 
         # What ACL (i.e. security permissions) will be giving the files on S3?
-        self.acl = getattr(settings, 'DEFAULT_ACL', self.DEFAULT_ACL)
+        self.acl = getattr(settings, "DEFAULT_ACL", self.DEFAULT_ACL)
 
         # Should we set cache-control headers?
-        self.cache_control = getattr(settings, 'BAKERY_CACHE_CONTROL', {})
+        self.cache_control = getattr(settings, "BAKERY_CACHE_CONTROL", {})
 
         # If the user specifies a build directory...
-        if options.get('build_dir'):
+        if options.get("build_dir"):
             # ... validate that it is good.
-            #if not os.path.exists(options.get('build_dir')):
+            # if not os.path.exists(options.get('build_dir')):
             #    raise CommandError(self.build_missing_msg)
             # Go ahead and use it
             self.build_dir = options.get("build_dir")
         # If the user does not specify a build dir...
         else:
             # Check if it is set in settings.py
-            if not hasattr(settings, 'BUILD_DIR'):
+            if not hasattr(settings, "BUILD_DIR"):
                 raise CommandError(self.build_unconfig_msg)
             # Then make sure it actually exists
-            #if not os.path.exists(settings.BUILD_DIR):
+            # if not os.path.exists(settings.BUILD_DIR):
             #    raise CommandError(self.build_missing_msg)
             # Go ahead and use it
             self.build_dir = settings.BUILD_DIR
 
         self.build_dir = smart_text(self.build_dir)
 
-        # Connect the BUILD_DIR with our filesystem backend             
+        # Connect the BUILD_DIR with our filesystem backend
         self.app = apps.get_app_config("bakery")
         self.fs = self.app.filesystem
         self.fs_name = self.app.filesystem_name
 
-	# If the build dir doesn't exist make it                        
+        # If the build dir doesn't exist make it
         if not self.fs.exists(self.build_dir):
             raise CommandError(self.build_missing_msg)
-        
+
         # If the user provides a bucket name, use that.
         if options.get("aws_bucket_name"):
             self.aws_bucket_name = options.get("aws_bucket_name")
         else:
             # Otherwise try to find it the settings
-            if not hasattr(settings, 'AWS_BUCKET_NAME'):
+            if not hasattr(settings, "AWS_BUCKET_NAME"):
                 raise CommandError(self.bucket_unconfig_msg)
             self.aws_bucket_name = settings.AWS_BUCKET_NAME
 
@@ -255,22 +247,22 @@ class Command(BasePublishCommand):
         self.aws_bucket_prefix = options.get("aws_bucket_prefix")
 
         # If the user sets the --force option
-        if options.get('force'):
+        if options.get("force"):
             self.force_publish = True
         else:
             self.force_publish = False
 
         # set the --dry-run option
-        if options.get('dry_run'):
+        if options.get("dry_run"):
             self.dry_run = True
             if self.verbosity > 0:
                 logger.info("Executing with the --dry-run option set.")
         else:
             self.dry_run = False
 
-        self.no_delete = options.get('no_delete')
-        self.no_pooling = options.get('no_pooling')
-        self.s3fs = options.get('s3fs')
+        self.no_delete = options.get("no_delete")
+        self.no_pooling = options.get("no_pooling")
+        self.s3fs = options.get("s3fs")
 
     def get_bucket_file_list(self):
         """
@@ -279,13 +271,11 @@ class Command(BasePublishCommand):
         """
         logger.debug("Retrieving bucket object list")
 
-        paginator = self.s3_client.get_paginator('list_objects')
-        options = {
-            'Bucket': self.aws_bucket_name
-        }
+        paginator = self.s3_client.get_paginator("list_objects")
+        options = {"Bucket": self.aws_bucket_name}
         if self.aws_bucket_prefix:
             logger.debug("Adding prefix {} to bucket list as a filter".format(self.aws_bucket_prefix))
-            options['Prefix'] = self.aws_bucket_prefix
+            options["Prefix"] = self.aws_bucket_prefix
         page_iterator = paginator.paginate(**options)
 
         obj_dict = {}
@@ -300,13 +290,10 @@ class Command(BasePublishCommand):
         absolute paths to files.
         """
         file_list = []
-        for (dirpath, dirnames, filenames) in self.fs.walk(self.build_dir):
+        for dirpath, dirnames, filenames in self.fs.walk(self.build_dir):
             for fname in filenames:
-                
-                local_key = path.combine(
-                    path.frombase(path.abspath(self.build_dir), dirpath),
-                    fname.name
-                )
+
+                local_key = path.combine(path.frombase(path.abspath(self.build_dir), dirpath), fname.name)
                 local_key = path.relpath(local_key)
                 file_list.append(smart_text(local_key))
         return file_list
@@ -320,10 +307,11 @@ class Command(BasePublishCommand):
         self.update_list = []
 
         # Figure out which files need to be updated and upload all these files
-        logger.debug("Comparing {} local files with {} bucket files".format(
-            len(self.local_file_list),
-            len(self.s3_obj_dict.keys())
-        ))
+        logger.debug(
+            "Comparing {} local files with {} bucket files".format(
+                len(self.local_file_list), len(self.s3_obj_dict.keys())
+            )
+        )
         if self.no_pooling:
             [self.compare_local_file(f) for f in self.local_file_list]
         else:
@@ -344,7 +332,7 @@ class Command(BasePublishCommand):
         """
         Returns the md5 checksum of the provided file name.
         """
-        with self.fs.open(filename, 'rb') as f:
+        with self.fs.open(filename, "rb") as f:
             m = hashlib.md5(f.read())
         return m.hexdigest()
 
@@ -356,7 +344,7 @@ class Command(BasePublishCommand):
         """
         # Loop through the file contents ...
         md5s = []
-        with self.fs.open(filename, 'rb') as fp:
+        with self.fs.open(filename, "rb") as fp:
             while True:
                 # Break it into chunks
                 data = fp.read(chunk_size)
@@ -386,7 +374,7 @@ class Command(BasePublishCommand):
         """
         # Where is the file?
         file_path = path.combine(self.build_dir, file_key)
-        #file_path = file_key
+        # file_path = file_key
         # If we're in force_publish mode just add it
         if self.force_publish:
             self.update_list.append((file_key, file_path))
@@ -397,7 +385,7 @@ class Command(BasePublishCommand):
         if file_key in self.s3_obj_dict:
 
             # Get the md5 stored in Amazon's header
-            s3_md5 = self.s3_obj_dict[file_key].get('ETag').strip('"').strip("'")
+            s3_md5 = self.s3_obj_dict[file_key].get("ETag").strip('"').strip("'")
 
             # If there is a multipart ETag on S3, compare that to our local file after its chunked up.
             # We are presuming this file was uploaded in multiple parts.
@@ -437,25 +425,22 @@ class Command(BasePublishCommand):
         Set the content type and gzip headers if applicable
         and upload the item to S3
         """
-        extra_args = {'ACL': self.acl}
+        extra_args = {"ACL": self.acl}
         # determine the mimetype of the file
         guess = mimetypes.guess_type(filename)
         content_type = guess[0]
         encoding = guess[1]
 
         if content_type:
-            extra_args['ContentType'] = content_type
+            extra_args["ContentType"] = content_type
 
         # add the gzip headers, if necessary
-        if (self.gzip and content_type in self.gzip_content_types) or encoding == 'gzip':
-            extra_args['ContentEncoding'] = 'gzip'
+        if (self.gzip and content_type in self.gzip_content_types) or encoding == "gzip":
+            extra_args["ContentEncoding"] = "gzip"
 
         # add the cache-control headers if necessary
         if content_type in self.cache_control:
-            extra_args['CacheControl'] = ''.join((
-                'max-age=',
-                str(self.cache_control[content_type])
-            ))
+            extra_args["CacheControl"] = "".join(("max-age=", str(self.cache_control[content_type])))
 
         # access and write the contents from the file
         if not self.dry_run:
@@ -467,7 +452,7 @@ class Command(BasePublishCommand):
                 try:
                     copy_file(self.fs, filename, s3fs, key)
                 except fs.errors.ResourceNotFound as e:
-                    #s3fs won't make directories if it doesn't exist, so have to do it explicitly
+                    # s3fs won't make directories if it doesn't exist, so have to do it explicitly
                     s3fs.makedirs(path.dirname(key))
                     copy_file(self.fs, filename, s3fs, key)
             else:

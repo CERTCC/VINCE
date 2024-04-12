@@ -41,7 +41,7 @@ from re import search
 from django.core.exceptions import ValidationError
 import mimetypes
 import os
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str as smart_text
 from vinny.settings import DEFAULT_USER_SETTINGS
 from django.urls import reverse, reverse_lazy
 import base64

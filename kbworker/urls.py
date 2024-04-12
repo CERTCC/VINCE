@@ -41,10 +41,9 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include      
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))               
 """
-from django.conf.urls import url
+from django.urls import include, re_path
 from kbworker.views import check_for_updates
 
 urlpatterns = [
-    url(r'^check-for-updates/$', check_for_updates, name='checkupdate'),
+    re_path(r"^check-for-updates/$", check_for_updates, name="checkupdate"),
 ]
-

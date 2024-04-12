@@ -44,7 +44,7 @@ from django.template import RequestContext
 from django.contrib.postgres.search import SearchVector, SearchRank
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str as force_text
 from django.core.paginator import Paginator
 from django.db import connection
 from django.db.models import Q
