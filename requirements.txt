@@ -57,7 +57,7 @@ psycopg2-binary==2.9.5
 pyasn1==0.4.8
 pycparser==2.21
 pycryptodome==3.19.1
-pydantic==1.10.2
+pydantic==1.10.13
 PyJWT==2.6.0
 pyparsing==3.0.9
 pyrsistent==0.19.2
