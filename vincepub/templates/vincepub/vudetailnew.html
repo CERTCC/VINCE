@@ -103,7 +103,7 @@
 		<td>
 		{% for vuln in object.vulnote.notevuls.all|sortvuls %}
 		{% if vuln.cve %}
-                <a href="http://web.nvd.nist.gov/vuln/detail/{{ vuln.vul }}">{{ vuln.vul }}  </a>
+                <a href="https://www.cve.org/CVERecord?id={{ vuln.vul }}">{{ vuln.vul }}  </a>
 		{% endif %}
                 {% endfor %}
 		</td>

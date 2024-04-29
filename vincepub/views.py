@@ -1702,7 +1702,7 @@ class CVEVulViewAPI(PublicAPIView):
             vul = {
                 "note": x.idnumber,
                 "cve": cvewo,
-                "description": f"http://web.nvd.nist.gov/vuln/detail/{ cve }",
+                "description": f"https://www.cve.org/CVERecord?id={ cve }",
                 "uid": cve,
                 "case_increment": 1,
                 "date_added": x.datefirstpublished,

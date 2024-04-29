@@ -127,7 +127,7 @@
 		<td>
 		{% for vuln in case.vulnerability_set.all|undeleted %}
 		{% if vuln.cve %}
-                  <a href="http://web.nvd.nist.gov/vuln/detail/CVE-{{ vuln.cve }}">CVE-{{ vuln.cve }}  </a>
+                  <a href="https://www.cve.org/CVERecord?id=CVE-{{ vuln.cve }}">CVE-{{ vuln.cve }}  </a>
 		{% endif %}
                   {% endfor %}
 		</td>
