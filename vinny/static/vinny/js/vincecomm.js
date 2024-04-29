@@ -45,33 +45,60 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
 function to_locale(df) {
     try {
 	/* Check if already processed or the if the element is visible
 	  and return quietly*/
-	if(df.classList.contains('locale-processed'))
-	    return;
-	if(df.offsetParent == null)
-	    return;
-	let epoch_ms = Date.parse(df.innerHTML);
-	if(isNaN(epoch_ms)) {
-	    console.log("Invalid Date "+df.innerHTML);
-	    return;
-	}
+		console.log("df.innerHTML is " + df.innerHTML)
+		if(df.classList.contains('locale-processed')){
+			return;
+		}
+		if(df.offsetParent == null){
+			return;
+		}
+		let epoch_ms = Date.parse(df.innerHTML);
+		console.log('epoch_ms is ' + epoch_ms)
+		if(isNaN(epoch_ms)) {
+			console.log("Invalid Date "+df.innerHTML);
+			return;
+		}
         let d = new Date(epoch_ms);
-	df.title = df.innerHTML;
-        if(df.classList.contains('datefield'))
-	    df.innerHTML = d.toLocaleDateString();
-        if(df.classList.contains('datetimefield'))
-	    df.innerHTML = d.toLocaleString();
-	df.classList.add('locale-processed');
+		console.log('d is ' + d)
+		df.title = df.innerHTML;
+		if (df.classList.contains('prominentdatefield')){
+			let month = d.getUTCMonth() + 1
+			let date = d.getUTCDate()
+			let year = d.getUTCFullYear()
+			if (df.classList.contains('dateonly')){
+				console.log('this is a prominent date field')
+				console.log('we are expecting the displayed date to be ' + month + '/' + date + '/' + year)
+				df.innerHTML = month + '/' + date + '/' + year
+			} else {
+				let hours = ("0" + d.getUTCHours()).slice(-2)
+				let minutes = ("0" + d.getUTCMinutes()).slice(-2)
+				console.log('this is a prominent date field')
+				console.log('we are expecting the displayed date to be ' + hours + ':' + minutes + ' UTC on ' + month + '/' + date + '/' + year)
+				df.innerHTML = hours + ':' + minutes + ' UTC on ' + month + '/' + date + '/' + year
+			}			
+		}
+        if(df.classList.contains('datefield')){
+		    df.innerHTML = d.toLocaleDateString();
+			console.log("d.toLocaleDateString() is " + d.toLocaleDateString())
+		}
+        if(df.classList.contains('datetimefield')){
+	    	df.innerHTML = d.toLocaleString();
+			console.log("d.toLocaleString() is " + d.toLocaleString())
+		}
+		df.classList.add('locale-processed');
     } catch(err) {
         console.log("Date field parsing error "+String(err));
     }
 }
+
 function update_locales() {
-    $('.datetimefield,.datefield').each(function(_,el) {
-	to_locale(el);
+    $('.datetimefield,.datefield,.prominentdatefield').each(function(_,el) {
+		to_locale(el);
     });
 }
 

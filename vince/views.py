@@ -5144,10 +5144,11 @@ class TicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Te
                 User.objects.filter(is_active=True, groups__in=user_groups)
                 .order_by(User.USERNAME_FIELD)
                 .exclude(id=context["ticket"].assigned_to.id)
+                .distinct()
             )
         else:
-            context["assignable_users"] = User.objects.filter(is_active=True, groups__in=user_groups).order_by(
-                User.USERNAME_FIELD
+            context["assignable_users"] = (
+                User.objects.filter(is_active=True, groups__in=user_groups).order_by(User.USERNAME_FIELD).distinct()
             )
         context["assignable"] = [user.usersettings.preferred_username for user in context["assignable_users"]]
         if context["ticket"].submitter_email:
@@ -14979,45 +14980,45 @@ class ReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
             .order_by("-count")
         )
 
-        new_cases = VulnerabilityCase.objects.filter(
-            created__year=year, created__month=month, team_owner=context["my_team"]
-        ).order_by("created")
-        date_month = date(year, month, 1)
-        active_cases = VulnerabilityCase.objects.filter(
-            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=date_month, team_owner=context["my_team"]
-        )
-        deactive_cases = (
-            CaseAction.objects.filter(
-                title__icontains="changed status of case from Active to Inactive",
-                date__month=month,
-                date__year=year,
-                case__team_owner=context["my_team"],
-            )
-            .select_related("case")
-            .order_by("case")
-            .distinct("case")
-        )
-        to_active_cases = (
-            CaseAction.objects.filter(
-                title__icontains="changed status of case from Inactive to Active",
-                date__month=month,
-                date__year=year,
-                case__team_owner=context["my_team"],
-            )
-            .select_related("case")
-            .order_by("case")
-            .distinct("case")
-        )
-        context.update(
-            {
-                "case_stats": {
-                    "new_cases": new_cases,
-                    "active_cases": active_cases,
-                    "deactive_cases": deactive_cases,
-                    "to_active_cases": to_active_cases,
-                }
-            }
-        )
+        # new_cases = VulnerabilityCase.objects.filter(
+        #     created__year=year, created__month=month, team_owner=context["my_team"]
+        # ).order_by("created")
+        # date_month = date(year, month, 1)
+        # active_cases = VulnerabilityCase.objects.filter(
+        #     status=VulnerabilityCase.ACTIVE_STATUS, created__lt=date_month, team_owner=context["my_team"]
+        # )
+        # deactive_cases = (
+        #     CaseAction.objects.filter(
+        #         title__icontains="changed status of case from Active to Inactive",
+        #         date__month=month,
+        #         date__year=year,
+        #         case__team_owner=context["my_team"],
+        #     )
+        #     .select_related("case")
+        #     .order_by("case")
+        #     .distinct("case")
+        # )
+        # to_active_cases = (
+        #     CaseAction.objects.filter(
+        #         title__icontains="changed status of case from Inactive to Active",
+        #         date__month=month,
+        #         date__year=year,
+        #         case__team_owner=context["my_team"],
+        #     )
+        #     .select_related("case")
+        #     .order_by("case")
+        #     .distinct("case")
+        # )
+        # context.update(
+        #     {
+        #         "case_stats": {
+        #             "new_cases": new_cases,
+        #             "active_cases": active_cases,
+        #             "deactive_cases": deactive_cases,
+        #             "to_active_cases": to_active_cases,
+        #         }
+        #     }
+        # )
         context["new_users"] = (
             User.objects.using("vincecomm").filter(date_joined__month=month, date_joined__year=year).count()
         )
@@ -15079,6 +15080,86 @@ class ReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
         )
 
         logger.debug(f"ReportsView context is {context}")
+        return context
+
+
+class ReportsCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/include/reports_page_elements/reports_page_cases.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        if check_misconfiguration(self.request.user):
+            return redirect("vince:misconfigured")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(ReportsCasesView, self).get_context_data(**kwargs)
+        year = int(self.request.GET.get("year", datetime.now().year))
+        month = int(self.request.GET.get("month", datetime.now().month))
+        if month == 0:
+            month = 12
+            year = year - 1
+        elif month > 12:
+            month = 1
+            year = year + 1
+        context["year"] = year
+        context["monthstr"] = date(year, month, 1).strftime("%B")
+        context["month"] = month
+        context["teams"] = Group.objects.exclude(groupsettings__contact__isnull=True)
+        user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
+        if self.kwargs.get("pk"):
+            context["my_team"] = Group.objects.get(id=self.kwargs.get("pk"))
+            context["teams"] = context["teams"].exclude(id=self.kwargs.get("pk"))
+        else:
+            context["my_team"] = user_groups[0]
+            context["teams"] = context["teams"].exclude(id=context["my_team"].id)
+            # this team's queues
+
+        my_queues = get_team_queues(context["my_team"])
+
+        new_cases = VulnerabilityCase.objects.filter(
+            created__year=year, created__month=month, team_owner=context["my_team"]
+        ).order_by("created")
+        date_month = date(year, month, 1)
+        active_cases = VulnerabilityCase.objects.filter(
+            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=date_month, team_owner=context["my_team"]
+        )
+        deactive_cases = (
+            CaseAction.objects.filter(
+                title__icontains="changed status of case from Active to Inactive",
+                date__month=month,
+                date__year=year,
+                case__team_owner=context["my_team"],
+            )
+            .select_related("case")
+            .order_by("case")
+            .distinct("case")
+        )
+        to_active_cases = (
+            CaseAction.objects.filter(
+                title__icontains="changed status of case from Inactive to Active",
+                date__month=month,
+                date__year=year,
+                case__team_owner=context["my_team"],
+            )
+            .select_related("case")
+            .order_by("case")
+            .distinct("case")
+        )
+        context.update(
+            {
+                "case_stats": {
+                    "new_cases": new_cases,
+                    "active_cases": active_cases,
+                    "deactive_cases": deactive_cases,
+                    "to_active_cases": to_active_cases,
+                }
+            }
+        )
+
         return context
 
 

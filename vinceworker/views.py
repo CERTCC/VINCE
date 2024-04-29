@@ -244,15 +244,16 @@ def generate_reminders(request):
 
 @csrf_exempt
 def ingest_vulreport(request):
-    logger.debug("ingest_vulreport received request")
-    logger.debug(f"Request method is: {request.method}")
-
+    # Use a log_tag variable as the function name is used for SQS
+    # injection other than vul reports like Bounces.
+    log_tag = "ingest_sqs_report"
+    logger.debug(f"{log_tag} received request with method {request.method}")
     if request.method == "POST":
         try:
             message = request.body.decode("utf-8")
             attributes = {}
             body_data = json.loads(message)
-            logger.debug(body_data)
+            logger.debug(f"{log_tag} data submitted is {body_data}")
             if body_data.get("MessageAttributes"):
                 if body_data["MessageAttributes"].get("MessageType"):
                     attributes["MessageType"] = body_data["MessageAttributes"].get("MessageType").get("Value")
@@ -273,10 +274,8 @@ def ingest_vulreport(request):
             cisaqueue = TicketQueue.objects.filter(title="CISA-General").first()
             vulqueue = TicketQueue.objects.filter(title="CR").first()
 
-        except Exception:
-            logger.debug(f"Message is not valid json")
-            error_msg = "%s" % (traceback.format_exc())
-            logger.debug(error_msg)
+        except Exception as e:
+            logger.debug(f"{log_tag} recevied an invalid json Error is {e}")
             # send_sns('vinceworker', 'issue with json load of HTTP POST', error_msg)
             return HttpResponse(status=404)
 
@@ -287,13 +286,13 @@ def ingest_vulreport(request):
                 return write_srmail(request)
             if attributes["MessageType"] == "UpdateStatus":
                 update_vendor_status(attributes, message)
-                logger.debug("updated vendor status")
+                logger.debug(f"{log_tag} updated vendor status")
             elif attributes["MessageType"] == "VendorLogin":
                 update_vendor_view_status(attributes, message)
             elif attributes["MessageType"] in ["NewTicket", "MessageReply"]:
                 create_ticket(attributes, message)
             elif attributes["MessageType"] in ["NewPost", "EditPost", "PostRemoved"]:
-                logger.debug("vendor posted in vc")
+                logger.debug(f"{log_tag} vendor posted in vc")
                 create_case_post_action(attributes, message)
             elif attributes["MessageType"] == "EditContact":
                 create_action(attributes, message)
@@ -336,6 +335,7 @@ def ingest_vulreport(request):
                     if mail:
                         headers = mail.get("commonHeaders")
                         if headers:
+                            logger.info(f"{log_tag} processing a Bounce SQS {data.get('bounce')}")
                             create_bounce_ticket(headers, data.get("bounce"))
                             return JsonResponse({"response": "success"}, status=200)
                     send_sns("email bounce", "Bounce notification received, but unexpected format", json.dumps(data))
@@ -389,10 +389,10 @@ def ingest_vulreport(request):
                 vince_retrieve_submission(cr, data["vrf_id"], data.get("s3_file_name"))
                 return JsonResponse({"response": "success"}, status=200)
             else:
-                logger.debug(cr.errors)
+                logger.debug(f"{log_tag} encountered error(s): {cr.errors}")
 
-        except:
-            logger.debug(traceback.format_exc())
+        except Exception as e:
+            logger.debug(f"{log_tag} encountered the following error(s): {e}")
 
     return HttpResponse(f"Request: {request}")
 

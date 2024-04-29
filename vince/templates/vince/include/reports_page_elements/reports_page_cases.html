@@ -1,0 +1,60 @@
+{% load i18n report_tags ticket_to_link %}
+
+<div class="row">
+    <div class="large-12 columns">
+      <h3 class="section-title">Cases</h3>
+      <ul class="stats-list">
+        <li class="stats-list-positive">
+          {{ case_stats.new_cases | length }} <span class="stats-list-label">New Cases</span>
+        </li>
+        <li>
+          {{ case_stats.active_cases | length }} <span class="stats-list-label">Pre-existing Active Cases</span>
+        </li>
+        <li class="stats-list-negative">
+          {{ case_stats.deactive_cases | length }} <span class="stats-list-label">Deactivated Cases</span>
+        </li>
+        <li class="stats-list-neutral">
+          {{ case_stats.to_active_cases | length }} <span class="stats-list-label">Reactivated Cases</span>
+        </li>
+        
+      </ul>
+      <div class="thread-messages"><b> New Cases {{ monthstr }} {{ year }} </b></div>
+      <div>
+        {% for note in case_stats.new_cases %}
+        {% if forloop.counter0 == 5 %}
+        <div id="hidevendors">
+      {% endif %}
+        <div><a href="{{note.get_absolute_url}}">{% if note|case_access:user %}{{ note.vutitle }}{% else %}{{ note.vu_vuid }}{% endif %}</a></div>
+        {% empty %}
+        <i>No new cases opened this month</i>
+        {% endfor %}
+      </div>
+      {% if case_stats.new_cases|length > 5 %}
+        </div>
+      <div class="showmore">
+        <div id="moreVendors"><small>
+          <a href="#" id="moreVendor">SHOW ALL {{ case_stats.new_cases|length }} CASES</a></small>
+        </div>
+        <div id="lessVendors">
+          <small><a href="#" id="lessVendor">SHOW LESS</a></small>
+        </div>
+      </div>
+      {% endif %}
+  
+      {% if case_stats.deactive_cases|length > 0 %}
+      <div class="thread-messages"><b> Deactivated Cases {{ monthstr }} {{ year }} </b></div>
+      {% for note in case_stats.deactive_cases %}
+      <div><a href="{{note.case.get_absolute_url}}">{% if note.case|case_access:user %}{{ note.case.vutitle }}{% else %}{{ note.case.vu_vuid }}{% endif %}</a></div>
+      {% endfor %}
+      {% endif %}
+  
+      {% if case_stats.to_active_cases|length > 0 %}
+      <div class="thread-messages"><b> Reactivated Cases {{ monthstr }} {{ year }} </b></div>
+      {% for note in case_stats.to_active_cases %}
+      <div><a href="{{note.case.get_absolute_url}}">{% if note.case|case_access:user %}{{ note.case.vutitle }}{% else %}{{ note.case.vu_vuid }}{% endif %}</a></div>
+      {% endfor %}
+      {% endif %}
+      
+    </div>
+  </div>
+  

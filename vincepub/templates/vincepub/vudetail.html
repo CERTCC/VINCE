@@ -144,14 +144,14 @@
 	      <td>
 		{% for cve in object.cveids %}
 		{% if forloop.last %}
-		<a href="http://web.nvd.nist.gov/vuln/detail/{{ cve|subCAN }}">{{ cve|subCAN }}</a>
+		<a href="https://www.cve.org/CVERecord?id={{ cve|subCAN }}">{{ cve|subCAN }}</a>
 		{% else %}
-		<a href="http://web.nvd.nist.gov/vuln/detail/{{ cve|subCAN }}">{{ cve|subCAN }}</a>, 
+		<a href="https://www.cve.org/CVERecord?id={{ cve|subCAN }}">{{ cve|subCAN }}</a>, 
 		{% endif %}
 		{% endfor %}
 	      </td>
 	      {% else %}
-	      <td><a href="http://web.nvd.nist.gov/vuln/detail/{{ object.cveids|subCAN }}">{{ object.cveids|subCAN }}</a></td>
+	      <td><a href="https://www.cve.org/CVERecord?id={{ object.cveids|subCAN }}">{{ object.cveids|subCAN }}</a></td>
 	      {% endif %}
 	    </tr>
 	    <tr>

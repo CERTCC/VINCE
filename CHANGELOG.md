@@ -3,6 +3,16 @@
 CHANGELOG
 VINCE Coordination platform code
 
+Version 3.0.1 2024-04-29
+
+* Dependabot update recommendations: `idna` 3.4 to 3.7, `Django` 4.2 to 4.2.11, `pydantic` 1.10.2 to 1.10.13, `sqlparse` 0.4.4 to 0.5.0
+* Fixed bounce tool so that it now correctly links permanent bounce tickets only to the email address producing bounces
+* Adjusted dropdown menu for assigning tickets to coordinators on VINCE Track ticket page, to avoid introducing duplicates
+* Made embargo end times default to noon UTC & made display of embargo end times unambiguous on VINCE Comm case page
+* Added code to make the cases section of the reports page load async to reduce loading time
+* Changed destination of links for further information about CVEs on Vul Note page
+
+
 Version 3.0.0 2024-04-10
 
 * Made the Vendor Association button to track and  populate ticket id & (if appropriate) vendor name.

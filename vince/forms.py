@@ -1651,9 +1651,17 @@ class EditCaseForm(forms.ModelForm):
     due_date = forms.DateTimeField(
         label=_("Due Date"),
         widget=forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
-        help_text=_("Estimated Public Date"),
+        help_text=_("Estimated Public Date (defaults to 12:00 noon UTC)"),
         required=False,
     )
+
+    def clean_due_date(self):
+        due_date = self.cleaned_data["due_date"]
+        if due_date in [None, "", "None"]:
+            return
+        else:
+            due_date_noon = due_date + timedelta(hours=12)
+            return due_date_noon
 
     field_order = [
         "vuid",

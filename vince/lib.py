@@ -2006,10 +2006,14 @@ def create_bounce_record(email_to, bounce_type, subject, ticket=None):
 
 
 def create_bounce_ticket(headers, bounce_info):
+    logger.debug(f"create_bounce_ticket is happening & headers is {headers}")
+    logger.debug(f"create_bounce_ticket is happening & bounce_info is {bounce_info}")
     subject = headers.get("subject")
     # email_to = headers.get("to")
-    email_to = bounce_info.get("bouncedRecipients")
+    email_to = [x.get("emailAddress") for x in bounce_info.get("bouncedRecipients") if x.get("emailAddress")]
+    logger.debug(f"create_bounce_ticket is happening & email_to is {email_to}")
     email_to_str = ", ".join(email_to)
+    logger.debug(f"create_bounce_ticket is happening & email_to_str is {email_to_str}")
     email_from = headers.get("from")
     email_from_str = ", ".join(email_from)
     bounce_type = bounce_info.get("bounceType")
@@ -2064,14 +2068,10 @@ def create_bounce_ticket(headers, bounce_info):
                             # if user is inactive, unassign this ticket
                             ticket.assigned_to = None
                     ticket.save()
-                followup = FollowUp(
-                    ticket=ticket,
-                    title=f"Email Bounce Notification from {email_from_str} to {email_to_str}",
-                    date=timezone.now(),
-                )
                 if bounce_info:
-                    followup.comment = json.dumps(bounce_info)
-                followup.save()
+                    logger.debug(
+                        f"Email Bounce Notification from {email_from_str} to {email_to_str} with bounce_info as follows: {bounce_info}"
+                    )
 
                 for email in email_to:
                     create_bounce_record(email, bounce_type, subject, ticket)

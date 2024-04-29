@@ -86,7 +86,7 @@
     <a class="dashboard-nav-card vin-card orig_report" href="{% url 'vinny:cr' case.id %}">
       <i class="dashboard-nav-card-icon fas fa-file-alt" aria-hidden="true"></i>
       <h3 class="dashboard-nav-title">View Original Report</h3>
-      <p class="dashboard-nav-summary">{% if case.team_owner %}{{ case.team_owner.groupcontact.contact.vendor_name }}{% else %}We{% endif %} received this report on {% if case.cr.date_submitted %}<span class="datefield">{{ case.cr.date_submitted|date:"c" }}{% else %}{{ case.created|date:"c" }}{% endif %}</span>.</p>
+      <p class="dashboard-nav-summary">{% if case.team_owner %}{{ case.team_owner.groupcontact.contact.vendor_name }}{% else %}We{% endif %} received this report at <span class="prominentdatefield">{% if case.cr.date_submitted %}{{ case.cr.date_submitted|date:"c" }}{% else %}{{ case.created|date:"c" }}{% endif %}</span>.</p>
       <h5 class="dashboard-nav-card-action"><p class="btn-cta">View the report</p></h5>
     </a>
   </div>
@@ -198,11 +198,11 @@
       {% endif %}
       {% else %}
       <h3 class="dashboard-nav-title">
-        Expected Date Public: {% if case.due_date %}<span class="datefield">{{ case.due_date|date:"c" }}</span>{% else %}<b>TBD</b>{% endif %}
+        Expected Date Public: {% if case.due_date %}<span class="prominentdatefield dateonly">{{ case.due_date|date:"c" }}</span>{% else %}<b>TBD</b>{% endif %}
         {% if case.note %}<span class="icsdownload" id="downloadics"><i class="far fa-calendar-plus"></i></span>{% endif %}
       </h3>
       <p class="dashboard-nav-summary">
-        We expect this vulnerability to become public on {% if case.due_date %}<span class="datefield">{{ case.due_date|date:"c" }}</span>{% else %}<b>TBD</b>{% endif %}.
+        We expect this vulnerability to become public no earlier than {% if case.due_date %}<span class="prominentdatefield">{{ case.due_date|date:"c" }}</span>{% else %}<b>TBD</b>{% endif %}.
       </p>
       {% if case.note or case.due_date %}
       <h5 class="dashboard-nav-card-action"><p class="btn-cta">
