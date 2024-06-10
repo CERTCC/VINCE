@@ -1,0 +1,102 @@
+{% load i18n report_tags ticket_to_link %}
+
+{% if total_tickets %}
+
+  <div class="row">
+    <div class="large-8 columns">
+      <h3 class="section-title">Tickets created {{ monthstr }} {{ year }}</h3>
+      <ul class="bar-graph">
+        <li class="bar-graph-axis">
+          <div class="bar-graph-label">100%</div>
+          <div class="bar-graph-label">80%</div>
+          <div class="bar-graph-label">60%</div>
+          <div class="bar-graph-label">40%</div>
+          <div class="bar-graph-label">20%</div>
+          <div class="bar-graph-label">0%</div>
+        </li>
+        {% for tkt in ticket_stats %}
+          <li class="bar primary" style="height: {{ tkt.count|percentcalc:total_tickets }}%;" title="{{ tkt.queue__title }}">
+            <div class="percent">{{ tkt.count|percentcalc:total_tickets }}<span>%</span></div>
+            <div class="description">
+              <a href="#yararesults" class="desclink">{{ tkt.queue__title }}</a>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="large-4 columns">
+      <table class="unstriped">
+        <tr>
+          <th>Queue</th>
+          <th>Count</th>
+        </tr>
+        {% for tkt in ticket_stats %}
+          <tr>
+            <td>{{ tkt.queue__title }}</td>
+            <td>{{ tkt.count }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+{% else %}
+  <div class="row">
+    <div class="large-12 columns">
+      <h3 class="section-title"> Tickets created {{monthstr}} {{year}}</h3>
+      <p>
+        <i>No tickets created in {{ monthstr }} {{ year }}</i>
+      </p>
+    </div>
+  </div>
+{% endif %}
+
+<hr>
+{% if total_closed %}
+  <div class="row">
+    <div class="large-8 columns">
+      <h3 class="section-title">Tickets closed {{ monthstr }} {{ year }}</h3>
+      <ul class="bar-graph">
+        <li class="bar-graph-axis">
+          <div class="bar-graph-label">100%</div>
+          <div class="bar-graph-label">80%</div>
+          <div class="bar-graph-label">60%</div>
+          <div class="bar-graph-label">40%</div>
+          <div class="bar-graph-label">20%</div>
+          <div class="bar-graph-label">0%</div>
+        </li>
+        {% for tkt in closed_ticket_stats %}
+          <li class="bar primary" style="height: {{ tkt.count|percentcalc:total_tickets }}%;" title="{{ tkt.close_reason|close_reason_display }}">
+            <div class="percent">{{ tkt.count|percentcalc:total_closed }}<span>%</span></div>
+            <div class="description">
+              <a href="#yararesults" class="desclink">{{ tkt.close_reason|close_reason_display }}</a>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="large-4 columns">
+      <table class="unstriped">
+        <tr>
+          <th>Close Reason</th>
+          <th>Count</th>
+        </tr>
+        {% for tkt in closed_ticket_stats %}
+          <tr>
+            <td>{{ tkt.close_reason|close_reason_display }}</td>
+            <td>{{ tkt.count }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+
+    </div>
+  </div>
+{% else %}
+  <div class="row">
+    <div class="large-12 columns">
+      <h3 class="section-title"> Tickets closed {{monthstr}} {{year}}</h3>
+      <p><i>No tickets closed in {{ monthstr }} {{ year }}</i></p>
+    </div>
+  </div>
+{% endif %}
+
+<hr>

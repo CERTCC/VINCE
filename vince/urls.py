@@ -193,6 +193,7 @@ urlpatterns = [
     path("email_template/filter/", views.EmailTemplateFilterView.as_view(), name="filteremailtmpl"),
     path("reports/", views.ReportsView.as_view(), name="reports"),
     path(r"reports/cases/(?P<pk>[0-9]+)/$", views.ReportsCasesView.as_view(), name="reports_page_cases"),
+    path(r"reports/tickets/(?P<pk>[0-9]+)/$", views.ReportsTicketsView.as_view(), name="reports_page_tickets"),
     path("reports/users/", views.UserGraphReport.as_view(), name="usergraphs"),
     re_path(r"^reports/(?P<pk>[0-9]+)/$", views.ReportsView.as_view(), name="reports"),
     re_path(

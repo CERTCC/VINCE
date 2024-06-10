@@ -63,6 +63,12 @@ logger.setLevel(logging.DEBUG)
 
 class AllSearchForm(forms.Form):
     searchbar = forms.CharField(max_length=100, label="Keyword(s)", widget=forms.TextInput(), required=False)
+    datestart = forms.DateField(required=False)
+    dateend = forms.DateField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(AllSearchForm, self).__init__(*args, **kwargs)
+        self.fields["dateend"].initial = timezone.now
 
 
 class RolesForm(forms.Form):
@@ -1947,7 +1953,7 @@ class InitContactForm(forms.ModelForm):
         required=False,
         label=_("Internal Verification"),
         help_text=_(
-            "By checking this box, an email will not be sent but the email body will be logged in the ticket and should provide justification for why external verification is not needed."
+            "If this box is checked, an email will not be sent but the email body will be logged in the ticket and should provide justification for why external verification is not needed."
         ),
     )
 
@@ -1986,6 +1992,16 @@ class InitContactForm(forms.ModelForm):
             return ticket
         except:
             raise forms.ValidationError("Invalid Ticket Selection. Use only numeric ID of Ticket.")
+
+    field_order = [
+        "contact",
+        "user",
+        "internal",
+        "email",
+        "subject",
+        "email_body",
+        "ticket",
+    ]
 
 
 class ContactForm(forms.ModelForm):

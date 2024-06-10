@@ -54,16 +54,16 @@ function searchAll(e) {
 
     $("#id_page").val("1");
 
-    var url = $("#searchall").attr("action");
-    var facet = $(".search-menu .menu li .menu-active").text();
-    var q = $("#id_searchbar").val();
+    let url = $("#searchall").attr("action");
+    let facet = $(".search-menu .menu li .menu-active").text();
+    let q = $("#id_searchbar").val();
 
     if (history.pushState) {
-	    var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?q=' + $("#id_searchbar").val() + "&facet=" + facet;
+	    let newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?q=' + $("#id_searchbar").val() + "&facet=" + facet;
 	    window.history.pushState({path:newurl},'',newurl);
     }
     
-    var data = $('#searchall').serialize() + "&facet=" + facet;
+    let data = $('#searchall').serialize() + "&facet=" + facet;
 
     lockunlock(true,'div.mainbody,div.vtmainbody','#searchresults');
     
@@ -103,7 +103,33 @@ $(document).ready(function() {
     });
 
     searchAll();
-    
+
+    let dateFormat = "yy-mm-dd"
+
+    let from = $( "#id_datestart" ).datepicker({
+        defaultDate: "+1w",
+        changeMonth: true,
+        changeYear: true,
+        dateFormat: dateFormat,
+        numberOfMonths: 1,
+        maxDate: "+0D"
+     }).on( "change", function() {
+        /*to.datepicker( "option", "minDate", getDate( this ) );*/
+        searchAll();
+    })
+
+	let to = $( "#id_dateend" ).datepicker({
+            defaultDate: "+1w",
+            changeMonth: true,
+            changeYear: true,
+            dateFormat: dateFormat,
+            numberOfMonths: 1,
+            maxDate: "+0D"
+	}).on( "change", function() {
+        from.datepicker( "option", "maxDate", getDate( this ) );
+	    searchAll();
+	});
+
     $(".search-menu .menu li").on("click", "a", function(event) {
 
     	$( ".search-menu .menu li" ).each(function( index ) {
@@ -122,7 +148,7 @@ $(document).ready(function() {
         searchAll();
     }*/
 
-    var form = document.getElementById('searchall');
+    let form = document.getElementById('searchall');
     if (form) {
         if (form.attachEvent) {
             form.attachEvent("submit", searchAll);
@@ -130,5 +156,17 @@ $(document).ready(function() {
             form.addEventListener("submit", searchAll);
         }
     }
+
+    function getDate( element ) {
+    	let date;
+	    try {
+            date = $.datepicker.parseDate( dateFormat, element.value );
+	    } catch( error ) {
+            date = null;
+	    }
+
+	    return date;
+    }
+
 
 });

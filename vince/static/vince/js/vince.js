@@ -458,7 +458,6 @@ $(function () {
        dynamically generated */
     post_content_refresh();
     function mutation_refresh(mu,ob) {
-		console.log(arguments);
 		if(mu.length && mu[0].target) {
 			if($(mu[0].target).attr("onmutate")) {
 				post_content_refresh(mu[0].target);
@@ -466,7 +465,6 @@ $(function () {
 		}
     }
     $('.asyncrefresh').each(function() {
-		console.log(arguments);
 		let ob = new MutationObserver(mutation_refresh);
 		ob.observe(this,{childList:true});
     });

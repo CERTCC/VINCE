@@ -3,6 +3,27 @@
 CHANGELOG
 VINCE Coordination platform code
 
+Version 3.0.4 2024-06-10
+
+* Fixed bug that prevented display of "No data" message in certain circumstances on the VINCE Track case page vendor tab
+* Reconfigured code for templated mail preparation to stop bug that derailed the mailer process in certain circumstances
+* Fixed code that inappropriately displayed uuid instead of group name on the VINCE Track contact information page
+
+
+Version 3.0.3 2024-06-04
+
+* Added code to make the tickets section of the reports page load async to reduce loading time
+* Reconfigured code for catching recently bounced users when sending templated mail
+
+
+Version 3.0.2 2024-05-30
+
+* Dependabot update recommendations: `requests` 2.31.0 to 2.32.0
+* Reconfigured initiate contact form so internal checkbox hides email addresses & triggers appropriate helptext in textarea
+* Rerouted internal verification requests from initiate contact form so resulting tickets are assigned to (second) Authorizer
+* Added ability to sort search results on the VINCE Track All Search page
+
+
 Version 3.0.1 2024-04-29
 
 * Dependabot update recommendations: `idna` 3.4 to 3.7, `Django` 4.2 to 4.2.11, `pydantic` 1.10.2 to 1.10.13, `sqlparse` 0.4.4 to 0.5.0
