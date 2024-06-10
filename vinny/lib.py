@@ -468,27 +468,16 @@ def create_post_notification(post, user, tracking):
 
 def get_user_preferences(post, user, role, tracking=None):
 
-    #is this the first post in the case?
-    first_post = Post.objects.filter(case=post.case).order_by('created').first()
-    if post == first_post:
-        # this is the first post in the case, so we need to mute participants that have
-        # email notifications disabled
-        user_groups = user.groups.exclude(groupcontact__isnull=True)
-        cm = CaseMember.objects.filter(case=post.case, group__in=user_groups).exclude(group__groupcontact__isnull=True).first()
-        if cm:
-            email = VinceCommEmail.objects.filter(email=user.email, contact=cm.group.groupcontact.contact).first()
-            if email:
-                if email.email_function == "EMAIL":
-                    #mute the case
-                    settings = user.vinceprofile.settings
-                    if user.vinceprofile.settings.get('muted_cases'):
-                        muted_cases = user.vinceprofile.settings['muted_cases']
-                        muted_cases.append(post.case.id)
-                        settings.update({'muted_cases': muted_cases})
-                    else:
-                        settings.update({'muted_cases': [post.case.id]})
-                    user.vinceprofile.settings = settings
-                    user.vinceprofile.save()
+    # if email notifications disabled.  email notifications disabled is
+    #indicated by condition (email_function == "EMAIL") 
+    user_groups = user.groups.exclude(groupcontact__isnull=True)
+    cm = CaseMember.objects.filter(case=post.case, group__in=user_groups).exclude(group__groupcontact__isnull=True).first()
+    if cm:
+        email = VinceCommEmail.objects.filter(email=user.email, contact=cm.group.groupcontact.contact).first()
+        if email and email.email_function == "EMAIL":
+            #if notifications are disabled just return false.
+            #dont send anything to this user.
+            return false
                     
     #does this user have email notifications enabled
     if role != 1:

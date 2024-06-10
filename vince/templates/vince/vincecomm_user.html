@@ -82,7 +82,7 @@
       <b>Organization:</b>  {{ vc_user.vinceprofile.org }}<br/>
       <b>Title:</b>   {{ vc_user.vinceprofile.title }}<br/>
       <b>Email:</b>   {{ vc_user.email }}<br/>
-      <b>Groups:</b>   {{ vc_user.groups.all|join:", " }}<br/>
+      <b>Groups:</b>   {% for groupname in groupnames %} {{ groupname }},{% endfor %}<br/>
       <b>Contacts:</b> {% for c in contact %}<a href="{% url 'vince:contact' c.contact.id %}">{{ c.contact.vendor_name }}</a>,{% endfor %}<br/>
       <b>Last Login:</b>   {{ vc_user.last_login }}<br/>
       {% if vc_user.vinceprofile.service %}

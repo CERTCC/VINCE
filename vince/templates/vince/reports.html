@@ -19,77 +19,88 @@
     </div>
   </div>
 </div>
+
 <div class="row">
   <div class="large-3 columns">&nbsp;</div>
   <div class="large-6 columns">
     <div class="text-center">
-    <ul class="pagination-pointed pagination text-center" role="navigation" aria-label="Pagination">
-	<li class="pagination-previous"><a class="pagination-pointed-button" href="?month={{ month|add:"-1" }}&year={{year}}" aria-label="Previous month">Previous <span class="show-for-sr">page</span></a></li>
-	{% blocktrans %}
-	<li class="current"><span class="show-for-sr">You're on page</span> {{ monthstr }} {{ year }}</li>
-	{% endblocktrans %}
-	{% if show_next %}
-	<li class="pagination-next"><a class="pagination-pointed-button" href="?month={{ month|add:"1"}}&year={{year}}" aria-label="Next page">Next <span class="show-for-sr">page</span></a></li>
-	{% else %}
-	<li class="pagination-next disabled"><a class="pagination-pointed-button" href="#" aria-label="Next page">Next <span class="show-for-sr">page</span></a></li>
-	{% endif %}
-    </ul>
+      <ul class="pagination-pointed pagination text-center" role="navigation" aria-label="Pagination">
+        <li class="pagination-previous">
+          <a class="pagination-pointed-button" href="?month={{ month|add:"-1" }}&year={{year}}" aria-label="Previous month">Previous <span class="show-for-sr">page</span></a>
+        </li>
+        {% blocktrans %}
+          <li class="current"><span class="show-for-sr">You're on page</span> {{ monthstr }} {{ year }}</li>
+        {% endblocktrans %}
+        {% if show_next %}
+          <li class="pagination-next"><a class="pagination-pointed-button" href="?month={{ month|add:"1"}}&year={{year}}" aria-label="Next page">Next <span class="show-for-sr">page</span></a></li>
+        {% else %}
+    	  <li class="pagination-next disabled"><a class="pagination-pointed-button" href="#" aria-label="Next page">Next <span class="show-for-sr">page</span></a></li>
+	      {% endif %}
+      </ul>
     </div>
   </div>
   <div class="large-3 columns">
     {% if teams %}
-    <button class="button default dropdown menu float-right" data-dropdown-menu type="button" data-toggle="switchteam" aria-haspopup="true" aria-expanded="false" id="switchteambutton">Switch Team</button>
-    <div class="dropdown-pane hoverable bottom" id="switchteam" data-dropdown data-hover="true" data-hover-pane="true">
-      <ul class="menu vertical">
-	
-        {% for t in teams %}
-        {% if t == my_team %} {% else %}
-        <li><a class="dropdown-item" href="{% url 'vince:reports' t.id %}">{{ t.name }}</a></li>
-        {% endif %}
-        {% endfor %}
-      </ul>
-    </div>
+      <button class="button default dropdown menu float-right" data-dropdown-menu type="button" data-toggle="switchteam" aria-haspopup="true" aria-expanded="false" id="switchteambutton">Switch Team</button>
+      <div class="dropdown-pane hoverable bottom" id="switchteam" data-dropdown data-hover="true" data-hover-pane="true">
+        <ul class="menu vertical">
+          {% for t in teams %}
+            {% if t == my_team %}
+            {% else %}
+              <li><a class="dropdown-item" href="{% url 'vince:reports' t.id %}">{{ t.name }}</a></li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
     {% endif %}
   </div>
 </div>
+
 <hr>
 
 <div class="row">
   <div class="large-12 columns">
     <h3 class="section-title">Vulnerability Notes</h3>
-    
     <ul class="stats-list">
       <li class="stats-list-positive">
-	{{ newnotes|length }} <span class="stats-list-label">New</span>
+      	{{ newnotes|length }} <span class="stats-list-label">New</span>
       </li>
       <li>
-	{{ updated | length }} <span class="stats-list-label">Updated</span>
+	      {{ updated | length }} <span class="stats-list-label">Updated</span>
       </li>
     </ul>
 
-    <div class="thread-messages"><b> Published {{ monthstr }} {{ year }} </b></div>
+    <div class="thread-messages">
+      <b> Published {{ monthstr }} {{ year }} </b>
+    </div>
+
     <ul>
-    {% for note in newnotes %}
-    <li><a href="{{note.get_absolute_url}}">{{ note.vutitle }}</a></li>
-    {% empty %}
-    <i>No vulnerability notes published this month</i>
-    {% endfor %}
+      {% for note in newnotes %}
+        <li><a href="{{note.get_absolute_url}}">{{ note.vutitle }}</a></li>
+      {% empty %}
+        <i>No vulnerability notes published this month</i>
+      {% endfor %}
     </ul>
 
 
-    <div class="thread-messages"><b> Updated {{ monthstr }} {{ year }} </b></div>
+    <div class="thread-messages">
+      <b> Updated {{ monthstr }} {{ year }} </b>
+    </div>
     <ul>
-    {% for note in updated %}
-    <li><a href="{{note.get_absolute_url}}">{{ note.vutitle }}</a></li>
-    {% empty %}
-    <i>No vulnerability notes updated this month</i>
-    {% endfor %}
+      {% for note in updated %}
+        <li>
+          <a href="{{note.get_absolute_url}}">{{ note.vutitle }}</a>
+        </li>
+      {% empty %}
+        <i>No vulnerability notes updated this month</i>
+      {% endfor %}
     </ul>
     
   </div>
 </div>
 
 <hr>
+
 <div class="row">
   <div class="large-8 columns">
     <h3 class="section-title">Emails</h3>
@@ -117,117 +128,27 @@
 </div>
 
 <hr>
+
 {% if fwd_reports %}
-<div class="row">
-  <div class="large-12 columns">
-    <h3 class="section-title">Forwarded Reports {{ monthstr }} {{ year }}</h3>
-    <div class="thread-messages">
-      {% for r in fwd_reports %}
-      <div> <a href="{% url 'vince:ticket' r.ticket.id %}">[{{ r.ticket.queue }}-{{ r.ticket.id }}] {{ r.ticket.title }}</a></div>
-      {% endfor %}
+  <div class="row">
+    <div class="large-12 columns">
+      <h3 class="section-title">Forwarded Reports {{ monthstr }} {{ year }}</h3>
+      <div class="thread-messages">
+        {% for r in fwd_reports %}
+          <div> <a href="{% url 'vince:ticket' r.ticket.id %}">[{{ r.ticket.queue }}-{{ r.ticket.id }}] {{ r.ticket.title }}</a></div>
+        {% endfor %}
+      </div>
     </div>
   </div>
-</div>
-<hr>
+
+  <hr>
 {% endif %}
 
-{% if total_tickets %}
-
-<div class="row">
-  <div class="large-8 columns">
-    <h3 class="section-title">Tickets created {{ monthstr }} {{ year }}</h3>
-    <ul class="bar-graph">
-      <li class="bar-graph-axis">
-	<div class="bar-graph-label">100%</div>
-	<div class="bar-graph-label">80%</div>
-	<div class="bar-graph-label">60%</div>
-	<div class="bar-graph-label">40%</div>
-	<div class="bar-graph-label">20%</div>
-	<div class="bar-graph-label">0%</div>
-      </li>
-      {% for tkt in ticket_stats %}
-      <li class="bar primary" style="height: {{ tkt.count|percentcalc:total_tickets }}%;" title="{{ tkt.queue__title }}">
-        <div class="percent">{{ tkt.count|percentcalc:total_tickets }}<span>%</span></div>
-        <div class="description">
-          <a href="#yararesults" class="desclink">
-            {{ tkt.queue__title }}</a></div>
-      </li>
-          {% endfor %}
-    </ul>
-  </div>
-  <div class="large-4 columns">
-    <table class="unstriped">
-      <tr>
-	<th>Queue</th>
-	<th>Count</th>
-      </tr>
-      {% for tkt in ticket_stats %}
-      <tr>
-	<td>{{ tkt.queue__title }}</td><td>{{ tkt.count }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-  </div>
-
+<div id="reports_page_tickets" href="{% url 'vince:reports_page_tickets' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh">
+  <!-- Load this async -->
 </div>
-{% else %}
-<div class="row">
-  <div class="large-12 columns">
-    <h3 class="section-title"> Tickets created {{monthstr}} {{year}}</h3>
-    <p><i>No tickets created in {{ monthstr }} {{ year }}</i></p>
-  </div>
-</div>
-{% endif %}
 
-<hr>
-{% if total_closed %}
-<div class="row">
-  <div class="large-8 columns">
-    <h3 class="section-title">Tickets closed {{ monthstr }} {{ year }}</h3>
-    <ul class="bar-graph">
-      <li class="bar-graph-axis">
-        <div class="bar-graph-label">100%</div>
-        <div class="bar-graph-label">80%</div>
-        <div class="bar-graph-label">60%</div>
-        <div class="bar-graph-label">40%</div>
-        <div class="bar-graph-label">20%</div>
-        <div class="bar-graph-label">0%</div>
-      </li>
-      {% for tkt in closed_ticket_stats %}
-      <li class="bar primary" style="height: {{ tkt.count|percentcalc:total_tickets }}%;" title="{{ tkt.close_reason|close_reason_display }}">
-        <div class="percent">{{ tkt.count|percentcalc:total_closed }}<span>%</span></div>
-        <div class="description">
-          <a href="#yararesults" class="desclink">
-            {{ tkt.close_reason|close_reason_display }}</a></div>
-      </li>
-          {% endfor %}
-    </ul>
-  </div>
-  <div class="large-4 columns">
-     <table class="unstriped">
-      <tr>
-        <th>Close Reason</th>
-        <th>Count</th>
-      </tr>
-      {% for tkt in closed_ticket_stats %}
-      <tr>
-        <td>{{ tkt.close_reason|close_reason_display }}</td><td>{{ tkt.count }}</td>
-      </tr>
-      {% endfor %}
-    </table>
 
-  </div>
-</div>
-{% else %}
-<div class="row">
-  <div class="large-12 columns">
-    <h3 class="section-title"> Tickets closed {{monthstr}} {{year}}</h3>
-    <p><i>No tickets closed in {{ monthstr }} {{ year }}</i></p>
-  </div>
-</div>
-{% endif %}
-
-<hr>
 <div class="row" id="userinfo">
   <div class="large-6 columns">
     <h3 class="section-title">VINCE User Stats</h3>
@@ -255,43 +176,51 @@
     <h1><i class="fas fa-user-tie"></i> {{vendor_users}}</h1>
   </div>
 </div>
+
 <hr>
+
 <div class="row">
   <div class="large-6 columns">
     <h3 class="section-title">Current Ticket Status</h3>
-  </div><div class="large-6 columns"></div>
+  </div>
+  <div class="large-6 columns"></div>
 </div>
+
 <div class="row">
   {% for entry in basic_ticket_stats.open_ticket_stats %}
-  <div class="large-4 columns">
-    <div class="dashboard-my-tickets">
-      <a class="dashboard-nav-card card-{{ entry.2 }}" href="{% url 'vince:ticketsearch' %}?{{entry.3}}">
-        <i class="dashboard-nav-card-icon fas fa-calendar-alt" aria-hidden="true"></i>
-        <h2 class="dashboard-nav-stat">{{entry.1}}</h2>
-        <h5 class="dashboard-nav-card-title">{{ entry.0 }}</h5>
-      </a>
+    <div class="large-4 columns">
+      <div class="dashboard-my-tickets">
+        <a class="dashboard-nav-card card-{{ entry.2 }}" href="{% url 'vince:ticketsearch' %}?{{entry.3}}">
+          <i class="dashboard-nav-card-icon fas fa-calendar-alt" aria-hidden="true"></i>
+          <h2 class="dashboard-nav-stat">{{entry.1}}</h2>
+          <h5 class="dashboard-nav-card-title">{{ entry.0 }}</h5>
+        </a>
+      </div>
     </div>
-  </div>
   {% endfor %}
 </div>
+
 <hr>
+
 {% if cves %}
-<div class="row" id="reports">
-  <div class="large-6 columns">
-    <h3> CVEs assigned in {{ monthstr }} {{ year }}</h3>
-    <div class="callout">
-      {% for cve in cves %}
-      <div class="cve"><b>{% if cve.case %}<a href="{% url 'vince:case' cve.case.id %}#vuls">{% endif %}{{ cve.vul }}{% if cve.description %}</a>{% endif %}</b>: {{ cve.description }}
-	<br/>
-	<span class="cvetime">{{ cve.date_added }} {% if cve.user %} by {{ cve.user }}{% endif %}</span>
+  <div class="row" id="reports">
+    <div class="large-6 columns">
+      <h3> CVEs assigned in {{ monthstr }} {{ year }}</h3>
+      <div class="callout">
+        {% for cve in cves %}
+        <div class="cve"><b>{% if cve.case %}<a href="{% url 'vince:case' cve.case.id %}#vuls">{% endif %}{{ cve.vul }}{% if cve.description %}</a>{% endif %}</b>: {{ cve.description }}
+    <br/>
+    <span class="cvetime">{{ cve.date_added }} {% if cve.user %} by {{ cve.user }}{% endif %}</span>
+        </div>
+        {% endfor %}
       </div>
-      {% endfor %}
+    </div>
+    <div class="large-6 columns">
     </div>
   </div>
-  <div class="large-6 columns">
-  </div>
-</div>
-<hr>
+
+  <hr>
+
 {% endif %}
 
 <div class="row">
@@ -299,20 +228,28 @@
     <h3 class="section-title">Ticket Tags</h3>
   </div><div class="large-6 columns"></div>
 </div>
+
 <div class="row">
   <div class="large-6 columns">
     <table class="unstriped">
-      <tr><td>Tag</td><td>Overall</td><td>Created {{ monthstr }} {{ year }}</td></tr>
-      {% for t in tickettags %}
       <tr>
-	<td><a href="{% url 'vince:ticketsearch' %}?tag={{t.tag}}&status=1&status=2&status=3&status=4&status=5&status=6">{{ t.tag }}</a></td>
-	<td>{{ t.count }}</td>
-	<td>{{ t.month_count }}</td>
+        <td>Tag</td>
+        <td>Overall</td>
+        <td>Created {{ monthstr }} {{ year }}</td>
       </tr>
+      {% for t in tickettags %}
+        <tr>
+	        <td>
+            <a href="{% url 'vince:ticketsearch' %}?tag={{t.tag}}&status=1&status=2&status=3&status=4&status=5&status=6">{{ t.tag }}</a>
+          </td>
+          <td>{{ t.count }}</td>
+          <td>{{ t.month_count }}</td>
+        </tr>
       {% endfor %}
     </table>
   </div>
 </div>
+
 <hr>
 
 <div class="row">
@@ -320,51 +257,63 @@
     <h3 class="section-title">Case Tags</h3>
   </div><div class="large-6 columns"></div>
 </div>
+
 <div class="row">
   <div class="large-6 columns">
     <table class="unstriped">
-      <tr><td>Tag</td><td>Overall</td><td>Tagged {{monthstr}} {{ year }}</td></tr>
-      {% for t in casetags %}
       <tr>
-        <td><a href="{% url 'vince:casesearch' %}?tag={{t.tag}}">{{ t.tag }}</a></td>
-        <td>{{ t.count }}</td>
-	<td>{{ t.month_count }}</td>
+        <td>Tag</td>
+        <td>Overall</td>
+        <td>Tagged {{monthstr}} {{ year }}</td>
       </tr>
+      {% for t in casetags %}
+        <tr>
+          <td><a href="{% url 'vince:casesearch' %}?tag={{t.tag}}">{{ t.tag }}</a></td>
+          <td>{{ t.count }}</td>
+	        <td>{{ t.month_count }}</td>
+        </tr>
       {% endfor %}
     </table>
   </div>
 </div>
+
 <hr>
+
 <div class="row">
   <div class="large-6 columns">
     <h3 class="section-title">Vulnerability Tags</h3>
   </div><div class="large-6 columns"></div>
 </div>
+
 <div class="row">
   <div class="large-6 columns">
     <table class="unstriped">
-      <tr><td>Tag</td><td>Overall</td><td>Created {{monthstr}} {{ year }}</td></tr>
-      {% for t in vultags %}
       <tr>
-        <td><a href="{% url 'vince:search' %}?q={{t.tag}}&facet=Vuls">{{ t.tag }}</a></td>
-        <td>{{ t.count }}</td>
-        <td>{{ t.month_count }}</td>
+        <td>Tag</td>
+        <td>Overall</td>
+        <td>Created {{monthstr}} {{ year }}</td>
       </tr>
+      {% for t in vultags %}
+        <tr>
+          <td><a href="{% url 'vince:search' %}?q={{t.tag}}&facet=Vuls">{{ t.tag }}</a></td>
+          <td>{{ t.count }}</td>
+          <td>{{ t.month_count }}</td>
+        </tr>
       {% endfor %}
     </table>
   </div>
 </div>
 
-
 <hr>
+
 {% comment "not using this currently" %}
-<div class="row">
-  <div class="large-6 columns">
-    <h3 class="section-title">Filters</h3>
-    <div class="callout">
-      <a href="{% url 'vince:cnovreport' %}">Cases without vendors</a>
-    </div>
-  </div><div class="large-6 columns"></div>
-</div>
+  <div class="row">
+    <div class="large-6 columns">
+      <h3 class="section-title">Filters</h3>
+      <div class="callout">
+        <a href="{% url 'vince:cnovreport' %}">Cases without vendors</a>
+      </div>
+    </div><div class="large-6 columns"></div>
+  </div>
 {% endcomment %}
 {% endblock %}

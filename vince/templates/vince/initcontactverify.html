@@ -72,10 +72,11 @@
       {% for field in form %}
 
       {% if field.name == "email" %}
-      <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %} </label>
-      <div class="taggle input custom" id="email_tags"></div>
-        {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
-
+      <div class="form-group" id="email_field">
+        <label for='id_{{ field.name }}'>{% trans field.label %}{% if field.field.required %} <span class='required'>*</span>{% endif %} </label>
+        <div class="taggle input custom" id="email_tags"></div>
+          {% if field.errors %}<dd class='error'>{{ field.errors }}</dd>{% endif %}
+      </div>
       {% else %}
       
 

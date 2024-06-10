@@ -1425,7 +1425,8 @@ div.homelink a {
     width:100%;
 }
 
-/* when putting up an announcement-banner, change padding-top for the following two selectors to 195 and 225 respectively: */
+/* when putting up an announcement-banner, change padding-top for the following two selectors to 195 and 225 respectively, */
+/* then return them to 130 and 150 respectively when removing the banner. */
 
 #TRoffCanvasLeft {
     background-color: #282829;
@@ -4202,6 +4203,10 @@ input:checked ~ .switch-paddle {
 
 .tabulator-col {
     vertical-align: top !important;
+}
+
+.all-search-form-element {
+    vertical-align: bottom !important;
 }
 
 .tabulator-page:disabled {
