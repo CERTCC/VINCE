@@ -195,10 +195,10 @@ class CSAFSerializer(serializers.ModelSerializer):
         case_status = "final"
 
         if vr.dateupdated:
-            revision_date = vr.dateupdated
+            revision_date = vr.dateupdated.isoformat(timespec='seconds')
             revision_number = vr.dateupdated.strftime("1.%Y%m%d%H%M%S")
         else:
-            revision_date = datetime.datetime.now()
+            revision_date = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
             revision_number = revision_date.strftime("1.%Y%m%d%H%M%S")
         if vr.revision:
             revision_number = revision_number + "." + str(vr.revision)
@@ -226,7 +226,7 @@ class CSAFSerializer(serializers.ModelSerializer):
             "case_version": case_version
         }
         csafdoc = json.loads(csafdocument, strict=False)
-        if vr.vulnote.references and vr.vulnote.references != '' and vr.vulnote.references != 'None':
+        if vr.vulnote and vr.vulnote.references and vr.vulnote.references != '' and vr.vulnote.references != 'None':
             refs = filter(self.isvalid_reference,re.split('\r?\n',vr.vulnote.references))
             csafdoc["references"] += list(map(lambda x: {"url": x, "summary": x},refs))
         vens = list(Vendor.objects.filter(note=vr.vulnote))
@@ -270,7 +270,6 @@ class CSAFSerializer(serializers.ModelSerializer):
             csafvul = csafvul_template % {
                 "vuid":  vr.vuid,
                 "cve":  cve,
-                "ORG_NAME": settings.ORG_NAME,
                 "title": json.dumps(casevul.description.split(".")[0]+"."),
                 "description": json.dumps(casevul.description) }
             csafvulj = json.loads(csafvul,strict=False)

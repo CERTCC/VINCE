@@ -174,7 +174,6 @@ from rest_framework.views import APIView
 import pathlib
 import mimetypes
 from django.views.decorators.cache import cache_control
-from lib.vince.utils import deepGet
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -277,6 +276,34 @@ def filterDateTimeFields(POST, res, crit="created__range"):
             logger.info(f"Filtering failed for DateTimeField error {e}, all fields are {POST}")
 
     return res
+
+
+def prepare_info_for_report_element(self):
+    info_for_context = {}
+    year = int(self.request.GET.get("year", datetime.now().year))
+    month = int(self.request.GET.get("month", datetime.now().month))
+    if month == 0:
+        month = 12
+        year = year - 1
+    elif month > 12:
+        month = 1
+        year = year + 1
+    info_for_context["year"] = year
+    info_for_context["monthstr"] = date(year, month, 1).strftime("%B")
+    info_for_context["month"] = month
+    info_for_context["teams"] = Group.objects.exclude(groupsettings__contact__isnull=True)
+    user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
+    if self.kwargs.get("pk"):
+        info_for_context["my_team"] = Group.objects.get(id=self.kwargs.get("pk"))
+        info_for_context["teams"] = info_for_context["teams"].exclude(id=self.kwargs.get("pk"))
+    else:
+        info_for_context["my_team"] = user_groups[0]
+        info_for_context["teams"] = info_for_context["teams"].exclude(id=info_for_context["my_team"].id)
+        # this team's queues
+
+    my_queues = get_team_queues(info_for_context["my_team"])
+
+    return [info_for_context, my_queues]
 
 
 @register.filter(name="leading_zeros")
@@ -2797,6 +2824,7 @@ class CaseFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
         ]
 
         context["form"] = form
+        logger.debug(f"in CaseFilter, context is {context}")
         return context
 
 
@@ -2850,7 +2878,7 @@ class EditCaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, F
         context = super(EditCaseRequestView, self).get_context_data(**kwargs)
         ticket = get_object_or_404(Ticket, id=self.kwargs["ticket_id"])
         cr = get_object_or_404(CaseRequest, id=ticket.id)
-        if deepGet(cr.metadata, "ai_ml_system") == True:
+        if vinceutils.deepGet(cr.metadata, "ai_ml_system") == True:
             context["ai_ml_system"] = True
         form = EditCaseRequestForm(instance=cr)
         context["form"] = form
@@ -4896,7 +4924,7 @@ class CaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
             context["preexistingcomment"] = self.request.session.get("preexistingcomment")
             del self.request.session["preexistingcomment"]
         context["ticket"] = get_object_or_404(CaseRequest, id=self.kwargs["pk"])
-        if deepGet(context["ticket"].metadata, "ai_ml_system") == True:
+        if vinceutils.deepGet(context["ticket"].metadata, "ai_ml_system") == True:
             context["ai_ml_system"] = True
         else:
             context["ai_ml_system"] = False
@@ -4968,6 +4996,7 @@ class TicketActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         context["ticketpage"] = 1
         context["ticket"] = get_object_or_404(Ticket, id=self.kwargs["pk"])
         context["more"] = False
+        logger.debug(f'in TicketActivityView, context["ticket"].get_actions() is {context["ticket"].get_actions()}')
         if context["ticket"].followup_set.count() > Ticket.MAX_ACTIVITY:
             if self.request.GET.get("all", None):
                 context["ticket"].MAX_ACTIVITY = 0
@@ -7288,14 +7317,14 @@ class CaseOriginalReportView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin
                     vc_cr = VTCaseRequest.objects.filter(vrf_id=context["cr"].vrf_id).first()
                     if vc_cr:
                         context["vincecomm_link"] = reverse("vinny:cr_report", args=[vc_cr.id])
-                if deepGet(context["cr"].metadata, "ai_ml_system") == True:
+                if vinceutils.deepGet(context["cr"].metadata, "ai_ml_system") == True:
                     context["ai_ml_system"] = True
         else:
             context["ticket"] = context["case"].case_request
             if hasattr(context["ticket"], "vrf_id") and context["ticket"].vrf_id:
                 context["vrf_url"] = download_vrf(context["ticket"].vrf_id)
 
-        # if deepGet(context["ticket"].metadata,"ai_ml_system") == True:
+        # if vinceutils.deepGet(context["ticket"].metadata,"ai_ml_system") == True:
         #     context['ai_ml_system'] = True
         # else:
         #     context['ai_ml_system'] = False
@@ -9524,44 +9553,35 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
         assoc.email = ",".join(self.request.POST.getlist("email"))
         assoc.save()
 
-        role = UserRole.objects.filter(role="Authorizer").first()
-        if role:
-            authorizer = auto_assignment(role.id, exclude=self.request.user)
-
         if form.cleaned_data["ticket"]:
             ticket = form.cleaned_data["ticket"]
-            if form.cleaned_data["internal"] == False:
-                if ticket.assigned_to == None:
-                    ticket.assigned_to = self.request.user
-                    ticket.save()
-            elif authorizer:
-                assoc.approval_requested = True
-                ticket.assigned_to = authorizer
-                ticket.save()
-            else:
-                logger.debug("something went wrong with finding an authorizer.")
-                return JsonResponse({"error": "No Authorizer available"}, status=401)
         else:
-            if form.cleaned_data["internal"] == False:
-                ticket_assignee = self.request.user
-            elif authorizer:
-                assoc.approval_requested = True
-                ticket_assignee = authorizer
-            else:
-                logger.debug("something went wrong with finding an authorizer.")
-                return JsonResponse({"error": "No Authorizer available"}, status=401)
             ticket = Ticket(
                 title=f"Contact Verification Process Initiated for {form.cleaned_data['user']}",
                 description=f"{form.cleaned_data['email_body']}",
                 status=Ticket.CLOSED_STATUS,
                 queue=get_vendor_queue(self.request.user),
                 submitter_email=form.cleaned_data["user"],
-                assigned_to=ticket_assignee,
             )
-            ticket.save()
-            assoc.ticket = ticket
-            assoc.save()
 
+        if form.cleaned_data["internal"] == True:
+            authorizer_role = UserRole.objects.filter(role="Authorizer").first()
+            if authorizer_role:
+                authorizer = auto_assignment(authorizer_role.id, exclude=self.request.user)
+            else:
+                logger.debug("something went wrong with finding an authorizer.")
+                return JsonResponse({"error": "No Authorizer available"}, status=401)
+            ticket_assignee = authorizer
+            assoc.approval_requested = True
+            assoc.save()
+            ticket.assigned_to = ticket_assignee
+            ticket.save()
+        else:
+            ticket_assignee = self.request.user
+            ticket.assigned_to = ticket_assignee
+            ticket.save()
+
+        # Create followup and send email notifications
         if form.cleaned_data["internal"] == False:
             title = f"Sent email to {assoc.email} with subject {form.cleaned_data['subject']} to attempt to verify {form.cleaned_data['user']} works for {form.cleaned_data['contact'].vendor_name}."
             body = form.cleaned_data["email_body"]
@@ -9592,6 +9612,16 @@ class ContactVerifyInit(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, For
             # if it's internal - keep it open so it can be assigned to an authorizer
             ticket.status = Ticket.OPEN_STATUS
             ticket.save()
+
+        if form.cleaned_data["internal"] == True:
+            fakerequest = self.request
+            fakerequest.POST = {
+                "owner": ticket_assignee.id,
+                "new_status": Ticket.OPEN_STATUS,
+                "comment": "Requesting Authorization for Contact Association",
+                "auto": 1,
+            }
+            update_ticket(fakerequest, ticket.id)
 
         return redirect("vince:ticket", ticket.id)
 
@@ -14544,13 +14574,27 @@ class ResetUserMFAView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
     def get_context_data(self, **kwargs):
         context = super(ResetUserMFAView, self).get_context_data(**kwargs)
         context["vc_user"] = User.objects.using("vincecomm").filter(id=self.kwargs["pk"]).first()
-        data = get_user_details(context["vc_user"].username)
-        if data.get("PreferredMfaSetting") == "SMS_MFA":
-            attributes = data.get("UserAttributes")
-            for x in attributes:
-                if x["Name"] == "phone_number":
-                    context["sms"] = x["Value"]
-                    break
+
+        # data = get_user_details(context["vc_user"].username)
+        # if data.get("PreferredMfaSetting") == "SMS_MFA":
+        #     attributes = data.get("UserAttributes")
+        #     for x in attributes:
+        #         if x["Name"] == "phone_number":
+        #             context["sms"] = x["Value"]
+        #             break
+
+        try:
+            data = get_user_details(context["vc_user"].username)
+            if data.get("PreferredMfaSetting") == "SMS_MFA":
+                attributes = data.get("UserAttributes")
+                for x in attributes:
+                    if x["Name"] == "phone_number":
+                        context["sms"] = x["Value"]
+                        break
+        except:
+            logger.debug(f"In ResetUserMFAView, user MFA settings were not found for {context['vc_user'].username}.")
+            messages.error(self.request, f"User MFA settings were not found for {context['vc_user'].username}.")
+
         return context
 
     def post(self, request, *args, **kwargs):
@@ -14928,110 +14972,94 @@ class ReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.T
 
     def get_context_data(self, **kwargs):
         context = super(ReportsView, self).get_context_data(**kwargs)
-        year = int(self.request.GET.get("year", datetime.now().year))
-        month = int(self.request.GET.get("month", datetime.now().month))
-        if month == 0:
-            month = 12
-            year = year - 1
-        elif month > 12:
-            month = 1
-            year = year + 1
-        context["year"] = year
-        context["monthstr"] = date(year, month, 1).strftime("%B")
-        context["month"] = month
-        context["teams"] = Group.objects.exclude(groupsettings__contact__isnull=True)
-        user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
-        if self.kwargs.get("pk"):
-            context["my_team"] = Group.objects.get(id=self.kwargs.get("pk"))
-            context["teams"] = context["teams"].exclude(id=self.kwargs.get("pk"))
-        else:
-            context["my_team"] = user_groups[0]
-            context["teams"] = context["teams"].exclude(id=context["my_team"].id)
-            # this team's queues
+        info_for_context, my_queues = prepare_info_for_report_element(self)
+        for x in info_for_context:
+            context[x] = info_for_context[x]
 
-        my_queues = get_team_queues(context["my_team"])
+        context["reportpage"] = 1
+
+        read_queues = get_r_queues(self.request.user)
+
+        context["fwd_reports"] = FollowUp.objects.filter(
+            title__icontains="Successfully forwarded",
+            ticket__queue__in=my_queues,
+            date__month=context["month"],
+            date__year=context["year"],
+        )
+
+        return context
+
+
+class ReportsVulnotesView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/include/reports_page_elements/reports_page_vulnotes.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        if check_misconfiguration(self.request.user):
+            return redirect("vince:misconfigured")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(ReportsVulnotesView, self).get_context_data(**kwargs)
+        info_for_context, my_queues = prepare_info_for_report_element(self)
+        for x in info_for_context:
+            context[x] = info_for_context[x]
+
         context["newnotes"] = VulnerabilityCase.objects.filter(
-            vulnote__date_published__year=year, vulnote__date_published__month=month, team_owner=context["my_team"]
-        ).exclude(vulnote__date_published__isnull=True)
-        context["updated"] = VulnerabilityCase.objects.filter(
-            vulnote__date_last_published__year=year,
-            vulnote__date_last_published__month=month,
+            vulnote__date_published__year=context["year"],
+            vulnote__date_published__month=context["month"],
             team_owner=context["my_team"],
         ).exclude(vulnote__date_published__isnull=True)
+        context["updated"] = VulnerabilityCase.objects.filter(
+            vulnote__date_last_published__year=context["year"],
+            vulnote__date_last_published__month=context["month"],
+            team_owner=context["my_team"],
+        ).exclude(vulnote__date_published__isnull=True)
+
+        return context
+
+
+class ReportsEmailsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/include/reports_page_elements/reports_page_emails.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        if check_misconfiguration(self.request.user):
+            return redirect("vince:misconfigured")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(ReportsEmailsView, self).get_context_data(**kwargs)
+        info_for_context, my_queues = prepare_info_for_report_element(self)
+        for x in info_for_context:
+            context[x] = info_for_context[x]
+
         context["ticket_emails"] = FollowUp.objects.filter(
-            title__icontains="New Email", date__year=year, date__month=month, ticket__queue__in=my_queues
+            title__icontains="New Email",
+            date__year=context["year"],
+            date__month=context["month"],
+            ticket__queue__in=my_queues,
         ).exclude(ticket__case__isnull=False)
         context["case_emails"] = FollowUp.objects.filter(
-            title__icontains="New Email", ticket__queue__in=my_queues, date__year=year, date__month=month
+            title__icontains="New Email",
+            ticket__queue__in=my_queues,
+            date__year=context["year"],
+            date__month=context["month"],
         ).exclude(ticket__case__isnull=True)
         context["case_emails_distinct"] = (
             context["case_emails"].order_by("ticket__case__id").distinct("ticket__case__id").count()
         )
         context["total_emails"] = len(context["ticket_emails"]) + len(context["case_emails"])
-        if (month < datetime.now().month) and (year <= datetime.now().year):
+        if (context["month"] < datetime.now().month) and (context["year"] <= datetime.now().year):
             context["show_next"] = 1
-        elif year < datetime.now().year:
+        elif context["year"] < datetime.now().year:
             context["show_next"] = 1
-
-        context["new_users"] = (
-            User.objects.using("vincecomm").filter(date_joined__month=month, date_joined__year=year).count()
-        )
-        context["total_users"] = User.objects.using("vincecomm").all().count()
-        vendor_group_dict = {
-            group.name: group.user_set.count()
-            for group in Group.objects.using("vincecomm").exclude(groupcontact__isnull=True)
-            if group.user_set.count() > 0
-        }
-        vendor_groups = Group.objects.using("vincecomm").exclude(groupcontact__isnull=True)
-        context["vendor_users"] = User.objects.using("vincecomm").filter(groups__in=vendor_groups).distinct().count()
-        context["vendors"] = len(vendor_group_dict)
-        context["cves"] = Vulnerability.objects.filter(
-            date_added__year=year, date_added__month=month, case__team_owner=context["my_team"]
-        ).exclude(cve__isnull=True)
-        context["cves_reserved"] = CVEReservation.objects.filter(
-            time_reserved__year=year, time_reserved__month=month, account__team=context["my_team"]
-        )
-        tickets_in_queues = Ticket.objects.filter(queue__in=my_queues)
-        context["basic_ticket_stats"] = calc_basic_ticket_stats(tickets_in_queues)
-
-        context["reportpage"] = 1
-
-        read_queues = get_r_queues(self.request.user)
-        context["tickettags"] = (
-            TicketTag.objects.filter(ticket__queue__in=my_queues)
-            .values("tag")
-            .order_by("tag")
-            .annotate(count=Count("tag"))
-            .annotate(month_count=Count("tag", filter=Q(ticket__created__year=year, ticket__created__month=month)))
-            .order_by("-tag")
-        )
-        # context['tickettags'] = TicketTag.objects.filter(ticket__queue__in=my_queues).values('tag').order_by('tag').annotate(count=Count('tag')).order_by('-count')
-        context["casetags"] = (
-            CaseTag.objects.filter(case__team_owner=context["my_team"])
-            .values("tag")
-            .order_by("tag")
-            .annotate(count=Count("tag"))
-            .annotate(count=Count("tag"))
-            .annotate(month_count=Count("tag", filter=Q(created__year=year, created__month=month)))
-            .order_by("-count")
-        )
-
-        context["vultags"] = (
-            VulnerabilityTag.objects.filter(vulnerability__case__team_owner=context["my_team"])
-            .values("tag")
-            .order_by("tag")
-            .annotate(count=Count("tag"))
-            .annotate(count=Count("tag"))
-            .annotate(
-                month_count=Count(
-                    "tag", filter=Q(vulnerability__date_added__year=year, vulnerability__date_added__month=month)
-                )
-            )
-            .order_by("-count")
-        )
-        context["fwd_reports"] = FollowUp.objects.filter(
-            title__icontains="Successfully forwarded", ticket__queue__in=my_queues, date__month=month, date__year=year
-        )
 
         return context
 
@@ -15050,41 +15078,22 @@ class ReportsCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
 
     def get_context_data(self, **kwargs):
         context = super(ReportsCasesView, self).get_context_data(**kwargs)
-        year = int(self.request.GET.get("year", datetime.now().year))
-        month = int(self.request.GET.get("month", datetime.now().month))
-        if month == 0:
-            month = 12
-            year = year - 1
-        elif month > 12:
-            month = 1
-            year = year + 1
-        context["year"] = year
-        context["monthstr"] = date(year, month, 1).strftime("%B")
-        context["month"] = month
-        context["teams"] = Group.objects.exclude(groupsettings__contact__isnull=True)
-        user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
-        if self.kwargs.get("pk"):
-            context["my_team"] = Group.objects.get(id=self.kwargs.get("pk"))
-            context["teams"] = context["teams"].exclude(id=self.kwargs.get("pk"))
-        else:
-            context["my_team"] = user_groups[0]
-            context["teams"] = context["teams"].exclude(id=context["my_team"].id)
-            # this team's queues
-
-        my_queues = get_team_queues(context["my_team"])
+        info_for_context, my_queues = prepare_info_for_report_element(self)
+        for x in info_for_context:
+            context[x] = info_for_context[x]
 
         new_cases = VulnerabilityCase.objects.filter(
-            created__year=year, created__month=month, team_owner=context["my_team"]
+            created__year=context["year"], created__month=context["month"], team_owner=context["my_team"]
         ).order_by("created")
-        date_month = date(year, month, 1)
+        date_month = date(context["year"], context["month"], 1)
         active_cases = VulnerabilityCase.objects.filter(
             status=VulnerabilityCase.ACTIVE_STATUS, created__lt=date_month, team_owner=context["my_team"]
         )
         deactive_cases = (
             CaseAction.objects.filter(
                 title__icontains="changed status of case from Active to Inactive",
-                date__month=month,
-                date__year=year,
+                date__month=context["month"],
+                date__year=context["year"],
                 case__team_owner=context["my_team"],
             )
             .select_related("case")
@@ -15094,8 +15103,8 @@ class ReportsCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         to_active_cases = (
             CaseAction.objects.filter(
                 title__icontains="changed status of case from Inactive to Active",
-                date__month=month,
-                date__year=year,
+                date__month=context["month"],
+                date__year=context["year"],
                 case__team_owner=context["my_team"],
             )
             .select_related("case")
@@ -15130,36 +15139,17 @@ class ReportsTicketsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
 
     def get_context_data(self, **kwargs):
         context = super(ReportsTicketsView, self).get_context_data(**kwargs)
-        year = int(self.request.GET.get("year", datetime.now().year))
-        month = int(self.request.GET.get("month", datetime.now().month))
-        if month == 0:
-            month = 12
-            year = year - 1
-        elif month > 12:
-            month = 1
-            year = year + 1
-        context["year"] = year
-        context["monthstr"] = date(year, month, 1).strftime("%B")
-        context["month"] = month
-        context["teams"] = Group.objects.exclude(groupsettings__contact__isnull=True)
-        user_groups = self.request.user.groups.exclude(groupsettings__contact__isnull=True)
-        if self.kwargs.get("pk"):
-            context["my_team"] = Group.objects.get(id=self.kwargs.get("pk"))
-            context["teams"] = context["teams"].exclude(id=self.kwargs.get("pk"))
-        else:
-            context["my_team"] = user_groups[0]
-            context["teams"] = context["teams"].exclude(id=context["my_team"].id)
-            # this team's queues
+        info_for_context, my_queues = prepare_info_for_report_element(self)
+        for x in info_for_context:
+            context[x] = info_for_context[x]
 
-        my_queues = get_team_queues(context["my_team"])
-
-        ticketdata = Ticket.objects.filter(queue__in=my_queues, created__year=year, created__month=month).aggregate(
-            total_tickets=Count("id"), total_closed=Count("id", filter=Q(status=Ticket.CLOSED_STATUS))
-        )
+        ticketdata = Ticket.objects.filter(
+            queue__in=my_queues, created__year=context["year"], created__month=context["month"]
+        ).aggregate(total_tickets=Count("id"), total_closed=Count("id", filter=Q(status=Ticket.CLOSED_STATUS)))
         context["total_tickets"] = ticketdata["total_tickets"]
         context["total_closed"] = ticketdata["total_closed"]
         context["ticket_stats"] = (
-            Ticket.objects.filter(queue__in=my_queues, created__year=year, created__month=month)
+            Ticket.objects.filter(queue__in=my_queues, created__year=context["year"], created__month=context["month"])
             .values("queue__title")
             .order_by("queue__title")
             .annotate(count=Count("queue__title"))
@@ -15167,13 +15157,175 @@ class ReportsTicketsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         )
         context["closed_ticket_stats"] = (
             Ticket.objects.filter(
-                queue__in=my_queues, created__year=year, created__month=month, status=Ticket.CLOSED_STATUS
+                queue__in=my_queues,
+                created__year=context["year"],
+                created__month=context["month"],
+                status=Ticket.CLOSED_STATUS,
             )
             .values("close_reason")
             .order_by("close_reason")
             .annotate(count=Count("close_reason"))
             .order_by("-count")
         )
+
+        return context
+
+
+class ReportsUserStatsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/include/reports_page_elements/reports_page_userstats.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        if check_misconfiguration(self.request.user):
+            return redirect("vince:misconfigured")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(ReportsUserStatsView, self).get_context_data(**kwargs)
+        info_for_context, my_queues = prepare_info_for_report_element(self)
+        for x in info_for_context:
+            context[x] = info_for_context[x]
+
+        context["new_users"] = (
+            User.objects.using("vincecomm")
+            .filter(date_joined__month=context["month"], date_joined__year=context["year"])
+            .count()
+        )
+        context["total_users"] = User.objects.using("vincecomm").all().count()
+        vendor_group_dict = {
+            group.name: group.user_set.count()
+            for group in Group.objects.using("vincecomm").exclude(groupcontact__isnull=True)
+            if group.user_set.count() > 0
+        }
+        vendor_groups = Group.objects.using("vincecomm").exclude(groupcontact__isnull=True)
+        context["vendor_users"] = User.objects.using("vincecomm").filter(groups__in=vendor_groups).distinct().count()
+        context["vendors"] = len(vendor_group_dict)
+
+        return context
+
+
+class ReportsCurrentTicketStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/include/reports_page_elements/reports_page_current_ticket_status.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        if check_misconfiguration(self.request.user):
+            return redirect("vince:misconfigured")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        logger.debug("ReportsCurrentTicketStatusView has been called")
+        context = super(ReportsCurrentTicketStatusView, self).get_context_data(**kwargs)
+        info_for_context, my_queues = prepare_info_for_report_element(self)
+        for x in info_for_context:
+            context[x] = info_for_context[x]
+
+        tickets_in_queues = Ticket.objects.filter(queue__in=my_queues)
+        context["basic_ticket_stats"] = calc_basic_ticket_stats(tickets_in_queues)
+
+        return context
+
+
+class ReportsCVEsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/include/reports_page_elements/reports_page_cves.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        if check_misconfiguration(self.request.user):
+            return redirect("vince:misconfigured")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(ReportsCVEsView, self).get_context_data(**kwargs)
+        info_for_context, my_queues = prepare_info_for_report_element(self)
+        for x in info_for_context:
+            context[x] = info_for_context[x]
+
+        context["cves"] = Vulnerability.objects.filter(
+            date_added__year=context["year"], date_added__month=context["month"], case__team_owner=context["my_team"]
+        ).exclude(cve__isnull=True)
+        logger.debug(f'the following cves were found: {context["cves"]}')
+        context["cves_reserved"] = CVEReservation.objects.filter(
+            time_reserved__year=context["year"],
+            time_reserved__month=context["month"],
+            account__team=context["my_team"],
+        )
+
+        return context
+
+
+class ReportsTagsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+    template_name = "vince/include/reports_page_elements/reports_page_tags.html"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        if check_misconfiguration(self.request.user):
+            return redirect("vince:misconfigured")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(ReportsTagsView, self).get_context_data(**kwargs)
+        info_for_context, my_queues = prepare_info_for_report_element(self)
+        for x in info_for_context:
+            context[x] = info_for_context[x]
+
+        context["tickettags"] = (
+            TicketTag.objects.filter(ticket__queue__in=my_queues)
+            .values("tag")
+            .order_by("tag")
+            .annotate(count=Count("tag"))
+            .annotate(
+                month_count=Count(
+                    "tag", filter=Q(ticket__created__year=context["year"], ticket__created__month=context["month"])
+                )
+            )
+            .order_by("-tag")
+        )
+        # context['tickettags'] = TicketTag.objects.filter(ticket__queue__in=my_queues).values('tag').order_by('tag').annotate(count=Count('tag')).order_by('-count')
+
+        context["casetags"] = (
+            CaseTag.objects.filter(case__team_owner=context["my_team"])
+            .values("tag")
+            .order_by("tag")
+            .annotate(count=Count("tag"))
+            .annotate(count=Count("tag"))
+            .annotate(
+                month_count=Count("tag", filter=Q(created__year=context["year"], created__month=context["month"]))
+            )
+            .order_by("-count")
+        )
+
+        context["vultags"] = (
+            VulnerabilityTag.objects.filter(vulnerability__case__team_owner=context["my_team"])
+            .values("tag")
+            .order_by("tag")
+            .annotate(count=Count("tag"))
+            .annotate(count=Count("tag"))
+            .annotate(
+                month_count=Count(
+                    "tag",
+                    filter=Q(
+                        vulnerability__date_added__year=context["year"],
+                        vulnerability__date_added__month=context["month"],
+                    ),
+                )
+            )
+            .order_by("-count")
+        )
+
+        logger.debug(f'in ReportsTagsView, team is {context["my_team"]} and context is {context}')
 
         return context
 
@@ -15489,7 +15641,7 @@ class VinceCommUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             context["groupnames"] = []
             for group in context["vc_user"].groups.all():
                 try:
-                    contact = Contact.objects.filter(uuid = group.name).first()
+                    contact = Contact.objects.filter(uuid=group.name).first()
                     if contact:
                         context["groupnames"].append(contact.name)
                 except:
@@ -15534,18 +15686,34 @@ class VinceCommRemoveUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
     def post(self, request, *args, **kwargs):
         user = User.objects.using("vincecomm").filter(id=self.kwargs["pk"]).first()
         if user:
+            vtuser = User.objects.filter(id=self.kwargs["pk"]).first()
+            if vtuser:
+                vtuser.is_active = False
+                vtuser.save()
+                groupInfo = list(vtuser.groups.all().values_list('name',flat=True))
+                logger.debug(f"{self.request.user} has made VinceTrack user {vtuser} inactive and removed from Groups: {groupInfo}")
+                VendorAction(title=f"Administrator {self.request.user} made the VinceTrack account {vtuser} to be inactive and removed from Group {groupInfo}",user=user).save()
             user.is_active = False
             user.save()
-            logger.debug(f"{self.request.user} has made {user} inactive")
-            check_ga = None
             groups = user.groups.all()
-            for group in groups:
-                group.user_set.remove(user)
+            groupInfo = "[]"
+            if groups:
+                guuid = [x for x in groups.values_list('name',flat=True) if vinceutils.is_uuid(x)]
+                groupInfo = list(VinceCommContact.objects.filter(uuid__in=guuid).values_list('vendor_name',flat=True))
+                user.groups.clear()
+            logger.debug(f"{self.request.user} has made VinceComm user {user} inactive and removed from Groups: {groupInfo}")
+            VendorAction(title=f"Administrator {self.request.user} made the VinceComm account {user} to be inactive and removed from Group {groupInfo}",user=user).save()
             emails = VinceCommEmail.objects.filter(email__iexact=user.username)
             for email in emails:
                 ga = VinceCommGroupAdmin.objects.filter(email=email).first()
                 if ga:
-                    check_ga = ga
+                    if ga.contact:
+                        messages.warning(
+                            self.request,
+                            _(
+                                f"This user has been removed as a group admin for {ga.contact.vendor_name}. Please reassign a new group admin."
+                            ),
+                        )
                 email.delete()
             emails = EmailContact.objects.filter(email__iexact=user.username)
             for email in emails:
@@ -15573,6 +15741,10 @@ class VinceCommRemoveUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                     )
                     logger.debug(f"{self.request.user} has made {user} inactive due to permanent bounce")
                     fup.save()
+                    va = VendorAction(
+                        user=user, title=f"{self.request.user} has made {user} inactive due to permanent bounce"
+                    )
+                    va.save()
             # close any bounces that may be associated with this user
             bn = BounceEmailNotification.objects.filter(email=user.email, action_taken=False)
             for b in bn:
@@ -15582,13 +15754,6 @@ class VinceCommRemoveUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
             messages.success(
                 self.request, _("The user has been removed from all groups and contacts and is now inactive")
             )
-            if check_ga:
-                messages.warning(
-                    self.request,
-                    _(
-                        f"This user has been removed as a group admin for {ga.contact.vendor_name}. Please reassign a new group admin."
-                    ),
-                )
             return redirect("vince:vcuser", user.id)
         else:
             messages.error(self.request, _("Error: User was not found"))
@@ -15911,9 +16076,9 @@ class VinceTeamSettingsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         initial["outgoing_email"] = context["team"].groupsettings.team_email or settings.DEFAULT_REPLY_EMAIL
         initial["disclosure_link"] = context["team"].groupsettings.disclosure_link
         initial["cna_email"] = context["team"].groupsettings.cna_email
-        if deepGet(context["team"].groupsettings.metadata, "reports.weekly") == "on":
+        if vinceutils.deepGet(context["team"].groupsettings.metadata, "reports.weekly") == "on":
             initial["weekly_report_boolean"] = context["team"].groupsettings.metadata["reports"]["weekly"]
-        if deepGet(context["team"].groupsettings.metadata, "reports.recipients"):
+        if vinceutils.deepGet(context["team"].groupsettings.metadata, "reports.recipients"):
             initial["weekly_report_recipients"] = (
                 context["team"]
                 .groupsettings.metadata["reports"]["recipients"]
@@ -15973,13 +16138,13 @@ class VinceTeamSettingsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
         if team.groupsettings.metadata == None or type(team.groupsettings.metadata) != dict:
             # Initialize metadata if not set
             team.groupsettings.metadata = {"reports": {}}
-        elif deepGet(team.groupsettings.metadata, "reports") == None:
+        elif vinceutils.deepGet(team.groupsettings.metadata, "reports") == None:
             # initialize reports in metadata
             team.groupsettings.metadata["reports"] = {}
 
-        if self.request.POST.get("weekly_report_boolean") != deepGet(team.groupsettings.metadata, "reports.weekly"):
+        if self.request.POST.get("weekly_report_boolean") != vinceutils.deepGet(team.groupsettings.metadata, "reports.weekly"):
             action = Action(
-                title=f"{self.request.user.usersettings.preferred_username} changed {team.name} team's weekly report setting from {deepGet(team.groupsettings.metadata,'reports.weekly')} to {self.request.POST.get('weekly_report_boolean')}",
+                title=f"{self.request.user.usersettings.preferred_username} changed {team.name} team's weekly report setting from {vinceutils.deepGet(team.groupsettings.metadata,'reports.weekly')} to {self.request.POST.get('weekly_report_boolean')}",
                 user=self.request.user,
                 comment="Team Settings Change",
             )
@@ -15989,11 +16154,11 @@ class VinceTeamSettingsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin,
             else:
                 team.groupsettings.metadata["reports"]["weekly"] = "off"
 
-        if self.request.POST.get("weekly_report_recipients") != deepGet(
+        if self.request.POST.get("weekly_report_recipients") != vinceutils.deepGet(
             team.groupsettings.metadata, "reports.recipients"
         ):
             action = Action(
-                title=f"{self.request.user.usersettings.preferred_username} changed {team.name} team's set of weekly report recipients from {deepGet(team.groupsettings.metadata,'reports.recipients')} to {self.request.POST.get('weekly_report_recipients')}",
+                title=f"{self.request.user.usersettings.preferred_username} changed {team.name} team's set of weekly report recipients from {vinceutils.deepGet(team.groupsettings.metadata,'reports.recipients')} to {self.request.POST.get('weekly_report_recipients')}",
                 user=self.request.user,
                 comment="Team Settings Change",
             )

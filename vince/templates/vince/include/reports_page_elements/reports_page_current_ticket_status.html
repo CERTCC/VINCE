@@ -1,0 +1,15 @@
+{% load i18n report_tags ticket_to_link %}
+
+  <div class="row">
+    {% for entry in basic_ticket_stats.open_ticket_stats %}  
+      <div class="large-4 columns">
+        <div class="dashboard-my-tickets">
+          <a class="dashboard-nav-card card-{{ entry.2 }}" href="{% url 'vince:ticketsearch' %}?{{entry.3}}">
+            <i class="dashboard-nav-card-icon fas fa-calendar-alt" aria-hidden="true"></i>
+            <h2 class="dashboard-nav-stat">{{entry.1}}</h2>
+            <h5 class="dashboard-nav-card-title">{{ entry.0 }}</h5>
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>

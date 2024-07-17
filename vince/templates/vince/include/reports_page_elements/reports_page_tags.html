@@ -1,0 +1,118 @@
+{% load i18n report_tags ticket_to_link %}
+
+<div class="row">
+    <div class="large-6 columns">
+      <h5>Ticket Tags</h5>
+    </div>
+    <div class="large-6 columns"></div>
+</div>
+  
+
+{% if tickettags %}
+<div class="row">
+    <div class="large-6 columns">
+        <table class="unstriped">
+            <tr>
+                <td>Tag</td>
+                <td>Overall</td>
+                <td>Created {{ monthstr }} {{ year }}</td>
+            </tr>
+            {% for t in tickettags %}
+                <tr>
+                    <td>
+                        <a href="{% url 'vince:ticketsearch' %}?tag={{t.tag}}&status=1&status=2&status=3&status=4&status=5&status=6">{{ t.tag }}</a>
+                    </td>
+                    <td>{{ t.count }}</td>
+                    <td>{{ t.month_count }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% else %}
+<div class="row">
+    <div class="large-12 columns">
+      <p>
+        <i>No ticket tags</i>
+      </p>
+    </div>
+  </div>
+{% endif %}
+  
+<div class="row">
+    <div class="large-6 columns">
+        <h5>Case Tags</h5>
+    </div>
+    <div class="large-6 columns"></div>
+</div>
+
+{% if casetags %}
+<div class="row">
+    <div class="large-6 columns">
+        <table class="unstriped">
+            <tr>
+                <td>Tag</td>
+                <td>Overall</td>
+                <td>Tagged {{monthstr}} {{ year }}</td>
+            </tr>
+            {% for t in casetags %}
+                <tr>
+                    <td><a href="{% url 'vince:casesearch' %}?tag={{t.tag}}">{{ t.tag }}</a></td>
+                    <td>{{ t.count }}</td>
+                    <td>{{ t.month_count }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% else %}
+<div class="row">
+    <div class="large-12 columns">
+      <p>
+        <i>No case tags</i>
+      </p>
+    </div>
+  </div>
+{% endif %}
+  
+
+<div class="row">
+    <div class="large-6 columns">
+        <h5>Vulnerability Tags</h5>
+    </div>
+    <div class="large-6 columns"></div>
+</div>
+
+{% if vultags %}
+
+<div class="row">
+    <div class="large-6 columns">
+        <table class="unstriped">
+            <tr>
+                <td>Tag</td>
+                <td>Overall</td>
+                <td>Created {{monthstr}} {{ year }}</td>
+            </tr>
+            {% for t in vultags %}
+                <tr>
+                <td><a href="{% url 'vince:search' %}?q={{t.tag}}&facet=Vuls">{{ t.tag }}</a></td>
+                <td>{{ t.count }}</td>
+                <td>{{ t.month_count }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% else %}
+<div class="row">
+    <div class="large-12 columns">
+      <p>
+        <i>No vulnerability tags</i>
+      </p>
+    </div>
+  </div>
+{% endif %}
+  

@@ -111,28 +111,22 @@ $(document).ready(function() {
             // Previously submitted - don't submit again
             e.preventDefault();
         } else {
-            console.log(1)
             let email_body = $("#id_email_body").val();
-            console.log(2)
             if ((email_body.search(/VENDOR/) >= 0)) {
                 alert("Please check email text and replace VENDOR placeholder text");
                 return false;
             }
-            console.log(3)
             if ((email_body.search(/EMAIL/) >= 0)) {
                 alert("Please check email text and replace EMAIL placeholder text");
                 return false;
             }
-            console.log(4)
             if ((email_body.search(/JUSTIFICATION/) >= 0)) {
                 alert("Please check email text and replace JUSTIFICATION placeholder text");
                 return false;
             }
-            console.log(5)
             if (internal_verification_checkbox.checked && taggle.getTagValues().length == 0){
                 taggle.add(user_to_verify)
             }
-            console.log(6)
             // Mark it so that the next submit can be ignored
             $form.data('submitted', true);
         }
@@ -154,10 +148,6 @@ $(document).ready(function() {
             placeholder: ["Verification emails must first be added to contact."],
 	    });
     };
-
-
-    // This is all code for VIN-731. It's commented out because we didn't quite have time to test all possible edge cases before a separate process
-    // required us to put out a VINCE release.
 
     let user_to_verify_field = document.getElementById('id_user');
     let user_to_verify = user_to_verify_field.value;

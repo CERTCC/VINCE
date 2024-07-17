@@ -2895,6 +2895,18 @@ button:hover, .button:hover{
     display: block;
 }
 
+.collapse-inline {
+    display: none;
+}
+
+.expanded-inline {
+    display: inline;
+}
+
+.expandable-section-heading {
+    cursor: pointer;
+}
+
 tr.delete td {
     background-color: #FDC;
 }
@@ -2990,7 +3002,6 @@ tr.equal td {
 }
 
 .diff-container td {
-    white-space: pre;
     font-family: monospace;
     padding: 0.2rem 0.3rem 0.3rem;
 }

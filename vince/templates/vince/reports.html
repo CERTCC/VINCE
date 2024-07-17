@@ -58,262 +58,138 @@
 
 <hr>
 
-<div class="row">
-  <div class="large-12 columns">
-    <h3 class="section-title">Vulnerability Notes</h3>
-    <ul class="stats-list">
-      <li class="stats-list-positive">
-      	{{ newnotes|length }} <span class="stats-list-label">New</span>
-      </li>
-      <li>
-	      {{ updated | length }} <span class="stats-list-label">Updated</span>
-      </li>
-    </ul>
+<div id="reports_page_wrapper">
 
-    <div class="thread-messages">
-      <b> Published {{ monthstr }} {{ year }} </b>
-    </div>
-
-    <ul>
-      {% for note in newnotes %}
-        <li><a href="{{note.get_absolute_url}}">{{ note.vutitle }}</a></li>
-      {% empty %}
-        <i>No vulnerability notes published this month</i>
-      {% endfor %}
-    </ul>
-
-
-    <div class="thread-messages">
-      <b> Updated {{ monthstr }} {{ year }} </b>
-    </div>
-    <ul>
-      {% for note in updated %}
-        <li>
-          <a href="{{note.get_absolute_url}}">{{ note.vutitle }}</a>
-        </li>
-      {% empty %}
-        <i>No vulnerability notes updated this month</i>
-      {% endfor %}
-    </ul>
-    
-  </div>
-</div>
-
-<hr>
-
-<div class="row">
-  <div class="large-8 columns">
-    <h3 class="section-title">Emails</h3>
-    <ul class="stats-list">
-      <li class="stats-list-positive">
-        {{ total_emails }} <span class="stats-list-label">Emails</span>
-      </li>
-      <li>
-        {{ ticket_emails | length }} <span class="stats-list-label">General</span>
-      </li>
-      <li>
-        {{ case_emails | length }} <span class="stats-list-label">Case</span>
-      </li>
-      <li>
-        {{ case_emails_distinct }} <span class="stats-list-label">Unique Cases</span>
-      </li>
-    </ul>
-  </div>
-</div>
-<hr>
-
-
-<div id="reports_page_cases" href="{% url 'vince:reports_page_cases' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh">
-  <!-- Load this async -->
-</div>
-
-<hr>
-
-{% if fwd_reports %}
+  
   <div class="row">
     <div class="large-12 columns">
-      <h3 class="section-title">Forwarded Reports {{ monthstr }} {{ year }}</h3>
-      <div class="thread-messages">
-        {% for r in fwd_reports %}
-          <div> <a href="{% url 'vince:ticket' r.ticket.id %}">[{{ r.ticket.queue }}-{{ r.ticket.id }}] {{ r.ticket.title }}</a></div>
-        {% endfor %}
-      </div>
+      <h3 class="section-title expandable-section-heading" id="vulnotes_expand"><i class="expandable-section-heading-icon fas fa-caret-right vulnotes_expand"></i> Vulnerability Notes</span></h3>
     </div>
+  </div>
+
+
+  <div id="reports_page_vulnotes" href="{% url 'vince:reports_page_vulnotes' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh vulnotes_expand collapse">
+    <!-- Load this async -->
   </div>
 
   <hr>
-{% endif %}
 
-<div id="reports_page_tickets" href="{% url 'vince:reports_page_tickets' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh">
-  <!-- Load this async -->
-</div>
+  <div class="row">
+    <div class="large-8 columns">
+      <h3 class="section-title expandable-section-heading" id="emails_expand"><i class="expandable-section-heading-icon fas fa-caret-right emails_expand"></i> Emails</h3>
+    </div>
+  </div>
 
+  <div id="reports_page_emails" href="{% url 'vince:reports_page_emails' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh emails_expand collapse">
+    <!-- Load this async -->
+  </div>
 
-<div class="row" id="userinfo">
-  <div class="large-6 columns">
-    <h3 class="section-title">VINCE User Stats</h3>
-  </div>
-  <div class="large-6 columns text-right">
-    <a href="{% url 'vince:usergraphs' %}" class="button primary">User Graphs</a>
-  </div>
-</div>
-    
-<div class="row">
-  <div class="large-3 columns">
-    <h3 class="section-title">New Users</h3>
-    <h1><i class="fas fa-user-plus"></i> {{ new_users }}</h1>
-  </div>
-  <div class="large-3 columns">
-    <h3 class="section-title">Total Users</h3>
-    <h1><i class="fas fa-user"></i> {{ total_users }}</h1>
-  </div>
-  <div class="large-3 columns">
-    <h3 class="section-title">Vendors</h3>
-    <h1><i class="fas fa-users"></i> {{ vendors }} </h1>
-  </div>
-  <div class="large-3 columns">
-    <h3 class="section-title">Vendor Users</h3>
-    <h1><i class="fas fa-user-tie"></i> {{vendor_users}}</h1>
-  </div>
-</div>
+  <hr>
 
-<hr>
-
-<div class="row">
-  <div class="large-6 columns">
-    <h3 class="section-title">Current Ticket Status</h3>
+  <div class="row">
+    <div class="large-12 columns">
+      <h3 class="section-title expandable-section-heading" id="cases_expand"><i class="expandable-section-heading-icon fas fa-caret-right cases_expand"></i> Cases</h3>
+    </div>
   </div>
-  <div class="large-6 columns"></div>
-</div>
 
-<div class="row">
-  {% for entry in basic_ticket_stats.open_ticket_stats %}
-    <div class="large-4 columns">
-      <div class="dashboard-my-tickets">
-        <a class="dashboard-nav-card card-{{ entry.2 }}" href="{% url 'vince:ticketsearch' %}?{{entry.3}}">
-          <i class="dashboard-nav-card-icon fas fa-calendar-alt" aria-hidden="true"></i>
-          <h2 class="dashboard-nav-stat">{{entry.1}}</h2>
-          <h5 class="dashboard-nav-card-title">{{ entry.0 }}</h5>
-        </a>
+  <div id="reports_page_cases" href="{% url 'vince:reports_page_cases' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh cases_expand collapse">
+    <!-- Load this async -->
+  </div>
+
+  <hr>
+
+  {% if fwd_reports %}
+    <div class="row">
+      <div class="large-12 columns">
+        <h3 class="section-title" id="fwd_reports_expand"><i class="expandable-section-heading-icon fas fa-caret-right fwd_reports_expand"></i> Forwarded Reports {{ monthstr }} {{ year }}</h3>
       </div>
     </div>
-  {% endfor %}
-</div>
 
-<hr>
-
-{% if cves %}
-  <div class="row" id="reports">
-    <div class="large-6 columns">
-      <h3> CVEs assigned in {{ monthstr }} {{ year }}</h3>
-      <div class="callout">
-        {% for cve in cves %}
-        <div class="cve"><b>{% if cve.case %}<a href="{% url 'vince:case' cve.case.id %}#vuls">{% endif %}{{ cve.vul }}{% if cve.description %}</a>{% endif %}</b>: {{ cve.description }}
-    <br/>
-    <span class="cvetime">{{ cve.date_added }} {% if cve.user %} by {{ cve.user }}{% endif %}</span>
+    <div class="fwd_reports_expand collapse">
+      <div class="row">
+        <div class="large-12 columns">
+          <div class="thread-messages">
+            {% for r in fwd_reports %}
+              <div> <a href="{% url 'vince:ticket' r.ticket.id %}">[{{ r.ticket.queue }}-{{ r.ticket.id }}] {{ r.ticket.title }}</a></div>
+            {% endfor %}
+          </div>
         </div>
-        {% endfor %}
       </div>
     </div>
-    <div class="large-6 columns">
-    </div>
-  </div>
 
-  <hr>
+    <hr>
+  {% endif %}
 
-{% endif %}
-
-<div class="row">
-  <div class="large-6 columns">
-    <h3 class="section-title">Ticket Tags</h3>
-  </div><div class="large-6 columns"></div>
-</div>
-
-<div class="row">
-  <div class="large-6 columns">
-    <table class="unstriped">
-      <tr>
-        <td>Tag</td>
-        <td>Overall</td>
-        <td>Created {{ monthstr }} {{ year }}</td>
-      </tr>
-      {% for t in tickettags %}
-        <tr>
-	        <td>
-            <a href="{% url 'vince:ticketsearch' %}?tag={{t.tag}}&status=1&status=2&status=3&status=4&status=5&status=6">{{ t.tag }}</a>
-          </td>
-          <td>{{ t.count }}</td>
-          <td>{{ t.month_count }}</td>
-        </tr>
-      {% endfor %}
-    </table>
-  </div>
-</div>
-
-<hr>
-
-<div class="row">
-  <div class="large-6 columns">
-    <h3 class="section-title">Case Tags</h3>
-  </div><div class="large-6 columns"></div>
-</div>
-
-<div class="row">
-  <div class="large-6 columns">
-    <table class="unstriped">
-      <tr>
-        <td>Tag</td>
-        <td>Overall</td>
-        <td>Tagged {{monthstr}} {{ year }}</td>
-      </tr>
-      {% for t in casetags %}
-        <tr>
-          <td><a href="{% url 'vince:casesearch' %}?tag={{t.tag}}">{{ t.tag }}</a></td>
-          <td>{{ t.count }}</td>
-	        <td>{{ t.month_count }}</td>
-        </tr>
-      {% endfor %}
-    </table>
-  </div>
-</div>
-
-<hr>
-
-<div class="row">
-  <div class="large-6 columns">
-    <h3 class="section-title">Vulnerability Tags</h3>
-  </div><div class="large-6 columns"></div>
-</div>
-
-<div class="row">
-  <div class="large-6 columns">
-    <table class="unstriped">
-      <tr>
-        <td>Tag</td>
-        <td>Overall</td>
-        <td>Created {{monthstr}} {{ year }}</td>
-      </tr>
-      {% for t in vultags %}
-        <tr>
-          <td><a href="{% url 'vince:search' %}?q={{t.tag}}&facet=Vuls">{{ t.tag }}</a></td>
-          <td>{{ t.count }}</td>
-          <td>{{ t.month_count }}</td>
-        </tr>
-      {% endfor %}
-    </table>
-  </div>
-</div>
-
-<hr>
-
-{% comment "not using this currently" %}
   <div class="row">
     <div class="large-6 columns">
-      <h3 class="section-title">Filters</h3>
-      <div class="callout">
-        <a href="{% url 'vince:cnovreport' %}">Cases without vendors</a>
-      </div>
-    </div><div class="large-6 columns"></div>
+      <h3 class="section-title expandable-section-heading" id="tickets_expand"><i class="expandable-section-heading-icon fas fa-caret-right tickets_expand"></i> Tickets</span></h3>
+    </div>
   </div>
-{% endcomment %}
-{% endblock %}
+
+
+  <div id="reports_page_tickets" href="{% url 'vince:reports_page_tickets' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh tickets_expand collapse">
+    <!-- Load this async -->
+  </div>
+
+  <hr>
+
+  <div class="row">
+    <div class="large-6 columns">
+      <h3 class="section-title expandable-section-heading" id="user_stats_expand"><i class="expandable-section-heading-icon fas fa-caret-right user_stats_expand"></i> VINCE User Stats</h3>
+    </div>
+    <div class="large-6 columns text-right user_stats_expand collapse-inline">
+      <a href="{% url 'vince:usergraphs' %}" class="button primary">User Graphs</a>
+    </div>
+  </div>
+
+
+  <div id="reports_page_userstats" href="{% url 'vince:reports_page_userstats' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh user_stats_expand collapse">
+    <!-- Load this async -->
+  </div>
+
+  <hr>
+
+  <div class="row">
+    <div class="large-6 columns">
+      <h3 class="section-title expandable-section-heading" id="current_ticket_status_expand"><i class="expandable-section-heading-icon fas fa-caret-right current_ticket_status_expand"></i> Current Ticket Status</h3>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+
+  <div id="reports_page_current_ticket_status" href="{% url 'vince:reports_page_current_ticket_status' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh current_ticket_status_expand collapse">
+    <!-- Load this async -->
+  </div>
+
+  <hr>
+
+  <div id="reports_page_cves" href="{% url 'vince:reports_page_cves' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh">
+    <!-- Load this async -->
+  </div>
+
+  <div class="row">
+    <div class="large-6 columns">
+      <h3 class="section-title expandable-section-heading" id="tags_expand"><i class="expandable-section-heading-icon fas fa-caret-right tags_expand"></i> Tags </h3>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+
+
+<div id="reports_page_tags" href="{% url 'vince:reports_page_tags' my_team.id %}?month={{ month }}&year={{ year }}" class="asyncload autoload asyncrefresh tags_expand collapse">
+    <!-- Load this async -->
+  </div>
+
+  <hr>
+
+  {% comment "not using this currently" %}
+    <div class="row">
+      <div class="large-6 columns">
+        <h3 class="section-title">Filters</h3>
+        <div class="callout">
+          <a href="{% url 'vince:cnovreport' %}">Cases without vendors</a>
+        </div>
+      </div><div class="large-6 columns"></div>
+    </div>
+  {% endcomment %}
+  {% endblock %}
+
+</div>

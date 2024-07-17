@@ -477,7 +477,7 @@ def get_user_preferences(post, user, role, tracking=None):
         if email and email.email_function == "EMAIL":
             #if notifications are disabled just return false.
             #dont send anything to this user.
-            return false
+            return False
                     
     #does this user have email notifications enabled
     if role != 1:

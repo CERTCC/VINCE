@@ -1,0 +1,27 @@
+{% load i18n report_tags ticket_to_link %}
+
+{% if cves %}
+  <div class="row" id="reports">
+    <div class="large-6 columns">
+      <h3 class="section-title" id="cves_expand"><i class="expandable-section-heading-icon fas fa-caret-right cves_expand"></i> CVEs assigned in {{ monthstr }} {{ year }}</h3>
+    <div>
+  <div>
+
+  <div class="cves_expand collapse">
+    <div class="row">
+      <div class="callout">
+        {% for cve in cves %}
+          <div class="cve"><b>{% if cve.case %}<a href="{% url 'vince:case' cve.case.id %}#vuls">{% endif %}{{ cve.vul }}{% if cve.description %}</a>{% endif %}</b>: {{ cve.description }}
+            <br/>
+            <span class="cvetime">{{ cve.date_added }} {% if cve.user %} by {{ cve.user }}{% endif %}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="large-6 columns">
+    </div>
+  </div>
+
+  <hr>
+  
+{% endif %}

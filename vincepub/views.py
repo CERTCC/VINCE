@@ -914,12 +914,24 @@ class SearchView(generic.FormView):
     def form_valid(self, form):
         logger.debug(f"From valid {self.__class__.__name__} post: {self.request.POST}")
         page = self.request.GET.get("page", 1)
-        if self.request.POST["datestart"]:
-            startdate = DateField().clean(self.request.POST["datestart"])
-            enddate = DateField().clean(self.request.POST["dateend"])
-        else:
-            startdate = DateField().clean("1975-01-01")
-            enddate = timezone.now()
+
+        startdate = DateField().clean("1969-01-01")
+        enddate = timezone.now()
+
+        try:
+            if self.request.POST.get("datestart"):
+                startdate = DateField().clean(self.request.POST["datestart"])
+            if self.request.POST.get("dateend"):
+                enddate = DateField().clean(self.request.POST["dateend"])
+        except Exception as e:
+            logger.debug(f"Error in date processing from Form data {self.request.POST}, ignoring dates. Error is {e}")
+
+        # if self.request.POST["datestart"]:
+        #     startdate = DateField().clean(self.request.POST["datestart"])
+        #     enddate = DateField().clean(self.request.POST["dateend"])
+        # else:
+        #     startdate = DateField().clean("1975-01-01")
+        #     enddate = timezone.now()
 
         wordSearch = None
         if self.request.POST["wordSearch"]:

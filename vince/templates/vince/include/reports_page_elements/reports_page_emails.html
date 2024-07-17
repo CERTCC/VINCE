@@ -1,0 +1,21 @@
+{% load i18n report_tags ticket_to_link %}
+
+<div class="row">
+  <div class="large-8 columns">
+    <ul class="stats-list">
+      <li class="stats-list-positive">
+        {{ total_emails }} <span class="stats-list-label">Emails</span>
+      </li>
+      <li>
+        {{ ticket_emails | length }} <span class="stats-list-label">General</span>
+      </li>
+      <li>
+        {{ case_emails | length }} <span class="stats-list-label">Case</span>
+      </li>
+      <li>
+        {{ case_emails_distinct }} <span class="stats-list-label">Unique Cases</span>
+      </li>
+    </ul>
+  </div>
+</div>
+  
