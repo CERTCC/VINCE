@@ -3,6 +3,22 @@
 CHANGELOG
 VINCE Coordination platform code
 
+Version 3.0.5 2024-07-17
+
+* Dependabot update recommendations: `urllib3` 1.26.18 to 1.26.19, `certifi` 2023.7.22 to 2024.7.4, `zipp` 3.10.1 to 1.19.1 `Django` 4.2.11 to 4.2.14
+* Added code to make the tag, vulnote, email & CVE sections of the reports page load async to reduce loading time (Internal-662)
+* Made all sections of the reports page expandable/collapsible, collapsed on load, to ease async loading (Internal-662)
+* Ensured that transient bounce messages automatically get posted to the user's activity stream
+* Set up automatic logging of user deactivation due to bounce issues to the user's activity stream
+* Directed bounce messages for users with already open bounce tickets into a followup on original bounce ticket
+* Added code to intercept emails addressed to recent bouncers before they are sent (Internal-752)
+* Added field to API case view with timestamp field for most recent update (Isseu #149)
+* Started improving vulnote review process with css alteration to remove need for unnecessary scrolling (Internal-755)
+* Fixed bug in date processing for the vincepub search function (Internal-756)
+* Added code to handle errors that arise in certain cases when resetting user MFA (Internal-757)
+* Ensured that deactivated users are removed from VINCE Track and from all relevant Groups, with logging to Activity stream (Internal-759)
+
+
 Version 3.0.4 2024-06-10
 
 * Fixed bug that prevented display of "No data" message in certain circumstances on the VINCE Track case page vendor tab

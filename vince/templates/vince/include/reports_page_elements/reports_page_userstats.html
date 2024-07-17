@@ -1,0 +1,21 @@
+{% load i18n report_tags ticket_to_link %}
+
+<div class="row">
+  <div class="large-3 columns">
+    <h5>New Users</h3>
+    <h1><i class="fas fa-user-plus"></i> {{ new_users }}</h1>
+  </div>
+  <div class="large-3 columns">
+    <h5>Total Users</h3>
+    <h1><i class="fas fa-user"></i> {{ total_users }}</h1>
+  </div>
+  <div class="large-3 columns">
+    <h5>Vendors</h3>
+    <h1><i class="fas fa-users"></i> {{ vendors }} </h1>
+  </div>
+  <div class="large-3 columns">
+    <h5>Vendor Users</h3>
+    <h1><i class="fas fa-user-tie"></i> {{vendor_users}}</h1>
+  </div>
+</div>
+  

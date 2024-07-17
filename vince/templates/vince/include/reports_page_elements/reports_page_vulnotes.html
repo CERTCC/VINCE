@@ -1,0 +1,41 @@
+{% load i18n report_tags ticket_to_link %}
+
+<div class="row">
+  <div class="large-12 columns">    
+    <ul class="stats-list">
+      <li class="stats-list-positive">
+          {{ newnotes|length }} <span class="stats-list-label">New</span>
+      </li>
+      <li>
+          {{ updated | length }} <span class="stats-list-label">Updated</span>
+      </li>
+    </ul>
+
+    <div class="thread-messages">
+      <b> Published {{ monthstr }} {{ year }} </b>
+    </div>
+
+    <ul>
+      {% for note in newnotes %}
+        <li><a href="{{note.get_absolute_url}}">{{ note.vutitle }}</a></li>
+      {% empty %}
+        <i>No vulnerability notes published this month</i>
+      {% endfor %}
+    </ul>
+
+
+    <div class="thread-messages">
+      <b> Updated {{ monthstr }} {{ year }} </b>
+    </div>
+    <ul>
+      {% for note in updated %}
+        <li>
+          <a href="{{note.get_absolute_url}}">{{ note.vutitle }}</a>
+        </li>
+      {% empty %}
+        <i>No vulnerability notes updated this month</i>
+      {% endfor %}
+    </ul>
+    
+  </div>
+</div>

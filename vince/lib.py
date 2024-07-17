@@ -2019,16 +2019,54 @@ def create_bounce_ticket(headers, bounce_info):
     bounce_type = bounce_info.get("bounceType")
     date = headers.get("date")
 
+    # weed out the bounces for inactive users
     dead_users = []
     for email in email_to:
-        if User.objects.filter(username=email, is_active=False):
-            logger.debug(f"Ignoring {email} as this user is inactive")
-            dead_users.append(email)
-        elif (bounce_type == "Transient") and VINCE_IGNORE_TRANSIENT_BOUNCES:
-            create_bounce_record(email, bounce_type, subject)
+        try:
+            user = User.objects.using("vincecomm").filter(username=email).first()
+        except:
+            logger.debug(f"bounce ticket creation process failed to find user with email address {email}")
+        if user:
+            if user.is_active == False:
+                logger.debug(f"Ignoring {email} as this user is inactive")
+                dead_users.append(email)
+            elif bounce_type == "Transient":
+                va = VendorAction(user=user, title="A transient bounce message was received for {user}")
+                if VINCE_IGNORE_TRANSIENT_BOUNCES:
+                    create_bounce_record(email, bounce_type, subject)
 
     if dead_users:
         email_to = list(set(email_to) - set(dead_users))
+        email_to_str = ", ".join(email_to)
+        if not email_to:
+            logger.debug("No valid bounced recipients. Found all recipients are inactive")
+            return
+
+    # weed out the bounces for users with prexisting open bounce tickets
+    preexisting_bounce_users = []
+    for email in email_to:
+        try:
+            preexisting_bounce_ticket = Ticket.objects.filter(
+                title=f"Email Bounce Notification to {email}",
+                status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS, Ticket.IN_PROGRESS_STATUS],
+            ).first()
+            if preexisting_bounce_ticket:
+                logger.debug(f"preexisting_bounce_ticket is {preexisting_bounce_ticket}")
+                logger.debug(f"in particular, preexisting_bounce_ticket.id is {preexisting_bounce_ticket.id}")
+                fup = FollowUp(
+                    ticket=preexisting_bounce_ticket,
+                    date=timezone.now(),
+                    title=f"Another Email Bounce Notification to {email} was received",
+                )
+                if bounce_info:
+                    fup.comment = json.dumps(bounce_info)
+                fup.save()
+                preexisting_bounce_users.append(email)
+        except:
+            logger.debug(f"emails have started bouncing back from {email}")
+
+    if preexisting_bounce_users:
+        email_to = list(set(email_to) - set(preexisting_bounce_users))
         email_to_str = ", ".join(email_to)
         if not email_to:
             logger.debug("No valid bounced recipients found all recipients are inactive")

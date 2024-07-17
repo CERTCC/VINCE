@@ -29,6 +29,41 @@
 */
 $(document).ready(function() {
 
+    function togglesectionvisibility(classtotoggle){
+        let elementstotoggle = document.getElementsByClassName(classtotoggle)
+        for (let i = 0; i < elementstotoggle.length; i++) {
+            if (elementstotoggle[i].classList.contains('collapse')){
+                elementstotoggle[i].classList.add('expanded')
+                elementstotoggle[i].classList.remove('collapse')
+            } else if (elementstotoggle[i].classList.contains('expanded')) {
+                elementstotoggle[i].classList.add('collapse')
+                elementstotoggle[i].classList.remove('expanded')
+            } else if (elementstotoggle[i].classList.contains('collapse-inline')) {
+                elementstotoggle[i].classList.add('expanded-inline')
+                elementstotoggle[i].classList.remove('collapse-inline')
+            } else if (elementstotoggle[i].classList.contains('expanded-inline')) {
+                elementstotoggle[i].classList.add('collapse-inline')
+                elementstotoggle[i].classList.remove('expanded-inline')
+            } else if (elementstotoggle[i].classList.contains('fa-caret-right')) {
+                elementstotoggle[i].classList.add('fa-caret-down')
+                elementstotoggle[i].classList.remove('fa-caret-right')
+            } else if (elementstotoggle[i].classList.contains('fa-caret-down')) {
+                elementstotoggle[i].classList.add('fa-caret-right')
+                elementstotoggle[i].classList.remove('fa-caret-down')
+            }
+        }
+    }
+
+    document.getElementById("reports_page_wrapper").addEventListener("click", function(e) {
+        let classtotoggle = ""
+        if(e.target && e.target.classList.contains('expandable-section-heading-icon')) {
+            classtotoggle = e.target.parentElement.id
+        }
+        if(e.target && e.target.classList.contains('expandable-section-heading')) {
+            classtotoggle = e.target.id
+        }
+        togglesectionvisibility(classtotoggle)
+    });
 
     $('#moreVendor').click(function(e) {
         $("#hidevendors").toggle();
