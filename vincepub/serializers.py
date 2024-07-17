@@ -242,7 +242,7 @@ class CSAFSerializer(serializers.ModelSerializer):
             if ven.addendum:
                 addinfo = {"category": "other",
                            "text": ven.addendum,
-                           "title": f"CERT/CC comment on {ven.vendor} notes"}
+                           "title": f"{settings.ORG_NAME} comment on {ven.vendor} notes"}
                 csafdoc["notes"] += [addinfo]
         return csafdoc
 
