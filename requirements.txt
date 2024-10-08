@@ -24,7 +24,7 @@ cryptography==42.0.4
 cvelib==1.3.0
 Deprecated==1.2.13
 dictdiffer==0.9.0
-Django==4.2.14
+Django==4.2.16
 django-appconf==1.0.5
 django-countries==7.4.2
 django-environ==0.9.0
