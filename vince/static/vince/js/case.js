@@ -265,26 +265,17 @@ $(document).ready(function() {
     $('a').each(function () {
         $(this).qtip({
             content: $(this).attr("title"),
-	    style: {classes: 'qtip-youtube'}
-	})
+	        style: {classes: 'qtip-youtube'}
+	    })
     });
 
     var input = document.getElementById("id_keyword");
     if (input) {
-	input.addEventListener("keydown", function(event) {
-	    if (event.keyCode == 13) {
-		searchComms(event);
-	    }
-	});
-    }
-
-    var form = document.getElementById('filterform');
-    if (form) {
-	if (form.attachEvent) {
-            form.attachEvent("submit", searchComms);
-	} else {
-            form.addEventListener("submit", searchComms);
-	}
+	    input.addEventListener("keydown", function(event) {
+            if (event.keyCode == 13) {
+                searchComms(event);
+            }
+        });
     }
 
     if (document.getElementById("user_taggs")) {
@@ -442,58 +433,6 @@ $(document).ready(function() {
         auto(case_avail_tags, casetaggle, case_tag_url, addmodal);
 
     }
-
-
-
-    $("input[id^='id_status_']").change(function(event) {
-        searchTickets();
-    });
-
-    $(".vendorchoice input").change(function(event) {
-        searchComms();
-    });
-
-    $("#id_timesort").change(function(event) {
-        searchComms();
-    });
-
-
-    $("#id_communication_type").change(function(event) {
-        searchComms();
-    });
-
-    $("#id_participants").change(function(event) {
-	searchComms();
-    });
-
-
-    var dateFormat = "yy-mm-dd",
-	from = $( "#id_datestart" )
-        .datepicker({
-            defaultDate: "+1w",
-            changeMonth: true,
-            changeYear: true,
-            dateFormat: dateFormat,
-            numberOfMonths: 1,
-            maxDate: "+0D"
-        })
-        .on( "change", function() {
-            /*to.datepicker( "option", "minDate", getDate( this ) );*/
-            searchComms();
-        }),
-        to = $( "#id_dateend" ).datepicker({
-            defaultDate: "+1w",
-            changeMonth: true,
-            changeYear: true,
-            dateFormat: dateFormat,
-            numberOfMonths: 1,
-            maxDate: "+0D"
-
-        })
-        .on( "change", function() {
-            from.datepicker( "option", "maxDate", getDate( this ) );
-            searchComms();
-        });
 
     var addmodal = $("#smallmodal");
     var largemodal = $("#largemodal");
@@ -838,18 +777,16 @@ $(document).ready(function() {
 
 
     $(document).on("click", '.makepublic', function(event) {
-	event.preventDefault();
-	var csrftoken = getCookie('csrftoken');
-	var artifact = $(this).attr("artid");
-	var url = $(this).attr("href");
+        event.preventDefault();
+        var csrftoken = getCookie('csrftoken');
+        var artifact = $(this).attr("artid");
+        var url = $(this).attr("href");
 
-	$.post(url, {'csrfmiddlewaretoken': csrftoken, 'artifact': artifact
-                    }, function(data) {
-			reloadArtifacts(data['case']);
-		    })
-	    .fail(function(d) {
-                permissionDenied(addmodal);
-            });
+    	$.post(url, {'csrfmiddlewaretoken': csrftoken, 'artifact': artifact}, function(data) {
+            reloadArtifacts(data['case']);
+		}).fail(function(d) {
+            permissionDenied(addmodal);
+        });
     });
 
 
@@ -1112,21 +1049,6 @@ $(document).ready(function() {
     deleteCssClass: 'remove-formset right'
     });
     }*/
-
-    $('#moreVendor').click(function(e) {
-        $("#hidevendors").toggle();
-        $("#moreVendors").toggle();
-        $("#lessVendors").toggle();
-        e.preventDefault();
-    });
-
-    $('#lessVendor').click(function(e) {
-        $("#hidevendors").toggle();
-        $("#moreVendors").toggle();
-        $("#lessVendors").toggle();
-        e.preventDefault();
-
-    });
 
 
     // if (document.getElementById('vuls_data')) {
@@ -1494,7 +1416,6 @@ $(document).ready(function() {
     async function createVendorsTable() {
         let data = await ajaxVendorData()
         let vendors_data = data['data']
-        console.log(vendors_data)
         populateFiltersWithValues(vendors_data)
         let vendors_total = vendors_data.length
         let pageSizeOptionsArray = []
@@ -2328,14 +2249,14 @@ $(document).ready(function() {
                     specialElementHandlers = {
                         [fClass]: function (e, o) {
                             if(!('href' in e)) {
-				return false;
+				                return false;
                             }
                             if(e.innerHTML == e.href) {
-				console.log(e);
-				return false;
+				                console.log(e);
+				                return false;
                             }
                             if(e.href.indexOf("http") != 0){
-				return false;
+				                return false;
                             }
                             let xid = Math.random().toString(32).substr(2);
                             $(e).attr('id',xid);
@@ -2359,85 +2280,85 @@ $(document).ready(function() {
 			    
                             // this bit gets us the x and y position where the text before the <a> tag ends:
                             for (let i = 1; i < wordsinmbeforexid.length; i++){
-				if (widthsofar + parseInt(doc.getTextWidth(" " + wordsinmbeforexid[i])/rt) < margins.width) {
+				                if (widthsofar + parseInt(doc.getTextWidth(" " + wordsinmbeforexid[i])/rt) < margins.width) {
                                     widthsofar += parseInt(doc.getTextWidth(" " + wordsinmbeforexid[i])/rt);
-				} else {
+				                } else {
                                     ycounter++
                                     widthsofar = parseInt(doc.getTextWidth(wordsinmbeforexid[i])/rt)
-				}
+				                }
                             }
                             if (widthsofar != 0){
-				widthsofar += parseInt(doc.getTextWidth(" ")/rt);
+				                widthsofar += parseInt(doc.getTextWidth(" ")/rt);
                             }
 			    
                             // there are now two cases. Either the text of the link together with the text preceding it in the <a>'s parent exceeds the margin, or not. If not, then no word wrap affects the positioning
                             // of the link, so we can just place the link at the found location, as follows:
                             if (widthsofar + parseInt(doc.getTextWidth(e.innerText)/rt) < margins.width) {
-				x = margins.left + widthsofar;
-				y = o.y + ycounter * 4.3;
-				doc.link(x,y,parseInt(doc.getTextWidth(e.innerText)/rt),5,{url: e.href})
+                                x = margins.left + widthsofar;
+                                y = o.y + ycounter * 4.3;
+                                doc.link(x,y,parseInt(doc.getTextWidth(e.innerText)/rt),5,{url: e.href})
                             } else {
 				
-				// But if the text of the link together with the text preceding it in the <a>'s parent does exceed the margin, then we have to loop through the words in the link text, as follows:
-				let widthoflinktextsofar = 0;
-				for (let i = 0; i < wordsine.length; i++) {
+                                // But if the text of the link together with the text preceding it in the <a>'s parent does exceed the margin, then we have to loop through the words in the link text, as follows:
+                                let widthoflinktextsofar = 0;
+                                for (let i = 0; i < wordsine.length; i++) {
 				    
                                     if (widthsofar + widthoflinktextsofar + parseInt(doc.getTextWidth(wordsine[i])/rt) <= margins.width) {
-					widthoflinktextsofar += parseInt(doc.getTextWidth(wordsine[i] + " ")/rt)
-					if (i === wordsine.length - 1) {
+                                        widthoflinktextsofar += parseInt(doc.getTextWidth(wordsine[i] + " ")/rt)
+                                        if (i === wordsine.length - 1) {
                                             x = margins.left + widthsofar;
                                             y = o.y + ycounter * 4.3;
                                             doc.link(x,y,widthoflinktextsofar,5,{url: e.href})    
-					}
+                    					}
                                     } else {
-					x = margins.left + widthsofar;
-					y = o.y + ycounter * 4.3;
-					doc.link(x,y,widthoflinktextsofar,5,{url: e.href})
-					widthsofar = 0
-					ycounter++
-					widthoflinktextsofar = parseInt(doc.getTextWidth(wordsine[i])/rt)
-					if (i === wordsine.length - 1) {
+                                        x = margins.left + widthsofar;
+                                        y = o.y + ycounter * 4.3;
+                                        doc.link(x,y,widthoflinktextsofar,5,{url: e.href})
+                                        widthsofar = 0
+                                        ycounter++
+                                        widthoflinktextsofar = parseInt(doc.getTextWidth(wordsine[i])/rt)
+                                        if (i === wordsine.length - 1) {
                                             x = margins.left
                                             y = o.y + ycounter * 4.3;
                                             doc.link(x,y,widthoflinktextsofar,5,{url: e.href})
-					}
+                                        }
                                     }
-				}
+                				}
                             }
                             return false;
-			}
+			            }
                     }
-		    let tempdivid = 'd' + randClass;
+		            let tempdivid = 'd' + randClass;
                     $('#' + tempdivid).remove();
                     simpleHTML = simpleHTML.replace(/<br>\\*/ig,"</p><p>");
                     $('body').append($('<div>')
 				     .attr('id',tempdivid).html(simpleHTML)
 				     .css('display','none'));
                     $('#' + tempdivid + 'hr').each(function() {
-			$(this).after($("<p>").append($("<hr>")));
-			$(this).remove();
+                        $(this).after($("<p>").append($("<hr>")));
+                        $(this).remove();
                     });
                     $('#' + tempdivid + ' a').addClass(randClass);
-		    $('#' + tempdivid + ' a').each(function() {
-			let el = this;
-			if(el.innerHTML == el.href) {
+        		    $('#' + tempdivid + ' a').each(function() {
+		            	let el = this;
+			            if(el.innerHTML == el.href) {
                             let u = new URL(el.innerText);
-			    /* Change URL and www in URL's to avoid fromHTML autolinking */
+			                /* Change URL and www in URL's to avoid fromHTML autolinking */
                             let sturl = u.host.replace(/^www\./i,'') + u.pathname;
                             let fakeUrl =  u.protocol[0].toUpperCase() + u.protocol.substr(1) + '//'+ sturl + u.search;
                             if(fakeUrl.length > lineChars) {
-				fakeUrl =   u.protocol[0].toUpperCase() + u.protocol.substr(1) + '//'+sturl.substr(0,lineChars - 12 - u.protocol.length) + '...';
+				                fakeUrl =   u.protocol[0].toUpperCase() + u.protocol.substr(1) + '//'+sturl.substr(0,lineChars - 12 - u.protocol.length) + '...';
                             } 
                             el.innerText = fakeUrl;
-			}
+			            }
                     });
                     simpleHTML = $('#'+tempdivid).html();
                     margins = {
-			bottom:10,
-			top:15,
-			left:10,
-			right:10,
-			width:170
+                        bottom:10,
+                        top:15,
+                        left:10,
+                        right:10,
+                        width:170
                     };
                     doc.setPage(0);
                     doc.setFont("helvetica");
@@ -2446,57 +2367,57 @@ $(document).ready(function() {
                     doc.setFontSize(70);
                     doc.text("EMBARGOED", 50, doc.internal.pageSize.height - 120, null, 45); 
                     doc.fromHTML(
-			simpleHTML,
-			margins.left,
-			margins.top,
-			{
-                            'width': margins.width,
-                            'elementHandlers': specialElementHandlers
-			},
-			function (dispose) {
-			},
-			margins
+                        simpleHTML,
+                        margins.left,
+                        margins.top,
+                        {
+                                        'width': margins.width,
+                                        'elementHandlers': specialElementHandlers
+                        },
+                        function (dispose) {
+                        },
+            			margins
                     );
                     var pageCount = doc.internal.getNumberOfPages();
                     for(i = 0; i < pageCount; i++) { 
-			doc.setPage(i);
-			// Set header
-			let amberPosition = 94.5;
-			let amberTop = 3
-			doc.setFillColor(0,0,0);
-			doc.rect(amberPosition, amberTop, 21.2, 5, 'F');
-			
-			doc.setFont("times");
-			doc.setFontType("bold");
-			doc.setFontSize(10);
-			doc.setTextColor(245, 194, 66);
-			doc.text(amberPosition,amberTop+4, "TLP:AMBER");
-			
-			doc.setFontSize(10);
-			doc.setTextColor(255,0,0);
-			doc.text(19, 12, "The information within this document is to " +
-				 "be restricted to participants’ organizations only " +
-				 "until publicly released.");
-			
-			doc.setFontSize(10);
-			doc.setTextColor(150);
-			doc.text(7, 5, "EMBARGOED");
-			doc.text(179, 5, "EMBARGOED");
-			
-			// Set footer
-			let amberBottom = 275
-			doc.setFillColor(0,0,0);
-			doc.rect(amberPosition, amberBottom, 21.2, 5, 'F');
-			
-			doc.setFont("times");
-			doc.setFontType("bold");
-			doc.setFontSize(10);
-			doc.setTextColor(245, 194, 66);
-			doc.text(amberPosition,amberBottom+4, "TLP:AMBER");
+                        doc.setPage(i);
+                        // Set header
+                        let amberPosition = 94.5;
+                        let amberTop = 3
+                        doc.setFillColor(0,0,0);
+                        doc.rect(amberPosition, amberTop, 21.2, 5, 'F');
+                        
+                        doc.setFont("times");
+                        doc.setFontType("bold");
+                        doc.setFontSize(10);
+                        doc.setTextColor(245, 194, 66);
+                        doc.text(amberPosition,amberTop+4, "TLP:AMBER");
+                        
+                        doc.setFontSize(10);
+                        doc.setTextColor(255,0,0);
+                        doc.text(19, 12, "The information within this document is to " +
+                            "be restricted to participants’ organizations only " +
+                            "until publicly released.");
+                        
+                        doc.setFontSize(10);
+                        doc.setTextColor(150);
+                        doc.text(7, 5, "EMBARGOED");
+                        doc.text(179, 5, "EMBARGOED");
+                        
+                        // Set footer
+                        let amberBottom = 275
+                        doc.setFillColor(0,0,0);
+                        doc.rect(amberPosition, amberBottom, 21.2, 5, 'F');
+                        
+                        doc.setFont("times");
+                        doc.setFontType("bold");
+                        doc.setFontSize(10);
+                        doc.setTextColor(245, 194, 66);
+                        doc.text(amberPosition,amberBottom+4, "TLP:AMBER");
                     }
                     doc.save($('#vutitle').html() + " - Notice (Draft).pdf");
                     $('#' + tempdivid).remove();
-		}
+                }
             }).fail(function() {
                 console.log("The getJSON request didn't work for some reason.");
             });
@@ -2547,6 +2468,85 @@ $(document).ready(function() {
         $(document).on("click", '#openpost', openposthandler);
     };
 
+    function initialize_activity_section() {
+        $("input[id^='id_status_']").change(function(event) {
+            searchTickets();
+        });
+    
+        $(".vendorchoice input").change(function(event) {
+            searchComms();
+        });
+    
+        $("#id_timesort").change(function(event) {
+            searchComms();
+        });
+    
+    
+        $("#id_communication_type").change(function(event) {
+            searchComms();
+        });
+    
+        $("#id_participants").change(function(event) {
+        searchComms();
+        });
+    
+    
+        var dateFormat = "yy-mm-dd",
+        from = $( "#id_datestart" )
+            .datepicker({
+                defaultDate: "+1w",
+                changeMonth: true,
+                changeYear: true,
+                dateFormat: dateFormat,
+                numberOfMonths: 1,
+                maxDate: "+0D"
+            })
+            .on( "change", function() {
+                /*to.datepicker( "option", "minDate", getDate( this ) );*/
+                searchComms();
+            }),
+            to = $( "#id_dateend" ).datepicker({
+                defaultDate: "+1w",
+                changeMonth: true,
+                changeYear: true,
+                dateFormat: dateFormat,
+                numberOfMonths: 1,
+                maxDate: "+0D"
+    
+            })
+            .on( "change", function() {
+                from.datepicker( "option", "maxDate", getDate( this ) );
+                searchComms();
+            });
+    
+    
+    
+        var form = document.getElementById('filterform');
+        if (form) {
+            if (form.attachEvent) {
+                form.attachEvent("submit", searchComms);
+            } else {
+                form.addEventListener("submit", searchComms);
+            }
+        }
+
+        $('#moreVendor').click(function(e) {
+            $("#hidevendors").toggle();
+            $("#moreVendors").toggle();
+            $("#lessVendors").toggle();
+            e.preventDefault();
+        });
+    
+        $('#lessVendor').click(function(e) {
+            $("#hidevendors").toggle();
+            $("#moreVendors").toggle();
+            $("#lessVendors").toggle();
+            e.preventDefault();
+    
+        });
+    
+    }
+
     if (tabsoughtviaurl) {
         if (tabsoughtviaurl === "participants") {
             initialize_participants_tab();
@@ -2559,7 +2559,7 @@ $(document).ready(function() {
         };
     };
 
-    function initialize_tab_js(mutation) {
+    function initialize_observer_js(mutation) {
         if (mutation[0]) {
             if (mutation[0].target.getAttribute('id') === "participants"){
                 initialize_participants_tab();
@@ -2569,20 +2569,24 @@ $(document).ready(function() {
                 initialize_posts_tab();
             } else if (mutation[0].target.getAttribute('id') === "vuls") {
                 initialize_vuls_tab();
+            } else if (mutation[0].target.getAttribute('id') === "ticket_activity"){
+                initialize_activity_section();
             };
         };
     };
     
-    let tab_observer = new MutationObserver(initialize_tab_js);
+    let observer = new MutationObserver(initialize_observer_js);
 
     let participants_tab = document.getElementById("participants");
     let vulnote_tab = document.getElementById("vulnote");
     let posts_tab = document.getElementById("posts");
     let vuls_tab = document.getElementById("vuls");
+    let activity_section = document.getElementById("ticket_activity");
 
-    tab_observer.observe(participants_tab, {childList:true});
-    tab_observer.observe(vulnote_tab, {childList:true});
-    tab_observer.observe(posts_tab, {childList:true});
-    tab_observer.observe(vuls_tab, {childList:true});
+    observer.observe(participants_tab, {childList:true});
+    observer.observe(vulnote_tab, {childList:true});
+    observer.observe(posts_tab, {childList:true});
+    observer.observe(vuls_tab, {childList:true});
+    observer.observe(activity_section, {childList:true})
 
 });

@@ -1380,21 +1380,33 @@ class VendorView(generic.ListView):
 
     def get_queryset(self):
         self.newvulnote = False
-        report = VUReport.objects.filter(vuid=self.kwargs["vuid"]).first()
-        if report:
-            if report.vulnote:
+        # logger.debug(f"vincepub VendorView get_queryset is running, and self.kwargs['vuid'] is {self.kwargs['vuid']}")
+        vureport = VUReport.objects.filter(vuid=self.kwargs["vuid"]).first()
+        if vureport:
+            # logger.debug(f"vincepub VendorView found the following vureport: {vureport}")
+            if vureport.vulnote:
                 self.newvulnote = True
                 return Vendor.objects.filter(note__vureport__vuid=self.kwargs["vuid"]).order_by("vendor")
+        # else:
+        #     vcvureport = VCVUReport.objects.filter(vuid=self.kwargs["vuid"]).first()
+        #     if vcvureport:
+        #         logger.debug(f"vincepub VendorView found the following vcvureport: {vcvureport}")
+        #         if vcvureport.vulnote:
+        #             self.newvulnote = True
+        #             return Vendor.objects.filter(note__vureport__vuid=self.kwargs["vuid"]).order_by("vendor")
+        # logger.debug(f"vincepub VendorView failed to find a report")
         return VendorRecord.objects.filter(vuid=self.kwargs["vuid"]).order_by("vendor")
 
     def get_context_data(self, **kwargs):
         context = super(VendorView, self).get_context_data(**kwargs)
+        # logger.debug(f"initially, vincepub VendorView context starts out as {context}")
         vendorids = []
         context["vendors"] = len(self.get_queryset())
         if not self.newvulnote:
             for vendor in self.get_queryset():
                 vendorids.append(vendor.vendorrecordid)
             context["vendorhtml"] = VendorHTML.objects.filter(vendorrecordid__in=vendorids)
+        # logger.debug(f"vincepub VendorView is about to return this context: {context}")
         return context
 
 

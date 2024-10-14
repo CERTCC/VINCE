@@ -673,9 +673,16 @@ def send_templated_mail(
         .replace("\r", "")
     )
 
+    if sender == None:
+        sender = f"{settings.DEFAULT_VISIBLE_NAME} <{settings.DEFAULT_FROM_EMAIL}>"
+
     footer_file = os.path.join("vince-email", locale, "email_text_footer.txt")
 
-    text_part = from_string("%s{%% include '%s' %%}" % (t.plain_text, footer_file)).render(context)
+    if settings.DEFAULT_FROM_EMAIL in sender:
+        header = "=======================================================================\nTHIS IS AN AUTOMATED EMAIL.\nTHIS EMAIL IS SENT FROM AN ACCOUNT THAT IS NOT MONITORED.\nDO NOT REPLY TO THIS EMAIL, OR WE WILL BE UNABLE TO RESPOND.\n=======================================================================\n\n"
+        text_part = header + from_string("%s{%% include '%s' %%}" % (t.plain_text, footer_file)).render(context)
+    else:
+        text_part = from_string("%s{%% include '%s' %%}" % (t.plain_text, footer_file)).render(context)
 
     email_html_base_file = os.path.join("vince-email", locale, "email_html_inline.html")
     # keep new lines in html emails
@@ -707,9 +714,6 @@ def send_templated_mail(
             recipients = recipients.split(",")
     elif type(recipients) != list:
         recipients = [recipients]
-
-    if sender == None:
-        sender = f"{settings.DEFAULT_VISIBLE_NAME} <{settings.DEFAULT_FROM_EMAIL}>"
 
     # remove recipients who have bounced recently
     try:
@@ -791,7 +795,9 @@ def send_templated_mail(
                         msg.attach(filename, content)
 
     logger.debug(
-        'Sending email using template {} with subject "{}" to {!r}'.format(template_name, subject_part, recipients)
+        'Sending email using template {} with subject "{}" from {} to {!r}'.format(
+            template_name, subject_part, sender, recipients
+        )
     )
 
     try:
@@ -1021,7 +1027,11 @@ def send_submitter_email_notification(contacts, ticket, subject, body, vtcr=None
 
     if vtcr:
         context["vrf"] = vtcr.vrf_id
-        context["caseurl"] = f"{settings.KB_SERVER_NAME}{vtcr.get_absolute_url()}"
+    try:
+        if vtcr.new_vuid:
+            context["caseurl"] = f"{settings.KB_SERVER_NAME}{vtcr.get_absolute_url()}"
+    except:
+        logger.debug("no new_vuid found")
 
     send_templated_mail("blank_body", context, contacts, html=False)
 
@@ -1039,6 +1049,10 @@ def send_regular_email_notification(contacts, subject, body):
     context["body"] = mark_safe(body)
     context["subject"] = subject
     context["signup_url"] = f"{settings.KB_SERVER_NAME}/vince/comm/signup/"
+
+    logger.debug(
+        f"send_regular_email_notification is running and settings.DEFAULT_REPLY_EMAIL is {settings.DEFAULT_REPLY_EMAIL}"
+    )
 
     send_templated_mail(
         "blank_body_no_sig", context, contacts, sender=settings.DEFAULT_REPLY_EMAIL, html=False, replyto=False

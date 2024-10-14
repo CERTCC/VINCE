@@ -229,44 +229,44 @@ $(document).ready(function() {
     });
     
     $(document).on("click", "#assign_submit", function(event) {
-	var val = $("#uassign option:selected").val();
-	var name = $("#uassign option:selected").html();
-	var url = window.location.href.replace(location.hash,"") + "?assign="+val;
+		var val = $("#uassign option:selected").val();
+		var name = $("#uassign option:selected").html();
+		var url = window.location.href.split('#')[0] + "?assign="+val;
 
-	if (val == "-2") {
-	    var url = window.location.href + "?autoassign=1";
-	    
-	    $.ajax({
-                url: url,
-                type: "GET",
-                success: function(data) {
-		    adddepmodal.html(data).foundation('open');
-		},
-		error: function(xhr, status) {
-		    permissionDenied(adddepmodal);
+		if (val == "-2") {
+			var url = window.location.href.split('#')[0] + "?autoassign=1";
+			
+			$.ajax({
+				url: url,
+				type: "GET",
+				success: function(data) {
+					adddepmodal.html(data).foundation('open');
+				},
+				error: function(xhr, status) {
+					permissionDenied(adddepmodal);
+				}
+			});
+
+		} else {
+			$.ajax({
+			url: url,
+			type: "GET",
+			success: function(data) {
+				if (val == 0) {
+				$(".assigned_to_name").html("Unassigned");
+				$(".assigned_to").html($("#reassignblock").html());
+				} else {
+				$(".assigned_to_name").html(name);
+				}
+			},
+			error: function(xhr, status) {
+				permissionDenied(adddepmodal);
+			}
+			});
+
+			$("#assign_block").hide();
+			$(".assigned_to").show();
 		}
-	    });
-
-	} else {
-	    $.ajax({
-		url: url,
-		type: "GET",
-		success: function(data) {
-		    if (val == 0) {
-			$(".assigned_to_name").html("Unassigned");
-			$(".assigned_to").html($("#reassignblock").html());
-		    } else {
-			$(".assigned_to_name").html(name);
-		    }
-		},
-		error: function(xhr, status) {
-            permissionDenied(adddepmodal);
-        }
-	    });
-
-	    $("#assign_block").hide();
-	    $(".assigned_to").show();
-	}
     });
 
     var role = document.getElementById('assignrole');
@@ -439,29 +439,32 @@ $(document).ready(function() {
     });
     
     $(document).on("submit", "#commentform", function(event) {
-	var new_status = $("input[name='new_status']:checked").val();
-	if (new_status != 4) {
-	    return;
-	}
-	if (status_change==false) {
-	    return;
-	}
-	var url = $(this).attr("confirm");
-	if (url) {
-	    event.preventDefault();
-	    $.ajax({
-		url: url,
-		type: "GET",
-		success: function(data) {
-                    adddepmodal.html(data).foundation('open');
-		    $("#id_new_status").val(new_status);
-		    $("#id_comment").val($("#commentBox").val());
-		},
-		error: function(xhr, status) {
-                    permissionDenied(adddepmodal);
+		var new_status = $("input[name='new_status']:checked").val();
+		if (new_status != 4) {
+			return;
 		}
-            });
-	} else { return; }
+		if (status_change==false) {
+			return;
+		}
+		var url = $(this).attr("confirm");
+		console.log('url is ' + url )
+		if (url) {
+			event.preventDefault();
+			$.ajax({
+				url: url,
+				type: "GET",
+				success: function(data) {
+					adddepmodal.html(data).foundation('open');
+					$("#id_new_status").val(new_status);
+					$("#id_comment").val($("#commentBox").val());
+				},
+				error: function(xhr, status) {
+					permissionDenied(adddepmodal);
+				}
+			});
+		} else { 
+			return; 
+		}
 	
     });
 

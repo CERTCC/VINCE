@@ -4082,44 +4082,32 @@ class UserSettings(models.Model):
     contacts_write = models.BooleanField(
         help_text=_('Does this user have permissions to add/edit VINCE contacts'),
         default=True)
+
+    #Mass unpickled has been removed for safety
     
     def _set_settings(self, data):
         # data should always be a Python dictionary.
+        sdata = {}
         if not isinstance(data,dict):
-            logger.warn("Non dictionary item sent to pickle %s" % str(data))
-            data = {}        
+            logger.warn("Non dictionary item sent to settings %s" % str(data))
         try:
-            import pickle
-        except ImportError:
-            import cPickle as pickle
-        from base64 import encodebytes as b64encode
-        self.settings_pickled = b64encode(pickle.dumps(data)).decode()
+            sdata = json.dumps(data)
+        except Exception as e:
+            logger.warn("Non JSON dictionary item sent to settings %s, error is %s" % str(data), e)
+        self.settings_pickled = sdata
 
     def _get_settings(self):
         # return a python dictionary representing the pickled data.
-        try:
-            import pickle
-        except ImportError:
-            import cPickle as pickle
-        class RestrictedUnpickler(pickle.Unpickler):
-            def find_class(self, module, name):
-                """ If find_class gets called then return error """
-                raise pickle.UnpicklingError("global '%s.%s' is forbidden" %
-                                             (module, name))
-        try:
-            from base64 import decodebytes as b64decode
-            if self.settings_pickled:
-                s = b64decode(self.settings_pickled.encode('utf-8'))
-                #replacement for pickle.loads()
-                return RestrictedUnpickler(io.BytesIO(s)).load()
-            else:
-                return {}
-        except (pickle.UnpicklingError, AttributeError) as e:
-            logger.warn("Error when trying to unpickle data %s " %(str(e)))
-            return {}
-        except Exception as e:
-            logger.warn("Generic error when trying to unpickle data %s " %(str(e)))
-            return {}
+        if self.settings_pickled:
+            try:
+                data = json.loads(self.settings_pickled)
+                if isinstance(data,dict):
+                    return data
+                else:
+                    logger.warn("Non dictionary item sent to settings %s" % str(data))
+            except Exception as e:
+                logger.warn("Generic error when trying to json parse data %s " %(str(e)))
+        return {}
 
     settings = property(_get_settings, _set_settings)
 

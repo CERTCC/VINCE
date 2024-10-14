@@ -317,22 +317,32 @@ def send_templated_mail(
         context["team"]["phone"] = settings.DEFAULT_PHONE_NUMBER
         context["team"]["email"] = context["team"].get("email", settings.DEFAULT_REPLY_EMAIL)
 
-    html_part = from_string(
-        "{%% extends '%s' %%}{%% block title %%}"
-        "%s"
-        "{%% endblock %%}{%% block content %%}%s{%% endblock %%}"
-        "{%% block phone %%}%s{%% endblock %%}{%% block email %%}%s{%% endblock %%}"
-        % (email_html_base_file, t.heading, t.html, context["team"]["phone"], context["team"]["email"])
-    ).render(context)
+    if sender == None:
+        sender = f"{settings.DEFAULT_VISIBLE_NAME} <{settings.DEFAULT_FROM_EMAIL}>"
+
+    if settings.DEFAULT_FROM_EMAIL in sender:
+        header = "THIS IS AN AUTOMATED EMAIL.\nTHIS EMAIL IS SENT FROM AN ACCOUNT THAT IS NOT MONITORED.\nDO NOT REPLY TO THIS EMAIL, OR WE WILL BE UNABLE TO RESPOND.\n\n"
+        html_part = from_string(
+            "{%% extends '%s' %%}%s{%% block title %%}"
+            "%s"
+            "{%% endblock %%}{%% block content %%}%s{%% endblock %%}"
+            "{%% block phone %%}%s{%% endblock %%}{%% block email %%}%s{%% endblock %%}"
+            % (email_html_base_file, t.heading, header, t.html, context["team"]["phone"], context["team"]["email"])
+        ).render(context)
+    else:
+        html_part = from_string(
+            "{%% extends '%s' %%}{%% block title %%}"
+            "%s"
+            "{%% endblock %%}{%% block content %%}%s{%% endblock %%}"
+            "{%% block phone %%}%s{%% endblock %%}{%% block email %%}%s{%% endblock %%}"
+            % (email_html_base_file, t.heading, t.html, context["team"]["phone"], context["team"]["email"])
+        ).render(context)
 
     if isinstance(recipients, str):
         if recipients.find(","):
             recipients = recipients.split(",")
     elif type(recipients) != list:
         recipients = [recipients]
-
-    if sender == None:
-        sender = f"{settings.DEFAULT_VISIBLE_NAME} <{settings.DEFAULT_FROM_EMAIL}>"
 
     if recipients:
         logger.debug(f"in VINCE Comm recipients is {recipients}")

@@ -32,15 +32,15 @@
 
 function init_tags() {
     var artifact_tags = []
+
     if (document.getElementById('artifact_tags')) {
-	artifact_tags =	JSON.parse(document.getElementById('artifact_tags').textContent);
+        artifact_tags =	JSON.parse(document.getElementById('artifact_tags').textContent);
     }
     
     var taggle = new Taggle('taggs', {
-	tags: artifact_tags,
-	duplicateTagClass: 'bounce',
-	placeholder: ["Tag this artifact..."],
-	
+        tags: artifact_tags,
+        duplicateTagClass: 'bounce',
+        placeholder: ["Tag this artifact..."],
     });
 
     autoTaggle($("#taggs").attr("href"), taggle);
@@ -50,8 +50,8 @@ function autoTaggle(data, taggle) {
     var container = taggle.getContainer();
     var input = taggle.getInput();
     $(input).autocomplete({
-	source: data,
-	appendTo:container,
+        source: data,
+        appendTo: container,
         position: { at: "left bottom", of: container },
         select: function(event, data) {
             event.preventDefault();
@@ -62,58 +62,52 @@ function autoTaggle(data, taggle) {
     });
 }  
 
-
 $(document).ready(function() {
 
-    
     var data = JSON.parse(document.getElementById('artifacts').textContent);
 
-    var tableData = [
-	{id:1, name:"Billy Bob", age:"12", gender:"male", height:1, col:"red", dob:"", cheese:1},
-	{id:2, name:"Mary May", age:"1", gender:"female", height:2, col:"blue", dob:"14/05/1982", cheese:true},
-    ]
-
     var linkFormatter = function(cell, formatterParams, onRendered) {
-	var values = cell.getValue();
-	if (cell.getRow().getData().url) {
-	    return "<a href=\""+cell.getRow().getData().url+"\" target=\"_blank\">"+cell.getRow().getData().value+"</a>";
-	}
-	else {
-	    return values;
-	}
+        var values = cell.getValue();
+        if (cell.getRow().getData().url) {
+            return "<a href=\""+cell.getRow().getData().url+"\" target=\"_blank\">"+cell.getRow().getData().value+"</a>";
+        }
+        else {
+            return values;
+        }
     }
 
-     //define custom formatter function
+    //define custom formatter function
     var tagFormatter = function(cell, formatterParams, onRendered){
-	var values = cell.getValue();
-	var tags = "";
-	
-	if(values){
+        var values = cell.getValue();
+        var tags = "";
+
+        if(values){
             values.forEach(function(value){
-		tags += "<span class='tag'>" + value + "</span>";
+                tags += "<span class='tag'>" + value + "</span>";
             });
-	}
-	return tags;
+        }
+        
+        return tags;
     }
 
 
     var taskbuttonFormatter = function(cell,  formatterParams, onRendered){
         var buttons = "<button class=\"editartifact btn-link\" obj="+cell.getValue()+"><i class=\"fas fa-pencil-alt\"></i></a>";
-	if (cell.getRow().getData().url) {
-	    if (cell.getRow().getData().public) {
-		buttons = buttons + "<button class=\"shareartifact btn-link\" href="+cell.getRow().getData().share_url+"><i class=\"fas fa-unlink\"></i></button>";
-	    } else {
-		buttons = buttons + "<button class=\"shareartifact btn-link\" pub=1 href="+cell.getRow().getData().share_url+"><i class=\"fas fa-share-square\"></i></button>";
-	    }
-	}
-	buttons = buttons + "<button class=\"deleteartifact btn-link\" href="+cell.getRow().getData().delete_url+"><i class=\"fas fa-trash-alt\"></i></button>";
-	return buttons;
+    if (cell.getRow().getData().url) {
+        if (cell.getRow().getData().public) {
+        buttons = buttons + "<button class=\"shareartifact btn-link\" href="+cell.getRow().getData().share_url+"><i class=\"fas fa-unlink\"></i></button>";
+        } else {
+        buttons = buttons + "<button class=\"shareartifact btn-link\" pub=1 href="+cell.getRow().getData().share_url+"><i class=\"fas fa-share-square\"></i></button>";
+        }
+    }
+    buttons = buttons + "<button class=\"deleteartifact btn-link\" href="+cell.getRow().getData().delete_url+"><i class=\"fas fa-trash-alt\"></i></button>";
+    return buttons;
     };
 
     var modal = $("#editartifact");
 
     var cellClickFunction = function(e, cell) {
-	var url = "/vince/artifact/"+ cell.getRow().getData().id + "/edit/"
+    var url = "/vince/artifact/"+ cell.getRow().getData().id + "/edit/"
         $.ajax({
             url: url,
             type: "GET",
@@ -121,42 +115,41 @@ $(document).ready(function() {
                 modal.html(data).foundation('open');
                 init_tags();
             },
-	    error: function(xhr, status) {
+        error: function(xhr, status) {
                 permissionDenied(modal);
             }
-	    
+        
         });
     }
     
     var table = new Tabulator("#artifact-table", {
-	data:data, //set initial table data
-	layout:"fitColumns",
-	height: "250px",
-	placeholder: "There are no artifacts for this case.",
-	columns:[
+        data:data, //set initial table data
+        layout:"fitColumns",
+        height: "250px",
+        placeholder: "There are no artifacts for this case.",
+        columns:[
             {title:"Type", field:"type", cellClick:cellClickFunction},
             {title:"Title", field:"title", cellClick:cellClickFunction},
-	    {title:"Ticket", field:"ticket_url", formatter:"link", formatterParams: {urlField:"related_ticket", url:function(cell) {return cell.getRow().getData().related_ticket; }}},
+            {title:"Ticket", field:"ticket_url", formatter:"link", formatterParams: {urlField:"related_ticket", url:function(cell) {return cell.getRow().getData().related_ticket; }}},
             {title:"Value", field:"value", formatter:linkFormatter},
             {title:"Description", field:"description", cellClick:cellClickFunction},
             {title:"Date Added", field:"date_added", cellClick:cellClickFunction},
             {title:"Added By", field:"user", cellClick:cellClickFunction},
-	    {title:"Tags", field:"tags", formatter:tagFormatter, width:250, cellClick:cellClickFunction},
-	    {formatter:taskbuttonFormatter, align:"center", field:"id"}
-	],
-	
+            {title:"Tags", field:"tags", formatter:tagFormatter, width:250, cellClick:cellClickFunction},
+            {formatter:taskbuttonFormatter, align:"center", field:"id"}
+        ],
     });
 
     $(document).on("click", ".shareartifact", function(event) {
         event.preventDefault();
-	var url = $(this).attr("href");
+        var url = $(this).attr("href");
         $.ajax({
             url: url,
             type: "GET",
             success: function(data) {
                 modal.html(data).foundation('open');
             },
-	    error: function(xhr, status) {
+            error: function(xhr, status) {
                 permissionDenied(modal);
             }
         });
@@ -171,7 +164,7 @@ $(document).ready(function() {
             success: function(data) {
                 modal.html(data).foundation('open');
             },
-	    error: function(xhr, status) {
+        error: function(xhr, status) {
                 permissionDenied(modal);
             }
         });
@@ -182,15 +175,15 @@ $(document).ready(function() {
         event.preventDefault();
         var formdata = $(this).serializeArray();
         $.post($(this).attr("action"), formdata,
-               function(data) {
-                   table.replaceData(data['artifacts']);
-		   modal.foundation('close');
-               })
-	    .fail(function() {
-		permissionDenied(modal);
-	    });
+            function(data) {
+                table.replaceData(data['artifacts']);
+        modal.foundation('close');
+            })
+        .fail(function() {
+        permissionDenied(modal);
+        });
     });
-		 
+        
 
     
     $(document).on("click", ".editartifact", function(event) {
@@ -201,9 +194,9 @@ $(document).ready(function() {
             type: "GET",
             success: function(data) {
                 modal.html(data).foundation('open');
-		init_tags();
+        init_tags();
             },
-	    error: function(xhr, status) {
+        error: function(xhr, status) {
                 permissionDenied(modal);
             }
         });
@@ -218,12 +211,11 @@ $(document).ready(function() {
             success: function(data) {
                 modal.html(data).foundation('open');
                 $("#id_comment").val($("#commentBox").val());
-        		init_tags();
+                init_tags();
             },
-	        error: function(xhr, status) {
+            error: function(xhr, status) {
                 permissionDenied(modal);
             }
         });
     });
-
 });

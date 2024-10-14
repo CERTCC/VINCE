@@ -1,169 +1,175 @@
 {% load i18n humanize markdown_extras post_tags dashboard_tags %}
 {% load ticket_to_link %}
 {% if paginator %}
-<div class="row">
-  <div class="large-12 columns">
-    {% if total %}
-    <div class="resultCount"> Showing results {{ activity.start_index }} - {{ activity.end_index }} of {{ total }} Results </div>
-    {% elif paginator.count %}
-    <div class="resultCount"> {{ paginator.count }} Results </div>
-    {% endif %}
-  </div>
-</div>
-{% endif %}
-<div class="article-row-section">
-{% for item in activity %}
-<article class="article-row">
-  <div class="article-row-img">
-    {% if item.vc %}
-    {% autoescape off %}{% if item.user %}{{ item.user|userlogo:"profile-pic" }}{% endif %}{% endautoescape %}
-    {% else %}
-    {% autoescape off %}{{ item|actionlogo }}{% endautoescape %}
-    {% endif %}
-  </div>
-  <div class="article-row-content">
-    {% if item.vc %}
-    <div class="article-row-system">VinceComm {% if item.user %}by {{ item.user.vinceprofile.vince_username }}{% endif %}</div>
-    {% else %}
-    <div class="article-row-system">VinceTrack {% if item.user %}by {{ item.user.usersettings.vince_username }}{% endif %}
-      {% if item.user == user and allow_edit and item.title|comment_editable %}
-      <a href="{% url 'vince:followup_edit' item.id %}" class='case-edit'>edit</a>
+  <div class="row">
+    <div class="large-12 columns">
+      {% if total %}
+        <div class="resultCount"> Showing results {{ activity.start_index }} - {{ activity.end_index }} of {{ total }} Results </div>
+      {% elif paginator.count %}
+        <div class="resultCount"> {{ paginator.count }} Results </div>
       {% endif %}
     </div>
-    {% endif %}
-    <p class="article-row-content-description">
-      {{ item.title }}
+  </div>
+{% endif %}
 
-    </p>
-    {% if item.current_revision %}
-    <a href="{% url 'vinny:postcase' item.id %}">posted in VinceComm Case {{item.case.vu_vuid}}.</a>
-    <p>{{ item.current_revision.content|markdown|safe }}</p>
-    {% elif item.thread %}
-      {% if item.thread.groupchat %}
-      <span class="message-groupchat"><i class="fas fa-users"></i>  Group Chat:</span>
-      {% endif %}
-      {{ item.user.vinceprofile.vince_username }} <a href="{{item.get_absolute_url}}"> sent message</a> in thread involving {% if item.thread.from_group %}{{ item.thread.from_group }} and {% endif %}{% if item.thread.to_group %}{{ item.thread.to_group }}{% else %}{{ item.thread.users.all|join:", " }}{% endif %}
-    <div class="message-content">{{ item.content | markdown | safe }}</div>
-    <div class="message-attachment">{% for i in item.messageattachment_set.all %}
-      <div class="participant-pic">
-      {% if i.file %}
-      <a download="{{ i.file.filename }}" href="{% url 'vinny:attachment' 'msg' i.file.uuid %}" target="_blank" class="dl_file">
-        <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ i.file.filename|showfileicon }}{% endautoescape %} </span></div>
-      </a>
-      {% elif i.attachment %}
-      <a download="{{ i.attachment.name }}" href="{{ i.attachment.url }}" target="_blank" class="dl_file">
-        <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ i.attachment.name|showfileicon }}{% endautoescape %}</span></div>
-      </a>
-      {% endif %}
-      </div>
-      <div class="participant-info">
-        {% if i.file %}
-        <a download="{{ i.file.filename }}" href="{% url 'vinny:attachment' 'msg' i.file.uuid %}" target="_blank" class="dl_file">{{ i.file.filename }}</a>
-        {% elif i.attachment %}
-        <a download="{{ i.attachment.name }}" href="{{ i.attachment.url }}" target="_blank" class="dl_file">{{ i.attachment.name }}</a>
+<div class="article-row-section">
+  {% for item in activity %}
+    <article class="article-row">
+      <div class="article-row-img">
+        {% if item.vc %}
+          {% autoescape off %}
+            {% if item.user %}
+              {{ item.user|userlogo:"profile-pic" }}
+            {% endif %}
+          {% endautoescape %}
+        {% else %}
+          {% autoescape off %}
+            {{ item|actionlogo }}
+          {% endautoescape %}
         {% endif %}
       </div>
-      {% endfor %}
-    </div>
-      {% if message.messageattachment_set.all|length > 0 %}
-      <div><i class="fas fa-paperclip"></i> {{ item.messageattachment_set.all|length }} attachments</div>
-      {% endif %}
-      {% elif item.followup %}
-      <p><a href='{{ item.followup.ticket.get_absolute_url }}'>{{ item.followup.ticket.ticket }}</a> {{ item.followup.ticket.title }}</p>
-      {% if item.comment %}
-      <p class="article-row-content-detail">
-	<div class="long_text_container">
-          <div class="text_container {% if 'Post removed' in item.title %}{% else %}textheightshort{% endif %}">
-            <div class="text_content">
-	      {{ item.comment|force_escape|smarter_urlize:50|num_to_link|linebreaksbr }}
-	    </div>
+      <div class="article-row-content">
+        {% if item.vc %}
+          <div class="article-row-system">VinceComm {% if item.user %}by {{ item.user.vinceprofile.vince_username }}{% endif %}</div>
+        {% else %}
+          <div class="article-row-system">VinceTrack {% if item.user %}by {{ item.user.usersettings.vince_username }}{% endif %}
+            {% if item.user == user and allow_edit and item.title|comment_editable %}
+              <a href="{% url 'vince:followup_edit' item.id %}" class='case-edit'>edit</a>
+            {% endif %}
           </div>
-          <div class="showfull moretext"><i class="fas fa-arrow-down"></i>  Show More</div>
-          <div class="showfull lesstext"><i class="fas fa-arrow-up"></i> Show Less</div>
-          <a href="#" class="scrollnext"><i class="fas fa-arrow-down"></i></a>
-	</div>
-      </p>
-	    
-      {% endif %}
-      {% else %}
-      </p>
-      {% if item.title == "Added Vendor to Case" %}
-      <p><i class="fas fa-user-plus"></i> {{ item.caseaction.vendor.contact.vendor_name }}</p>
-      {% elif item.title in "Notified vendors,Status Change,New Status,Vendor Statement,Vendor Vul Statement" %}
-      <p class="article-row-content-detail">
-      <div class="long_text_container">
-        <div class="text_container textheightshort">
-          <div class="text_content">
-            {{ item.comment|force_escape|smarter_urlize:50|num_to_link|linebreaksbr }}
+        {% endif %}
+        <p class="article-row-content-description">
+          {{ item.title }}
+        </p>
+        {% if item.current_revision %}
+          <a href="{% url 'vinny:postcase' item.id %}">posted in VinceComm Case {{item.case.vu_vuid}}.</a>
+          <p>{{ item.current_revision.content|markdown|safe }}</p>
+        {% elif item.thread %}
+          {% if item.thread.groupchat %}
+            <span class="message-groupchat"><i class="fas fa-users"></i>  Group Chat:</span>
+          {% endif %}
+          {{ item.user.vinceprofile.vince_username }} <a href="{{item.get_absolute_url}}"> sent message</a> in thread involving {% if item.thread.from_group %}{{ item.thread.from_group }} and {% endif %}{% if item.thread.to_group %}{{ item.thread.to_group }}{% else %}{{ item.thread.users.all|join:", " }}{% endif %}
+          <div class="message-content">{{ item.content | markdown | safe }}</div>
+          <div class="message-attachment">
+            {% for i in item.messageattachment_set.all %}
+              <div class="participant-pic">
+                {% if i.file %}
+                  <a download="{{ i.file.filename }}" href="{% url 'vinny:attachment' 'msg' i.file.uuid %}" target="_blank" class="dl_file">
+                    <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ i.file.filename|showfileicon }}{% endautoescape %} </span></div>
+                  </a>
+                {% elif i.attachment %}
+                  <a download="{{ i.attachment.name }}" href="{{ i.attachment.url }}" target="_blank" class="dl_file">
+                    <div class="profile-pic text-center imgpreview"><span class="logo-initial">{% autoescape off %}{{ i.attachment.name|showfileicon }}{% endautoescape %}</span></div>
+                  </a>
+                {% endif %}
+              </div>
+              <div class="participant-info">
+                {% if i.file %}
+                  <a download="{{ i.file.filename }}" href="{% url 'vinny:attachment' 'msg' i.file.uuid %}" target="_blank" class="dl_file">{{ i.file.filename }}</a>
+                {% elif i.attachment %}
+                  <a download="{{ i.attachment.name }}" href="{{ i.attachment.url }}" target="_blank" class="dl_file">{{ i.attachment.name }}</a>
+                {% endif %}
+              </div>
+            {% endfor %}
           </div>
-	</div>
-        <div class="showfull moretext"><i class="fas fa-arrow-down"></i>  Show More</div>
-        <div class="showfull lesstext"><i class="fas fa-arrow-up"></i> Show Less</div>
-        <a href="#" class="scrollnext"><i class="fas fa-arrow-down"></i></a>
+          {% if message.messageattachment_set.all|length > 0 %}
+            <div><i class="fas fa-paperclip"></i> {{ item.messageattachment_set.all|length }} attachments</div>
+          {% endif %}
+        {% elif item.followup %}
+          <p><a href='{{ item.followup.ticket.get_absolute_url }}'>{{ item.followup.ticket.ticket }}</a> {{ item.followup.ticket.title }}</p>
+          {% if item.comment %}
+            <p class="article-row-content-detail">
+	            <div class="long_text_container">
+                <div class="text_container {% if 'Post removed' in item.title %}{% else %}textheightshort{% endif %}">
+                  <div class="text_content">
+	                  {{ item.comment|force_escape|smarter_urlize:50|num_to_link|linebreaksbr }}
+	                </div>
+                </div>
+                <div class="showfull moretext"><i class="fas fa-arrow-down"></i>  Show More</div>
+                <div class="showfull lesstext"><i class="fas fa-arrow-up"></i> Show Less</div>
+                <a href="#" class="scrollnext"><i class="fas fa-arrow-down"></i></a>
+	            </div>
+            </p>	    
+          {% endif %}
+        {% else %}
+          </p>
+          {% if item.title == "Added Vendor to Case" %}
+            <p><i class="fas fa-user-plus"></i> {{ item.caseaction.vendor.contact.vendor_name }}</p>
+          {% elif item.title in "Notified vendors,Status Change,New Status,Vendor Statement,Vendor Vul Statement" %}
+            <p class="article-row-content-detail">
+              <div class="long_text_container">
+                <div class="text_container textheightshort">
+                  <div class="text_content">
+                    {{ item.comment|force_escape|smarter_urlize:50|num_to_link|linebreaksbr }}
+                  </div>
+	              </div>
+                <div class="showfull moretext"><i class="fas fa-arrow-down"></i>  Show More</div>
+                <div class="showfull lesstext"><i class="fas fa-arrow-up"></i> Show Less</div>
+                <a href="#" class="scrollnext"><i class="fas fa-arrow-down"></i></a>
+              </div>
+            </p>
+          {% elif item.title == "Vendor Viewed Case" %}
+            <p>{{ item.contact.vendor_name }} viewed case in VinceComm</p>
+          {% elif item.comment %}
+            <p class="article-row-content-detail">
+	            <div class="long_text_container">
+                <div class="text_container {% if 'Post removed' in item.title %}{% else %}textheightshort{% endif %}">
+                  <div class="text_content">
+                    {{ item.comment|force_escape|smarter_urlize:50|num_to_link|linebreaksbr }}
+                  </div>
+	              </div>
+                <div class="showfull moretext"><i class="fas fa-arrow-down"></i>  Show More</div>
+                <div class="showfull lesstext"><i class="fas fa-arrow-up"></i> Show Less</div>
+                <a href="#" class="scrollnext"><i class="fas fa-arrow-down"></i></a>
+	            </div>
+            </p>
+          {% endif %}
+        {% endif %}
+        <time class="article-row-content-time"><i class="far fa-clock"></i> {% if item.created %}{{ item.created|date:"Y-m-d" }} ({{ item.created|timesince }} ago) {% else %}{{ item.date|date:"Y-m-d"}} ({{ item.date|timesince }} ago){% endif %} {% if item.last_edit %}<b>Edited {{item.last_edit|date:"Y-m-d"}}</b>{% endif %} {% if item.caseaction.case %} <a href="{{ item.caseaction.case.get_absolute_url }}">View Case</a>{% endif %}
+        </time>
       </div>
-      </p>
-      {% elif item.title == "Vendor Viewed Case" %}
-      <p>{{ item.contact.vendor_name }} viewed case in VinceComm</p>
-      {% elif item.comment %}
-      <p class="article-row-content-detail">
-	<div class="long_text_container">
-          <div class="text_container {% if 'Post removed' in item.title %}{% else %}textheightshort{% endif %}">
-            <div class="text_content">
-              {{ item.comment|force_escape|smarter_urlize:50|num_to_link|linebreaksbr }}
-            </div>
-	  </div>
-          <div class="showfull moretext"><i class="fas fa-arrow-down"></i>  Show More</div>
-          <div class="showfull lesstext"><i class="fas fa-arrow-up"></i> Show Less</div>
-          <a href="#" class="scrollnext"><i class="fas fa-arrow-down"></i></a>
-	</div>
-      </p>
-      {% endif %}
-      {% endif %}
-      <time class="article-row-content-time"><i class="far fa-clock"></i> {% if item.created %}{{ item.created|date:"Y-m-d" }} ({{ item.created|timesince }} ago) {% else %}{{ item.date|date:"Y-m-d"}} ({{ item.date|timesince }} ago){% endif %} {% if item.last_edit %}<b>Edited {{item.last_edit|date:"Y-m-d"}}</b>{% endif %} {% if item.caseaction.case %} <a href="{{ item.caseaction.case.get_absolute_url }}">View Case</a>{% endif %}
-      </time>
-    </div>
-</article>
-{% empty %}
-{% if paginator %}
-<div class="row">
-  <div class="large-12 columns">
-    <div class="blog-post">
-      <h3> There is no recent activity </h3>
-    </div>
-  </div>
-</div>
-{% else %}
-<p>{% trans "There is no recent activity" %}</p>
-{% endif %}
-{% endfor %}
-
-{% if paginator %}
-<ul class="pagination text-center" role="navigation" aria-label="Pagination">
-  {% if activity.has_previous %}
-  <li class="pagination-previous"><a href="#" next="{{ activity.previous_page_number }}" class="search_notes">Previous</a></li>
-  {% else %}
-  <li class="pagination-previous disabled">Previous</li>
-  {% endif %}
-  {% for i in activity.paginator.page_range %}
-  {% if activity.number == i %}
-  <li class="current"><span class="show-for-sr">You're on page</span> {{ activity.number }}</li>
-  {% elif i > activity.number|add:'-3' and i < activity.number|add:'3' %}
-						  <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
-						  {% else %}
-						  {% if i == 1 %}
-  <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
-  <li class="ellipsis"></li>
-  {% elif forloop.last %}
-  <li class="ellipsis"></li>
-  <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
-  {% endif %}
-  {% endif %}
+    </article>
+  {% empty %}
+    {% if paginator %}
+      <div class="row">
+        <div class="large-12 columns">
+          <div class="blog-post">
+            <h3> There is no recent activity </h3>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <p>{% trans "There is no recent activity" %}</p>
+    {% endif %}
   {% endfor %}
-  {% if activity.has_next %}
-  <li class="pagination-next"><a href="#" next="{{ activity.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
-  {% else %}
-  <li class="pagination-next disabled">Next</li>
+
+  {% if paginator %}
+    <ul class="pagination text-center" role="navigation" aria-label="Pagination">
+      {% if activity.has_previous %}
+        <li class="pagination-previous"><a href="#" next="{{ activity.previous_page_number }}" class="search_notes">Previous</a></li>
+      {% else %}
+        <li class="pagination-previous disabled">Previous</li>
+      {% endif %}
+      {% for i in activity.paginator.page_range %}
+        {% if activity.number == i %}
+          <li class="current"><span class="show-for-sr">You're on page</span> {{ activity.number }}</li>
+        {% elif i > activity.number|add:'-3' and i < activity.number|add:'3' %}
+          <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+			  {% else %}
+				  {% if i == 1 %}
+            <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+            <li class="ellipsis"></li>
+          {% elif forloop.last %}
+            <li class="ellipsis"></li>
+            <li><a href="#" next="{{ i }}" aria-label="Page {{ i }}" class="search_notes">{{ i }}</a></li>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+      {% if activity.has_next %}
+        <li class="pagination-next"><a href="#" next="{{ activity.next_page_number }}" aria-label="Next page" class="search_notes">Next</a></li>
+      {% else %}
+        <li class="pagination-next disabled">Next</li>
+      {% endif %}
+    </ul>
   {% endif %}
-</ul>
-{% endif %}
 </div>

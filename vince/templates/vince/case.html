@@ -6,6 +6,7 @@
 <script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>
 <link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.css' %}">
 
+<script type="text/javascript" src="{% static 'vince/js/case_activity_search.js' %}"></script>
 <script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
 <script type="text/javascript" src="{% static 'vince/js/vulmodal.js' %}"></script>
 <script type="text/javascript" src="{% static 'vince/js/artifacts.js' %}"></script>
@@ -94,22 +95,31 @@
 
 <div class="row">
   <div class="large-12 columns">
-    <div class="shouldautorefresh" id="case_activity" >
+    <div id="case_activity" >
+
       <div class="row">
         <div class="large-12 columns">
           <h3 class="section-title">{% trans "Activity" %}</h3>
         </div>
       </div>      
-      {% include 'vince/include/case_activity.html' %}
+      
+      <div id="ticket_activity" href="{% url 'vince:case_activity' case.id %}" class="asyncload autoload asyncrefresh">
+        <!-- Load this async (this is just the little form at the top of the activity section) -->
+      </div>
+
+
+      {% comment %}
       <div class="row">
         <div class="large-12 columns">
           <div class="article-row-section">
-            <div class="article-row-section-inner" id="timeline" href="{% url 'vince:case_timeline' case.id %}">
-              {% include 'vince/include/case_timeline.html' %}
+            <div class="article-row-section-inner asyncload autoload asyncrefresh" id="timeline" href="{% url 'vince:case_timeline' case.id %}">
+              <!-- Load this async (this is the big activity section listing all the things that have happened) -->
             </div>
           </div>
         </div>
       </div>
+      {% endcomment %}
+
     </div>
   </div>
 </div>

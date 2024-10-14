@@ -3,6 +3,32 @@
 CHANGELOG
 VINCE Coordination platform code
 
+Version 3.0.8 2024-10-14
+
+* Fixed a potential security issue with pickle DOS reported by @coldwaterq [coldwaterq](https://github.com/coldwaterq) as [CVE-2024-9953](https://www.cve.org/CVERecord?id=CVE-2024-9953) resolved in 3.0.8
+* Dependabot update recommendations: `django` 4.2.14 to 4.2.16
+* Fixed bug that interfered in certain circumstances with email sending functionality
+
+
+Version 3.0.7 2024-09-10
+
+* Dependabot update recommendations: `cryptography` 42.0.4 to 43.0.1
+* Made the activity section of the VINCE Track case page load async (Internal-767)
+* Set the owner field options on the VT case and ticket search page to change dynamically with the selected teams (Internal-754)
+* Resolved bug that prevented VT users from being able to reply to certain messages within VINCE Comm (Internal-700)
+* Removed condition preventing display of buttons for accessing the vendor association process on certain tickets (Internal-588)
+* Fixed bug that caused certain outgoing VINCE emails to contain bad links to case pages (Internal-770)
+* Added code to ensure emails from `settings.IGNORE_EMAILS_TO` (donotreply@) include prominent indication that replies will not be read (Internal-771)
+
+
+Version 3.0.6 2024-07-29
+
+* Fixed bug that interfered in certain circumstances with processing of contact associations (Internal-763)
+* Modified code to ensure that user verification emails only go to group admins and notification-only email addresses (Internal-765)
+* Adjusted redirect process after adding vul to a case so that the user lands on the case vul tab (Internal-766)
+* Amended code for autoassigning tickets from the ticket page so as to avoid redirect bug (Internal-761)
+
+
 Version 3.0.5 2024-07-17
 
 * Dependabot update recommendations: `urllib3` 1.26.18 to 1.26.19, `certifi` 2023.7.22 to 2024.7.4, `zipp` 3.10.1 to 1.19.1 `Django` 4.2.11 to 4.2.14

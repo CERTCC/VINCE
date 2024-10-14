@@ -146,6 +146,44 @@ async function close_tickets(search) {
 
 $(document).ready(function() {
 
+    let team_memberships = JSON.parse(document.getElementById('team_memberships_js').textContent);
+
+    function updateOwnerField(selectAllWasTicked){
+        data = $('#searchform').serializeArray()
+        let owner_list_div = document.getElementById("id_owner")
+        let tickedTeams = []
+        data.forEach(function(datum){ 
+            if (datum.name == "team") {
+                tickedTeams.push(parseInt(datum.value));
+            }
+        })
+
+        if (selectAllWasTicked || tickedTeams.length == 0 || tickedTeams.length == team_memberships.length){
+            for (let i = 1; i < owner_list_div.children.length; i++){
+                owner_list_div.children[i].style.display = "block";
+            }
+        } else {
+            let owners_who_should_display = []
+                for (let i = 0; i < team_memberships.length; i++){
+                    if (tickedTeams.includes(team_memberships[i].group_id)){
+                        let array_of_user_ids = []
+                        team_memberships[i].users.forEach(function(user){
+                            array_of_user_ids.push(user.id)
+                        })
+                        owners_who_should_display.push.apply(owners_who_should_display, array_of_user_ids)
+                    }
+                }
+            for (let i = 1; i < owner_list_div.children.length; i++){
+                if (owners_who_should_display.includes(parseInt(owner_list_div.children[i].firstElementChild.firstElementChild.value))) {
+                    owner_list_div.children[i].style.display = "block";
+                } else {
+                    owner_list_div.children[i].style.display = "none";
+                }
+            }
+        }
+    
+    }
+
     $(document).on("click", '.search_page', function(event) {
     	let page = $(this).attr('next');
 	    nextPage(page);
@@ -204,6 +242,7 @@ $(document).ready(function() {
 
     $("#filter_by_dropdown_select_all_4").click(function(){
 	    $("#id_team input[type=checkbox]").prop('checked', $(this).prop('checked'));
+        updateOwnerField(true);
 	    searchTickets();
     });
 
@@ -248,6 +287,7 @@ $(document).ready(function() {
     });
 
     $("#id_team").change(function() {
+        updateOwnerField(false);
         searchTickets();
     });
 
