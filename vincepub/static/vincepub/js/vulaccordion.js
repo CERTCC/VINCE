@@ -29,46 +29,53 @@
 */
 
 function reloadVendors() {
+    // console.log('reloadVendors is now running')
     var vuid = $("#vuid").html();
+    // console.log('vuid is ' + vuid)
     var url_mask="/vuls/vendor/VU%23" + vuid;
+    // console.log('url_mask is ' + url_mask)
     $("#accordion").replaceWith("<div id='accordion' class='ui-accordion ui-widget ui-helper-reset'><div class='loading_gif'></div></div>");
-    $.get(url_mask)
-	.done(function(data, textStatus, jqXHR) {
-            $("#vendorinfo").html(data);
+    $.get(url_mask).done(function(data, textStatus, jqXHR) {
+        // console.log('the data returned from the get request sent out by reloadVendors is ' + data)
+        $("#vendorinfo").html(data);
 	    $("#accordion").accordion({
-		header: '.accordion-header',
-		icons: false,
-		heightStyle: "content",
-		active: false,
-		collapsible: true,
+            header: '.accordion-header',
+            icons: false,
+            heightStyle: "content",
+            active: false,
+            collapsible: true,
 	    });
 	    if ($("#info_checkbox").hasClass('checked')) {
-		showVendors($("#vendorstatus option:selected").val(), true);
-		$(".more-vendors").hide();
-            }
+            showVendors($("#vendorstatus option:selected").val(), true);
+            $(".more-vendors").hide();
+        }
 	});
 }
 
 function reloadVendorsStatus() {
+    // console.log('reloadVendorStatus is running')
     var vuid = $("#vuid").html();
+    // console.log('vuid is ' + vuid)
     var url_mask="/vuls/vendorstatus/VU%23" + vuid;
+    // console.log('url_mask is ' + url_mask)
     $("#accordion").replaceWith("<div id='accordion' class='ui-accordion ui-widget ui-helper-reset'><div class='loading_gif'></div></div>");
     $.ajax({
-     url: url_mask,
-     success: function(data) {
-         $("#vendorinfo").html(data);
-         $("#accordion").accordion({
-             header: '.accordion-header',
-             icons: false,
-             heightStyle: "content",
-             active: false,
-             collapsible: true,
-         });
-	 if ($("#info_checkbox").hasClass('checked')) {
-             showVendors($("#vendorstatus option:selected").val(), true);
-	     $(".more-vendors").hide();
-         }
-     }
+        url: url_mask,
+        success: function(data) {
+            // console.log('the data returned from the get request sent out by reloadVendorStatus is ' + data)
+            $("#vendorinfo").html(data);
+            $("#accordion").accordion({
+                header: '.accordion-header',
+                icons: false,
+                heightStyle: "content",
+                active: false,
+                collapsible: true,
+            });
+            if ($("#info_checkbox").hasClass('checked')) {
+                showVendors($("#vendorstatus option:selected").val(), true);
+                $(".more-vendors").hide();
+            }
+        }
    });
 }
 
@@ -111,25 +118,25 @@ async function printvunote() {
 function showInfo() {
     var status = $("#vendorstatus option:selected").val();
     $("[data-type='accordion-section']").each(function () {
-	$(this).show();
-	if (!($(this)[0].classList.contains("info"))) {
-	    if ($(this).css("display") == "block") {
-		$(this).hide();
-	    }
-	} else {
-	    if(!($(this)[0].classList.contains(status))) {
-		if ($(this).css("display") == "block") {
+        $(this).show();
+        if (!($(this)[0].classList.contains("info"))) {
+            if ($(this).css("display") == "block") {
+                $(this).hide();
+            }
+        } else {
+            if(!($(this)[0].classList.contains(status))) {
+                if ($(this).css("display") == "block") {
                     $(this).hide();
-		}
-	    }
-	}
+                }
+            }
+        }
     });
 }
 
 function showAll() {
     $("[data-type='accordion-section']").each(function () {
         $(this).show();
-});
+    });
 }
 
 
@@ -157,31 +164,31 @@ function showVendors(status, info) {
 $(document).ready(function() {
 
     $("#accordion").accordion({
-      header: '.accordion-header',
-      icons: false,
-      heightStyle: "content",
-       active: false,
-       collapsible: true,
-   });
+        header: '.accordion-header',
+        icons: false,
+        heightStyle: "content",
+        active: false,
+        collapsible: true,
+    });
 
     
     $(document).on("click", '#moreVendorsLink', function(e) {
         $(".extravendors").toggle();
-	$(".moreVendors").toggle();
+	    $(".moreVendors").toggle();
         $(".lessVendors").toggle();
         e.preventDefault();
     });
 
     $(document).on("click", '#lessVendorsLink', function(e) {
         $(".extravendors").toggle();
-	$(".moreVendors").toggle();
+	    $(".moreVendors").toggle();
         $(".lessVendors").toggle();
         e.preventDefault();
     });
 
     $(document).on("click", ".popup-print", function(e) {
-	e.preventDefault();
-	printvunote();
+        e.preventDefault();
+        printvunote();
     });
     
 
@@ -189,96 +196,109 @@ $(document).ready(function() {
     var hash = window.location.hash;
     var anchor = $('a[href$="'+hash+'"]');
     if (anchor.length > 0){
-	anchor.click();
-	$("#moreVendorsLink").trigger("click");
+        anchor.click();
+        $("#moreVendorsLink").trigger("click");
     }
+
     /* this is to scroll to that newly opened vendor record */
     $('#accordion').bind('accordionactivate', function(event, ui) {
-     /* In here, ui.newHeader = the newly active header as a jQ object
+        /* In here, ui.newHeader = the newly active header as a jQ object
               ui.newContent = the newly active content area */
-	if (ui.newHeader[0]) {
-	    $( ui.newHeader )[0].scrollIntoView();
-	}
+        if (ui.newHeader[0]) {
+            $( ui.newHeader )[0].scrollIntoView();
+        }
     });
     
 
     $("#vendorstatus").on("change", function() {
-	var status = this.value;
-	var info = $("#info_checkbox").hasClass('checked');
-	var hidesort = $("#hidesort").attr("method");
-	var sort = $("#vendorsort option:selected").val();
-	$(".more-vendors").hide();
-	if (status == "all") {
-	    if ((hidesort == "status") && (sort == "alpha")) {
-		reloadVendors();
-		showVendors($("#vendorstatus option:selected").val(), $("#info_checkbox").hasClass('checked'));
+        // console.log('javascript is handling a change to #vendorstatus')
+        var status = this.value;
+        // console.log('status is ' + status)
+        var info = $("#info_checkbox").hasClass('checked');
+        // console.log('info is ' + info)
+        var hidesort = $("#hidesort").attr("method");
+        // console.log('hidesort is ' + hidesort)
+        var sort = $("#vendorsort option:selected").val();
+        // console.log('sort is ' + sort)
+        $(".more-vendors").hide();
+        if (status == "all") {
+            if ((hidesort == "status") && (sort == "alpha")) {
+                // console.log('javascript is in the block of code where it is found that hidesort == "status"')
+                reloadVendors();
+                showVendors($("#vendorstatus option:selected").val(), $("#info_checkbox").hasClass('checked'));
                 $("#hidesort").attr("method", "alpha");
-		return true;
-	    } else if (hidesort != sort) {
-		reloadVendorsStatus();
-		showVendors($("#vendorstatus option:selected").val(), $("#info_checkbox").hasClass('checked'));
+                return true;
+            } else if (hidesort != sort) {
+                // console.log('javascript is in the block of code where it is found that hidesort != sort')
+                reloadVendorsStatus();
+                showVendors($("#vendorstatus option:selected").val(), $("#info_checkbox").hasClass('checked'));
                 $("#hidesort").attr("method", "status");
-		return true;
-	    }
-	}
-	showVendors(status, info);
+                return true;
+            } else {
+                // console.log('none of the conditions for which pre-existing code was prepared obtains')
+            }
+        }
+        showVendors(status, info);
     });
 
     $("#vendorsort").on("change", function() {
-	var sort = this.value;
-	var status = $("#vendorstatus option:selected").val();
-	$(".more-vendors").hide();
-	if (status == "all") {
-	    if (sort == "alpha") {
-		reloadVendors();
-		$("#hidesort").attr("method", "alpha");
-		
+        // console.log('javascript is handling a change to #vendorsort')
+        var sort = this.value;
+        // console.log('sort is ' + sort)
+        var status = $("#vendorstatus option:selected").val();
+        // console.log('status is ' + status)
+        $(".more-vendors").hide();
+        if (status == "all") {
+            if (sort == "alpha") {
+                // console.log('javascript is in the block of code where it is found that sort == "alpha"')
+                reloadVendors();
+                $("#hidesort").attr("method", "alpha");
             } else {
-		reloadVendorsStatus();
-		$("#hidesort").attr("method", "status");
-	    }
-	}
+                // console.log('javascript is in the block of code where it is not found that sort == "alpha"')
+                reloadVendorsStatus();
+                $("#hidesort").attr("method", "status");
+            }
+        }
     });
 
     $("#info_checkbox").on("change", function() {
-	$(".more-vendors").hide();
-	$("#info_checkbox").toggleClass('checked');
-	if ($("#info_checkbox").hasClass('checked')) {
-	    showVendors($("#vendorstatus option:selected").val(), true);
-	} else {
-	    showVendors($("#vendorstatus option:selected").val(), false);
-	}
-
-
+        $(".more-vendors").hide();
+        $("#info_checkbox").toggleClass('checked');
+        if ($("#info_checkbox").hasClass('checked')) {
+            showVendors($("#vendorstatus option:selected").val(), true);
+        } else {
+            showVendors($("#vendorstatus option:selected").val(), false);
+        }
     });
 			 
 
     
-$('.popup-twitter').popupWindow({
-     height:400,
-     width:575,
-     top:50,
-     left:50
-});
-  $('.popup-facebook').popupWindow({
-  height:500,
-  width:900,
-  top:50,
-  left:50
-  });
+    $('.popup-twitter').popupWindow({
+        height:400,
+        width:575,
+        top:50,
+        left:50
+    });
 
-  $('.popup-share').popupWindow({
-  height:500,
-  width:900,
-  top:50,
-  left:50
-  });
+    $('.popup-facebook').popupWindow({
+        height:500,
+        width:900,
+        top:50,
+        left:50
+    });
 
-$('.accordion-expand-collapse a').click(function() {
-    $('#accordion .ui-accordion-header:not(.ui-state-active)').next().slideToggle();
-    $(this).text($(this).text() == 'Expand all' ? 'Collapse all' : 'Expand all');
-    $(this).toggleClass('collapse');
-    return false;
-});
+    $('.popup-share').popupWindow({
+        height:500,
+        width:900,
+        top:50,
+        left:50
+    });
+
+    $('.accordion-expand-collapse a').click(function() {
+        $('#accordion .ui-accordion-header:not(.ui-state-active)').next().slideToggle();
+        $(this).text($(this).text() == 'Expand all' ? 'Collapse all' : 'Expand all');
+        $(this).toggleClass('collapse');
+        return false;
+    });
 
 });

@@ -55,7 +55,7 @@ $(document).ready(function() {
             url: "/vince/ajax_calls/contact/"+contact_id,
             success: function(data) {
                 taggle.removeAll()
-                let emails = data['emails'].split(',');
+                let emails = data['admin_emails'].split(',');
                 taggle.settings.allowedTags = emails
                 if (internal_verification_checkbox.checked){
                     taggle.settings.allowedTags.push(document.getElementById('id_user').value)

@@ -24,38 +24,41 @@
       <h2>Ticket [{{ ticket.queue }}-{{ ticket.id }}] {% if ticket.case %}<a href="{% url 'vince:case' ticket.case.id %}">({{ ticket.case.vu_vuid }})</a>{% endif %}  {% autoescape off %}{{ ticket.get_status_html }} {% if ticket.get_status_display == "Closed" %}{{ ticket.get_close_status_html }}{% endif %}{% endautoescape %}</h2>
     </div>
     <div class="large-4 columns text-right">
+
       <a href="{% url 'vince:initcontactverify' %}?tkt={{ ticket.id }}" class="button primary small"><i class="fas fa-suitcase"></i> Vendor Association</a>
+
       {% if ticket.case %}
-      <a href="{% url 'vince:case' ticket.case.id %}" class="button primary small"><i class="fas fa-suitcase"></i> View case</a>
-      {% if vincecomm_link %}
-      <a href="{{ vincecomm_link }}" class="button default small small-only-expanded"><i class="fas fa-eye"></i> View in VinceComm</a>
-      {% endif %}
+        <a href="{% url 'vince:case' ticket.case.id %}" class="button primary small"><i class="fas fa-suitcase"></i> View case</a>
+        {% if vincecomm_link %}
+          <a href="{{ vincecomm_link }}" class="button default small small-only-expanded"><i class="fas fa-eye"></i> View in VinceComm</a>
+        {% endif %}
       {% else %}
-      <a href="{% url 'vince:newcase' ticket.id %}" class="button primary small"><i class="fas fa-suitcase"></i> Create case</a>
+        <a href="{% url 'vince:newcase' ticket.id %}" class="button primary small"><i class="fas fa-suitcase"></i> Create case</a>
       {% endif %}
+
       <!-- Tickets under a Case can still be in Vendor queue requiring Association approval See VIN-588 -->
-      {% if ticket.queue.title == "Vendor" %}
+      <!-- Also, tickets can link to the association process even if they aren't in the Vendor queue -->
       {% if ca %}
-      {% if ca.complete %}
-      {% if ca.restart %}
-      <a href="{% url 'vince:msgadmin' ticket.id %}" id="msgadmin" email="{{ ticket.submitter_email }}" class="button cmu small">Verify Contact</a>
-      {% endif %}
-      
-      {% elif ca.approval_requested %}
-      <a href="{% url 'vince:complete_contact' ca.id %}" class="complete button small cmu">Complete Association</a>
-      <a href="{% url 'vince:restart_contact' ca.id %}" class="complete button small default">Restart</a>
+        {% if ca.complete %}
+          {% if ca.restart %}
+            <a href="{% url 'vince:msgadmin' ticket.id %}" id="msgadmin" email="{{ ticket.submitter_email }}" class="button cmu small">Verify Contact</a>
+          {% endif %}
+    
+        {% elif ca.approval_requested %}
+          <a href="{% url 'vince:complete_contact' ca.id %}" class="complete button small cmu">Complete Association</a>
+          <a href="{% url 'vince:restart_contact' ca.id %}" class="complete button small default">Restart</a>
+        {% else %}
+          <a href="{% url 'vince:contactreqauth' ca.id %}" class="approve button small primary">Request Authorization</a>
+          <a href="{% url 'vince:restart_contact' ca.id %}" class="approve button small default">Restart</a>
+        {% endif %}
       {% else %}
-      <a href="{% url 'vince:contactreqauth' ca.id %}" class="approve button small primary">Request Authorization</a>
-      <a href="{% url 'vince:restart_contact' ca.id %}" class="approve button small default">Restart</a>
-      {% endif %}
-      {% else %}
-      <!--<a href="{% url 'vince:initcontactverify' %}?tkt={{ticket.id}}" class="button cmu">Verify Contact</a>-->
-      <a href="{% url 'vince:msgadmin' ticket.id %}" id="msgadmin" email="{{ ticket.submitter_email }}" class="button cmu small">Verify Contact</a>
-      {% endif %}
+        <!--<a href="{% url 'vince:initcontactverify' %}?tkt={{ticket.id}}" class="button cmu">Verify Contact</a>-->
+        <a href="{% url 'vince:msgadmin' ticket.id %}" id="msgadmin" email="{{ ticket.submitter_email }}" class="button cmu small">Verify Contact</a>
       {% endif %}
     </div>
   </div>
 </div>
+
 {% if messages %}
 <div class="row">
   <div class="large-12 columns" id="ticket_messages_wrapper_div">

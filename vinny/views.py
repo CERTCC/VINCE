@@ -251,11 +251,11 @@ def _my_group_admin(user):
     return []
 
 
-def _my_group_for_case(user, case):
+def _my_group_for_case(user, case, showTracking=False):
     my_groups = user.groups.exclude(groupcontact__isnull=True)
     casemembers = CaseMember.objects.filter(case=case, group__in=my_groups)
     for member in casemembers:
-        if member.coordinator or member.reporter_group:
+        if not showTracking and (member.coordinator or member.reporter_group):
             # this is a coordinator or a reporting group
             continue
         elif _user_allowed(member, user):
@@ -2255,6 +2255,8 @@ class ThreadView(LoginRequiredMixin, TokenMixin, PendingTestMixin, generic.Updat
 
     def get_queryset(self):
         qs = super(ThreadView, self).get_queryset()
+        if self.request.user.is_superuser:
+            return qs
         qs = qs.filter(userthread__user=self.request.user).distinct()
         return qs
 
@@ -2775,6 +2777,7 @@ class VulNoteView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.D
         context = super(VulNoteView, self).get_context_data(**kwargs)
         context["unread_msg_count"] = 0
         context["draft"] = True
+        logger.debug(f"vinny VulNoteView is about to return the following context: {context}")
         return context
 
 
@@ -2951,18 +2954,19 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
 
             return context
 
-        group = _my_group_for_case(self.request.user, case)
+        showTracking = _my_group_for_case(self.request.user, case, True)
+        showStatus = _my_group_for_case(self.request.user, case)
         if len(vuls) == 0 or is_in_group_vincetrack(self.request.user):
             context["showstatus"] = False
         else:
-            if group:
+            if showStatus:
                 context["showstatus"] = True
                 # else this is a participant/coordinator
             else:
                 context["showstatus"] = False
 
         context["showupdatestatus"] = False
-        if group:
+        if showTracking:
             # show tracking id bc this user is a vendor
             context["showtracking"] = True
             if is_in_group_vincetrack(self.request.user):

@@ -196,7 +196,9 @@ urlpatterns = [
     re_path(r"reports/emails/(?P<pk>[0-9]+)/$", views.ReportsEmailsView.as_view(), name="reports_page_emails"),
     re_path(r"reports/cases/(?P<pk>[0-9]+)/$", views.ReportsCasesView.as_view(), name="reports_page_cases"),
     re_path(r"reports/tickets/(?P<pk>[0-9]+)/$", views.ReportsTicketsView.as_view(), name="reports_page_tickets"),
-    re_path(r"reports/userstats/(?P<pk>[0-9]+)/$", views.ReportsUserStatsView.as_view(), name="reports_page_userstats"),
+    re_path(
+        r"reports/userstats/(?P<pk>[0-9]+)/$", views.ReportsUserStatsView.as_view(), name="reports_page_userstats"
+    ),
     re_path(
         r"reports/current_ticket_status/(?P<pk>[0-9]+)/$",
         views.ReportsCurrentTicketStatusView.as_view(),
@@ -298,6 +300,7 @@ urlpatterns = [
     re_path("^vrf/(?P<pk>[0-9]+)/$", views.CRVRFFullScreen.as_view(), name="vrffullscreen"),
     re_path("^newcase/(?P<ticket_id>[0-9]+)/$", views.CreateNewCaseView.as_view(), name="newcase"),
     re_path("^ticket/(?P<pk>[0-9]+)/activity/$", views.TicketActivityView.as_view(), name="ticket_activity"),
+    re_path("^case/(?P<pk>[0-9]+)/activity/$", views.CaseActivityView.as_view(), name="case_activity"),
     re_path("^ticket/(?P<pk>[0-9]+)/assign/team/$", views.AssignTicketNewTeam.as_view(), name="assignteam"),
     re_path("^ticket/(?P<pk>[0-9]+)/artifact/$", views.AddTicketArtifactView.as_view(), name="artifact"),
     re_path("^case/(?P<pk>[0-9]+)/artifact/$", views.AddCaseArtifactView.as_view(), name="case_artifact"),
