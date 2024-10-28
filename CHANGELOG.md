@@ -3,6 +3,12 @@
 CHANGELOG
 VINCE Coordination platform code
 
+Version 3.0.9 2024-10-28
+
+* Update to fix Security issue with enumerate users in vincecomm (Internal-783 CVE-2024-10469)
+* Update date format to VinceComm as per GH-Issue (GH Issue #157)
+
+
 Version 3.0.8 2024-10-14
 
 * Fixed a potential security issue with pickle DOS reported by @coldwaterq [coldwaterq](https://github.com/coldwaterq) as [CVE-2024-9953](https://www.cve.org/CVERecord?id=CVE-2024-9953) resolved in 3.0.8
