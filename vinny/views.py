@@ -1536,7 +1536,10 @@ class AdminView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Tem
                 ).first()
                 if admin:
                     return PendingTestMixin.test_func(self)
-        return PendingTestMixin.test_func(self)
+                else:
+                    return False
+            return PendingTestMixin.test_func(self)
+        return False
 
     def dispatch(self, request, *args, **kwargs):
         if self.kwargs.get("vendor_id"):
@@ -2884,6 +2887,8 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         case = Case.objects.get(id=self.kwargs["pk"])
         # content = VendorNotificationContent.objects.filter(case=case).first()
         context["case"] = case
+        logger.debug(f"case.due_date is {case.due_date}")
+        logger.debug(f"context['case'].due_date is {context['case'].due_date}")
         context["casepage"] = 1
         context["today"] = timezone.now
         # context['content'] = content
