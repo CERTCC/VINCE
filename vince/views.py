@@ -179,6 +179,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+def get_vincecomm_messages(id):
+    return Message.objects.filter(pk=id).first()
+
+
 def normalize_time(instance, column):
     """Time fields normalize and find issues"""
     if hasattr(instance, column):
@@ -5029,7 +5033,18 @@ class TicketActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         context["ticketpage"] = 1
         context["ticket"] = get_object_or_404(Ticket, id=self.kwargs["pk"])
         context["more"] = False
-        logger.debug(f'in TicketActivityView, context["ticket"].get_actions() is {context["ticket"].get_actions()}')
+        followups = context["ticket"].get_actions()
+
+        list_of_fups_with_messages = []
+        for followup in followups:
+            fup_with_messages = {"fup": followup}
+            list_of_msg_values = []
+            for message in followup.followupmessage_set.all():
+                list_of_msg_values.append(get_vincecomm_messages(message.id))
+            fup_with_messages["msgset"] = list_of_msg_values
+            list_of_fups_with_messages.append(fup_with_messages)
+
+        context["followups"] = list_of_fups_with_messages
         if context["ticket"].followup_set.count() > Ticket.MAX_ACTIVITY:
             if self.request.GET.get("all", None):
                 context["ticket"].MAX_ACTIVITY = 0

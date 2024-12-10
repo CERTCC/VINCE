@@ -78,7 +78,7 @@ class CaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Case
-        fields = ("vuid", "created", "status", "summary", "title", "due_date", "modified")
+        fields = ("vuid", "created", "status", "summary", "title", "due_date", "modified", "pk")
 
     def get_status(self, obj):
         return obj.get_status_display()
