@@ -5040,7 +5040,7 @@ class TicketActivityView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
             fup_with_messages = {"fup": followup}
             list_of_msg_values = []
             for message in followup.followupmessage_set.all():
-                list_of_msg_values.append(get_vincecomm_messages(message.id))
+                list_of_msg_values.append(get_vincecomm_messages(message.msg))
             fup_with_messages["msgset"] = list_of_msg_values
             list_of_fups_with_messages.append(fup_with_messages)
 
