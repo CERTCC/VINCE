@@ -3,6 +3,17 @@
 CHANGELOG
 VINCE Coordination platform code
 
+Version 3.0.11 2024-12-11
+
+* Update to fix "Reply to User" button further scenarios.
+
+Version 3.0.10 2024-12-10
+
+* Dependabot update recommendations: `django` 4.2.17 to 4.2.16
+* Fixed bug preventing the "Reply to User" buttons from working in certain circumstances
+* Added pk to CaseAPIView (GH-Issue #162)
+
+
 Version 3.0.9 2024-10-28
 
 * Update to fix Security issue with enumerate users in vincecomm (Internal-783 CVE-2024-10469)
