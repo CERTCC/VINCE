@@ -48,6 +48,7 @@
 	top: 0%;
     }
 }
+
 nav.cdown {
     display:inline-block;
 }
@@ -133,4 +134,17 @@ span.trackorg::before {
 }
 span.trackorg::after {
     content: "]";
+}
+nav.cdown.messagefilter li {
+    background: #0a9906;
+}
+nav.cdown.messagefilter li:hover {
+    background-color: #006600;
+}
+div.columns:has( .messagefilter) .p-relative {
+    position: relative;
+    z-index: 10;
+}
+span#showall {
+    font-size: small;
 }

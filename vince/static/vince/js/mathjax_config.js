@@ -28,8 +28,19 @@
 ########################################################################
 */
 
+/*
+  skipHtmlTags: {'[-]': ['code', 'pre', 'td'], '[+]': ['p']}
+*/
 MathJax = {
-    tex: { inlineMath: [["$","$"],["\\(","\\)"]]},
+    options: {
+	skipHtmlTags: [
+            'script', 'noscript', 'style', 'textarea', 'pre',
+            'code', 'annotation', 'annotation-xml', 'td'
+	]
+    },
+    tex: { inlineMath: [["$","$"],["\\(","\\)"]],
+	   packages: {'[+]': ['noerrors']}},
+    loader: {load: ['[tex]/noerrors']},
     startup: {
 	ready: function () {
 	    MathJax.startup.defaultReady();

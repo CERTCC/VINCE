@@ -4574,7 +4574,7 @@ class CasesAPIView(generics.ListAPIView):
         return "My Cases"
 
     def get_queryset(self):
-        if is_in_group_vincelimited(self.request.user):
+        if is_in_group_vincetrack(self.request.user) or is_in_group_vincelimited(self.request.user):
             return Case.objects.all().order_by("-modified")
 
         my_cases = _get_my_cases(self.request.user)

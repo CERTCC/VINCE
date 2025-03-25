@@ -221,10 +221,26 @@
       <div class="large-9 columns">
 	<h3>Case Discussion</h3>
       </div>
-      <div class="large-3 columns text-right">
+      <div class="large-3 columns text-right p-relative">
 	<div class="hidden" id="paginate_by">{{ paginate_by }}</div>
 	{% if num_posts > 10 %}
-	<a href="#" class="expandreplies">Show all</a>
+	<nav role="navigation" class="cdown messagefilter">
+	  <ul>
+	    <li><a><i class="fas fa-filter"></i></a>
+	      <ul class="dropdown">
+		<li class="showunreadt">
+		  Show unread threads
+		</li>
+		<li class="showunreadm">
+		  Show unread posts
+		</li>
+		<li class="showallt">
+		  Show All
+		</li>
+	      </ul>
+	    </li>
+	  </ul>
+	</nav>
 	<span id="showall">Showing all <span id="postcount">{{ total_posts }}</span> posts</span>
 	{% endif %}
       </div>
@@ -324,7 +340,7 @@
     <div class="participant_type type_vendors">
       <div class="row column">
 	      <h4>Vendors
-	        <nav role="navigation" class="cdown" id="vendorfilter">
+	        <nav role="navigation" class="cdown vendorfilter">
 	          <ul>
 	            <li><a><i class="fas fa-filter"></i></a>
                 <ul class="dropdown">
