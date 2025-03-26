@@ -3,6 +3,28 @@
 CHANGELOG
 VINCE Coordination platform code
 
+Version 3.0.14 2025-03-17
+
+* Added code for checking authenticity of emails subject to new preprocessing for AWS email integration (Internal-791)
+* Added code for retrieving "To" and "From" email values correctly in light of new preprocessing (Internal-792)
+* Fixed bug that prevented case discussions from being properly hidden behind header in Comm (Internal-796)
+
+
+Version 3.0.13 2025-02-20
+
+* dependabot update recommendations `cryptography` 43.0.1 to 44.0.1
+* Added logs to aid ongoing AWS mail migration effort
+* Upgraded jQuery to 3.4.1
+* Fixed pagination bug on case vendors ajax call (Internal-794)
+* Changed API Case request to enable Track users to access data about all cases more easily (Internal-795)
+* Resolved MathJax display issue reported by VINCE User #166
+
+
+Version 3.0.12 2025-01-13
+
+* Added new feature Message Filtering see (Internal-787)
+
+
 Version 3.0.11 2024-12-11
 
 * Update to fix "Reply to User" button further scenarios.

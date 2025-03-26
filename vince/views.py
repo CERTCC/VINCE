@@ -667,8 +667,8 @@ def calendar_events(request):
 @user_passes_test(is_in_group_vincetrack, login_url="vince:login")
 def autocomplete_casevendors(request, pk):
     case = get_object_or_404(VulnerabilityCase, id=pk)
-    page = request.GET.get("page", 1)
-    size = request.GET.get("size", 0)
+    page = int(request.GET.get("page", 1))
+    size = int(request.GET.get("size", 0))
     vendors = VulnerableVendor.casevendors(case).order_by("vendor")
     user_filter = False
     logger.debug(f"in autocomplete_casevendors, request.GET is {request.GET}")

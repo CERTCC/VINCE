@@ -328,6 +328,7 @@ def ingest_vulreport(request):
 
         try:
             data = json.loads(body_data["Message"])
+            logger.debug(f"in {log_tag}, data is {data}")
             if "notificationType" in data:
                 # this is a bounce or a complaint
                 if data["notificationType"] in ["Bounce", "Complaint"]:
@@ -344,10 +345,13 @@ def ingest_vulreport(request):
             if "receipt" in data:
                 if data["receipt"].get("action"):
                     if data["receipt"]["action"].get("type") == "S3":
-                        # this is an email notification
+                        logger.debug(f"{log_tag} found S3")
+                        # this is an email notification in prod
                         # if data["receipt"]["action"].get("bucketName") == settings.EMAIL_BUCKET:
                         email_msg = create_ticket_from_email_s3(
-                            data["receipt"]["action"].get("objectKey"), data["receipt"]["action"].get("bucketName")
+                            data["receipt"]["action"].get("bucketName"),
+                            data["receipt"]["action"].get("objectKey"),
+                            None,
                         )
                         return JsonResponse({"response": "success"}, status=200)
             data["submission_type"] = "web"

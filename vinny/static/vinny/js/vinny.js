@@ -617,32 +617,62 @@ $(document).ready(function() {
         $(this).toggle();
 	$(this).siblings('.loadreply').toggle();
     });
-
-    $(document).on("click", ".expandreplies", function(e) {
-	e.preventDefault();
-	$(this).hide();
+    $(".showunreadm").on("click",function() {
+	$('#allposts .callout, #pinnedposts .callout').not('.unseen').hide();
+	let count = $('.callout.unseen').length;
+	$("#showall").html("Showing unread posts (" + String(count) + ")");
 	$("#showall").show();
-	/*$(this).text($(this).text() == 'Show all' ? 'Collapse all' : 'Show all');
-        $('.loadreply').each(function() {
-	    $(this).click();
-	    });*/
+	$('.secondary.callout').show();
+    });
+    $(".showunreadt").on("click",function() {
+	$('#allposts .callout, #pinnedposts .callout').not('.unseen').hide();
+	let count = $('.callout.unseen').length;
+	$('.unseen.replypost').closest('.replies').each(function(_,el) {
+	    el.querySelectorAll(".callout").forEach(function(cel) {
+		cel.style.display = "block";
+		count++;
+	    })
+	    if(el.previousElementSibling) {
+		el.previousElementSibling.style.display = "block"
+		count++;
+	    }
+	});
+	$("#showall").html("Showing unread threads (" + String(count) + ")");
+	$("#showall").show();
+	$('.secondary.callout').show();
+    });
+
+    $(".showallt").on("click", function(e) {
+	e.preventDefault();
+	let element = this;
+	$("#showall").show();
+	$("#showall").html("Showing all posts");
 	var $form = $("#postform");
         var url = $form.attr( "action" );
         var csrftoken = getCookie('csrftoken');
-        $.ajax({
-            url: url+"?no_page=1",
-            beforeSend:function(){
+	if($('#allposts').hasClass("expanded")) {
+	    /* If any filter applied remove it and return*/
+	    $('#allposts .callout, #pinnedposts .callout').show();
+	    const count = $('.callout.cmu').length + $('.callout.pinned').length;
+	    $("#showall").html("Showing allposts (" + String(count) + ")");
+	    return;
+	}
+	$.ajax({
+	    url: url+"?no_page=1",
+	    beforeSend:function(){
                 $(".loadmore").html("<h4>Loading...</h4>");
-            },
-            success: function( data ) {
+	    },
+	    success: function( data ) {
                 $(".loadmore").hide();
+		$("#allposts").addClass("expanded");
 		$("#allposts").html(data);
 		/* reload plugins */
                 initTooltipster(".user-mention:not(.tooltipstered)", umProfileStore, displayUserCard);
                 $("#allposts .dropdown-pane").foundation();
-            }
+		const count = $('.callout.cmu').length + $('.callout.pinned').length;
+		$("#showall").html("Showing allposts (" + String(count) + ")");
+	    }
 	});
-
     });
     
 });

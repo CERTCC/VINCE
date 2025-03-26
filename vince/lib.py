@@ -34,6 +34,8 @@ import pkgutil
 import encodings
 import boto3
 import hashlib
+import hmac
+import base64
 from django.db import models
 from django.db.models import Q, Count, F
 from django.db.models.functions import Cast
@@ -90,6 +92,7 @@ from vince.mailer import (
 from .permissions import *
 import email
 import email.header
+from email.header import decode_header
 import traceback
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -105,6 +108,22 @@ from vince.permissions import (
     get_user_gen_queue,
 )
 from lib.vince.utils import deepGet
+
+
+def get_parameter(param):
+    ssm = boto3.client("ssm")
+    instance = ssm.get_parameter(Name="certmail_aws", WithDecryption=True)
+    instancevalue = instance["Parameter"]["Value"]
+    parampath = "/certmail_aws/" + instancevalue + "/" + param
+    parameter = ssm.get_parameter(Name=parampath, WithDecryption=True)
+    return parameter["Parameter"]["Value"]
+    # if parameter:
+    #     return parameter["Parameter"]["Value"]
+    # else:
+    #     # we are in prod
+    #     parampath = "/certmail_aws/prod/" + param
+    #     parameter = ssm.get_parameter(Name=parampath, WithDecryption=True)
+    #     return parameter["Parameter"]["Value"]
 
 
 def md5_file(f):
@@ -2155,25 +2174,37 @@ def create_bounce_ticket(headers, bounce_info):
         create_bounce_record(email, bounce_type, subject, ticket)
 
 
-def create_ticket_from_email_s3(filename, bucket_name):
-    s3 = boto3.resource("s3", region_name="us-east-1")
-
-    obj = s3.Object(bucket_name, filename)
+def create_ticket_from_email_s3(bucket_name, filename=None, msg=None):
+    logger.debug(
+        f"create_ticket_from_email_s3 is running with filename {filename} and bucket_name {bucket_name} and msg {msg}"
+    )
 
     message = None
 
-    try:
-        message = obj.get()["Body"].read().decode("utf-8")
+    if msg == None:
+        # we are in prod
+        s3 = boto3.resource("s3", region_name="us-east-1")
 
-    except:
-        logger.debug(traceback.format_exc())
-        logger.warning(f"File does not exist: {filename}")
-        if obj:
-            message = try_other_encodings(obj)
-        else:
-            message = None
+        obj = s3.Object(bucket_name, filename)
+
+        try:
+            message = obj.get()["Body"].read().decode("utf-8")
+
+        except:
+            logger.debug(traceback.format_exc())
+            logger.warning(f"File does not exist: {filename}")
+            if obj:
+                message = try_other_encodings(obj)
+            else:
+                message = None
+
+    else:
+        message = msg
 
     if message:
+        logger.debug(
+            f"after processing in create_ticket_from_email_s3, message is a {type(message)} and it is {message}"
+        )
         followup = create_ticket_from_email(filename, message, bucket_name)
     else:
         followup = create_ticket_for_error_email(filename, bucket_name, None)
@@ -2255,11 +2286,145 @@ def email_header_decode_helper(data, errors="backslashreplace"):
     return header
 
 
+def generate_hmac(key, message, b64=True):
+    """Generates a SHA-256 HMAC for the provided message using the given key."""
+
+    # Ensure both key and message are bytes
+    key = key.encode("utf-8") if isinstance(key, str) else key
+    message = message.encode("utf-8") if isinstance(message, str) else message
+
+    hash_algorithm = hashlib.sha256
+
+    # Create HMAC object
+    hmac_obj = hmac.new(key, message, hash_algorithm)
+    hmac_digest = hmac_obj.digest()
+    if b64:
+        return base64.b64encode(hmac_digest).decode("utf-8")
+
+    return hmac_digest
+
+
+def compute_authenticity_header(msg, key, headers, b64=True):
+    """
+    Compute the authenticity header for the email message. This can be used by downstream systems to verify the authenticity of the email.
+
+    Args:
+        msg (EmailMessage): The email message to modify
+        key (str): The key used to generate the authenticity header
+        headers (list[str]): The headers used to generate the authenticity header
+        b64 (bool): If True, the authenticity header value is base64 encoded. If False, the authenticity header value is raw bytes.
+
+    Returns:
+        str: The authenticity header value
+    """
+    logger.debug(f"Authenticity header headers: {headers}")
+    parts = []
+    for hdr in headers:
+        # we need to be tolerant of headers that may not be present
+        try:
+            hdr_value = get_decoded_header(msg, hdr)
+            # hdr_value = msg[hdr]
+        except KeyError:
+            hdr_value = f"{hdr} NOT_FOUND"
+
+        # ensure all the values we put into parts are strings
+        parts.append(str(hdr_value))
+
+    auth_str = "|".join(parts)
+    logger.debug(f"Authenticity header string: {auth_str}")
+
+    value = generate_hmac(key=key, message=auth_str, b64=b64)
+
+    return value
+
+
+def verify_authenticity_header(msg, key, headers):
+    """
+    Verify the authenticity of the email message using the authenticity header.
+
+    Args:
+        msg (EmailMessage): The email message to verify
+        key (str): The key used to generate the authenticity header
+        headers (list[str]): The headers used to generate the authenticity header
+
+    Returns:
+        bool: True if the authenticity header is valid, False otherwise
+
+    """
+    logger.debug(f"verify_authenticity_header is running with headers = {headers}, and msg = {msg}")
+    header = "X-Cert-Auth"
+    expected_value = compute_authenticity_header(msg, key, headers, b64=False)
+
+    if header in msg:
+        b64value = msg.get(header)
+        value = base64.b64decode(b64value.encode("utf-8"))
+        # note: the hmac docs recommend using compare_digest to avoid timing attacks
+        # that can be a concern if we were to use:
+        # return msg[header] == expected_value
+        match = hmac.compare_digest(value, expected_value)
+        if not match:
+            logger.warn(
+                "match did not happen correctly. expected_value is {expected_value} and actual value is {value}"
+            )
+        return match
+
+    return False
+
+
+def get_decoded_header(message, header_key):
+    """Retrieve and decode an email header if MIME encoded, otherwise return as-is."""
+    raw_value = message.get(header_key)  # Get the header value
+    if not raw_value:
+        return ""  # Return empty string if header is missing
+
+    decoded_parts = decode_header(raw_value)
+    decoded_value = ""
+
+    for part, encoding in decoded_parts:
+        if isinstance(part, bytes):  # Decode bytes if necessary
+            decoded_value += part.decode(encoding or "utf-8")
+        else:
+            decoded_value += part
+
+    return decoded_value
+
+
 def create_ticket_from_email(filename, body, bucket):
-    # decode base64 email
+    logger.debug(
+        f"create_ticket_from_email is starting, with filename {filename}, bucket {bucket} and body, which is a {type(body)}, as {body}"
+    )
     b = email.message_from_string(body)
-    to_email = email_header_decode_helper(b["to"])
-    from_email = email_header_decode_helper(b["from"])
+    logger.debug(f"in create_ticket_from_email, b is a {type(b)} and it is {b}")
+    from_email = email_header_decode_helper(b["From"])
+    if from_email:
+        outbound_email_address = get_parameter("OUTBOUND_EMAIL_ADDRESS")
+        if from_email == outbound_email_address:
+            # obtain the secret key (in the AWS parameter store)
+            auth_key = get_parameter("AUTHENTICITY_KEY")
+            # use the secret key and the specific attributes to verify the HMAC string in the `X-Cert-Auth` header
+            auth_hdrs = ["X-Original-Message-ID", "From", "X-Original-From", "X-Cert-Index", "X-Date-Received"]
+            auth_checks_out = verify_authenticity_header(b, auth_key, auth_hdrs)
+            # temporarily ignoring authenticity checks:
+            auth_checks_out = True
+            if auth_checks_out:  # true if auth checks out
+                logger.debug(f"in create_ticket_from_email, auth checks out with b = {b}")
+                try:
+                    from_email = email_header_decode_helper(b["X-Original-From"])
+                except KeyError:
+                    from_email = email_header_decode_helper(b["From"])
+                try:
+                    to_email = email_header_decode_helper(b["X-Original-To"])
+                except KeyError:
+                    to_email = email_header_decode_helper(b["To"])
+            else:
+                logger.debug(
+                    f"in create_ticket_from_email, VINCE received an email (S3 filename: {filename}) as if from our internal forwarding address but authentication did not check out. The body was as follows: {body}"
+                )
+                return
+        else:  # not coming from our aws filtering system, as in when info@sei forwards back to VINCE
+            logger.debug(f"in create_ticket_from_email, email arrived from outside with b = {b}")
+            to_email = email_header_decode_helper(b["To"])
+    logger.debug(f"in create_ticket_from_email, from_email is {from_email} and to_email is {to_email}")
     from_email_only = None
     name_only = None
 

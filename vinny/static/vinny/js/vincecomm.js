@@ -50,7 +50,6 @@ function to_locale(df) {
     try {
 	/* Check if already processed or the if the element is visible
 	  and return quietly*/
-		console.log("df.innerHTML is " + df.innerHTML)
 		if(df.classList.contains('locale-processed')){
 			return;
 		}
@@ -58,37 +57,29 @@ function to_locale(df) {
 			return;
 		}
 		let epoch_ms = Date.parse(df.innerHTML);
-		console.log('epoch_ms is ' + epoch_ms)
 		if(isNaN(epoch_ms)) {
 			console.log("Invalid Date "+df.innerHTML);
 			return;
 		}
         let d = new Date(epoch_ms);
-		console.log('d is ' + d)
 		df.title = df.innerHTML;
 		if (df.classList.contains('prominentdatefield')){
-			let month = d.getUTCMonth() + 1
-			let date = d.getUTCDate()
+			let month = ("0" + (d.getUTCMonth() + 1)).slice(-2)
+			let date = ("0" + d.getUTCDate()).slice(-2)
 			let year = d.getUTCFullYear()
 			if (df.classList.contains('dateonly')){
-				console.log('this is a prominent date field')
-				console.log('we are expecting the displayed date to be ' + month + '/' + date + '/' + year)
-				df.innerHTML = month + '/' + date + '/' + year
+				df.innerHTML = year + '-' + month + '-' + date
 			} else {
 				let hours = ("0" + d.getUTCHours()).slice(-2)
 				let minutes = ("0" + d.getUTCMinutes()).slice(-2)
-				console.log('this is a prominent date field')
-				console.log('we are expecting the displayed date to be ' + hours + ':' + minutes + ' UTC on ' + month + '/' + date + '/' + year)
-				df.innerHTML = hours + ':' + minutes + ' UTC on ' + month + '/' + date + '/' + year
+				df.innerHTML = hours + ':' + minutes + ' UTC on ' + year + '-' + month + '-' + date
 			}			
 		}
         if(df.classList.contains('datefield')){
 		    df.innerHTML = d.toLocaleDateString();
-			console.log("d.toLocaleDateString() is " + d.toLocaleDateString())
 		}
         if(df.classList.contains('datetimefield')){
 	    	df.innerHTML = d.toLocaleString();
-			console.log("d.toLocaleString() is " + d.toLocaleString())
 		}
 		df.classList.add('locale-processed');
     } catch(err) {
@@ -368,7 +359,7 @@ $(function () {
 			}
 		})
     }
-    $('nav.cdown').each(function(_,nav) {
+    $('.vendorfilter').each(function(_,nav) {
 		activate_navli(nav);
     });
 
