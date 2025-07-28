@@ -236,12 +236,12 @@ class VinceProfile(models.Model):
 
     modified = property(_get_modified)
 
-    #Security issue remove mass unpickling
+    # Security issue remove mass unpickling
 
     def _set_settings(self, data):
         # data should always be a Python dictionary.
         sdata = {}
-        if not isinstance(data,dict):
+        if not isinstance(data, dict):
             logger.warn("Non dictionary item sent to settings %s" % str(data))
         try:
             sdata = json.dumps(data)
@@ -254,12 +254,12 @@ class VinceProfile(models.Model):
         if self.settings_pickled:
             try:
                 data = json.loads(self.settings_pickled)
-                if isinstance(data,dict):
+                if isinstance(data, dict):
                     return data
                 else:
                     logger.warn("Non dictionary item sent to settings %s" % str(data))
             except Exception as e:
-                logger.warn("Generic error when trying to json parse data %s " %(str(e)))
+                logger.warn("Generic error when trying to json parse data %s " % (str(e)))
         return {}
 
     settings = property(_get_settings, _set_settings)
@@ -2112,6 +2112,14 @@ class CaseViewed(models.Model):
     date_viewed = models.DateTimeField(default=timezone.now)
 
 
+class APIAccess(models.Model):
+    url = models.URLField()
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True, on_delete=models.CASCADE)
+
+    date_viewed = models.DateTimeField(default=timezone.now)
+
+
 class CaseCoordinator(models.Model):
     case = models.ForeignKey(Case, on_delete=models.CASCADE)
 
@@ -2189,7 +2197,7 @@ class UserApproveRequest(models.Model):
     # Admin user or whoever rejected/approved this request.
     completed_by = models.CharField(max_length=255, blank=True, null=True)
 
-    expires_at = models.DateTimeField(default=timezone.now() + timedelta(days=30))
+    expires_at = models.DateTimeField(blank=True, null=True)
     contact = models.ForeignKey(VinceCommContact, on_delete=models.CASCADE)
 
     thread = models.ForeignKey(Thread, on_delete=models.DO_NOTHING, blank=True, null=True)
@@ -2199,3 +2207,8 @@ class UserApproveRequest(models.Model):
 
     def __str__(self):
         return f"User approve request for {self.user} to join {self.contact}"
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.expires_at = timezone.now() + timedelta(days=30)
+        super(UserApproveRequest, self).save(*args, **kwargs)

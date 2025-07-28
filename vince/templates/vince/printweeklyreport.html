@@ -151,26 +151,27 @@
     <h3>New Cases</h3>    
     <table>
       <tr>
-	<th>Case Name</th>
-	<th>Date Created</th>
-	</tr>
+      	<th>Case Name</th>
+	      <th>Date Created</th>
+	    </tr>
       {% for note in case_stats.new_cases %}
       <tr>
-	<td>
-	  {% if note|case_access:user %}{{ note.vutitle }}{% else %}{{ note.vu_vuid }}{% endif %}
-	</td>
-	<td>
-	  {{ note.created|date:"Y-m-d" }}
-	</td>
+        <td>
+          {% if note|case_access:user %}{{ note.vutitle }}{% else %}{{ note.vu_vuid }}{% endif %}
+        </td>
+	      <td>
+	        {{ note.created|date:"Y-m-d" }}
+	      </td>
       </tr>
       {% endfor %}
     </table>
     {% endif %}
+    
     {% if case_stats.deactive_cases %}
     <h3>Deactivated Cases</h3>
     <table>
       <tr>
-        <th>Case Name</th>
+      	<th>Case Name</th>
         <th>Date Deactivated</th>
         </tr>
       {% for note in case_stats.deactive_cases %}
@@ -207,19 +208,19 @@
     {% endif %}
 
     {% if fwd_reports %}
-    <h3>Forwarded Reports</h3>
-    <table>
-      <tr>
-	<th>Title</th>
-	<th>Date</th>
-      </tr>
-      {% for r in fwd_reports %}
-      <tr>
-	<td> [{{ r.ticket.queue }}-{{ r.ticket.id }}] {{ r.ticket.title }}</td>
-	<td> {{ r.date|date:"Y-m-d" }}</td>
-      </tr>
-      {% endfor %}
-    </table>
+      <h3>Forwarded Reports</h3>
+      <table>
+        <tr>
+          <th>Title</th>
+          <th>Date</th>
+        </tr>
+        {% for r in fwd_reports %}
+        <tr>
+          <td> [{{ r.ticket.queue }}-{{ r.ticket.id }}] {{ r.ticket.title }}</td>
+          <td> {{ r.date|date:"Y-m-d" }}</td>
+        </tr>
+        {% endfor %}
+      </table>
     {% endif %}
     
     
@@ -236,6 +237,7 @@
       </tr>
       {% endfor %}
     </table>
+
     {% endif %}
 
     
@@ -253,6 +255,7 @@
       </tr>
       {% endfor %}
     </table>
+
     {% endif %}
 
     {% if my_team.name == "CERT/CC" %}

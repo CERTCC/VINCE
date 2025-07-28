@@ -3,6 +3,55 @@
 CHANGELOG
 VINCE Coordination platform code
 
+
+## Description
+VINCE Coordination platform code
+
+Version 3.0.21 2025-06-30
+
+* updated numerous links to CVD documentation, etc. (Internal-816)
+* added logging for the authentication process (Internal-817)
+* modified specifications for spreadsheet used for detailed weekly reports to CISA (Internal-804)
+
+
+Version 3.0.20 2025-06-11
+
+* fixed bug affecting redirect after editing case vulnerability information (Internal-810)
+* added filtering for the Edit Case form to prevent inactive users from appearing as potential case owners (Internal-811)
+* reinstated API endpoints turned off in last release; added database model for logging certain API endpoint access events (Internal-812)
+* dependabot update recommendations: `django` 4.2.21 to 4.2.22, `requests` 2.32.0 to 2.32.4
+
+
+Version 3.0.19 2025-05-06
+
+* Turned off certain API endpoints for security review (Internal-807)
+* Updated code for CSV files in response to user requests for more fine-grained information (Internal-804)
+* Updated link to VINCE Documentation (Internal-808)
+
+
+Version 3.0.18 2025-04-17
+
+* Updated code for CSV files in reponse to even more user requests for more fine-grained information (Internal-804)
+
+
+Version 3.0.17 2025-04-17
+
+* Updated code for CSV files in reponse to user requests for more fine-grained information (Internal-804)
+
+
+Version 3.0.16 2025-04-17
+
+* dependabot update recommendations: `Django` 4.2.17 to 4.2.20, `python-jose` 3.3.0 to 3.4.0
+* Fixed bug preventing certain users from changing their passwords (Internal-800)
+* Tweaked logs for Internal-791
+* Added code for CSV files to support preparation of reports for CISA (Internal-804)
+
+
+Version 3.0.15 2025-03-17
+
+* Modified code for checking authenticity so as to include extra logs and to bypass false negatives (Internal-791)
+
+
 Version 3.0.14 2025-03-17
 
 * Added code for checking authenticity of emails subject to new preprocessing for AWS email integration (Internal-791)

@@ -447,6 +447,17 @@ def object_to_json_response(obj, status=200):
     )
 
 
+def create_record_of_API_access(url, user):
+    now = timezone.now()
+    logger.debug(f"API access log: user {user} accessed {url} at {now}")
+    try:
+        api_access = APIAccess(url=url, user=user)
+        api_access.save()
+    except Exception as e:
+        logger.debug(f"error {e} while trying to create record of API access with endpoint {url} and user {user}")
+    return
+
+
 # A similar method exists for all VinceComm users exists
 # below autocomplete_allvendors()
 @login_required(login_url="vinny:login")
@@ -4574,6 +4585,7 @@ class CasesAPIView(generics.ListAPIView):
         return "My Cases"
 
     def get_queryset(self):
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         if is_in_group_vincetrack(self.request.user) or is_in_group_vincelimited(self.request.user):
             return Case.objects.all().order_by("-modified")
 
@@ -4594,6 +4606,7 @@ class CaseAPIView(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         return f"Case Detail"
 
     def get_queryset(self):
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         if is_in_group_vincelimited(self.request.user):
             return Case.objects.all().order_by("-modified")
 
@@ -4609,6 +4622,7 @@ class CasePostAPIView(generics.ListAPIView):
         return f"Posts for Case"
 
     def get_queryset(self):
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         case = get_object_or_404(Case, vuid=self.kwargs["vuid"])
         return Post.objects.filter(case=case, current_revision__isnull=False).order_by("-created")
 
@@ -4622,6 +4636,7 @@ class CaseReportAPIView(generics.RetrieveAPIView):
         return f"Original Report for Case"
 
     def get_object(self):
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         case = get_object_or_404(Case, vuid=self.kwargs["vuid"])
         return case.cr
 
@@ -4634,6 +4649,7 @@ class CaseVulAPIView(generics.ListAPIView):
         return f"Case Vulnerabilities"
 
     def get_queryset(self):
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         case = get_object_or_404(Case, vuid=self.kwargs["vuid"])
         return CaseVulnerability.objects.filter(case=case, deleted=False)
 
@@ -4646,6 +4662,7 @@ class CaseVendorVulStatusAPIView(generics.ListAPIView):
         return f"Vulnerability Specific Vendor Status for Case"
 
     def get_queryset(self):
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         case = get_object_or_404(Case, vuid=self.kwargs["vuid"])
         return CaseMemberStatus.objects.filter(member__case=case)
 
@@ -4658,6 +4675,7 @@ class CaseVendorStatusAPIView(generics.ListAPIView):
         return f"Case Vendors"
 
     def get_queryset(self):
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         case = get_object_or_404(Case, vuid=self.kwargs["vuid"])
         return (
             CaseMember.objects.filter(case=case, coordinator=False, reporter_group=False)
@@ -4691,6 +4709,7 @@ class CVEVulAPIView(generics.GenericAPIView):
             # VINCE published vul
             vuln = VPVulSerializer(vul)
             vendors = VendorVulStatus.objects.filter(vul=vul)
+            create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
             if vendors:
                 vv = VendorVulSerializer(vendors, many=True)
                 return Response({"vulnerability": vuln.data, "note": report.data, "vendors": vv.data})
@@ -4710,6 +4729,7 @@ class CVEVulAPIView(generics.GenericAPIView):
             }
             # check for vendors
             vendors = VendorRecord.objects.filter(vuid=x.vuid)
+            create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
             if vendors:
                 vv = NewVendorRecordSerializer(vendors, many=True)
                 return Response({"vulnerability": vul, "note": report.data, "vendors": vv.data})
@@ -4724,6 +4744,7 @@ class CVEVulAPIView(generics.GenericAPIView):
                     vuln = VulSerializer(vul)
                     case = CaseSerializer(vul.case)
                     vendors = CaseMemberStatus.objects.filter(vulnerability=vul)
+                    create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
                     if vendors:
                         vv = VendorStatusSerializer(vendors, many=True)
 
@@ -4926,6 +4947,7 @@ class CaseVulNoteAPIView(generics.RetrieveAPIView):
     def get_object(self):
         case = get_object_or_404(Case, vuid=self.kwargs["vuid"])
         if case.note:
+            create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
             return case.note.vulnote
 
 
@@ -4937,9 +4959,11 @@ class VendorInfoAPIView(generics.ListAPIView):
         return f"Vendor Information"
 
     def get_queryset(self):
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         email = VinceCommEmail.objects.filter(email=self.request.user.email, status=True).values_list(
             "contact__id", flat=True
         )
+
         return VinceCommContact.objects.filter(id__in=email)
 
 
@@ -5114,6 +5138,7 @@ class CaseCSAFAPIView(generics.RetrieveAPIView):
 
     def get_object(self):
         svuid = self.kwargs["vuid"]
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         return Case.objects.filter(vuid=svuid).first()
 
     def handle_no_permission(self):

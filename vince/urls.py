@@ -221,6 +221,31 @@ urlpatterns = [
         views.PrintWeeklyReportsView.as_view(),
         name="printweeklyreport",
     ),
+    re_path(
+        "reports/weekly/csv/new_reports_submissions",
+        views.WeeklyCSVNewReportsOrSubmissionsView.as_view(),
+        name="weekly_csv_new_reports_submissions",
+    ),
+    re_path(
+        "reports/weekly/csv/active_cases_in_progress",
+        views.WeeklyCSVActiveCasesInProgressView.as_view(),
+        name="weekly_csv_active_cases_in_progress",
+    ),
+    re_path(
+        "reports/weekly/csv/completed_cases",
+        views.WeeklyCSVCompletedCasesView.as_view(),
+        name="weekly_csv_completed_cases",
+    ),
+    re_path(
+        "reports/weekly/csv/declined_cases",
+        views.WeeklyCSVDeclinedCasesView.as_view(),
+        name="weekly_csv_declined_cases",
+    ),
+    re_path(
+        "reports/weekly/csv/cases_published_cves",
+        views.WeeklyCSVCasesWithPublishedCVEsView.as_view(),
+        name="weekly_csv_cases_published_cves",
+    ),
     path("triage/", views.TriageView.as_view(), name="triage"),
     re_path(r"^triage/(?P<pk>[0-9]+)/$", views.TriageView.as_view(), name="triage"),
     path("reports/casesnovendors/", views.CasesWithoutVendorsReport.as_view(), name="cnovreport"),

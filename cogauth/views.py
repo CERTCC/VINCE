@@ -838,6 +838,7 @@ class MFAAuthRequiredView(FormView, AccessMixin):
             self.request.session["ACCESS_TOKEN"] = tokens["AuthenticationResult"]["AccessToken"]
             user = authenticate(self.request, username=self.request.session["username"])
             if user:
+                logger.debug(f"user {user} is trying to use the MFA Required screen")
                 del self.request.session["username"]
                 auth_login(self.request, user)
                 self.cognito = get_cognito(self.request)
@@ -863,8 +864,10 @@ class MFAAuthRequiredView(FormView, AccessMixin):
                     logger.debug(f"NEXT URL provided by GET request {next_url}")
                     try:
                         if is_safe_url(next_url, set(settings.ALLOWED_HOSTS), True):
+                            logger.debug(f"{user} wants to access {next_url}, and it has been found to be safe")
                             return redirect(next_url)
                         else:
+                            logger.debug(f"{user} wants to access {next_url}, and it has not been found to be safe")
                             return redirect(settings.LOGIN_REDIRECT_URL)
                     except Exception as e:
                         logger.debug(f"Error in redirection validator {e}")
@@ -1004,14 +1007,16 @@ class ChangePasswordView(LoginRequiredMixin, TokenMixin, PendingTestMixin, FormV
         ip = vinceutils.get_ip(self.request)
         try:
             c.change_password(form.cleaned_data["old_password"], form.cleaned_data["new_password1"])
-            logger.info(f"Password was updated for {self.request.username} from IP {ip}")
+            logger.info(f"Password was updated for {self.request.user.username} from IP {ip}")
         except ParamValidationError:
-            logger.info(f"Password updated failed for {self.request.username} from IP {ip} - invalid new password")
+            logger.info(
+                f"Password updated failed for {self.request.user.username} from IP {ip} - invalid new password"
+            )
             form._errors.setdefault("new_password1", ErrorList(["New password is unacceptable."]))
             return super().form_invalid(form)
         except (Boto3Error, ClientError) as e:
             error_code = e.response["Error"]["Code"]
-            logger.info(f"Password updated failed for {self.request.username} from IP {ip} - {e} {error_code}")
+            logger.info(f"Password updated failed for {self.request.user.username} from IP {ip} - {e} {error_code}")
             if error_code == "NotAuthorizedException":
                 form._errors.setdefault("old_password", ErrorList(["Password is incorrect."]))
                 return super().form_invalid(form)

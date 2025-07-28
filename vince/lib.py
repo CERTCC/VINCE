@@ -2364,7 +2364,7 @@ def verify_authenticity_header(msg, key, headers):
         match = hmac.compare_digest(value, expected_value)
         if not match:
             logger.warn(
-                "match did not happen correctly. expected_value is {expected_value} and actual value is {value}"
+                f"match did not happen correctly. expected_value is {expected_value} and actual value is {value}"
             )
         return match
 
@@ -3152,6 +3152,8 @@ def prepare_and_send_weekly_report():
     week = oneweekago.isocalendar()[1]
     weekstartdate = date.fromisocalendar(year, week, 1)
     weekenddate = date.fromisocalendar(year, week, 7)
+    # for testing:
+    # daterangeend = datetime.now()
     daterangeend = weekenddate + timedelta(days=1)
 
     # examine the GroupSettings model, looking for groups that have weekly="on"
@@ -3178,6 +3180,7 @@ def prepare_and_send_weekly_report():
             ticket__queue__in=my_queues,
         ).exclude(ticket__case__isnull=False)
         tickets = Ticket.objects.filter(queue__in=my_queues, created__range=[weekstartdate, daterangeend])
+        logger.debug(f"when processing the weekly report data, tickets is found to be {tickets}")
         closed_tickets = tickets.filter(status=Ticket.CLOSED_STATUS)
         new_cases = VulnerabilityCase.objects.filter(
             created__range=[weekstartdate, daterangeend], team_owner=my_team
@@ -3219,6 +3222,8 @@ def prepare_and_send_weekly_report():
             "case_emails_distinct": case_emails.order_by("ticket__case__id").distinct("ticket__case__id").count(),
             "total_emails": ticket_emails.count() + case_emails.count(),
             "total_tickets": tickets.count(),
+            "tickets": tickets,
+            "closed_tickets": closed_tickets,
             "ticket_stats": tickets.values("queue__title")
             .order_by("queue__title")
             .annotate(count=Count("queue__title"))
@@ -3247,15 +3252,7 @@ def prepare_and_send_weekly_report():
             ),
         }
 
-        logger.debug("context complete")
-        logger.debug("weeklyreport context is")
-        logger.debug(context)
-
-        # # This is just for testing:
-        # # weekstartdate = date.today()
-        # # daterangeend = weekstartdate + timedelta(days=1)
-        # # context['weekstartdate'] = weekstartdate
-        # # context['weekenddate'] = weekstartdate + timedelta(days=1)
+        logger.debug(f"weeklyreport context is {context}")
 
         if groupid == 1:
             total_ai_ml_crs = (

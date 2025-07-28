@@ -134,6 +134,7 @@ class CognitoAuthenticate(ModelBackend):
     def authenticate(self, request, username=None, password=None):
         ip = vinceutils.get_ip(request)
         if username and password:
+            logger.debug(f"CognitoAuthenticate is running with username {username}")
             cognito_user = CognitoUser(
                 settings.COGNITO_USER_POOL_ID,
                 settings.COGNITO_APP_ID,
@@ -147,10 +148,12 @@ class CognitoAuthenticate(ModelBackend):
                 logger.debug(f"trying to authenticate {username} from IP {ip}")
                 cognito_user.authenticate(password)
             except ForceChangePasswordException:
+                logger.debug(f"ForceChangePasswordException when trying to authenticate {username} from IP {ip}")
                 request.session["FORCEPASSWORD"] = True
                 request.session["username"] = username
                 return None
             except SoftwareTokenException as e:
+                logger.debug(f"SoftwareTokenException {e} when trying to authenticate {username} from IP {ip}")
                 request.session["MFAREQUIRED"] = "SOFTWARE_TOKEN_MFA"
                 request.session["username"] = username
                 request.session["MFASession"] = cognito_user.session
@@ -158,6 +161,7 @@ class CognitoAuthenticate(ModelBackend):
                 request.session.save()
                 return None
             except SMSMFAException:
+                logger.debug(f"SMSMFAException when trying to authenticate {username} from IP {ip}")
                 request.session["MFAREQUIRED"] = "SMS_MFA"
                 request.session["username"] = username
                 request.session["MFASession"] = cognito_user.session
@@ -194,6 +198,7 @@ class CognitoAuthenticate(ModelBackend):
             # emails for username - so get email and return CognitoUser
             email = list(filter(lambda email: email["Name"] == "email", user["UserAttributes"]))[0]["Value"]
             username = email
+            logger.debug(f"CognitoAuthenticate is running on an ACCESS_TOKEN. username is {username}")
             cognito_user = CognitoUser(
                 settings.COGNITO_USER_POOL_ID,
                 settings.COGNITO_APP_ID,
@@ -207,6 +212,9 @@ class CognitoAuthenticate(ModelBackend):
             cognito_user.refresh_token = request.session["REFRESH_TOKEN"]
 
         else:
+            logger.debug(
+                "CognitoAuthenticate is running, but it has not found a username/password pair or an ACCESS_TOKEN."
+            )
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
             data = {
                 "grant_type": "authorization_code",
@@ -237,6 +245,9 @@ class CognitoAuthenticate(ModelBackend):
                 )
                 user = client.get_user(AccessToken=access_token)
                 username = user["Username"]
+                logger.debug(
+                    f"CognitoAuthenticate is running, but it has not found a username/password pair or an ACCESS_TOKEN. Nevertheless, username has been found to be {username}"
+                )
                 cognito_user = CognitoUser(
                     settings.COGNITO_USER_POOL_ID,
                     settings.COGNITO_APP_ID,

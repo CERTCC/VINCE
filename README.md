@@ -13,9 +13,9 @@ Mellon University.
 
 * The CERT Guide to Coordinated Vulnerability Disclosure: [https://vuls.cert.org/confluence/display/CVD](https://vuls.cert.org/confluence/display/CVD)
 * Report a Vulnerability [https://www.kb.cert.org/vuls/report/](https://www.kb.cert.org/vuls/report/)
-* VINCE User Documentation: [https://vuls.cert.org/confluence/display/VIN/VINCE+Documentation](https://vuls.cert.org/confluence/display/VIN/VINCE+Documentation)
-* Vulnerability Note API Documentation: [https://vuls.cert.org/confluence/display/VIN/Vulnerability+Note+API](https://vuls.cert.org/confluence/display/VIN/Vulnerability+Note+API)
-* VINCE API Documentation: [https://vuls.cert.org/confluence/display/VIN/VINCE+API](https://vuls.cert.org/confluence/display/VIN/VINCE+API)
+* VINCE User Documentation: [https://certcc.github.io/VINCE-docs/](https://certcc.github.io/VINCE-docs/)
+* Vulnerability Note API Documentation: [https://certcc.github.io/VINCE-docs/Vulnerability-Note-API/](https://certcc.github.io/VINCE-docs/Vulnerability-Note-API/)
+* VINCE API Documentation: [https://certcc.github.io/VINCE-docs/VINCE-API/](https://certcc.github.io/VINCE-docs/VINCE-API/)
 
 ### Bugs and Feature Requests
 
@@ -72,7 +72,6 @@ users. Each application can also be further protected by network access controls
 reduce the risk of exposure.
 
 [<img src="https://github.com/CERTCC/VINCE/raw/main/Vince_Infrastructure.png" width="100%"></A>](https://github.com/CERTCC/VINCE/raw/main/Vince_Infrastructure.png)
-
 
 
 ### Local Install

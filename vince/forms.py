@@ -1699,10 +1699,15 @@ class EditCaseForm(forms.ModelForm):
     def get_group_choices(self, user):
         return [(q.id, q.name) for q in user.groups.exclude(groupsettings__contact__isnull=True)]
 
+    def get_owner_choices(self):
+
+        return [(u.id, u.email) for u in User.objects.using("default").filter(is_active=True)]
+
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user")
         super(EditCaseForm, self).__init__(*args, **kwargs)
         self.fields["team_owner"].choices = self.get_group_choices(user)
+        self.fields["owner"].choices = self.get_owner_choices()
 
 
 class AssignTicketTeamForm(forms.Form):
