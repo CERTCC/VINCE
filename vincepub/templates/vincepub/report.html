@@ -1,0 +1,50 @@
+{% extends VINCEPUB_BASE_TEMPLATE %}
+{% load staticfiles %}
+{% block js %}
+{{ block.super }}
+{% endblock %}
+{% block content %}
+<div class="row columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vincepub:index' %}">Home</a></li>
+      <li><span class="show-for-sr">Current: </span> Report</li>
+    </ul>
+  </nav>
+</div>
+ <div class="row" id="content">
+      <div class="large-8 medium-8 columns">
+	<div class="row">
+	  <div class="large-12 columns">
+	    <h2 class="subtitle"> Report a Vulnerability </h2>
+	  </div>
+	</div>
+	<div class="blog-post">
+	  <!--<a href="{% url 'vincepub:vulcoordrequest' %}" class="link-cta">Request a CVE from MITRE </a>-->
+
+	  <p class="lead-body">Before reporting any vulnerabilities to the CERT Coordination Center (CERT/CC) and making them public, try contacting the vendor directly. Some vendors offer bug bounty programs.</p>
+	  <p class="lead-body">We recommend reading our <a href="https://vuls.cert.org/confluence/display/Wiki/Vulnerability+Disclosure+Policy" target="_blank" rel="noopener">vulnerability disclosure policy</a> and <a href="{% url 'vincepub:discguidance' %}">guidance</a> before submitting a vulnerability report. We send information provided in vulnerability reports to affected vendors. </p>
+
+	  <p class="lead-body">CERT/CC does not accept or respond to every report. We prioritize reports that affect multiple vendors or that impact safety, critical or internet infrastructure, or national security. We also prioritize reports that affect sectors that are new to vulnerability disclosure. We may be able to provide assistance for reports when the coordination process breaks down.</p>
+	    <a href="{% url 'vincepub:vulcoordrequest' %}" class="link-cta"> Begin a Report </a>
+
+	</div>	
+	<p>&nbsp;</p>
+	<div class="row columns">&nbsp</div>	  
+      </div>
+      <div class="large-4 medium-4 columns">
+        <div id="sidebar-ext">
+	  <ul>
+	    <li><a href="https://cveform.mitre.org" target="_blank" rel="noopener">Request a CVE from MITRE</a>
+	    <!--<li><a href="https://vuls.cert.org/confluence/display/Wiki/CVE+IDs+and+How+to+Obtain+Them" target="_blank" rel="noopener">What is CVE?</a></li>-->
+	    <li><a href="{% url 'vincepub:vulcoordrequest' %}?ics=yes" target="_blank" rel="noopener">Report an ICS/OT Vulnerability</a></li>
+	    <li><a href="www.ic3.gov" target="_blank" rel="noopener">Report Criminal Activity to the FBI</a></li>
+	    <li><a href="https://hackerone.com/deptofdefense" target="_blank" rel="noopener">Report a U.S. Department of Defense (.mil) Website Vulnerability</a></li>
+	    <li><a href="{% url 'vincepub:govreport' %}" >Report a U.S. Government (.gov) Website Vulnerability</a></li>
+	  </ul>
+        </div>
+      </div>
+ </div>
+
+{% endblock %}
+ 

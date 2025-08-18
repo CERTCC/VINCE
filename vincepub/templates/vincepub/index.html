@@ -1,0 +1,87 @@
+{% extends "vincepub/base.html" %}
+{% load staticfiles %}
+{% block content %}
+<div class="row">
+  <div class="large-8 medium-8 small-12 columns">
+
+    <div class="row subtitle-index">
+      <div class="large-12 medium-12 columns">
+	<h2 class="subtitle"> Vulnerability Notes Database </h2>
+	<p class="lead-body">The Vulnerability Notes Database provides information about software vulnerabilities. Vulnerability notes include summaries, technical details, remediation information, and lists of affected vendors. Most vulnerability notes are the result of private coordination and disclosure efforts. For more comprehensive coverage of public vulnerability reports, consider the <a href="https://nvd.nist.gov" target="_blank">National Vulnerability Database (NVD)</a>. CERT/CC also publishes the <a href="https://github.com/CERTCC/Vulnerability-Data-Archive" target="_blank">Vulnerability Notes Data Archive</a> on GitHub.</p>
+      </div>
+    </div>
+    <div class="recentpub">
+      <div class="row column">
+	<h3>Recently Published Vulnerabilities</h3>
+      </div>
+      {% for note in pub_list %}
+      <div class="row column">
+	<div class="vulnerability-list">
+	  {% with '/vuls/id/'|add:note.idnumber as vul_link %}
+	  <h4>
+            <a href="{{ vul_link }}">
+	      {{ note.vuid }}: {{ note.name }}
+	      {% endwith %}
+            </a>
+	  </h4>
+	  <h6>{{ note.datefirstpublished|date:"F d, Y" }} </h6>
+	</div>
+      </div>
+    {% endfor %}
+    </div>
+    <div class="row">
+      <div class="large-6 medium-6 small-6 columns">
+      <a href="{% url 'vincepub:viewbypublish' 'desc' %}" class="link-cta">View More</a>
+      </div>
+      <div class="large-6 text-right medium-6 text-right small-6 text-left columns">
+	<a href="{% url 'vincepub:vulfeed' %}" class="link-cta"><i class="fas fa-rss"></i>&nbsp;Subscribe to our feed</a>
+      </div>
+    </div>
+  </div>
+  <div class="large-4 medium-4 columns hide-for-small-only">
+    <div id="sidebar">
+      <div class="cert-seal-wrap"><span class="cert-seal">CERT</span></div>
+      <p class="cert-seal-blurb">The CERT/CC Vulnerability Notes Database is run by the CERT Division, which is part of the Software Engineering Institute,
+	a federally funded research and development center operated by Carnegie Mellon University.  Together, we are leaders in cybersecurity, software innovation, and computer science.</p>
+      <p><a href="https://insights.sei.cmu.edu/divisions/cert/" class="link-cta">CERT division</a></p>
+    </div>
+  </div>
+</div>
+<div class="front_page_search" id="vince">
+<div class="row">
+  <div class="large-12 medium-12 columns">
+      <h3>Search</h3>
+      <p>Search over 3,500 vulnerability notes affecting over 2,300 vendors.</p>
+      <div class="row">
+	<div class="large-8 columns">
+	  <div class="quicksearch">
+            <form action="{% url 'vincepub:quickSearch' %}" method="GET" id="searchform" name="queryForm">
+              <div class="input-group">
+		<input class="input-group-field" name="searchbar" id="searchbar_front" type="search" placeholder="Search vulnerability notes" required>
+		<button type="submit" class="button"><i class="fas fa-search"></i></button>
+              </div>
+            </form>
+	  </div>
+	</div>
+	<div class="large-6 columns">
+	</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="front_page_report">
+  <div class="row">
+    <div class="large-8 medium-8 columns">
+      <h3>Want to report a vulnerability?</h3>
+      <p>The CERT Coordination Center (CERT/CC) prioritizes coordination efforts on vulnerabilities that affect multiple vendors or that impact safety, critical or internet infrastructure, or national security.  We also prioritize reports that affect sectors that are new to vulnerability disclosure.  We may be able to provide assistance for reports when the coordination process breaks down.</p>
+      <p>Before reporting a vulnerability to us, we recommend reading our <a href="https://vuls.cert.org/confluence/display/Wiki/Vulnerability+Disclosure+Policy" target="_blank" rel="noopener">vulnerability disclosure policy</a> and <a href="{% url 'vincepub:discguidance' %}">guidance.</a>
+      <p><a class="old-notes hollow button secondary large" href="{% url 'vincepub:initreport' %}">Report a Vulnerability</a></p>
+    </div>
+    <div class="large-4 medium-4 columns">
+    </div>
+  </div>
+</div>
+
+
+
+{% endblock %}

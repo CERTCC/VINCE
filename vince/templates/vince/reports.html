@@ -180,6 +180,36 @@
 
   <hr>
 
+  <div class="row">
+    <div class="large-6 columns">
+      <h3 class="section-title" id="download-csv"> Download Weekly Reports in CSV Format</h3>
+    </div>
+    <div class="large-6 columns"></div>
+  </div>
+
+  <div id="reports_page_cownload_csv">
+    <div class="row">
+      <div class="large-12 columns">
+        <div>
+          <a href="{% url 'vince:weekly_csv_new_reports_submissions' %}">New Reports or Submissions</a>
+        </div>
+        <div>
+          <a href="{% url 'vince:weekly_csv_active_cases_in_progress' %}">Active Cases in Progress</a>
+        </div>
+        <div>
+          <a href="{% url 'vince:weekly_csv_completed_cases' %}">Completed Cases - Closure & Out</a>
+        </div>
+        <div>
+          <a href="{% url 'vince:weekly_csv_cases_published_cves' %}">Cases with Published CVEs</a>
+        </div>
+      </div>
+      <div class="large-6 columns"></div>
+  </div>
+  
+  </div>
+
+
+
   {% comment "not using this currently" %}
     <div class="row">
       <div class="large-6 columns">

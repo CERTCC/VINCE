@@ -47,6 +47,7 @@ from django.db import IntegrityError, transaction
 from django.urls import reverse, reverse_lazy
 from cvelib import cve_api as cvelib
 import pytz
+import csv
 import email
 from django.template.loader import get_template
 from vince.lib import (
@@ -13237,7 +13238,8 @@ class EditVul(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
         ):
             return HttpResponseRedirect(self.request.META.get("HTTP_REFERER") + "#vuls")
         else:
-            return redirect("vince:editvuls", vul.case.id)
+            return redirect(reverse("vince:case", args=[vul.case.id]) + "#vuls")
+
 
     def form_invalid(self, form):
         logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
@@ -14204,7 +14206,7 @@ class RemoveVulnerability(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
             self.request.META.get("HTTP_REFERER"), set(settings.ALLOWED_HOSTS), True
         ):
             return HttpResponseRedirect(self.request.META.get("HTTP_REFERER") + "#vuls")
-        return redirect("vince:editvuls", case.id)
+        return redirect(reverse("vince:case", args=[vul.case.id]) + "#vuls")
 
 
 class VulnerabilityDetailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.DetailView):
@@ -14890,6 +14892,275 @@ class PrintReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             title__icontains="Successfully forwarded", date__month=month, date__year=year, ticket__queue__in=my_queues
         )
         return context
+
+
+class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        today = date.today()
+        oneweekago = date.today() - timedelta(days=9)
+
+        new_certcc_cases = VulnerabilityCase.objects.filter(
+            created__range=[oneweekago, today], team_owner__name="CERT/CC"
+        ).order_by("created")
+
+        new_unattached_tickets = [
+            ticket for ticket in Ticket.objects.filter(created__range=[oneweekago, today], case=None, depends_on=None)
+        ]
+
+        new_unattached_ticket_ids = [ticket.id for ticket in new_unattached_tickets]
+
+        declined_certcc_crtickets = [
+            ticket
+            for ticket in Ticket.objects.filter(
+                queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
+                modified__range=[oneweekago, today],
+                status=Ticket.CLOSED_STATUS,
+            ).exclude(id__in=new_unattached_ticket_ids)
+            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == "CERT/CC"
+        ]
+
+        new_tickets_and_newly_declined_tickets = new_unattached_tickets + declined_certcc_crtickets
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            f'attachment; filename="new_reports_or_submissions_{oneweekago}_to_{today}.csv"'
+        )
+
+        writer = csv.writer(response)
+
+        # Write header row
+        writer.writerow(
+            [
+                "Case ID",
+                "Case Name",
+                "Summary",
+                "Initial Triage Actions",
+                "Assigned Personnel/Team",
+                "Justification if Declined",
+            ]
+        )
+
+        for case in new_certcc_cases:
+            writer.writerow(
+                [
+                    f"VU#{case.vuid}",
+                    case.title,
+                    case.summary,
+                    "",
+                    case.team_owner.name,
+                ]
+            )
+
+        for ticket in new_tickets_and_newly_declined_tickets:
+            if ticket.queue.title == "CR":
+                assigned_team = ""
+                justification_if_declined = ""
+                try:
+                    assigned_team = get_my_team(ticket.assigned_to).name
+                except:
+                    assigned_team = "no assigned team found"
+                resolution = ""
+                try:
+                    resolution = ticket.resolution
+                except:
+                    resolution = "no resolution"
+                try:
+                    # justification_if_declined = ticket.get_close_reason_display()
+                    # In the fulness of time, we will put content in this space that is determined by the template used to 
+                    # respond to the reporter. For now we have:
+                    justification_if_declined = ""
+                except:
+                    justification_if_declined = ""
+                writer.writerow(
+                    [
+                        f"{ticket.queue}-{ticket.id}",
+                        ticket.title,
+                        resolution,
+                        "",
+                        assigned_team,
+                        justification_if_declined,
+                    ]
+                )
+
+        writer.writerow([f"{len(new_unattached_tickets)} tickets entered triage in the last week."])
+
+        return response
+
+
+class WeeklyCSVActiveCasesInProgressView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        today = date.today()
+        oneweekago = date.today() - timedelta(days=9)
+
+        active_cases = VulnerabilityCase.objects.filter(
+            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name="CERT/CC"
+        ).order_by("owner_id")
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            f'attachment; filename="active_cases_in_progress_{oneweekago}_to_{today}.csv"'
+        )
+
+        writer = csv.writer(response)
+
+        # Write header row
+        writer.writerow(
+            ["Case ID", "Case Name", "Date of Last Action", "Next Steps", "Blockers", "Estimated Completion"]
+        )
+
+        for case in active_cases:
+            last_modified = ""
+            try:
+                last_modified = case.modified.strftime("%m/%d/%Y")
+            except:
+                last_modified = "never modified"
+            due_date = ""
+            try:
+                due_date = case.due_date.strftime("%m/%d/%Y")
+            except:
+                due_date = "no due date"
+            writer.writerow([f"VU#{case.vuid}", case.title, last_modified, "", "", due_date])
+
+        return response
+
+
+class WeeklyCSVCompletedCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        today = date.today()
+        oneweekago = date.today() - timedelta(days=9)
+
+        case_closures = (
+            CaseAction.objects.filter(
+                title__icontains="changed status of case from Active to Inactive",
+                date__range=[oneweekago, today],
+                case__team_owner__name="CERT/CC",
+            )
+            .select_related("case")
+            .order_by("case")
+            .distinct("case")
+        )
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="completed_cases_{oneweekago}_to_{today}.csv"'
+
+        writer = csv.writer(response)
+
+        # Write header row
+        writer.writerow(["Case ID", "Case Name", "Final Outcome", "Lessons Learned", "Follow-Up Actions"])
+
+        for closure in case_closures:
+            writer.writerow(
+                [
+                    f"VU#{closure.case.vuid}",
+                    closure.case.title,
+                ]
+            )
+
+        return response
+
+
+class WeeklyCSVDeclinedCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        today = date.today()
+        oneweekago = date.today() - timedelta(days=9)
+
+        declined_certcc_crtickets = [
+            ticket
+            for ticket in Ticket.objects.filter(
+                queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
+                modified__range=[oneweekago, today],
+                status=Ticket.CLOSED_STATUS,
+            )
+            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == "CERT/CC"
+        ]
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="declined_cases_{oneweekago}_to_{today}.csv"'
+
+        writer = csv.writer(response)
+
+        # Write header row
+        writer.writerow(
+            ["Case ID", "Case Name", "Justification for Declining", "Work Performed Before Decision", "Date Declined"]
+        )
+
+        for ticket in declined_certcc_crtickets:
+            most_recent_closure_date = ""
+            try:
+                most_recent_closure_date = (
+                    ticket.get_actions().filter(title="Closed").latest("date").date.strftime("%m/%d/%Y")
+                )
+            except:
+                most_recent_closure_date = "closure date not found"
+                logger.debug(f"ticket {ticket.id} is closed, but its closure date was not found")
+            writer.writerow(
+                [f"CR-{ticket.id}", ticket.title, ticket.get_close_reason_display(), "", most_recent_closure_date]
+            )
+
+        return response
+
+
+class WeeklyCSVCasesWithPublishedCVEsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        today = date.today()
+        oneweekago = date.today() - timedelta(days=9)
+
+        certcc_cve_cases = [
+            case
+            for case in VulnerabilityCase.objects.filter(
+                status=VulnerabilityCase.ACTIVE_STATUS, team_owner__name="CERT/CC"
+            )
+            if case.get_cves()
+        ]
+
+        # for case in cve_cases:
+        #     case.cves = case.get_cves()
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="cases_with_cves_{oneweekago}_to_{today}.csv"'
+
+        writer = csv.writer(response)
+
+        # Write header row
+        writer.writerow(["Case ID", "Case Name", "CVE Published (Yes/No)", "CVE Number", "Summary of Findings"])
+
+        for case in certcc_cve_cases:
+            for cve in case.get_cves():
+                writer.writerow(
+                    [
+                        f"VU#{case.vuid}",
+                        case.title,
+                        "",
+                        cve,
+                    ]
+                )
+
+        return response
 
 
 class PrintWeeklyReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
@@ -16802,7 +17073,7 @@ class CreateNewEmailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
                     comments = fup.ticket.description.splitlines()
                     email_from = fup.ticket.submitter_email
                     match = re.search(
-                        "New [E|e]mail( received)?(?P<from_email> from ([ \x20-\x7E]+))? to (?P<to_email>.+?(?=CERT))",
+                        "New [E|e]mail( received)?(?P<from_email> from ([ \x20-\x7e]+))? to (?P<to_email>.+?(?=CERT))",
                         fup.title,
                     )
                     if match:
