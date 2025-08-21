@@ -7,6 +7,18 @@ VINCE Coordination platform code
 ## Description
 VINCE Coordination platform code
 
+Version 3.0.23 2025-08-14
+
+* modified specifications, in response to user requests, for spreadsheet used for detailed weekly reports (Internal-804)
+
+
+Version 3.0.22 2025-08-04
+
+* updated "Read More" link on guidance page (Internal-816)
+* modified specifications, in response to user requests, for spreadsheet used for detailed weekly reports (Internal-804)
+* fixed bug preventing the sending of private messages to coordinators with unusually long titles (GitHub issue 181)
+* removed autorefresh for activity section of the ticket page in response to user request (Internal-809)
+
 Version 3.0.21 2025-06-30
 
 * updated numerous links to CVD documentation, etc. (Internal-816)

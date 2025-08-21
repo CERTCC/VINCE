@@ -376,11 +376,17 @@ class SendMessageForm(forms.ModelForm):
         elif why == 2 and data["case"]:
             vc = Case.objects.filter(id=data["case"]).first()
             if vc:
-                subject = "Question about Case " + vc.get_title()
+                if len("Question about Case " + vc.get_title()) > 150:
+                    subject = ("Question about Case " + vc.get_title())[:147] + '...'
+                else:
+                    subject = "Question about Case " + vc.get_title()
         elif why == 9 and data["report"]:
             cr = VTCaseRequest.objects.filter(id=data["report"]).first()
             if cr:
-                subject = "Question about Vulnerability Report " + cr.get_title()
+                if len("Question about Vulnerability Report " + cr.get_title()) > 150:
+                    subject = ("Question about Vulnerability Report " + cr.get_title())[:147] + "..."
+                else:
+                    subject = "Question about Vulnerability Report " + cr.get_title()
         elif why == 10:
             # vendor association form.
             data["case"] = None
