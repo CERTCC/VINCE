@@ -14922,8 +14922,8 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             "Coordinator"
         ])
 
-        new_certcc_cases = VulnerabilityCase.objects.filter(
-            created__range=[oneweekago, today], team_owner__name="CERT/CC"
+        new_cases_to_report = VulnerabilityCase.objects.filter(
+            created__range=[oneweekago, today], team_owner__name=settings.ORG_NAME
         ).order_by("created")
 
         new_unattached_tickets = [
@@ -14932,19 +14932,19 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
 
         new_unattached_ticket_ids = [ticket.id for ticket in new_unattached_tickets]
 
-        declined_certcc_crtickets = [
+        declined_crtickets = [
             ticket
             for ticket in Ticket.objects.filter(
                 queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
                 modified__range=[oneweekago, today],
                 status=Ticket.CLOSED_STATUS,
             ).exclude(id__in=new_unattached_ticket_ids)
-            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == "CERT/CC"
+            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == settings.ORG_NAME
         ]
 
-        new_tickets_and_newly_declined_tickets = new_unattached_tickets + declined_certcc_crtickets
+        new_tickets_and_newly_declined_tickets = new_unattached_tickets + declined_crtickets
 
-        for case in new_certcc_cases:
+        for case in new_cases_to_report:
             try:
                 assignee = User.objects.filter(id = case.owner_id).first()
                 assignee_name = assignee.first_name + ' ' + assignee.last_name
@@ -15006,9 +15006,9 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         active_cases_sheet.append(["Case ID", "Case Name", "Date of Last Action", "Next Steps", "Blockers", "Estimated Completion", "Coordinator"])
 
         active_cases = VulnerabilityCase.objects.filter(
-            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name="CERT/CC"
+            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name=settings.ORG_NAME
         ).annotate(
-            assigned_to=Min('caseassignment__assigned', filter=Q(caseassignment__assigned__username__icontains='@cert.org'))
+            assigned_to=Min('caseassignment__assigned', filter=Q(caseassignment__assigned__username__icontains=settings.CONTACT_EMAIL[settings.CONTACT_EMAIL.rfind("@"):]))
         ).order_by('assigned_to')
 
         for case in active_cases:
@@ -15038,7 +15038,7 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             CaseAction.objects.filter(
                 title__icontains="changed status of case from Active to Inactive",
                 date__range=[oneweekago, today],
-                case__team_owner__name="CERT/CC",
+                case__team_owner__name=settings.ORG_NAME,
             )
             .select_related("case")
             .order_by("case")
@@ -15067,9 +15067,9 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         cve_cases_sheet = workbook.create_sheet("CVE Cases")
         cve_cases_sheet.append(["Case ID", "Case Name", "CVE Published (Yes/No)", "CVE Number", "Summary of Findings"])
 
-        certcc_cve_cases = [case for case in VulnerabilityCase.objects.filter(status=VulnerabilityCase.ACTIVE_STATUS, team_owner__name="CERT/CC") if case.get_cves()]
+        cve_cases = [case for case in VulnerabilityCase.objects.filter(status=VulnerabilityCase.ACTIVE_STATUS, team_owner__name=settings.ORG_NAME) if case.get_cves()]
 
-        for case in certcc_cve_cases:
+        for case in cve_cases:
             for cve in case.get_cves():
                 cve_cases_sheet.append(
                     [
@@ -15085,17 +15085,17 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         # declined_cases_sheet = workbook.create_sheet("Declined Cases")
         # declined_cases_sheet.append(["Case ID", "Case Name", "Justification for Declining", "Work Performed Before Decision", "Date Declined"])
 
-        # declined_certcc_crtickets = [
+        # declined_crtickets = [
         #     ticket
         #     for ticket in Ticket.objects.filter(
         #         queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
         #         modified__range=[oneweekago, today],
         #         status=Ticket.CLOSED_STATUS,
         #     )
-        #     if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == "CERT/CC"
+        #     if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == settings.ORG_NAME
         # ]
 
-        # for ticket in declined_certcc_crtickets:
+        # for ticket in declined_crtickets:
         #     most_recent_closure_date = ""
         #     try:
         #         most_recent_closure_date = (
@@ -15129,8 +15129,8 @@ class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserP
         today = date.today()
         oneweekago = date.today() - timedelta(days=8)
 
-        new_certcc_cases = VulnerabilityCase.objects.filter(
-            created__range=[oneweekago, today], team_owner__name="CERT/CC"
+        new_cases_to_report = VulnerabilityCase.objects.filter(
+            created__range=[oneweekago, today], team_owner__name=settings.ORG_NAME
         ).order_by("created")
 
         new_unattached_tickets = [
@@ -15139,17 +15139,17 @@ class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserP
 
         new_unattached_ticket_ids = [ticket.id for ticket in new_unattached_tickets]
 
-        declined_certcc_crtickets = [
+        declined_crtickets = [
             ticket
             for ticket in Ticket.objects.filter(
                 queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
                 modified__range=[oneweekago, today],
                 status=Ticket.CLOSED_STATUS,
             ).exclude(id__in=new_unattached_ticket_ids)
-            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == "CERT/CC"
+            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == settings.ORG_NAME
         ]
 
-        new_tickets_and_newly_declined_tickets = new_unattached_tickets + declined_certcc_crtickets
+        new_tickets_and_newly_declined_tickets = new_unattached_tickets + declined_crtickets
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = (
@@ -15170,7 +15170,7 @@ class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserP
             ]
         )
 
-        for case in new_certcc_cases:
+        for case in new_cases_to_report:
             writer.writerow(
                 [
                     f"VU#{case.vuid}",
@@ -15228,9 +15228,9 @@ class WeeklyCSVActiveCasesInProgressView(LoginRequiredMixin, TokenMixin, UserPas
         oneweekago = date.today() - timedelta(days=8)
 
         active_cases = VulnerabilityCase.objects.filter(
-            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name="CERT/CC"
+            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name=settings.ORG_NAME
         ).annotate(
-            assigned_to=Min('caseassignment__assigned', filter=Q(caseassignment__assigned__username__icontains='@cert.org'))
+            assigned_to=Min('caseassignment__assigned', filter=Q(caseassignment__assigned__username__icontains=settings.CONTACT_EMAIL[settings.CONTACT_EMAIL.rfind("@"):]))
         ).order_by('assigned_to')
 
         response = HttpResponse(content_type="text/csv")
@@ -15275,7 +15275,7 @@ class WeeklyCSVCompletedCasesView(LoginRequiredMixin, TokenMixin, UserPassesTest
             CaseAction.objects.filter(
                 title__icontains="changed status of case from Active to Inactive",
                 date__range=[oneweekago, today],
-                case__team_owner__name="CERT/CC",
+                case__team_owner__name=settings.ORG_NAME,
             )
             .select_related("case")
             .order_by("case")
@@ -15311,14 +15311,14 @@ class WeeklyCSVDeclinedCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestM
         today = date.today()
         oneweekago = date.today() - timedelta(days=8)
 
-        declined_certcc_crtickets = [
+        declined_crtickets = [
             ticket
             for ticket in Ticket.objects.filter(
                 queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
                 modified__range=[oneweekago, today],
                 status=Ticket.CLOSED_STATUS,
             )
-            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == "CERT/CC"
+            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == settings.ORG_NAME
         ]
 
         response = HttpResponse(content_type="text/csv")
@@ -15331,7 +15331,7 @@ class WeeklyCSVDeclinedCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestM
             ["Case ID", "Case Name", "Justification for Declining", "Work Performed Before Decision", "Date Declined"]
         )
 
-        for ticket in declined_certcc_crtickets:
+        for ticket in declined_crtickets:
             most_recent_closure_date = ""
             try:
                 most_recent_closure_date = (
@@ -15357,10 +15357,10 @@ class WeeklyCSVCasesWithPublishedCVEsView(LoginRequiredMixin, TokenMixin, UserPa
         today = date.today()
         oneweekago = date.today() - timedelta(days=8)
 
-        certcc_cve_cases = [
+        cve_cases = [
             case
             for case in VulnerabilityCase.objects.filter(
-                status=VulnerabilityCase.ACTIVE_STATUS, team_owner__name="CERT/CC"
+                status=VulnerabilityCase.ACTIVE_STATUS, team_owner__name=settings.ORG_NAME
             )
             if case.get_cves()
         ]
@@ -15376,7 +15376,7 @@ class WeeklyCSVCasesWithPublishedCVEsView(LoginRequiredMixin, TokenMixin, UserPa
         # Write header row
         writer.writerow(["Case ID", "Case Name", "CVE Published (Yes/No)", "CVE Number", "Summary of Findings"])
 
-        for case in certcc_cve_cases:
+        for case in cve_cases:
             for cve in case.get_cves():
                 writer.writerow(
                     [
@@ -16807,38 +16807,6 @@ class VinceContactReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                 ).values_list("contact__id", flat=True)
                 context["results"] = Contact.objects.filter(active=True, id__in=emails)
         return context
-
-
-# This is a rough draft of a view for managing alert emails that would be sent to different groups of people under various circumstances:
-#
-# class ManageAlertsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
-#     login_url = "vince:login"
-#     template_name = "vince/manage_alerts.html"
-
-#     def test_func(self):
-#         return is_in_group_vincetrack(self.request.user) and self.request.user.is_superuser
-
-#     def get_context_data(self, **kwargs):
-#         context = super(ManageAlertsView, self).get_context_data(**kwargs)
-#         context['alerts'] = [
-#             {
-#                 'label': 'AI/ML Systems',
-#                 'name_for_html_id': 'ai_ml_systems',
-#                 'help_text': 'Recipients of this alert will receive email notifications whenever a vulnerability report related to AI/ML systems is submitted.',
-#                 'current_recipients': ['gstrom@cert.org'],
-#                 'eligible_recipients': ['gstrom@cert.org', 'gstrom@sei.cmu.edu'],
-#             },
-#             {
-#                 'label': 'Rotwang',
-#                 'name_for_html_id': 'rotwang',
-#                 'help_text': 'Recipients of this alert will receive email notifications whenever a vulnerability report related to Metropolis is submitted.',
-#                 'current_recipients': ['gstrom@cert.org'],
-#                 'eligible_recipients': ['gstrom@cert.org', 'gstrom@sei.cmu.edu'],
-#             },
-
-#         ]
-#         # context['alertsjs'] = [obj.as_dict() for obj in context['alerts']]
-#         return context
 
 
 class CreateNewVinceUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):

@@ -7,6 +7,11 @@ VINCE Coordination platform code
 ## Description
 VINCE Coordination platform code
 
+Version 3.0.24 2025-08-26
+
+* adjusted code for generating spreadsheet used for detailed weekly reports (Intental-804)
+
+
 Version 3.0.23 2025-08-14
 
 * modified specifications, in response to user requests, for spreadsheet used for detailed weekly reports (Internal-804)
