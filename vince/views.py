@@ -175,6 +175,8 @@ from rest_framework.views import APIView
 import pathlib
 import mimetypes
 from django.views.decorators.cache import cache_control
+from openpyxl import Workbook
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -14892,6 +14894,229 @@ class PrintReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             title__icontains="Successfully forwarded", date__month=month, date__year=year, ticket__queue__in=my_queues
         )
         return context
+    
+
+class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
+    login_url = "vince:login"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        today = date.today()
+        oneweekago = date.today() - timedelta(days=8)
+
+        output = BytesIO()
+        workbook = Workbook()
+
+        # Create NewReportsOrSubmissions sheet
+        new_reports_sheet = workbook.active
+        new_reports_sheet.title = "New Reports or Submissions"
+        new_reports_sheet.append([
+            "Case ID",
+            "Case Name",
+            "Summary",
+            "Initial Triage Actions",
+            "Assigned Personnel/Team",
+            "Justification if Declined",
+            "Coordinator"
+        ])
+
+        new_cases_to_report = VulnerabilityCase.objects.filter(
+            created__range=[oneweekago, today], team_owner__name=settings.ORG_NAME
+        ).order_by("created")
+
+        new_unattached_tickets = [
+            ticket for ticket in Ticket.objects.filter(created__range=[oneweekago, today], case=None, depends_on=None)
+        ]
+
+        new_unattached_ticket_ids = [ticket.id for ticket in new_unattached_tickets]
+
+        declined_crtickets = [
+            ticket
+            for ticket in Ticket.objects.filter(
+                queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
+                modified__range=[oneweekago, today],
+                status=Ticket.CLOSED_STATUS,
+            ).exclude(id__in=new_unattached_ticket_ids)
+            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == settings.ORG_NAME
+        ]
+
+        new_tickets_and_newly_declined_tickets = new_unattached_tickets + declined_crtickets
+
+        for case in new_cases_to_report:
+            try:
+                assignee = User.objects.filter(id = case.owner_id).first()
+                assignee_name = assignee.first_name + ' ' + assignee.last_name
+            except:
+                assignee_name = "unassigned"
+            new_reports_sheet.append(
+                [
+                    f"VU#{case.vuid}",
+                    case.title,
+                    case.summary,
+                    " ",
+                    case.team_owner.name,
+                    " ",
+                    assignee_name,
+                ]
+            )
+
+        for ticket in new_tickets_and_newly_declined_tickets:
+            if ticket.queue.title == "CR":
+                assigned_team = " "
+                justification_if_declined = " "
+                try:
+                    assigned_team = get_my_team(ticket.assigned_to).name
+                except:
+                    assigned_team = "no assigned team found"
+                resolution = ""
+                try:
+                    resolution = ticket.resolution
+                except:
+                    resolution = "no resolution"
+                try:
+                    # justification_if_declined = ticket.get_close_reason_display()
+                    # In the fulness of time, we will put content in this space that is determined by the template used to 
+                    # respond to the reporter. For now we have:
+                    justification_if_declined = " "
+                except:
+                    justification_if_declined = " "
+                try:
+                    assignee = User.objects.filter(email = ticket.assigned_to).first()
+                    assignee_name = assignee.first_name + ' ' + assignee.last_name
+                except:
+                    assignee_name = "unassigned"
+                new_reports_sheet.append(
+                    [
+                        f"{ticket.queue}-{ticket.id}",
+                        ticket.title,
+                        resolution,
+                        " ",
+                        assigned_team,
+                        justification_if_declined,
+                        assignee_name,
+                    ]
+                )
+
+        new_reports_sheet.append([f"{len(new_unattached_tickets)} tickets entered triage in the last week."])
+
+        # Create ActiveCasesInProgress Sheet
+        active_cases_sheet = workbook.create_sheet("Active Cases in Progress")
+        active_cases_sheet.append(["Case ID", "Case Name", "Date of Last Action", "Next Steps", "Blockers", "Estimated Completion", "Coordinator"])
+
+        active_cases = VulnerabilityCase.objects.filter(
+            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name=settings.ORG_NAME
+        ).annotate(
+            assigned_to=Min('caseassignment__assigned', filter=Q(caseassignment__assigned__username__icontains=settings.CONTACT_EMAIL[settings.CONTACT_EMAIL.rfind("@"):]))
+        ).order_by('assigned_to')
+
+        for case in active_cases:
+            last_modified = ""
+            try:
+                last_modified = case.modified.strftime("%m/%d/%Y")
+            except:
+                last_modified = "never modified"
+            due_date = ""
+            try:
+                due_date = case.due_date.strftime("%m/%d/%Y")
+            except:
+                due_date = "no due date"
+            try:
+                assignee = User.objects.filter(id = case.assigned_to).first()
+                assignee_name = assignee.first_name + ' ' + assignee.last_name
+            except:
+                assignee_name = 'unassigned'
+            active_cases_sheet.append([f"VU#{case.vuid}", case.title, last_modified, " ", " ", due_date, assignee_name])
+
+
+        # Create CompletedCases Sheet
+        completed_cases_sheet = workbook.create_sheet("Completed Cases")
+        completed_cases_sheet.append(["Case ID", "Case Name", "Final Outcome", "Lessons Learned", "Follow-Up Actions", "Coordinator"])
+
+        case_closures = (
+            CaseAction.objects.filter(
+                title__icontains="changed status of case from Active to Inactive",
+                date__range=[oneweekago, today],
+                case__team_owner__name=settings.ORG_NAME,
+            )
+            .select_related("case")
+            .order_by("case")
+            .distinct("case")
+        )
+
+        for closure in case_closures:
+            try:
+                closers_email = closure.title.split()[0]
+                closer = User.objects.filter(email = closers_email).first()
+                closers_name = closer.first_name + ' ' + closer.last_name
+            except:
+                closers_name = "unassigned"
+            completed_cases_sheet.append(
+                [
+                    f"VU#{closure.case.vuid}",
+                    closure.case.title,
+                    " ",
+                    " ",
+                    " ",
+                    closers_name,
+                ]
+            )
+
+        # Create CVECases sheet
+        cve_cases_sheet = workbook.create_sheet("CVE Cases")
+        cve_cases_sheet.append(["Case ID", "Case Name", "CVE Published (Yes/No)", "CVE Number", "Summary of Findings"])
+
+        cve_cases = [case for case in VulnerabilityCase.objects.filter(status=VulnerabilityCase.ACTIVE_STATUS, team_owner__name=settings.ORG_NAME) if case.get_cves()]
+
+        for case in cve_cases:
+            for cve in case.get_cves():
+                cve_cases_sheet.append(
+                    [
+                        f"VU#{case.vuid}",
+                        case.title,
+                        " ",
+                        cve,
+                    ]
+                )
+
+
+        # # Create DeclinedCases sheet
+        # declined_cases_sheet = workbook.create_sheet("Declined Cases")
+        # declined_cases_sheet.append(["Case ID", "Case Name", "Justification for Declining", "Work Performed Before Decision", "Date Declined"])
+
+        # declined_crtickets = [
+        #     ticket
+        #     for ticket in Ticket.objects.filter(
+        #         queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
+        #         modified__range=[oneweekago, today],
+        #         status=Ticket.CLOSED_STATUS,
+        #     )
+        #     if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == settings.ORG_NAME
+        # ]
+
+        # for ticket in declined_crtickets:
+        #     most_recent_closure_date = ""
+        #     try:
+        #         most_recent_closure_date = (
+        #             ticket.get_actions().filter(title="Closed").latest("date").date.strftime("%m/%d/%Y")
+        #         )
+        #     except:
+        #         most_recent_closure_date = "closure date not found"
+        #         logger.debug(f"ticket {ticket.id} is closed, but its closure date was not found")
+        #     declined_cases_sheet.append(
+        #         [f"CR-{ticket.id}", ticket.title, ticket.get_close_reason_display(), " ", most_recent_closure_date]
+        #     )
+
+        workbook.save(output)
+        output.seek(0)
+
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="weekly_report_{oneweekago}_to_{today}.xlsx"'
+        return response
 
 
 class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
@@ -14902,10 +15127,10 @@ class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserP
 
     def get(self, request, *args, **kwargs):
         today = date.today()
-        oneweekago = date.today() - timedelta(days=9)
+        oneweekago = date.today() - timedelta(days=8)
 
-        new_certcc_cases = VulnerabilityCase.objects.filter(
-            created__range=[oneweekago, today], team_owner__name="CERT/CC"
+        new_cases_to_report = VulnerabilityCase.objects.filter(
+            created__range=[oneweekago, today], team_owner__name=settings.ORG_NAME
         ).order_by("created")
 
         new_unattached_tickets = [
@@ -14914,17 +15139,17 @@ class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserP
 
         new_unattached_ticket_ids = [ticket.id for ticket in new_unattached_tickets]
 
-        declined_certcc_crtickets = [
+        declined_crtickets = [
             ticket
             for ticket in Ticket.objects.filter(
                 queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
                 modified__range=[oneweekago, today],
                 status=Ticket.CLOSED_STATUS,
             ).exclude(id__in=new_unattached_ticket_ids)
-            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == "CERT/CC"
+            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == settings.ORG_NAME
         ]
 
-        new_tickets_and_newly_declined_tickets = new_unattached_tickets + declined_certcc_crtickets
+        new_tickets_and_newly_declined_tickets = new_unattached_tickets + declined_crtickets
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = (
@@ -14945,7 +15170,7 @@ class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserP
             ]
         )
 
-        for case in new_certcc_cases:
+        for case in new_cases_to_report:
             writer.writerow(
                 [
                     f"VU#{case.vuid}",
@@ -15000,11 +15225,13 @@ class WeeklyCSVActiveCasesInProgressView(LoginRequiredMixin, TokenMixin, UserPas
 
     def get(self, request, *args, **kwargs):
         today = date.today()
-        oneweekago = date.today() - timedelta(days=9)
+        oneweekago = date.today() - timedelta(days=8)
 
         active_cases = VulnerabilityCase.objects.filter(
-            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name="CERT/CC"
-        ).order_by("owner_id")
+            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name=settings.ORG_NAME
+        ).annotate(
+            assigned_to=Min('caseassignment__assigned', filter=Q(caseassignment__assigned__username__icontains=settings.CONTACT_EMAIL[settings.CONTACT_EMAIL.rfind("@"):]))
+        ).order_by('assigned_to')
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = (
@@ -15042,13 +15269,13 @@ class WeeklyCSVCompletedCasesView(LoginRequiredMixin, TokenMixin, UserPassesTest
 
     def get(self, request, *args, **kwargs):
         today = date.today()
-        oneweekago = date.today() - timedelta(days=9)
+        oneweekago = date.today() - timedelta(days=8)
 
         case_closures = (
             CaseAction.objects.filter(
                 title__icontains="changed status of case from Active to Inactive",
                 date__range=[oneweekago, today],
-                case__team_owner__name="CERT/CC",
+                case__team_owner__name=settings.ORG_NAME,
             )
             .select_related("case")
             .order_by("case")
@@ -15082,16 +15309,16 @@ class WeeklyCSVDeclinedCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestM
 
     def get(self, request, *args, **kwargs):
         today = date.today()
-        oneweekago = date.today() - timedelta(days=9)
+        oneweekago = date.today() - timedelta(days=8)
 
-        declined_certcc_crtickets = [
+        declined_crtickets = [
             ticket
             for ticket in Ticket.objects.filter(
                 queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
                 modified__range=[oneweekago, today],
                 status=Ticket.CLOSED_STATUS,
             )
-            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == "CERT/CC"
+            if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == settings.ORG_NAME
         ]
 
         response = HttpResponse(content_type="text/csv")
@@ -15104,7 +15331,7 @@ class WeeklyCSVDeclinedCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestM
             ["Case ID", "Case Name", "Justification for Declining", "Work Performed Before Decision", "Date Declined"]
         )
 
-        for ticket in declined_certcc_crtickets:
+        for ticket in declined_crtickets:
             most_recent_closure_date = ""
             try:
                 most_recent_closure_date = (
@@ -15128,12 +15355,12 @@ class WeeklyCSVCasesWithPublishedCVEsView(LoginRequiredMixin, TokenMixin, UserPa
 
     def get(self, request, *args, **kwargs):
         today = date.today()
-        oneweekago = date.today() - timedelta(days=9)
+        oneweekago = date.today() - timedelta(days=8)
 
-        certcc_cve_cases = [
+        cve_cases = [
             case
             for case in VulnerabilityCase.objects.filter(
-                status=VulnerabilityCase.ACTIVE_STATUS, team_owner__name="CERT/CC"
+                status=VulnerabilityCase.ACTIVE_STATUS, team_owner__name=settings.ORG_NAME
             )
             if case.get_cves()
         ]
@@ -15149,7 +15376,7 @@ class WeeklyCSVCasesWithPublishedCVEsView(LoginRequiredMixin, TokenMixin, UserPa
         # Write header row
         writer.writerow(["Case ID", "Case Name", "CVE Published (Yes/No)", "CVE Number", "Summary of Findings"])
 
-        for case in certcc_cve_cases:
+        for case in cve_cases:
             for cve in case.get_cves():
                 writer.writerow(
                     [
@@ -16580,38 +16807,6 @@ class VinceContactReportsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixi
                 ).values_list("contact__id", flat=True)
                 context["results"] = Contact.objects.filter(active=True, id__in=emails)
         return context
-
-
-# This is a rough draft of a view for managing alert emails that would be sent to different groups of people under various circumstances:
-#
-# class ManageAlertsView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
-#     login_url = "vince:login"
-#     template_name = "vince/manage_alerts.html"
-
-#     def test_func(self):
-#         return is_in_group_vincetrack(self.request.user) and self.request.user.is_superuser
-
-#     def get_context_data(self, **kwargs):
-#         context = super(ManageAlertsView, self).get_context_data(**kwargs)
-#         context['alerts'] = [
-#             {
-#                 'label': 'AI/ML Systems',
-#                 'name_for_html_id': 'ai_ml_systems',
-#                 'help_text': 'Recipients of this alert will receive email notifications whenever a vulnerability report related to AI/ML systems is submitted.',
-#                 'current_recipients': ['gstrom@cert.org'],
-#                 'eligible_recipients': ['gstrom@cert.org', 'gstrom@sei.cmu.edu'],
-#             },
-#             {
-#                 'label': 'Rotwang',
-#                 'name_for_html_id': 'rotwang',
-#                 'help_text': 'Recipients of this alert will receive email notifications whenever a vulnerability report related to Metropolis is submitted.',
-#                 'current_recipients': ['gstrom@cert.org'],
-#                 'eligible_recipients': ['gstrom@cert.org', 'gstrom@sei.cmu.edu'],
-#             },
-
-#         ]
-#         # context['alertsjs'] = [obj.as_dict() for obj in context['alerts']]
-#         return context
 
 
 class CreateNewVinceUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):

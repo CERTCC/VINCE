@@ -1700,7 +1700,11 @@ class Message(models.Model):
             vc = Case.objects.filter(id=case).first()
         else:
             vc = None
-        thread = Thread.objects.create(subject=subject, case=vc)
+        if len(subject) > 150:
+            subject_for_thread = subject[:147] + '...'
+        else:
+            subject_for_thread = subject
+        thread = Thread.objects.create(subject=subject_for_thread, case=vc)
         track_users = []
         direct_msg = False
 

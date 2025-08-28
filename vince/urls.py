@@ -222,6 +222,11 @@ urlpatterns = [
         name="printweeklyreport",
     ),
     re_path(
+        "reports/weekly/xls/summary",
+        views.WeeklyXLSSummary.as_view(),
+        name="weekly_xls_summary"
+    ),
+    re_path(
         "reports/weekly/csv/new_reports_submissions",
         views.WeeklyCSVNewReportsOrSubmissionsView.as_view(),
         name="weekly_csv_new_reports_submissions",
