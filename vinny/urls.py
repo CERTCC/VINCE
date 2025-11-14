@@ -174,6 +174,8 @@ urlpatterns = [
     path("reports/pub/", views.AdminReportsView.as_view(), name="adminreports"),
     path("reports/", views.ReportsView.as_view(), name="reports"),
     path("api/vendor/", views.VendorInfoAPIView.as_view(), name="vendor_api"),
+    # Make this endpoint go live when we complete VIN-821:
+    # path("api/vulreport/", views.VulReportAPIView.as_view(), name="vul_report_api"),
     path("api/cases/", views.CasesAPIView.as_view(), name="cases_api"),
     re_path("api/case/(?P<vuid>\d+)/$", views.CaseAPIView.as_view({"get": "retrieve"}), name="case_api"),
     re_path("api/case/posts/(?P<vuid>\d+)/$", views.CasePostAPIView.as_view(), name="case_post_api"),
