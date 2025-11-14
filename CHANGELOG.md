@@ -7,6 +7,30 @@ VINCE Coordination platform code
 ## Description
 VINCE Coordination platform code
 
+
+Version 3.0.28 2025-11-04
+
+* added code to fix issue in creation of XLS report (Internal-804)
+
+
+Version 3.0.27 2025-11-04
+
+* updated links to CVD documentation, etc. (Internal-816)
+* modified structure of weekly XLS report in response to user request (Internal-804)
+* modified Triage view so that it also includes new tickets assigned to no-longer-active users (Internal-825)
+* disabled buggy hovering feature in VINCE Comm case page (Internal-826)
+
+
+Version 3.0.26 2025-10-02
+
+* dependabot update recommendation: `Django` 4.2.24 to 4.2.25
+* fixed bug causing discrepency between two sources of info about vendors attached to a case (Internal-822)
+
+Version 3.0.25 2025-09-10
+
+* dependabot update recommendation: `Django` 4.2.22 to 4.2.24
+
+
 Version 3.0.24 2025-08-26
 
 * adjusted code for generating spreadsheet used for detailed weekly reports (Intental-804)

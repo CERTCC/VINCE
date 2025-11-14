@@ -86,6 +86,7 @@ import mimetypes
 from django.forms.utils import ErrorList
 from vinny.models import *
 from vincepub.models import VulCoordRequest, VUReport, NoteVulnerability, VendorVulStatus, VendorRecord
+from vincepub.forms import VulCoordForm
 from vinny.forms import *
 from vinny.lib import (
     vince_comm_send_sqs,
@@ -2911,12 +2912,12 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
         context["vuls"] = vuls
         try:
             context["vendors"] = CaseMember.objects.filter(
-                case=case, coordinator=False, reporter_group=False
+                case=case, coordinator=False, reporter_group=False, group__groupcontact__isnull=False
             ).order_by("group__groupcontact__contact__vendor_name")
         except:
             logger.debug("Vendor name ordering failed error: {e}")
             context["vendors"] = CaseMember.objects.filter(
-                case=case, coordinator=False, reporter_group=False
+                case=case, coordinator=False, reporter_group=False, group__groupcontact__isnull=False
             ).order_by("group__name")
         for vendor in context["vendors"]:
             logger.debug(vendor)
@@ -4574,6 +4575,99 @@ class PendingUserPermission(BasePermission):
             return False
         else:
             return True
+
+# make this view go live when we complete VIN-821:
+# # @method_decorator(csrf_exempt, name="dispatch")
+# class VulReportAPIView(generics.GenericAPIView):
+    
+#     # REQUIRED_FIELDS = [
+#     #     "share_release",
+#     #     "credit_release", 
+#     #     "multiplevendors",
+#     #     "product_name",
+#     #     "product_version",
+#     #     "vul_description",
+#     #     "vul_exploit",
+#     #     "vul_impact",
+#     #     "vul_discovery",
+#     #     "vul_public",
+#     #     "vul_exploited",
+#     #     "vul_disclose",
+#     #     "comm_attempt"
+#     # ]
+
+#     # OPTIONAL_FIELDS = [
+#     #     "contact_name",
+#     #     "contact_org",
+#     #     "contact_email",
+#     #     "contact_phone",
+#     #     "coord_status",
+#     #     "vendor_name",
+#     #     "other_vendors",
+#     #     "first_contact",
+#     #     "vendor_communication",
+#     #     "ics_impact",
+#     #     "metadata",
+#     #     "public_references",
+#     #     "exploit_references",
+#     #     "disclosure_plans",
+#     #     "user_file",
+#     #     "tracking",
+#     #     "comments",
+#     #     "reporter_pgp",
+#     #     "why_no_attempt",
+#     #     "please_explain",
+#     #     "ai_ml_system",
+#     #     "cisa_please"
+#     # ]
+
+#     def post(self, request, *args, **kwargs):
+
+#         try:
+#             data = json.loads(request.body.decode("utf-8"))
+#         except json.JSONDecodeError:
+#             return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+
+#         form = VulCoordForm(data)
+
+#         # # Make sure all required fields are filled in
+#         # missing = [field for field in self.REQUIRED_FIELDS if field not in data]
+#         # if missing:
+#         #     return JsonResponse({
+#         #         "error": f"Missing required field(s): {', '.join(missing)}"
+#         #     }, status=400)
+        
+#         # # Conditional validation
+#         # if "field1" in data and "field1a" not in data:
+#         #     return JsonResponse(
+#         #         {"error": "If you provide 'field1', you must also provide 'field1a'."},
+#         #         status=400,
+#         #     )
+
+#         # Validate and save if valid
+#         if form.is_valid():
+#             try:
+#                 form.instance.vrf_id = get_vrf_id()
+#                 logger.debug(f"API vul report received and assigned vrf_id {form.instance.vrf_id}. The form.data is {form.data}")
+#                 instance = form.save()
+#                 return JsonResponse(
+#                     {
+#                         "message": "Created successfully",
+#                         "id": instance.pk,
+#                     },
+#                     status=201,
+#                 )
+#             except:
+#                 logger.debug('something went wrong trying to digest a vul report via the API.')
+#         else:
+#             # Form validation failed
+#             return JsonResponse({"errors": form.errors}, status=400)
+
+#         return JsonResponse({
+#             "message": "you submitted a vrf!",
+#             "status": "ok"
+#         })
 
 
 class CasesAPIView(generics.ListAPIView):

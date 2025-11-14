@@ -30,24 +30,30 @@
 
 function initTooltipster(element, umProfileStore, displayUserCard) {
     /*replaced to use standard jquery tooltip since plugin was failing */
-    $(document).tooltip({
-	items:'.user-mention, .vendor-participant',
-        tooltipClass: 'tooltipster-default',
-	content: function(callback) {
-            var userUrl = $(this).attr('href')+"?quick=1";
-            if(umProfileStore.hasOwnProperty(userUrl)){
-		callback(umProfileStore[userUrl])
-                //displayUserCard(instance, umProfileStore[userUrl]);
-                // load from cache
-            }
-            else {
-                $.get(userUrl, function(data) {
-                    umProfileStore[userUrl] = data;
-		    callback(data);
-                });
-            }
-        }
-    });
+
+	// Temporarily commenting out this code until we can figure out why the wrong user's
+	// info is sometimes displayed when users hover over (for example) "@Fred" in posts on
+	// the case page:
+
+    // $(document).tooltip({
+	// 	items:'.user-mention, .vendor-participant',
+    //     tooltipClass: 'tooltipster-default',
+	// 	content: function(callback) {
+    //         var userUrl = $(this).attr('href')+"?quick=1";
+    //         if(umProfileStore.hasOwnProperty(userUrl)){
+	// 			callback(umProfileStore[userUrl])
+    //             //displayUserCard(instance, umProfileStore[userUrl]);
+    //             // load from cache
+    //         }
+    //         else {
+    //             $.get(userUrl, function(data) {
+    //                 umProfileStore[userUrl] = data;
+	// 	    		callback(data);
+    //             });
+    //         }
+    //     }
+    // });
+
 }
 
 function onBeforeUnload(e) {
@@ -320,50 +326,50 @@ $(document).ready(function() {
     });
     
     $(document).on("submit", "#postform", function(event) {
-	// Get some values from elements on the page:
-	event.preventDefault();
-	var content = simplemde.value();
-	console.log(content)
-	if (content == "") {
-	    return false;
-	}
-	var paginate_by =  $("#paginate_by").text();
-	$('#sendbutton').prop('disabled', true);
-	var $form = $( this );
-	var url = $(this).attr( "action" );
-	var csrftoken = getCookie('csrftoken');
-	var data = {'content': content, 'csrfmiddlewaretoken': csrftoken, 'paginate_by': paginate_by};
-	var reload_pinned = false;
-	if ($("#reply_to").length) {
-	    data["reply_to"] = $("#reply_to").val();
-	    if ($("#reply_to").attr("name") == "reply_to_pinned") {
-		reload_pinned = true;
-		data["pinned"] = 1;
-	    }
-	}
-	// Send the data using post
-	var posting = $.post( url, data );
-	
-	// Put the results in a div
-	posting.done(function( data ) {
-	    simplemde.value("");
-	    var reload_type = "#allposts";
-	    if (reload_pinned) {
-		reload_type = "#pinnedposts";
-	    }
-	    $('#sendbutton').prop('disabled', false);
-	    $(reload_type).empty().append( data );
-	    $(reload_type).foundation();
-	    /* reload plugins */
-	    $('html, body').animate({scrollTop:$(reload_type).offset().bottom}, 'slow');
-	    initTooltipster(".user-mention:not(.tooltipstered)", umProfileStore, displayUserCard);
-	    /* remove reply if present */
-	    if (document.contains(document.getElementById("reply_to"))) {
-		document.getElementById("reply_to").remove();
-	    }
-	    //$( "#post_reply" ).slideToggle( "slow", function() {
-        //});
-	});
+		// Get some values from elements on the page:
+		event.preventDefault();
+		var content = simplemde.value();
+		console.log(content)
+		if (content == "") {
+			return false;
+		}
+		var paginate_by =  $("#paginate_by").text();
+		$('#sendbutton').prop('disabled', true);
+		var $form = $( this );
+		var url = $(this).attr( "action" );
+		var csrftoken = getCookie('csrftoken');
+		var data = {'content': content, 'csrfmiddlewaretoken': csrftoken, 'paginate_by': paginate_by};
+		var reload_pinned = false;
+		if ($("#reply_to").length) {
+			data["reply_to"] = $("#reply_to").val();
+			if ($("#reply_to").attr("name") == "reply_to_pinned") {
+				reload_pinned = true;
+				data["pinned"] = 1;
+			}
+		}
+		// Send the data using post
+		var posting = $.post( url, data );
+		
+		// Put the results in a div
+		posting.done(function( data ) {
+			simplemde.value("");
+			var reload_type = "#allposts";
+			if (reload_pinned) {
+				reload_type = "#pinnedposts";
+			}
+			$('#sendbutton').prop('disabled', false);
+			$(reload_type).empty().append( data );
+			$(reload_type).foundation();
+			/* reload plugins */
+			$('html, body').animate({scrollTop:$(reload_type).offset().bottom}, 'slow');
+			initTooltipster(".user-mention:not(.tooltipstered)", umProfileStore, displayUserCard);
+			/* remove reply if present */
+			if (document.contains(document.getElementById("reply_to"))) {
+				document.getElementById("reply_to").remove();
+			}
+			//$( "#post_reply" ).slideToggle( "slow", function() {
+			//});
+		});
 
     });
 
@@ -445,30 +451,30 @@ $(document).ready(function() {
 
 
     $(document).on('click', '.reply-to-post', function() {
-	var post = $(this).parent().parent().parent().find('.post_author');
-	var lines = post.text().trim(); /*.split('\n');*/
-	var post_id = $(this).attr("post_id");
-	/*$("#post_reply").slideToggle( "slow", function() {});*/
-	$('html, body').animate({scrollTop:$(document).height()}, 'slow');
-	/*var newpost = lines.map(function(element) { return '> ' + element; });
-	  simplemde.value(newpost.join('\n'));*/
-	if ($(this).hasClass("pinned")) {
-	    $('<input>', {
-            type: 'hidden',
-            id: 'reply_to',
-            name: 'reply_to_pinned',
-            value: post_id
-        }).appendTo('#postform');
+		var post = $(this).parent().parent().parent().find('.post_author');
+		var lines = post.text().trim(); /*.split('\n');*/
+		var post_id = $(this).attr("post_id");
+		/*$("#post_reply").slideToggle( "slow", function() {});*/
+		$('html, body').animate({scrollTop:$(document).height()}, 'slow');
+		/*var newpost = lines.map(function(element) { return '> ' + element; });
+		simplemde.value(newpost.join('\n'));*/
+		if ($(this).hasClass("pinned")) {
+			$('<input>', {
+				type: 'hidden',
+				id: 'reply_to',
+				name: 'reply_to_pinned',
+				value: post_id
+			}).appendTo('#postform');
 
-	} else {
-	$('<input>', {
-	    type: 'hidden',
-	    id: 'reply_to',
-	    name: 'reply_to',
-	    value: post_id
-	}).appendTo('#postform');
-	}
-	simplemde.value('@'+lines);
+		} else {
+			$('<input>', {
+				type: 'hidden',
+				id: 'reply_to',
+				name: 'reply_to',
+				value: post_id
+			}).appendTo('#postform');
+		}
+		simplemde.value('@'+lines);
     });
 
 

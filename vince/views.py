@@ -672,7 +672,7 @@ def autocomplete_casevendors(request, pk):
     case = get_object_or_404(VulnerabilityCase, id=pk)
     page = int(request.GET.get("page", 1))
     size = int(request.GET.get("size", 0))
-    vendors = VulnerableVendor.casevendors(case).order_by("vendor")
+    vendors = VulnerableVendor.casevendors(case).select_related("contact").prefetch_related("contact__contacttag_set").order_by("vendor")
     user_filter = False
     logger.debug(f"in autocomplete_casevendors, request.GET is {request.GET}")
     for key in request.GET:
@@ -14918,7 +14918,6 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             "Summary",
             "Initial Triage Actions",
             "Assigned Personnel/Team",
-            "Justification if Declined",
             "Coordinator"
         ])
 
@@ -14973,6 +14972,8 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                 resolution = ""
                 try:
                     resolution = ticket.resolution
+                    if resolution is None:
+                        resolution = "no resolution"
                 except:
                     resolution = "no resolution"
                 try:
@@ -14991,10 +14992,9 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                     [
                         f"{ticket.queue}-{ticket.id}",
                         ticket.title,
-                        resolution,
+                        resolution + justification_if_declined,
                         " ",
                         assigned_team,
-                        justification_if_declined,
                         assignee_name,
                     ]
                 )
@@ -16044,7 +16044,7 @@ class TriageView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Li
             my_queues = get_rw_queues(self.request.user)
         return (
             Ticket.objects.filter(queue__in=my_queues, status__in=[Ticket.OPEN_STATUS, Ticket.REOPENED_STATUS])
-            .exclude(assigned_to__isnull=False)
+            .filter(Q(assigned_to__isnull=True) | Q(assigned_to__is_active=False))
             .order_by("-modified")
         )
 
