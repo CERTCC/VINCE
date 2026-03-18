@@ -135,6 +135,10 @@ class VinceProfile(models.Model):
     ignored = models.BooleanField(default=False)
     service = models.BooleanField(default=False)
     multifactor = models.BooleanField(default=False)
+    troublesome = models.BooleanField(
+        default=False,
+        help_text=_('Flag indicating this user requires special attention from coordinators')
+    )
     timezone = models.CharField(default="UTC", max_length=100)
     settings_pickled = models.TextField(
         _("Settings Dictionary"),

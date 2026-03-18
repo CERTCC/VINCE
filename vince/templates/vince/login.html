@@ -29,6 +29,7 @@
 {% block coltype %}content{% endblock%}
 
 {% block content %}
+
 <div id="content-main" class="content">
 {% block breadcrumbs %}{% endblock %}
 <form action="{% url 'cogauth:login' %}" method="post" id="login-form">{% csrf_token %}
@@ -83,7 +84,7 @@
 <div id="login-footer">
   <div id="footer-info">
     <div id="cmu-logo">
-      <img src="{% static 'vince/css/images/VINCE.png' %}">
+      <img src="{% static 'vince/css/images/CMUSEICERT.png' %}">
     </div>
   </div>
 </div>

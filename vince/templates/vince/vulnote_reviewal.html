@@ -22,6 +22,9 @@
 </div>
 
 <div id="case_id" class="hidden">{{case.id}}</div>
+{% if not is_assigned_reviewer %}
+<div id="readonly" class="hidden"></div>
+{% endif %}
 
 <div class="reveal" id="confirmmodal" data-reveal></div>
 
@@ -84,7 +87,11 @@
             <div class="form-group">
               {{ form.feedback.label_tag }}
 	      <small class='form-text text-muted'>{% trans form.feedback.help_text %}</small>
-              {% render_field form.feedback class="form-control" %}
+              {% if is_assigned_reviewer %}
+                {% render_field form.feedback class="form-control" %}
+              {% else %}
+                {% render_field form.feedback class="form-control" readonly="readonly" %}
+              {% endif %}
             </div>
           </div>
         </div>
@@ -92,9 +99,20 @@
         <p style="color: red">{% autoescape off %}{{ error }} {% endautoescape %}</p>
         {% endfor %}
         <div class="row column">
-	  <button type="submit" name="save" value="2" class="primary button">{% trans "Complete Review" %}</button>
-	  <button type="submit" name="save" value="1" class="primary button">{% trans "Save" %}</button>
-	  <a href="{% url 'vince:case' case.id %}#vulnote" class="button secondary">Cancel</a>
+    {% if is_assigned_reviewer %}
+      {% if tech_review_underway %}
+	    <button type="submit" name="save" value="2" class="primary button">{% trans "Complete Technical Review" %}</button>
+      {% else %}
+      <button type="submit" name="save" value="3" class="primary button">{% trans "Approve for Publication" %}</button>
+      <button type="submit" name="save" value="4" class="warning button">{% trans "Save & Notify Author" %}</button>
+      {% endif %}
+	    <button type="submit" name="save" value="1" class="primary button">{% trans "Save" %}</button>
+    {% else %}
+      <div class="callout warning">
+        <p>You are viewing this review in read-only mode. Only assigned reviewers can save changes.</p>
+      </div>
+    {% endif %}
+	  <a href="{% url 'vince:case' case.id %}#vulnote" class="button secondary">{% if is_assigned_reviewer %}Cancel{% else %}Back{% endif %}</a>
         </div>
       </div>
     </div>
@@ -112,7 +130,7 @@
 	<div class="modal-body">
 	  {% csrf_token %}
 	  <p>Do you approve this vulnerability note for publication?</p>
-	  <p>By approving this vulnerability note, you confirm that you have read the note in it's entirety and believe it is ready for publication.</p>
+	  <p>By approving this vulnerability note, you confirm that you have read the note in its entirety and believe it is ready for publication.</p>
 	  <p>If you select No, the author will have to make the appropriate changes and reopen the ticket for further review.  You will be unable to edit this review after completing it.</p>
 	</div>
 	<div class="modal-footer text-right">

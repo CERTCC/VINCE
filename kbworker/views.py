@@ -380,3 +380,18 @@ def vt_daily_digest(request):
     # for this periodic task                                                                                      
     return JsonResponse({'response':'success'}, status=200)
 
+
+@csrf_exempt
+def vt_weekly_report(request):
+    #we don't want to return 404s too many times so just return a success                                         
+    # for this periodic task                                                                                      
+    return JsonResponse({'response':'success'}, status=200)
+
+
+@csrf_exempt
+def vt_triage_cue(request):
+    #we don't want to return 404s too many times so just return a success                                         
+    # for this periodic task                                                                                      
+    return JsonResponse({'response':'success'}, status=200)
+
+

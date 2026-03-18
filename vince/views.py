@@ -32,7 +32,7 @@ import random
 import re
 import requests
 from django.urls import resolve
-from django.db.models import CharField
+from django.db.models import CharField, OuterRef, Subquery
 from django.db.models.functions import TruncMonth, TruncDay
 from datetime import datetime, timedelta
 from random import randint
@@ -3209,14 +3209,14 @@ class CreateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Form
                 form._errors.setdefault("role", ErrorList(["Role does not exist"]))
                 return self.form_invalid(form)
 
-            if form.cleaned_data["vulnote_approval"]:
+            if form.cleaned_data.get("tech_review") == 1 or form.cleaned_data.get("publish_approval") == 1:
                 # this can't be assigned to the person requesting it
                 assignment = auto_assignment(role.id, exclude=self.request.user)
             else:
                 assignment = auto_assignment(role.id)
 
             if assignment:
-                if (assignment.id == self.request.user.id) and form.cleaned_data["vulnote_approval"]:
+                if (assignment.id == self.request.user.id) and (form.cleaned_data.get("tech_review") == 1 or form.cleaned_data.get("publish_approval") == 1):
                     assignment = auto_assignment(role.id)
 
                 form.cleaned_data["assigned_to"] = assignment.id
@@ -3320,18 +3320,33 @@ class CreateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Form
         if "queue" in self.request.GET:
             initial_data["queue"] = self.request.GET["queue"]
 
+        roles = UserRole.objects.filter(Q(group__in=user_groups) | Q(group__isnull=True))
+
         case = None
         if "case_id" in self.kwargs:
             case = get_object_or_404(VulnerabilityCase, id=self.kwargs["case_id"])
-            if "approval" in self.request.GET:
-                initial_data["title"] = f"Approve Case {case.vu_vuid} vulnerability note for publishing"
+            if self.request.GET.get("tech_review") == "1":
+                roles = UserRole.objects.filter(role="Technical Analyst")
+                initial_data["title"] = f"Technical review for Case {case.vu_vuid} vulnerability note"
                 link_to_review = reverse("vince:vulnotereviewal", args=[case.vulnote.id])
                 initial_data["body"] = (
-                    f"Please proofread vul note for publishing ASAP.\r\n\r\n{settings.SERVER_NAME}{link_to_review}"
+                    f"Please provide a technical review ASAP.\r\n\r\n{settings.SERVER_NAME}{link_to_review}"
                 )
                 initial_data["priority"] = 2
                 initial_data["due_date"] = datetime.now() + timedelta(days=3)
-                initial_data["vulnote_approval"] = 1
+                initial_data["tech_review"] = 1
+                initial_data["submitter_email"] = self.request.user.email
+                assignable_users = assignable_users.exclude(id=self.request.user.id)
+            if self.request.GET.get("publish_approval") == "1":
+                roles = UserRole.objects.filter(role="Vul Note Reviewer")
+                initial_data["title"] = f"Approve Case {case.vu_vuid} vulnerability note for publishing"
+                link_to_review = reverse("vince:vulnotereviewal", args=[case.vulnote.id])
+                initial_data["body"] = (
+                    f"Please review and approve for publishing.\r\n\r\n{settings.SERVER_NAME}{link_to_review}"
+                )
+                initial_data["priority"] = 2
+                initial_data["due_date"] = datetime.now() + timedelta(days=3)
+                initial_data["publish_approval"] = 1
                 initial_data["submitter_email"] = self.request.user.email
                 assignable_users = assignable_users.exclude(id=self.request.user.id)
 
@@ -3347,7 +3362,6 @@ class CreateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Form
         else:
             form.fields["queue"].choices = [("", "--------")] + [(q.id, q.title) for q in readable_queues]
 
-        roles = UserRole.objects.filter(Q(group__in=user_groups) | Q(group__isnull=True))
         form.fields["role"].choices = [(u.id, u.role) for u in roles]
         if roles:
             form.fields["assigned_to"].choices = [("-2", "Auto Assign"), ("", "--------")] + [
@@ -3356,7 +3370,12 @@ class CreateTicketView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, Form
 
             context["show_role"] = True
             # set role to vul note reviewer
-            if initial_data.get("vulnote_approval"):
+            if initial_data.get("tech_review"):
+                for r in roles:
+                    if r.role == "Technical Analyst":
+                        form.fields["role"].initial = r.id
+                        break
+            elif initial_data.get("publish_approval"):
                 for r in roles:
                     if r.role == "Vul Note Reviewer":
                         form.fields["role"].initial = r.id
@@ -4248,12 +4267,19 @@ class VulNoteReviewView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         revision = get_object_or_404(VulNoteRevision, id=self.kwargs["pk"])
         context["vulnote"] = revision.vulnote
         context["case"] = revision.vulnote.case
-        # get reviews for this revision:
-        reviews = VulNoteReview.objects.filter(vulnote=revision, complete=True).order_by("-date_complete")
-        context["review"] = reviews.first()
-        if reviews.count() > 1:
-            context["next"] = reviews[1]
-            context["reviews"] = reviews.exclude(id=context["review"].id)
+        # get reviews for this revision (both complete and incomplete):
+        # Check for incomplete reviews first (most recent feedback from reviewer)
+        incomplete_reviews = VulNoteReview.objects.filter(vulnote=revision, complete=False).order_by("-id")
+        complete_reviews = VulNoteReview.objects.filter(vulnote=revision, complete=True).order_by("-date_complete")
+
+        # Combine: show incomplete reviews first, then complete reviews
+        all_reviews = list(incomplete_reviews) + list(complete_reviews)
+
+        if all_reviews:
+            context["review"] = all_reviews[0]
+            if len(all_reviews) > 1:
+                context["next"] = all_reviews[1]
+                context["reviews"] = all_reviews[1:]
 
         return context
 
@@ -4274,21 +4300,33 @@ class VulNoteReviewDetail(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
         context["vulnote"] = review.vulnote.vulnote
         context["case"] = review.vulnote.vulnote.case
         context["review"] = review
-        # get reviews for this ticket:
-        if not review.date_complete or not review.complete:
-            review.complete = True
-            review.date_complete = review.ticket.modified
-            review.save()
-        if review.ticket:
-            context["reviews"] = (
-                VulNoteReview.objects.filter(
-                    ticket=review.ticket, complete=True, date_complete__lte=review.date_complete
-                )
-                .exclude(id=review.id)
-                .order_by("-date_complete")
-            )
-            if context["reviews"]:
-                context["next"] = context["reviews"].first()
+
+        # Get all reviews for this revision (to maintain consistent navigation with VulNoteReviewView)
+        # First get incomplete reviews, then complete reviews
+        incomplete_reviews = list(VulNoteReview.objects.filter(
+            vulnote=review.vulnote, complete=False
+        ).order_by("-id"))
+
+        complete_reviews = list(VulNoteReview.objects.filter(
+            vulnote=review.vulnote, complete=True
+        ).order_by("-date_complete"))
+
+        # Combine: show incomplete reviews first, then complete reviews (INCLUDING current review)
+        all_reviews_ordered = incomplete_reviews + complete_reviews
+
+        # Find the current review's position in the ordered list
+        try:
+            current_position = all_reviews_ordered.index(review)
+            # Get reviews that come AFTER the current one in sequence
+            remaining_reviews = all_reviews_ordered[current_position + 1:]
+
+            if remaining_reviews:
+                context["next"] = remaining_reviews[0]
+                context["reviews"] = remaining_reviews
+        except (ValueError, IndexError):
+            # Current review not found in list or no remaining reviews
+            pass
+
         return context
 
 
@@ -4339,6 +4377,28 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
         vulnote = get_object_or_404(VulNote, id=self.kwargs["pk"])
         context["vulnote"] = vulnote
         context["case"] = vulnote.case
+
+        # Check if user is assigned to a review ticket for this vulnote
+        assigned_ticket = Ticket.objects.filter(
+            case=vulnote.case,
+            assigned_to=self.request.user
+        ).filter(
+            Q(title__icontains="vulnerability note for publishing") | Q(title__icontains="Technical review for Case")
+        ).exclude(
+            status=Ticket.CLOSED_STATUS
+        ).first()
+        # User is an assigned reviewer only if they have the ticket AND are not the vulnote owner
+        context["is_assigned_reviewer"] = assigned_ticket is not None and self.request.user != vulnote.owner
+
+        try:
+            if vulnote and vulnote.ticket_to_approve and vulnote.ticket_to_approve.title and "Technical review" in vulnote.ticket_to_approve.title:
+                context["tech_review_underway"] = True
+                context["tech_review_complete"] = False
+            else:
+                context["tech_review_underway"] = False
+                context["tech_review_complete"] = True
+        except:
+            logger.debug(f"Something went wrong when trying to determine whether vulnote {vulnote.id}'s tech review is complete.")
         if self.request.POST:
             return context
 
@@ -4355,7 +4415,24 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
             context["marks"] = json.loads(check.marks)
 
         else:
-            initial = {"content": vulnote.current_revision.content, "current_revision": vulnote.current_revision.id}
+            # If the current user is the vulnote author, look for incomplete reviews
+            # by any reviewer so the author can see the reviewer's feedback/edits
+            reviewer_review = None
+            if self.request.user == vulnote.owner:
+                reviewer_review = VulNoteReview.objects.filter(
+                    vulnote=vulnote.current_revision.id, complete=False
+                ).first()
+
+            if reviewer_review:
+                initial = {
+                    "content": reviewer_review.review,
+                    "current_revision": vulnote.current_revision.id,
+                    "feedback": reviewer_review.feedback,
+                }
+                if reviewer_review.marks:
+                    context["marks"] = json.loads(reviewer_review.marks)
+            else:
+                initial = {"content": vulnote.current_revision.content, "current_revision": vulnote.current_revision.id}
 
         context["form"] = VulNoteReviewForm(initial=initial)
         context["action"] = reverse("vince:vulnotereviewal", args=[vulnote.id])
@@ -4363,8 +4440,23 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
 
     def post(self, request, *args, **kwargs):
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
-        form = VulNoteReviewForm(self.request.POST)
         vulnote = get_object_or_404(VulNote, id=self.kwargs["pk"])
+
+        # Check if user is assigned to a review ticket for this vulnote
+        assigned_ticket = Ticket.objects.filter(
+            case=vulnote.case,
+            assigned_to=self.request.user
+        ).filter(
+            Q(title__icontains="vulnerability note for publishing") | Q(title__icontains="Technical review for Case")
+        ).exclude(
+            status=Ticket.CLOSED_STATUS
+        ).first()
+
+        if not assigned_ticket or self.request.user == vulnote.owner:
+            logger.warning(f"User {self.request.user} attempted to save review for vulnote {vulnote.id} without being assigned or as the vulnote owner")
+            return JsonResponse({"error": "You must be assigned to a review ticket to save reviews, and cannot review your own vulnote"}, status=403)
+
+        form = VulNoteReviewForm(self.request.POST)
         rev = VulNoteReview()
         if form.is_valid():
             # is this an edit?
@@ -4376,12 +4468,15 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
 
             rev.vulnote = VulNoteRevision.objects.get(id=form.cleaned_data["current_revision"])
 
+            # Note: "complete" in this context means that the *technical review* is complete;
+            # "approved" means that the vul note is approved for publication.
             rev.review = form.cleaned_data["content"]
             rev.reviewer = self.request.user
             rev.feedback = form.cleaned_data["feedback"]
             rev.marks = self.request.POST.get("marks")
             rev.complete = form.cleaned_data["completed"]
             rev.approve = form.cleaned_data["approved"]
+            notify_author = form.cleaned_data.get("notify_author", False)
 
             if form.cleaned_data["completed"]:
                 rev.date_complete = timezone.now()
@@ -4389,24 +4484,48 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
             rev.save()
             # is this user assigned a ticket to do review?
             tkt = Ticket.objects.filter(
-                case=vulnote.case, assigned_to=self.request.user, title__icontains="vulnerability note for publishing"
-            ).first()
+                    case=vulnote.case, 
+                    assigned_to=self.request.user
+                ).filter(
+                    Q(title__icontains="vulnerability note for publishing") | Q(title__icontains="Technical review for Case")
+                ).exclude(
+                    status=Ticket.CLOSED_STATUS
+                ).first()
             if tkt:
                 logger.debug(f"Review Ticket found for {tkt}")
                 rev.ticket = tkt
                 rev.save()
-                if rev.complete:
+                if notify_author and not rev.complete:
+                    # Reassign ticket to vulnote author for them to address reviewer's comments
+                    logger.debug(f"Reassigning ticket {tkt.id} to vulnote owner for review of comments")
+                    tkt.assigned_to = vulnote.owner
+                    tkt.status = Ticket.IN_PROGRESS_STATUS
+                    tkt.save()
+                    action = FollowUp(
+                        ticket=tkt,
+                        title="Reviewer has saved comments - please review",
+                        comment=f"Reviewer {self.request.user.usersettings.preferred_username} has saved comments and edits for your review. Please review the feedback and make any necessary changes.",
+                        date=timezone.now(),
+                        user=self.request.user,
+                    )
+                    action.save()
+                    logger.debug(f"Ticket {tkt.id} reassigned to {vulnote.owner} with notification")
+                elif rev.complete:
+                    logger.debug(f"ticket {tkt.id} has been found to be complete")
                     if rev.approve:
+                        logger.debug(f"ticket {tkt.id} has been found to be complete and approved")
                         tkt.status = Ticket.CLOSED_STATUS
+                        tkt.assigned_to = vulnote.owner
                         tkt.save()
                         action = FollowUp(
                             ticket=tkt,
-                            title="Vul note review completed and approved for publication",
+                            title="Technical review completed and vulnote approved for publication",
                             date=timezone.now(),
                             user=self.request.user,
                         )
 
                         action.save()
+                        logger.debug(f"action is {action}")
                         if tkt.submitter_email != self.request.user.email:
                             # don't let submitter circumvent process
                             vulnote.approved = True
@@ -4426,12 +4545,15 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
 
                     else:
                         tkt.status = Ticket.CLOSED_STATUS
+                        # The technical review is complete, but publication is not yet approved, 
+                        # so here we need to assign the ticket back to the owner of the vul note
+                        tkt.assigned_to = vulnote.owner
                         tkt.save()
                         if tkt.submitter_email:
                             action = FollowUp(
                                 ticket=tkt,
-                                title="Vul Note review completed",
-                                comment="Review complete but not approved.",
+                                title="Technical review completed",
+                                comment="Technical review complete but vulnote not yet approved for publication.",
                                 date=timezone.now(),
                                 user=self.request.user,
                             )
@@ -4441,7 +4563,7 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
                     tkt.status = Ticket.IN_PROGRESS_STATUS
                     tkt.save()
                     action = FollowUp(
-                        ticket=tkt, title="Vul Note review started", date=timezone.now(), user=self.request.user
+                        ticket=tkt, title="Vulnote technical review started", date=timezone.now(), user=self.request.user
                     )
 
                     action.save()
@@ -5013,6 +5135,7 @@ class CaseRequestView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
             context["vc_cr"] = vc_cr
             if vc_cr.user:
                 context["vince_user_submission"] = vc_cr.user.vinceprofile.vince_username
+                context["user_is_troublesome"] = vc_cr.user.vinceprofile.troublesome
         context["ticketpage"] = 1
         return context
 
@@ -5419,6 +5542,162 @@ class UpdateCaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
             action_type=CaseAction.lookup("VinceTrack"),
         )
         ca.save()
+
+
+class ChangeTicketStatusView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
+    login_url = "vince:login"
+    form_class = ChangeTicketStatusForm
+    template_name = "vince/why_change_status.html"
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            ticket = get_object_or_404(Ticket, id=self.kwargs["ticket_id"])
+            if ticket.case:
+                write_access = has_case_write_access(self.request.user, ticket.case)
+                return has_case_write_access(self.request.user, ticket.case)
+            queue_write_access = has_queue_write_access(self.request.user, ticket.queue)
+            return has_queue_write_access(self.request.user, ticket.queue)
+
+    def get_context_data(self, **kwargs):
+        context = super(ChangeTicketStatusView, self).get_context_data(**kwargs)
+        form = ChangeTicketStatusForm()
+        templates = EmailTemplate.objects.filter(locale="en", body_only=True)
+        form.fields["email_template"].choices = [(q.id, q.template_name) for q in templates]
+        context["form"] = form
+        context["ticket"] = get_object_or_404(Ticket, id=self.kwargs["ticket_id"])
+        cr = CaseRequest.objects.filter(ticket_ptr_id=self.kwargs["ticket_id"]).first()
+
+        referer = self.request.META.get("HTTP_REFERER", "")
+        logger.debug(f"HTTP Referrer is {referer}")
+
+        # is this ticket from a VINCE user?
+        if context["ticket"].submitter_email:
+            # lookup user
+            vcuser = User.objects.using("vincecomm").filter(email=context["ticket"].submitter_email).first()
+            if vcuser == None:
+                # no option to send message
+                form.fields["send_email"].choices = [(1, "No"), (2, "Send Email")]
+        elif cr:
+            if cr.contact_email:
+                vcuser = User.objects.using("vincecomm").filter(email=context["ticket"].submitter_email).first()
+                if vcuser == None:
+                    # no option to send message
+                    form.fields["send_email"].choices = [(1, "No"), (2, "Send Email")]
+        else:
+            # no one to email
+            form.fields["send_email"].choices = [(1, "No")]
+
+        context["form"] = form
+        return context
+    
+    def form_invalid(self, form):
+        logger.debug(f"{self.__class__.__name__} errors: {form.errors}")
+        return super().form_invalid(form)
+
+    def post(self, request, *args, **kwargs):
+        logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
+        form = ChangeTicketStatusForm(self.request.POST)
+        templates = EmailTemplate.objects.filter(locale="en", body_only=True)
+        form.fields["email_template"].choices = [(q.id, q.template_name) for q in templates]
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        ticket = get_object_or_404(Ticket, id=self.kwargs["ticket_id"])
+        ticket.save()
+        # look up cr in vincecomm
+        referer = self.request.META.get("HTTP_REFERER", "")
+        logger.debug(f"HTTP_Referrer header is {referer}")
+        cr = CaseRequest.objects.filter(id=ticket.id).first()
+        vtcr = None
+        if cr:
+            # look for vtcaserequest
+            vtcr = VTCaseRequest.objects.filter(id=cr.vc_id).first()
+            if vtcr:
+                vtcr.status = Ticket.CLOSED_STATUS
+                vtcr.save()
+
+        email_template = EmailTemplate.objects.get(id=form.cleaned_data["email_template"])
+        if int(form.cleaned_data["send_email"]) == 2:
+            logger.debug(f"{self.__class__.__name__} sending email to submitter")
+            notification = VendorNotificationEmail(
+                subject=email_template.subject, email_body=form.cleaned_data["email"]
+            )
+            if ticket.submitter_email:
+                send_submitter_email_notification(
+                    [ticket.submitter_email], ticket, email_template.subject, form.cleaned_data["email"], vtcr
+                )
+
+                fup = FollowUp(
+                    title=f'sent email using template "{email_template.template_name}" to {ticket.submitter_email}',
+                    comment=form.cleaned_data["email"],
+                    ticket=ticket,
+                    user=self.request.user,
+                )
+                fup.save()
+                notification.save()
+                email = VinceEmail(
+                    ticket=ticket,
+                    notification=notification,
+                    user=self.request.user,
+                    email_type=1,
+                    to=ticket.submitter_email,
+                )
+                email.save()
+            elif cr.contact_email:
+                send_submitter_email_notification(
+                    [cr.contact_email], ticket, email_template.subject, form.cleaned_data["email"], vtcr
+                )
+
+                fup = FollowUp(
+                    title=f'sent email using template "{email_template.template_name}" to {cr.contact_email}',
+                    comment=form.cleaned_data["email"],
+                    ticket=ticket,
+                    user=self.request.user,
+                )
+                fup.save()
+                notification.save()
+                email = VinceEmail(
+                    ticket=ticket, notification=notification, user=self.request.user, email_type=1, to=cr.contact_email
+                )
+                email.save()
+            if vtcr:
+                vc_user = User.objects.using("vincecomm").filter(username=self.request.user.username).first()
+                crfup = CRFollowUp(
+                    title=f"sent email to submitter", comment=form.cleaned_data["email"], cr=vtcr, user=vc_user
+                )
+                crfup.save()
+
+        elif int(form.cleaned_data["send_email"]) == 3:
+            logger.debug(f"send message to VINCE User {ticket.submitter_email}")
+            user_lookup = User.objects.using("vincecomm").filter(email=ticket.submitter_email).first()
+            sender = User.objects.using("vincecomm").filter(email=self.request.user.email).first()
+            subject = f"[{ticket.ticket_for_url}] {email_template.subject} {ticket.title}"
+            if user_lookup:
+                msg = Message.new_message(sender, [user_lookup.id], None, subject, form.cleaned_data["email"])
+                msg.thread.from_group = ticket.queue.team.groupsettings.contact.vendor_name
+                msg.thread.save()
+
+                fup = FollowUp(
+                    title=f'sent message using template "{email_template.template_name}" to {ticket.submitter_email}',
+                    comment=form.cleaned_data["email"],
+                    ticket=ticket,
+                    user=self.request.user,
+                )
+                fup.save()
+                tm = TicketThread(thread=msg.thread.id, ticket=ticket.id)
+
+                tm.save()
+                fm = FollowupMessage(followup=fup, msg=msg.id)
+                fm.save()
+
+        if self.request.session.get("vince_referer"):
+            update_ticket(self.request, self.kwargs["ticket_id"])
+            return redirect(self.request.session.get("vince_referer"))
+        else:
+            return update_ticket(self.request, self.kwargs["ticket_id"])
 
 
 class CloseTicketandTagView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.FormView):
@@ -6798,8 +7077,18 @@ class CaseView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Temp
             if context["vulnote"].ticket_to_approve:
                 # get all approval tickets
                 context["approvaltickets"] = Ticket.objects.filter(
-                    case=context["case"], title__icontains="vulnerability note for publishing"
-                )
+                        case=context["case"]
+                    ).filter(
+                        Q(title__icontains="vulnerability note for publishing") | Q(title__icontains="Technical review for Case")
+                    ).annotate(
+                        review_type=DBCase(
+                            When(title__icontains="Technical review for Case", then=Value("tech_review")),
+                            When(title__icontains="vulnerability note for publishing", then=Value("prepublish_review")),
+                            default=Value("other"),
+                            output_field=CharField(),
+                        )
+                    ).order_by('created')
+
                 if context["vulnote"].approved:
                     context["approved_by"] = (
                         VulNoteReview.objects.filter(vulnote__vulnote__case=context["case"], approve=True)
@@ -7420,19 +7709,59 @@ class CaseVulNoteView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                 "-created"
             )[:4]
             if context["vulnote"].ticket_to_approve:
-                # get all approval tickets
+                logger.debug(f"ticket_to_approve has been found for vulnote {context['vulnote'].id}")
+
                 context["approvaltickets"] = Ticket.objects.filter(
-                    case=context["case"], title__icontains="vulnerability note for publishing"
-                )
+                        case=context["case"]
+                    ).filter(
+                        Q(title__icontains="vulnerability note for publishing") | Q(title__icontains="Technical review for Case")
+                    ).annotate(
+                        review_type=DBCase(
+                            When(title__icontains="Technical review for Case", then=Value("tech_review")),
+                            When(title__icontains="vulnerability note for publishing", then=Value("prepublish_review")),
+                            default=Value("other"),
+                            output_field=CharField(),
+                        )
+                    ).order_by('created')
+
+                for tkt in context["approvaltickets"]:
+                    if tkt.status != Ticket.CLOSED_STATUS:
+                        logger.debug("ticket was not found to be closed")
+                        tkt.reviewer = tkt.assigned_to
+                    else:
+                        logger.debug("ticket was found to be closed")
+                        completion_fup = (
+                            tkt.followup_set
+                                .filter(title__icontains="Technical review completed")
+                                .order_by("-date")
+                                .first()
+                        )
+
+                        if completion_fup:
+                            logger.debug(f"completion fup found.")
+                            tkt.reviewer = completion_fup.user
+                            logger.debug(f"tkt.reviewer set to be {tkt.reviewer}")
+                            if "vulnerability note for publishing" in tkt.title:
+                                logger.debug('vulnerability note for publishing found in tkt.title')
+                                if self.request.user == tkt.reviewer:
+                                    logger.debug(f"self.request.user {self.request.user} found to be equal to tkt.reviewer")
+                                    context["current_user_may_approve_publication"] = True
+                                    logger.debug(f"current_user_may_approve_publication is {context['current_user_may_approve_publication']}")
+                        else:
+                            tkt.reviewer = None
+                    logger.debug(f"the reviewer for ticket {tkt.id} is {tkt.reviewer}")
+
                 if context["vulnote"].approved:
                     context["approved_by"] = (
                         VulNoteReview.objects.filter(vulnote__vulnote__case=context["case"], approve=True)
                         .distinct("reviewer")
                         .values_list("reviewer__usersettings__preferred_username", flat=True)
                     )
+                    
         except:
             # vulnote doesn't exist
             pass
+        logger.debug(f"CaseVulNoteView is returning this context: {context}")
         return context
 
 
@@ -14904,7 +15233,8 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
 
     def get(self, request, *args, **kwargs):
         today = date.today()
-        oneweekago = date.today() - timedelta(days=8)
+        now = timezone.now()
+        oneweekago = now - timedelta(days=8)
 
         output = BytesIO()
         workbook = Workbook()
@@ -14916,17 +15246,17 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             "Case ID",
             "Case Name",
             "Summary",
-            "Initial Triage Actions",
+            "Initial Triage Actions/Justification, if Declined",
             "Assigned Personnel/Team",
             "Coordinator"
         ])
 
         new_cases_to_report = VulnerabilityCase.objects.filter(
-            created__range=[oneweekago, today], team_owner__name=settings.ORG_NAME
+            created__range=[oneweekago, now], team_owner__name=settings.ORG_NAME
         ).order_by("created")
 
         new_unattached_tickets = [
-            ticket for ticket in Ticket.objects.filter(created__range=[oneweekago, today], case=None, depends_on=None)
+            ticket for ticket in Ticket.objects.filter(created__range=[oneweekago, now], case=None, depends_on=None)
         ]
 
         new_unattached_ticket_ids = [ticket.id for ticket in new_unattached_tickets]
@@ -14935,7 +15265,7 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             ticket
             for ticket in Ticket.objects.filter(
                 queue__queue_type=TicketQueue.CASE_REQUEST_QUEUE,
-                modified__range=[oneweekago, today],
+                modified__range=[oneweekago, now],
                 status=Ticket.CLOSED_STATUS,
             ).exclude(id__in=new_unattached_ticket_ids)
             if ticket.assigned_to != None and get_my_team(ticket.assigned_to).name == settings.ORG_NAME
@@ -14956,7 +15286,6 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                     case.summary,
                     " ",
                     case.team_owner.name,
-                    " ",
                     assignee_name,
                 ]
             )
@@ -14973,9 +15302,9 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                 try:
                     resolution = ticket.resolution
                     if resolution is None:
-                        resolution = "no resolution"
+                        resolution = " "
                 except:
-                    resolution = "no resolution"
+                    resolution = " "
                 try:
                     # justification_if_declined = ticket.get_close_reason_display()
                     # In the fulness of time, we will put content in this space that is determined by the template used to 
@@ -14992,8 +15321,8 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                     [
                         f"{ticket.queue}-{ticket.id}",
                         ticket.title,
-                        resolution + justification_if_declined,
                         " ",
+                        resolution + justification_if_declined,
                         assigned_team,
                         assignee_name,
                     ]
@@ -15003,7 +15332,7 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
 
         # Create ActiveCasesInProgress Sheet
         active_cases_sheet = workbook.create_sheet("Active Cases in Progress")
-        active_cases_sheet.append(["Case ID", "Case Name", "Date of Last Action", "Next Steps", "Blockers", "Estimated Completion", "Coordinator"])
+        active_cases_sheet.append(["Case ID", "Case Name", "Date of Last Action", "Next Steps", "Blockers", "Estimated Completion", "Coordinator", "Publish Next Week (1 for yes, 0 for no)"])
 
         active_cases = VulnerabilityCase.objects.filter(
             status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name=settings.ORG_NAME
@@ -15028,6 +15357,9 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             except:
                 assignee_name = 'unassigned'
             active_cases_sheet.append([f"VU#{case.vuid}", case.title, last_modified, " ", " ", due_date, assignee_name])
+        
+        active_cases_sheet.append([""])
+        active_cases_sheet.append(["Total vul notes expected to be published next week:"])
 
 
         # Create CompletedCases Sheet
@@ -15037,7 +15369,7 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
         case_closures = (
             CaseAction.objects.filter(
                 title__icontains="changed status of case from Active to Inactive",
-                date__range=[oneweekago, today],
+                date__range=[oneweekago, now],
                 case__team_owner__name=settings.ORG_NAME,
             )
             .select_related("case")
@@ -15183,8 +15515,8 @@ class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserP
 
         for ticket in new_tickets_and_newly_declined_tickets:
             if ticket.queue.title == "CR":
-                assigned_team = ""
-                justification_if_declined = ""
+                assigned_team = " "
+                justification_if_declined = " "
                 try:
                     assigned_team = get_my_team(ticket.assigned_to).name
                 except:
@@ -15193,20 +15525,20 @@ class WeeklyCSVNewReportsOrSubmissionsView(LoginRequiredMixin, TokenMixin, UserP
                 try:
                     resolution = ticket.resolution
                 except:
-                    resolution = "no resolution"
+                    resolution = " "
                 try:
                     # justification_if_declined = ticket.get_close_reason_display()
                     # In the fulness of time, we will put content in this space that is determined by the template used to 
                     # respond to the reporter. For now we have:
-                    justification_if_declined = ""
+                    justification_if_declined = " "
                 except:
-                    justification_if_declined = ""
+                    justification_if_declined = " "
                 writer.writerow(
                     [
                         f"{ticket.queue}-{ticket.id}",
                         ticket.title,
                         resolution,
-                        "",
+                        " ",
                         assigned_team,
                         justification_if_declined,
                     ]
@@ -15648,8 +15980,27 @@ class ReportsCasesView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
             created__year=context["year"], created__month=context["month"], team_owner=context["my_team"]
         ).order_by("created")
         date_month = date(context["year"], context["month"], 1)
+
+        # Get the most recent status change action for each case before date_month
+        last_status_change = CaseAction.objects.filter(
+            Q(title__icontains="changed status of case from Active to Inactive") |
+            Q(title__icontains="changed status of case from Inactive to Active"),
+            case=OuterRef('pk'),
+            date__lt=date_month
+        ).order_by('-date').values('title')[:1]
+
+        # Get cases that were active on the first day of date_month
+        # A case was active if:
+        # 1. It has no status change action before date_month (default is active), OR
+        # 2. Its last status change action was "Inactive to Active"
         active_cases = VulnerabilityCase.objects.filter(
-            status=VulnerabilityCase.ACTIVE_STATUS, created__lt=date_month, team_owner=context["my_team"]
+            created__lt=date_month,
+            team_owner=context["my_team"]
+        ).annotate(
+            last_status_action=Subquery(last_status_change)
+        ).filter(
+            Q(last_status_action__isnull=True) |
+            Q(last_status_action__icontains="Inactive to Active")
         )
         deactive_cases = (
             CaseAction.objects.filter(
@@ -16230,6 +16581,39 @@ class VinceCommUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         return context
 
 
+class ToggleTroublesomeUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.View):
+    login_url = "vince:login"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user) and get_contact_write_perms(self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            vc_user = User.objects.using("vincecomm").get(id=self.kwargs["pk"])
+            profile = vc_user.vinceprofile
+
+            troublesome = request.POST.get('troublesome', 'false').lower() == 'true'
+            profile.troublesome = troublesome
+            profile.save()
+
+            action_text = "flagged as troublesome" if troublesome else "unflagged as troublesome"
+            VendorAction(
+                title=f"Administrator {request.user} {action_text} user {vc_user.vinceprofile.vince_username}",
+                user=vc_user,
+            ).save()
+
+            logger.debug(f"{request.user} {action_text} VinceComm user {vc_user.username}")
+
+            return JsonResponse({"success": True, "troublesome": troublesome})
+        except User.DoesNotExist:
+            return JsonResponse({"success": False, "error": "User not found"}, status=404)
+        except Exception as e:
+            now = datetime.now(pytz.utc)
+            error_id = int(now.timestamp() * 1000)
+            logger.debug(f"Error toggling troublesome id:{error_id} flag: {str(e)}")
+            return JsonResponse({"success": False, "error": f"Error please reference error id:{error_id}"}, status=500)
+
+
 class VinceCommRemoveUserView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.TemplateView):
     login_url = "vince:login"
     template_name = "vince/vincecomm_user_rm.html"
@@ -16344,6 +16728,7 @@ class TriageAddEvent(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
 
         if self.request.POST.get("arg"):
+            logger.debug("The TriageAddEvent view received a POST with a value for arg")
             initial = {}
             initial["date"] = self.request.POST.get("arg")
             form = CalendarEventForm(initial=initial)
@@ -16355,12 +16740,14 @@ class TriageAddEvent(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
             form.fields["user"].choices = [(u.id, u.usersettings.vince_username) for u in assignable_users]
             return render(request, self.template_name, {"form": form})
         elif self.request.POST.get("newend"):
+            logger.debug("The TriageAddEvent view received a POST with a value for newend")
             # edit the enddate on this event
             event = get_object_or_404(CalendarEvent, id=self.request.POST.get("event_id"))
             event.end_date = self.request.POST.get("newend")
             event.save()
             return JsonResponse({"status": "success"}, status=200)
         else:
+            logger.debug("The TriageAddEvent view received a POST that did not have a value for arg or newend")
             if self.request.POST.get("user"):
                 user_assigned = User.objects.get(id=self.request.POST["user"])
             else:

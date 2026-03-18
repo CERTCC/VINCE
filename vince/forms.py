@@ -313,6 +313,8 @@ class VulNoteReviewForm(forms.Form):
 
     approved = forms.BooleanField(required=False, widget=forms.HiddenInput())
 
+    notify_author = forms.BooleanField(required=False, widget=forms.HiddenInput())
+
 
 class EditVulNote(forms.Form):
     content = forms.CharField(widget=forms.Textarea(), label=_("Contents"))
@@ -955,7 +957,8 @@ class TicketForm(AbstractTicketForm):
         required=False,
     )
 
-    vulnote_approval = forms.IntegerField(required=False, widget=forms.HiddenInput())
+    publish_approval = forms.IntegerField(required=False, widget=forms.HiddenInput())
+    tech_review = forms.IntegerField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, request=None, **kwargs):
         """
@@ -977,6 +980,26 @@ class TicketForm(AbstractTicketForm):
             except:
                 raise forms.ValidationError("Invalid Case Selection")
 
+    def clean(self):
+        cleaned_data = super().clean()
+
+        tech_review = cleaned_data.get("tech_review")
+        case = cleaned_data.get("case")
+
+        if tech_review == 1 and case:
+            tech_review_already_exists = Ticket.objects.filter(
+                status__in=[Ticket.OPEN_STATUS, Ticket.IN_PROGRESS_STATUS, Ticket.REOPENED_STATUS],
+                case=case,
+                title__icontains="Technical review",
+            ).exists()
+
+            if tech_review_already_exists:
+                raise ValidationError(
+                    "You cannot create this ticket because there is already a technical review underway for this case."
+                )
+
+        return cleaned_data
+
     def save(self, user=None):
         """
         Writes and returns a Ticket() object
@@ -996,7 +1019,7 @@ class TicketForm(AbstractTicketForm):
             case = self.cleaned_data["case"]
             ticket.case = case
             ticket.save()
-            if self.cleaned_data["vulnote_approval"]:
+            if self.cleaned_data.get("tech_review") or self.cleaned_data.get("publish_approval"):
                 vulnote = VulNote.objects.filter(case=case).first()
                 if vulnote:
                     vulnote.ticket_to_approve = ticket
@@ -1088,6 +1111,27 @@ class CloseTicketForm(forms.Form):
         super(CloseTicketForm, self).__init__(*args, **kwargs)
         self.fields["send_email"].initial = 1
         self.fields["close_choice"].initial = 2
+
+
+class ChangeTicketStatusForm(forms.Form):
+    """Adds a reason to change a ticket's status"""
+
+    send_email = forms.ChoiceField(
+        choices=[(1, "No"), (2, "Send Email"), (3, "Send Message")],
+        label=_("Notify Submitter?"),
+        widget=forms.RadioSelect(attrs={"class": "ul_nobullet"}),
+        required=True,
+    )
+    email_template = forms.ChoiceField(
+        choices=(), label="Choose an email template to send to submitter", required=False
+    )
+    email = forms.CharField(label="Edit Email", widget=forms.Textarea(attrs={"rows": 8}), required=False)
+    comment = forms.CharField(max_length=20000, widget=forms.HiddenInput(), required=False)
+    new_status = forms.IntegerField(required=False, widget=forms.HiddenInput())
+
+    def __init__(self, *args, **kwargs):
+        super(ChangeTicketStatusForm, self).__init__(*args, **kwargs)
+        self.fields["send_email"].initial = 1
 
 
 class TicketDependencyForm(forms.ModelForm):
@@ -1700,8 +1744,15 @@ class EditCaseForm(forms.ModelForm):
         return [(q.id, q.name) for q in user.groups.exclude(groupsettings__contact__isnull=True)]
 
     def get_owner_choices(self):
-
-        return [(u.id, u.email) for u in User.objects.using("default").filter(is_active=True)]
+        # Only return VINCE Track staff users who are in the "vince" group
+        # Filter out users without UserSettings to avoid cross-database contamination
+        return [
+            (u.id, u.email)
+            for u in User.objects.using("default")
+                .filter(is_active=True, groups__name="vince")
+                .exclude(usersettings__isnull=True)
+                .distinct()
+        ]
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user")

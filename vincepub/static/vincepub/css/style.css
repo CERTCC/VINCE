@@ -2716,13 +2716,38 @@ pre code {
 .announcement-banner {
   background-color: #b00;
   color: #fefefe;
-  font-size: 1.5em;
+  font-size: small;
   padding-left: 20px;
   padding-right: 20px;
   border-top-style: solid;
 }
 
-.announcement-banner .announcement-banner-link {
-  text-decoration: underline;
-  color: #fefefe;
+.announcement-banner p {
+    margin-bottom: 0rem;
+}
+
+.announcement-banner ul {
+    margin-bottom: 0rem;
+    list-style-type: disc;
+}
+
+.announcement-banner-link {
+    text-decoration: underline;
+    color: #fefefe;
+}
+
+.login-announcement-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    font-size: small;
+    background-color: #b00;
+    color: #fefefe;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.login-announcement-banner p {
+    margin-bottom: 0rem;
 }

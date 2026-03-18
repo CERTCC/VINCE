@@ -74,6 +74,7 @@ from vince.lib import (
     reset_user_mfa,
     prepare_and_send_weekly_report,
     prepare_and_send_alert_email,
+    prepare_and_send_triage_cue,
 )
 from vinny.lib import send_post_email, send_usermention_notification
 from django.contrib.auth.models import User
@@ -219,6 +220,22 @@ def send_weekly_report(request):
             return HttpResponse(status=404)
 
         prepare_and_send_weekly_report()
+
+        return JsonResponse({"response": "success"}, status=200)
+
+
+@csrf_exempt
+def send_triage_cue(request):
+    logger.debug("vinceworker send_triage_cue view triggered")
+
+    if request.method == "POST":
+        taskname = request.META.get("HTTP_X_AWS_SQSD_TASKNAME")
+        logger.debug(taskname)
+        logger.debug(request.META.get("HTTP_X_AWS_SQSD_SCHEDULED_AT"))
+        if taskname != "triagecue":
+            return HttpResponse(status=404)
+
+        prepare_and_send_triage_cue()
 
         return JsonResponse({"response": "success"}, status=200)
 

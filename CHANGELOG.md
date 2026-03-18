@@ -5,7 +5,65 @@ VINCE Coordination platform code
 
 
 ## Description
-VINCE Coordination platform code
+VINCE Coordination platform 
+
+Version 3.0.33 2026-03-16
+
+* modified code for creating weekly report spreadsheet in response to user request (Internal-804)
+* modified code for generating data on reports page (Internal-835)
+* created flag allowing coordinators to flag users as troublesome (Internal-837) 
+* fixed bug affecting user creation process in certain circumstances (Internal-838)
+* altered vulnote workflow to make it easier for reviewers to alert authors about new comments/edits (Internal-828)
+
+
+Version 3.0.32 2026-02-16
+
+* dependabot update recommendation: `Django` 4.2.27 to 4.2.28
+* updated documentation links (Internal-824)
+* refactored vul note review process in response to user request (Internal-828)
+* modified code for creating weekly report spreadsheet in response to user request (Internal-804)
+
+
+Version 3.0.31 2025-12-17
+
+* added code to trigger reminders for people assigned to Triage (Internal-827)
+* introduced modal allowing user to notify ticket submitter whenever ticket changes status (Internal-830)
+
+
+Version 3.0.30 2025-12-04
+
+* dependabot update recommendation: `Django` 4.2.26 to 4.2.27
+* updated jQuery to 3.7.1 (Internal-758)
+* updated jQuery-UI to 1.14.1 (Internal-758)
+
+
+Version 3.0.29 2025-11-19
+
+* dependabot update recommendation: `Django` 4.2.25 to 4.2.26
+* modified structure of weekly XLS report in response to user request (Internal-804)
+* removed banner announcing maintenance window (Internal-806)
+* updated code to work in new Python 3.11 Elastic Beanstalk environments (Internal-806)
+
+
+Version 3.0.31 2025-12-17
+
+* added code to trigger reminders for people assigned to Triage (Internal-827)
+* introduced modal allowing user to notify ticket submitter whenever ticket changes status (Internal-830)
+
+
+Version 3.0.30 2025-12-04
+
+* dependabot update recommendation: `Django` 4.2.26 to 4.2.27
+* updated jQuery to 3.7.1 (Internal-758)
+* updated jQuery-UI to 1.14.1 (Internal-758)
+
+
+
+Version 3.0.29 2025-11-19
+
+* dependabot update recommendation: `Django` 4.2.25 to 4.2.26
+* modified structure of weekly XLS report in response to user request (Internal-804)
+* updated code to work in new Python 3.11 Elastic Beanstalk environments (Internal-806)
 
 
 Version 3.0.28 2025-11-04
@@ -25,6 +83,7 @@ Version 3.0.26 2025-10-02
 
 * dependabot update recommendation: `Django` 4.2.24 to 4.2.25
 * fixed bug causing discrepency between two sources of info about vendors attached to a case (Internal-822)
+
 
 Version 3.0.25 2025-09-10
 

@@ -275,11 +275,18 @@ def add_permissions(user):
 
 
 def cognito_check_track_permissions(request):
+    logger.debug(f"=== cognito_check_track_permissions called for user {request.user.username if request.user.is_authenticated else 'ANONYMOUS'} ===")
     old_user = False
-    groups = get_group(request.session.get('ACCESS_TOKEN'))
+    access_token = request.session.get('ACCESS_TOKEN')
+    logger.debug(f"ACCESS_TOKEN present in session: {access_token is not None}")
+    groups = get_group(access_token)
+    logger.debug(f"Cognito groups from ACCESS_TOKEN: {groups}")
     if groups:
         vt_groups = settings.COGNITO_VINCETRACK_GROUPS.split(",")
-        if list(set(vt_groups) & set(groups)):
+        logger.debug(f"COGNITO_VINCETRACK_GROUPS: {vt_groups}")
+        intersection = list(set(vt_groups) & set(groups))
+        logger.debug(f"Intersection of vt_groups and user groups: {intersection}")
+        if intersection:
             # if vtgroups and this user's group intersect:
             vincegroup = Group.objects.using('default').filter(name='vince').first()
             if vincegroup:
@@ -322,13 +329,24 @@ def cognito_check_track_permissions(request):
                 # if this user is in the admin group - make them staff
                 request.user.is_staff=True
                 request.user.save()
+            logger.debug(f"cognito_check_track_permissions returning True for user {request.user.username}")
             return True
     else:
-        #remove vt perms if exists
+        logger.debug(f"cognito_check_track_permissions: No groups found")
+        # If ACCESS_TOKEN exists but returned no groups, it's expired/invalid - logout user
+        if access_token:
+            logger.warning(f"ACCESS_TOKEN exists but no groups found for {request.user.username}. Token likely expired/invalid. Logging out user.")
+            from django.contrib.auth import logout
+            logout(request)
+            return False
+
+        # Remove vt perms if exists (when no access_token at all)
+        logger.debug(f"No ACCESS_TOKEN in session, removing vt perms if they exist")
         if request.user.groups.filter(name='vince').exists():
             g = request.user.groups.filter(name='vince').first()
             g.user_set.remove(request.user)
-        
+
+    logger.debug(f"cognito_check_track_permissions returning False for user {request.user.username if request.user.is_authenticated else 'ANONYMOUS'}")
     return False
 
         

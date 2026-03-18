@@ -54,7 +54,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "3.0.28"
+VERSION = "3.0.33"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -416,6 +416,9 @@ if VINCE_NAMESPACE == "vince":
         "PASSWORD": vincetrack_password,
         "HOST": os.environ.get("VINCE_TRACK_DB_HOST", "localhost"),
         "PORT": os.environ.get("VINCE_TRACK_DB_PORT", 5432),
+        "OPTIONS": {
+            "sslmode": "require",
+        },
     }
 
 if VINCE_NAMESPACE in ["vince", "vinny"]:
@@ -712,7 +715,11 @@ REST_FRAMEWORK = {
         "cogauth.backend.HashedTokenAuthentication",
         #'rest_framework.authentication.TokenAuthentication',
         #        'cogauth.backend.JSONWebTokenAuthentication',
-    ]
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "100/hour",  # Authenticated users can make 100 requests per hour
+        "anon": "20/hour",   # Anonymous users can make 20 requests per hour (if applicable)
+    }
 }
 
 # 2.5MB - 2621440

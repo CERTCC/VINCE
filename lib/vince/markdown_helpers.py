@@ -33,6 +33,7 @@ import bleach
 from bleach_whitelist import generally_xss_safe, markdown_attrs
 import logging
 from bs4 import BeautifulSoup
+import xml.etree.ElementTree as etree
 
 
 unsafe = {"style","marquee","command"}
@@ -50,7 +51,11 @@ class UserMentionExtension(md.Extension):
         self.user_list = users
 
     def extendMarkdown(self, mde, md_globals={}):
-        mde.inlinePatterns["user_mentions"] = UserMentionInlinePattern(self.UM_RE, users=self.user_list)
+        mde.inlinePatterns.register(
+            UserMentionInlinePattern(self.UM_RE, users=self.user_list),
+            "user_mentions",
+            100,
+        )
 
 class UserMentionInlinePattern(md.inlinepatterns.Pattern):
 
@@ -97,7 +102,7 @@ class UserMentionInlinePattern(md.inlinepatterns.Pattern):
         user_name = m.group(2).replace("@", "")
         user = self.query_users(user_name)
         if user:
-            result = md.util.etree.Element('a')
+            result = etree.Element('a')
             result.text = "@%s" % user_name
             result.set('href', user.vinceprofile.url)
             result.set('class', 'user-mention')
@@ -105,7 +110,7 @@ class UserMentionInlinePattern(md.inlinepatterns.Pattern):
 
         group = self.query_groups(user_name)
         if group:
-            result = md.util.etree.Element('a')
+            result = etree.Element('a')
             result.text = "@%s" % user_name
             result.set('href', group.groupcontact.url)
             result.set('class', 'user-mention')
@@ -115,7 +120,7 @@ class UserMentionInlinePattern(md.inlinepatterns.Pattern):
         user_name = m.group(3).replace("@", "")
         user = self.query_users(user_name)
         if user:
-            result = md.util.etree.Element('a')
+            result = etree.Element('a')
             result.text = "@%s" % user_name
             result.set('href', user.vinceprofile.url)
             result.set('class', 'user-mention')
@@ -124,7 +129,7 @@ class UserMentionInlinePattern(md.inlinepatterns.Pattern):
         #or groupname
         group = self.query_groups(user_name)
         if group:
-            result = md.util.etree.Element('a')
+            result = etree.Element('a')
             result.text = "@%s" % user_name
             result.set('href', group.groupcontact.url)
             result.set('class', 'user-mention')

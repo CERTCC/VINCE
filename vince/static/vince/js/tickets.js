@@ -439,15 +439,18 @@ $(document).ready(function() {
     });
     
     $(document).on("submit", "#commentform", function(event) {
-		var new_status = $("input[name='new_status']:checked").val();
-		if (new_status != 4) {
-			return;
-		}
 		if (status_change==false) {
 			return;
 		}
-		var url = $(this).attr("confirm");
-		console.log('url is ' + url )
+		var new_status = $("input[name='new_status']:checked").val();
+		if (new_status != 4) {
+			var url = $(this).attr("confirm");
+			console.log('url is ' + url)
+		}
+		if (new_status == 4) {
+			var url = $(this).attr("confirm_close");
+			console.log('url is ' + url )
+		}
 		if (url) {
 			event.preventDefault();
 			$.ajax({
@@ -463,10 +466,12 @@ $(document).ready(function() {
 				}
 			});
 		} else { 
+			console.log('url not found')
 			return; 
 		}
+	}
 	
-    });
+    );
 
     $(document).on("click", "#quickclose", function(event) {
 	event.preventDefault();
@@ -552,20 +557,32 @@ $(document).ready(function() {
 	});
     });
     $(document).keypress(function(event) {
-	var keycode = (event.keyCode ? event.keyCode : event.which);
-	if(keycode == '13'){
-	    if (document.getElementById('why_close_form')) {
-		var send_email = $('input[name="send_email"]:checked').val();
-		if (send_email == '1') {
-		    $("#why_close_form").submit();
-		    return false;
+		var keycode = (event.keyCode ? event.keyCode : event.which);
+		if(keycode == '13'){
+			if (document.getElementById('why_close_form')) {
+				var send_email = $('input[name="send_email"]:checked').val();
+				if (send_email == '1') {
+					$("#why_close_form").submit();
+					return false;
+				}
+			} else if (document.getElementById('assignteamform')) {
+				/* ideally there would be a check to see if the reveal was actually open */
+				$("#assignteamform").submit();
+				return false;
+			}
+			if (document.getElementById('why_change_form')) {
+				var send_email = $('input[name="send_email"]:checked').val();
+				if (send_email == '1') {
+					$("#why_change_form").submit();
+					return false;
+				}
+			} else if (document.getElementById('assignteamform')) {
+				/* ideally there would be a check to see if the reveal was actually open */
+				$("#assignteamform").submit();
+				return false;
+			}
+
 		}
-	    } else if (document.getElementById('assignteamform')) {
-		/* ideally there would be a check to see if the reveal was actually open */
-		$("#assignteamform").submit();
-		return false;
-	    }
-	}
     });
 
     function searchVendors(vendor) {

@@ -1652,7 +1652,7 @@ $(document).ready(function() {
 
     $(document).on("click", "#submit_vendors", function(event) {
 	event.preventDefault();
-	$("#submit_vendors").attr("disabled", true);
+	$("#submit_vendors").prop("disabled", true);
         approvemodal.foundation('close');
 	var selectedRows = vendors_table.getSelectedRows();
 	var formdata = $("#vendornotifyform").serializeArray();
@@ -1898,16 +1898,15 @@ $(document).ready(function() {
 	return true;
     });
 
-
-    $(document).on("click", "#askapproval", function(event) {
-	var csrftoken = getCookie('csrftoken');
-	$.post($(this).attr("href"), {
-            "csrfmiddlewaretoken": csrftoken,
-	},
-               function(data) {
-                   window.location=data['location'];
-               });
-    });
+    // $(document).on("click", "#askapproval", function(event) {
+	// var csrftoken = getCookie('csrftoken');
+	// $.post($(this).attr("href"), {
+    //         "csrfmiddlewaretoken": csrftoken,
+	// },
+    //            function(data) {
+    //                window.location=data['location'];
+    //            });
+    // });
 
     var umProfileStore = {};
 

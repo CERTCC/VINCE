@@ -12,6 +12,9 @@ cron:
  - name: "weeklyreport"
    url: "/vinceworker/weeklyreport/"
    schedule: "0 9 * * 1"
+ - name: "triagecue"
+   url: "/vinceworker/triagecue/"
+   schedule: "0 9 * * 1-5"
 
 # When we send this to prod, the schedule value for the weekly reports should be changed to "0 9 * * 1"
 # For testing, the schedule value for the weekly reports can be changed to "*/5 * * * *" so that it runs every 5 minutes

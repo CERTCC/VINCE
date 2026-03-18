@@ -76,19 +76,58 @@ class CognitoUser(Cognito):
     )
 
     def get_user_obj(self, username=None, attribute_list=[], metadata={}, attr_map={}):
+        # DIAGNOSTIC LOGGING - Log all Cognito data to understand what's available
+        logger.debug(f"=== get_user_obj called for username: {username} ===")
+        logger.debug(f"Raw attribute_list: {attribute_list}")
+        logger.debug(f"Metadata: {metadata}")
+        logger.debug(f"attr_map: {attr_map}")
+
         user_attrs = cognito_to_dict(attribute_list, CognitoUser.COGNITO_ATTRS)
         django_fields = [f.name for f in CognitoUser.user_class._meta.get_fields()]
         log_attrs = user_attrs.copy()
         if "api_key" in user_attrs:
             log_attrs["api_key"] = "RESERVED"
-        logger.debug(f"User attributes in Cognito is {log_attrs}")
+        logger.debug(f"Processed user_attrs (after cognito_to_dict): {log_attrs}")
+        logger.debug(f"Django User model fields: {django_fields}")
         extra_attrs = {}
         # need to iterate over a copy
         for k, v in user_attrs.copy().items():
             if k not in django_fields:
                 extra_attrs.update({k: user_attrs.pop(k, None)})
+
+        logger.debug(f"Extra attributes (not in Django User model): {extra_attrs}")
+
         if getattr(settings, "COGNITO_CREATE_UNKNOWN_USERS", True):
-            user, created = CognitoUser.user_class.objects.update_or_create(username=username, defaults=user_attrs)
+            # Explicitly specify database based on namespace to prevent cross-database contamination
+            # vinny namespace = vincecomm database (external users)
+            # vince namespace = default database (staff users)
+            db_name = 'vincecomm' if settings.VINCE_NAMESPACE == "vinny" else 'default'
+            logger.debug(f"VINCE_NAMESPACE={settings.VINCE_NAMESPACE}, selected db_name={db_name}")
+
+            # Check if user already exists in either database
+            exists_in_default = CognitoUser.user_class.objects.using('default').filter(username=username).exists()
+            exists_in_vincecomm = CognitoUser.user_class.objects.using('vincecomm').filter(username=username).exists()
+            logger.debug(f"User {username} exists_in_default={exists_in_default}, exists_in_vincecomm={exists_in_vincecomm}")
+
+            # AUTHORIZATION CHECK: On Track deployment, only auto-create users who have Track access
+            if db_name == 'default' and settings.VINCE_NAMESPACE == "vince":
+                # User must exist in vincecomm with vincetrack group to get Track access
+                if not exists_in_vincecomm:
+                    logger.debug(f"AUTHORIZATION DENIED: User {username} attempted Track access but does not exist in vincecomm")
+                    return None
+
+                vincecomm_user = CognitoUser.user_class.objects.using('vincecomm').filter(username=username).first()
+                has_vincetrack_group = vincecomm_user.groups.filter(name='vincetrack').exists() if vincecomm_user else False
+                logger.debug(f"User {username} exists in vincecomm, has_vincetrack_group={has_vincetrack_group}")
+
+                if not has_vincetrack_group:
+                    logger.debug(f"AUTHORIZATION DENIED: User {username} attempted Track access without 'vincetrack' group authorization")
+                    return None
+
+                logger.info(f"User {username} authorized for Track access (exists in vincecomm with vincetrack group), proceeding with Track user creation")
+
+            user, created = CognitoUser.user_class.objects.using(db_name).update_or_create(username=username, defaults=user_attrs)
+            logger.debug(f"update_or_create result: created={created}, user.id={user.id if user else None}")
             if user:
                 if settings.VINCE_NAMESPACE == "vinny":
                     try:
@@ -106,13 +145,15 @@ class CognitoUser(Cognito):
                     except:
                         logger.debug(f"usersettings for {username} probably doesn't exist")
         else:
+            # Explicitly specify database based on namespace
+            db_name = 'vincecomm' if settings.VINCE_NAMESPACE == "vinny" else 'default'
             try:
-                user = CognitoUser.user_class.objects.get(username=username)
+                user = CognitoUser.user_class.objects.using(db_name).get(username=username)
                 for k, v in iteritems(user_attrs):
                     setattr(user, k, v)
-                user.save()
+                user.save(using=db_name)
             except CognitoUser.user_class.DoesNotExist:
-                logger.debug(f"USER {username} DOES NOT EXIST")
+                logger.debug(f"USER {username} DOES NOT EXIST in database {db_name}")
                 user = None
             if user:
                 try:
@@ -133,16 +174,35 @@ class CognitoUser(Cognito):
 class CognitoAuthenticate(ModelBackend):
     def authenticate(self, request, username=None, password=None):
         ip = vinceutils.get_ip(request)
+        # DIAGNOSTIC LOGGING - Log request details
+        request_path = getattr(request, 'path', 'NO_PATH')
+        logger.debug(f"=== CognitoAuthenticate called from IP {ip}, path={request_path}, username={username} ===")
+
         if username and password:
             logger.debug(f"CognitoAuthenticate is running with username {username}")
-            cognito_user = CognitoUser(
-                settings.COGNITO_USER_POOL_ID,
-                settings.COGNITO_APP_ID,
-                user_pool_region=settings.COGNITO_REGION,
-                access_key=getattr(settings, "AWS_ACCESS_KEY_ID", None),
-                secret_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
-                username=username,
-            )
+            try:
+                cognito_user = CognitoUser(
+                    settings.COGNITO_USER_POOL_ID,
+                    settings.COGNITO_APP_ID,
+                    user_pool_region=settings.COGNITO_REGION,
+                    access_key=getattr(settings, "AWS_ACCESS_KEY_ID", None),
+                    secret_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
+                    username=username,
+                )
+            except Exception as e:
+                logger.debug(f"CognitoAuthenticate failed for {username} with exception {e}")
+                if settings.COGNITO_USER_POOL_ID is None:
+                    logger.debug("COGNITO_USER_POOL_ID is not set")
+                if settings.COGNITO_APP_ID is None:
+                    logger.debug("COGNITO_APP_ID is not set")
+                if settings.COGNITO_REGION is None:
+                    logger.debug("COGNITO_REGION is not set")
+                access_key2=getattr(settings, "AWS_ACCESS_KEY_ID", None)
+                if access_key2 is None:
+                    logger.debug("access_key is not set")
+                secret_key2=getattr(settings, "AWS_SECRET_ACCESS_KEY", None)
+                if secret_key2 is None:
+                    logger.debug("secret_key is not set")
 
             try:
                 logger.debug(f"trying to authenticate {username} from IP {ip}")

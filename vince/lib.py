@@ -37,14 +37,14 @@ import hashlib
 import hmac
 import base64
 from django.db import models
-from django.db.models import Q, Count, F
+from django.db.models import Q, Count, F, Case as Cases, When, Value, CharField
 from django.db.models.functions import Cast
 
 # from django.utils import six
 from dateutil import parser
 
 # from django.utils.safestring import mark_safe
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 from django.core.files import File
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
@@ -88,6 +88,7 @@ from vince.mailer import (
     get_mail_content,
     send_weekly_report_mail,
     send_alert_email,
+    send_triage_cue_email,
 )
 from .permissions import *
 import email
@@ -3548,12 +3549,60 @@ def prepare_and_send_weekly_report():
     #     send_weekly_report_mail(recipients, my_team, html_content)
 
 
+def prepare_and_send_triage_cue():
+
+    today = timezone.localdate()
+    today_str = today.strftime("%B %-d, %Y")
+    tz = timezone.get_current_timezone()
+    today_start = timezone.make_aware(datetime.combine(today, time.min), tz)
+    today_weekday = today.weekday()
+    if today_weekday > 4:
+        return
+    elif today_weekday == 4:
+        next_workday_start = today_start + timedelta(days=3)
+        chatty_decorator = "on Monday"    
+    else:
+        next_workday_start = today_start + timedelta(days=1)
+        chatty_decorator = "tomorrow"
+    next_workday_str = next_workday_start.date().strftime("%B %-d, %Y")
+    day_after_next_workday_start = next_workday_start + timedelta(days=1)
+
+    today_msg = f"you are on Triage today, {today_str}"
+    next_workday_msg = f"you will be starting Triage {chatty_decorator}, {next_workday_str}"
+
+    triage_cues = (
+        CalendarEvent.objects
+        .filter(event_id=1)
+        .filter(
+            Q(date__gte=today_start, date__lt=day_after_next_workday_start) |
+            Q(date__lt=today_start, end_date__gt=today_start)
+        )
+        .annotate(
+            message=Cases(
+                When(date__lt=next_workday_start, then=Value(today_msg)),
+                When(date__gte=next_workday_start, date__lt=day_after_next_workday_start,
+                     then=Value(next_workday_msg)),
+                default=Value(""),
+                output_field=CharField(),
+            )
+        ).values("user", "date", "message")
+    )
+
+    logger.debug(f"triage_cues is {triage_cues}")
+    for cue in triage_cues:
+        user = User.objects.filter(id = cue["user"]).first()
+        username = user.usersettings.preferred_username
+        useremail = user.email
+        send_triage_cue_email(useremail, username, cue["message"])
+
 def prepare_and_send_alert_email(cr):
     logger.debug("prepare_and_send_alert_email has been correctly triggered")
-    recipients = ["gstrom@cert.org", "gstrom@cert.org"]
+    # When this code becomes active, the recipients should be determined in some programmatic way:
+    recipients = []
     crlink = f"{settings.SERVER_NAME}{reverse('vince:cr', args=[cr.id])}"
     logger.debug(f"crlink is {crlink}")
-    send_alert_email(recipients, crlink)
+    if recipients:
+        send_alert_email(recipients, crlink)
 
 
 def send_vt_daily_digest(user):

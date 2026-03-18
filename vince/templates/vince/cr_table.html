@@ -31,7 +31,12 @@
       <b>{{REPORT_ID}}{{ ticket.vrf_id }}</b>
       {% endif %}
     </p>
-
+    {% if user_is_troublesome %}
+    <div class="callout alert">
+      <h5><i class="fas fa-exclamation-triangle"></i> Troublesome User Alert</h5>
+      <p>This case request was submitted by a user flagged as troublesome. Please review with extra attention.</p>
+    </div>
+    {% endif %}
   </div>
   <div class="large-3 medium-4 small-12 columns">
     <button class="button default dropdown menu float-right" data-dropdown-menu type="button" data-toggle="wanttomenu" aria-haspopup="true" aria-expanded="false" id="iwanttobutton">
