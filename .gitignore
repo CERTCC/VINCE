@@ -1,7 +1,4 @@
 # Created by .ignore support plugin (hsz.mobi)
-### VINCE-localstack
-volumes
-
 ### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -26,3 +23,8 @@ venv*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
 .elasticbeanstalk/config.yml
+
+# claude stuff
+.devcontainer
+.claude
+.claudeignore

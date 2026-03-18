@@ -111,59 +111,63 @@ $(document).ready(function() {
 
 
     
-    $(document).on("click", "#approveform button", function(event) {
+    $(document).on("click", "#reviewform button", function(event) {
 	event.preventDefault();
 	if ($(this).attr("value") == 2) {
-	    submitform(true, true);
+	    submitform(true, false, false);
 	} else if ($(this).attr("value") == 1)  {
-	    submitform(true, false);
-	}
-	$("#modal").foundation("close");
-	
-    });
+	    submitform(false, false, false);
+	} else if ($(this).attr("value") == 3) {
+		$("#modal").foundation("open");
+	} else if ($(this).attr("value") == 4) {
+        submitform(false, false, true);  // completed=false, approved=false, notify_author=true
+    }
 
-    
-    $(document).on("click", "#reviewform button", function(event) {
-	if ($(this).attr("value") == 2) {
-	    // prompt for approval
-	    event.preventDefault();
-	    $("#modal").foundation("open");
-	} else if ($(this).attr("value") == 1) {
-	    event.preventDefault();
-	    submitform(false, false);
-	}
     });
 
 
-    function submitform(complete, approved) {
-	var allmarks = simplemde.codemirror.doc.getAllMarks();
-	var array = [];
-	for (var i=0; i<allmarks.length; i++) {
-	    var x = [allmarks[i].find().from.ch, allmarks[i].find().from.line, allmarks[i].find().to.ch, allmarks[i].find().to.line];
-	    var f = array.indexOfForArrays([x[0], x[1], x[2]-1, x[3]]);
-	    if (f < 0) {
-		array.push(x);
-	    } else {
-		array.splice(f, 1, x);
-		
-	    }
-	    
-	}
-	
-	var formdata = $('#reviewform').serializeArray()
-	formdata.find(item => item.name == 'content').value=simplemde.value();
+    $(document).on("click", "#approveform button", function(event) {
+		event.preventDefault();
+		if ($(this).attr("value") == 1) {
+			$("#modal").foundation("close");
+		}
+		if ($(this).attr("value") == 2) {
+			submitform(true, true, false)
+		}
+		$("#modal").foundation("close");
+    });
 
-	formdata.push({'name': 'marks', 'value': JSON.stringify(array)});
-	formdata.push({'name': 'completed', 'value': complete});
-	formdata.push({'name': 'approved', 'value': approved});
-	formdata.push({'name': 'save', 'value': 1});
-	
-	
-	$.post($("#reviewform").attr("action"), formdata,
-               function(data) {
-		   window.location = data["redirect"];
-               });
-	
+
+    function submitform(complete, approved, notify_author) {
+		var allmarks = simplemde.codemirror.doc.getAllMarks();
+		var array = [];
+		for (var i=0; i<allmarks.length; i++) {
+			var x = [allmarks[i].find().from.ch, allmarks[i].find().from.line, allmarks[i].find().to.ch, allmarks[i].find().to.line];
+			var f = array.indexOfForArrays([x[0], x[1], x[2]-1, x[3]]);
+			if (f < 0) {
+			array.push(x);
+			} else {
+			array.splice(f, 1, x);
+
+			}
+
+		}
+
+		var formdata = $('#reviewform').serializeArray()
+		formdata.find(item => item.name == 'content').value=simplemde.value();
+
+		formdata.push({'name': 'marks', 'value': JSON.stringify(array)});
+		formdata.push({'name': 'completed', 'value': complete});
+		formdata.push({'name': 'approved', 'value': approved});
+		formdata.push({'name': 'notify_author', 'value': notify_author || false});
+		formdata.push({'name': 'save', 'value': 1});
+
+
+		$.post($("#reviewform").attr("action"), formdata,
+			function(data) {
+				window.location = data["redirect"];
+			});
+
     }
 
 

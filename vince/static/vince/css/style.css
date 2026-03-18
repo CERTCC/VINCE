@@ -144,14 +144,44 @@ h1.vince_login_logo {
 .announcement-banner {
     background-color: #b00;
     color: #fefefe;
-    font-size: 1.5em;
+    font-size: small;
     padding-left: 20px;
     padding-right: 20px;
 }
 
-.announcement-banner .announcement-banner-link {
+.announcement-banner p {
+    margin-bottom: 0rem;
+}
+
+.announcement-banner h4 {
+    font-weight: 700 !important;
+}
+
+.announcement-banner ul {
+    margin-bottom: 0rem;
+    list-style-type: disc !important;
+    list-style-position: inside;
+}
+
+.announcement-banner-link {
     text-decoration: underline;
     color: #fefefe;
+}
+
+.login-announcement-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    font-size: small;
+    background-color: #b00;
+    color: #fefefe;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.login-announcement-banner p {
+    margin-bottom: 0rem;
 }
 
 .site-wrapper {
@@ -1401,12 +1431,18 @@ div.homelink a {
     padding-right:0;
 }
 
+/* When putting up an announcement-banner, change padding-top for the following selectors to something appropriate, */
+/* the sidebar menu does not get partially obscured by the banner when scrolling down, When the banner goes away, */
+/* change it back to 150px and 130px respectively. */
+
+
 #offCanvasLeft1 {
     width: 61px;
     background-color: #f1f1f2;
     border-right: 1px solid #c2c2c2;
     color: #4d4d4f;
-    padding-top:150px;
+    padding-top: 150px;
+    /* padding-top:340px; */
 
 }
 
@@ -1419,20 +1455,32 @@ div.homelink a {
 
 }
 
+/* When putting up an announcement-banner, change top for the following selector to something appropriate, */
+/* the sidebar menu does not get partially obscured by the banner when scrolling down. When the banner goes away, */
+/* change it back to "0 !important". */
+
 .less_padding {
     top: 0 !important;
+    /* top: 340px !important; */
     position: absolute;
     width:100%;
 }
 
-/* when putting up an announcement-banner, change padding-top for the following two selectors to 195 and 225 respectively, */
+.less_padding_vt {
+    top: 0px !important;
+    position: absolute;
+    width:100%;
+}
+
+/* when putting up an announcement-banner, change padding-top for the following two selectors to 195 and 225 respectively */
+/* (or whatever is needed to get the side menus to display below the announcement), */
 /* then return them to 130 and 150 respectively when removing the banner. */
 
 #TRoffCanvasLeft {
     background-color: #282829;
     border-right: 1px solid #c2c2c2;
     color: #f1f1f2;
-    padding-top:195px;
+    padding-top:130px;
 
 }
 
@@ -1440,7 +1488,8 @@ div.homelink a {
     background-color: #f1f1f2;
     border-right: 1px solid #c2c2c2;
     color: #4d4d4f;
-    padding-top:225px;
+    padding-top: 150px;
+    /* padding-top:340px; */
 }
 
 /*.position-left.reveal-for-medium ~ .off-canvas-content {

@@ -283,6 +283,7 @@ urlpatterns = [
         "contact/changes/preview/(?P<pk>[0-9]+)/$", views.ViewAndApproveChangesView.as_view(), name="previewcontact"
     ),
     re_path("contact/vcuser/(?P<pk>[0-9]+)/$", views.VinceCommUserView.as_view(), name="vcuser"),
+    re_path("contact/vcuser/(?P<pk>[0-9]+)/troublesome/$", views.ToggleTroublesomeUserView.as_view(), name="toggle_troublesome"),
     re_path("contact/vvuser/(?P<pk>[0-9]+)/$", views.Vince2VCUserView.as_view(), name="vvuser"),
     re_path("contact/vcuser/(?P<pk>[0-9]+)/thread/$", views.VinceCommUserThreadView.as_view(), name="vcuserthread"),
     re_path(
@@ -414,6 +415,7 @@ urlpatterns = [
     re_path("^ticket/(?P<ticket_id>[0-9]+)/update/$", views.UpdateTicketView.as_view(), name="update"),
     # re_path('^case/(?P<case_id>[0-9]+)/update/$', views.UpdateTicketView.as_view(), name='caseupdate'),
     re_path("^ticket/(?P<ticket_id>[0-9]+)/updateclose/$", views.CloseTicketandTagView.as_view(), name="closeticket"),
+    re_path("^ticket/(?P<ticket_id>[0-9]+)/changestatus/$", views.ChangeTicketStatusView.as_view(), name="changeticketstatus"),
     re_path("^hold/(?P<ticket_id>[0-9]+)/$", views.hold_ticket, name="hold"),
     re_path("^unhold/(?P<ticket_id>[0-9]+)/$", views.unhold_ticket, name="unhold"),
     re_path("^followup_edit/(?P<pk>[0-9]+)/$", views.FollowupEditView.as_view(), name="followup_edit"),

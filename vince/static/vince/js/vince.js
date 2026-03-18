@@ -381,7 +381,7 @@ $(function () {
     
     $window.on('scroll', function(){
 	var scrollTop = $window.scrollTop();
-	nav.toggleClass('less_padding', scrollTop > prev);
+	nav.toggleClass('less_padding_vt', scrollTop > prev);
 	prev = scrollTop;
     });
 

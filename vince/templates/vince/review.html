@@ -56,13 +56,20 @@
 
 <div class="row">
   <div class="small-10 large-10 columns">
+    {% if review.complete %}
     <p> <b>Review performed by {{ review.reviewer.usersettings.vince_username }} on {{ review.date_complete|date:"Y-m-d"}} </b> {% if review.ticket %}<a href="{{ review.ticket.get_absolute_url }}">{{ ticket.ticket_for_url }}</a>{% endif %}</p>
+    {% else %}
+    <div class="callout warning">
+      <p><b>In-Progress Review by {{ review.reviewer.usersettings.vince_username }}</b></p>
+      <p>This review is not yet complete. The reviewer has saved comments and edits for you to review.</p>
+    </div>
+    {% endif %}
     <div class="row">
       <div class="large-12 columns">
 	{% if review.marks %}
 	{{ review.marksj|json_script:"marks" }}
 	{% endif %}
-	
+
 	<textarea name="content" cols="40" rows="30" class="form-control" required="" id="id_content"> {{ review.review }}</textarea>
       </div>
     </div>

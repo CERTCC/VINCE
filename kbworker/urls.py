@@ -41,6 +41,19 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include      
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))               
 """
+import traceback
+
+# with open("/tmp/django_startup.log", "a") as f:
+#     f.write("Loading kbworker/urls.py...\n")
+#     try:
+#         from kbworker.views import check_for_updates
+#         f.write("Imported check_for_updates OK\n")
+#     except Exception as e:
+#         f.write(f"Error importing check_for_updates: {e}\n")
+#         f.write(traceback.format_exc() + "\n")
+
+
+
 from django.urls import include, re_path
 from kbworker.views import check_for_updates
 

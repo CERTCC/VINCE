@@ -2,10 +2,30 @@
 {% load i18n static %}
 
 {% block extrahead %}
+
+
 <script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
+<!-- <script type="text/javascript" src="{% static 'vince/js/foundation.min.js' %}"></script> -->
+<!-- <script type="text/javascript" src="{% static 'vince/js/announcement_modal.js' %}"></script> -->
 {% if token_login %}
 <script type="text/javascript" src="{% static 'vince/js/vtoken_login.js' %}"></script>
 {% endif %}
+<style>
+    .temporary-alert {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+    }
+</style>
+{% endblock %}
+
+{% block header %}
+  <div class="login-announcement-banner">
+</div>
+
+    {{ block.super }}
 {% endblock %}
 
 {% block content %}
@@ -17,8 +37,6 @@
 </div>
 {% endfor %}
 {% endif %}
-
-
 
 <div id="content-main">
 
@@ -65,4 +83,7 @@
 {% if token_login %}
 <div id="tokenlogin" class="hidden" token="{% url 'vinny:tokenlogin' %}"></div>
 {% endif %}
+
+<!-- <div class="reveal announcement-modal" id="announcement_modal" data-reveal>
+</div> -->
 {% endblock %}

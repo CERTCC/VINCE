@@ -37,10 +37,10 @@ function checkVendors() {
     });
     if (vendorlist.length > 0) {
         vendorlist = "To: " + vendorlist.substring(0,vendorlist.length-2) + '.';
-        $("#submit_vendors").attr("disabled", false);
+        $("#submit_vendors").prop("disabled", false);
     } else {
         vendorlist = 'To: CHOOSE A VENDOR';
-        $("#submit_vendors").attr("disabled", true);
+        $("#submit_vendors").prop("disabled", true);
     }
     
     $('#vendors_list').html(vendorlist);
@@ -54,7 +54,7 @@ function checkVendors() {
 
 $(document).ready(function() {
 
-    $("#submit_vendors").attr("disabled", true);
+    $("#submit_vendors").prop("disabled", true);
     
     /*$(document). on("click", "#submit_vendors", function(event) {
 	$("#email-form").foundation('close');

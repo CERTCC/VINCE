@@ -62,6 +62,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated, BasePermiss
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from vinny.serializers import (
     CaseSerializer,
     PostSerializer,
@@ -4576,98 +4577,150 @@ class PendingUserPermission(BasePermission):
         else:
             return True
 
-# make this view go live when we complete VIN-821:
-# # @method_decorator(csrf_exempt, name="dispatch")
-# class VulReportAPIView(generics.GenericAPIView):
-    
-#     # REQUIRED_FIELDS = [
-#     #     "share_release",
-#     #     "credit_release", 
-#     #     "multiplevendors",
-#     #     "product_name",
-#     #     "product_version",
-#     #     "vul_description",
-#     #     "vul_exploit",
-#     #     "vul_impact",
-#     #     "vul_discovery",
-#     #     "vul_public",
-#     #     "vul_exploited",
-#     #     "vul_disclose",
-#     #     "comm_attempt"
-#     # ]
+# make this view go live when we complete work on the API vul report endpoint 821:
+class CommVulReportAPIView(generics.GenericAPIView):
+    throttle_classes = [UserRateThrottle]
 
-#     # OPTIONAL_FIELDS = [
-#     #     "contact_name",
-#     #     "contact_org",
-#     #     "contact_email",
-#     #     "contact_phone",
-#     #     "coord_status",
-#     #     "vendor_name",
-#     #     "other_vendors",
-#     #     "first_contact",
-#     #     "vendor_communication",
-#     #     "ics_impact",
-#     #     "metadata",
-#     #     "public_references",
-#     #     "exploit_references",
-#     #     "disclosure_plans",
-#     #     "user_file",
-#     #     "tracking",
-#     #     "comments",
-#     #     "reporter_pgp",
-#     #     "why_no_attempt",
-#     #     "please_explain",
-#     #     "ai_ml_system",
-#     #     "cisa_please"
-#     # ]
+    def post(self, request, *args, **kwargs):
 
-#     def post(self, request, *args, **kwargs):
+        form = CaseRequestForm(
+            data=request.POST,
+            files=request.FILES
+        )
 
-#         try:
-#             data = json.loads(request.body.decode("utf-8"))
-#         except json.JSONDecodeError:
-#             return JsonResponse({"error": "Invalid JSON"}, status=400)
+        if not form.is_valid():
+            return JsonResponse(
+                {"errors": form.errors},
+                status=400
+            )
 
+        create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
+        vrf_id = get_vrf_id()
+        context = form.cleaned_data
+        if context["ai_ml_system"] == True:
+            context["metadata"] = {"ai_ml_system": True}
+        else:
+            context["metadata"] = {"ai_ml_system": False}
+        form.instance.vrf_id = vrf_id
+        newrequest = form.save(commit=False)
+        newrequest.save()
+        context["vrf_id"] = vrf_id
+        if context["why_no_attempt"]:
+            context["coord_choice"] = form.fields["why_no_attempt"].choices[int(context["why_no_attempt"]) - 1][1]
+        context["vrf_date_submitted"] = datetime.now(EST()).isoformat()
 
-#         form = VulCoordForm(data)
+        # get some meta info about who submitted this
+        context["remote_addr"] = self.request.META["REMOTE_ADDR"] if "REMOTE_ADDR" in self.request.META else "unknown"
+        context["remote_host"] = self.request.META["REMOTE_HOST"] if "REMOTE_HOST" in self.request.META else "unknown"
+        context["http_user_agent"] = (
+            self.request.META["HTTP_USER_AGENT"] if "HTTP_USER_AGENT" in self.request.META else "unknown"
+        )
+        context["http_referer"] = (
+            self.request.META["HTTP_REFERER"] if "HTTP_REFERER" in self.request.META else "unknown"
+        )
 
-#         # # Make sure all required fields are filled in
-#         # missing = [field for field in self.REQUIRED_FIELDS if field not in data]
-#         # if missing:
-#         #     return JsonResponse({
-#         #         "error": f"Missing required field(s): {', '.join(missing)}"
-#         #     }, status=400)
-        
-#         # # Conditional validation
-#         # if "field1" in data and "field1a" not in data:
-#         #     return JsonResponse(
-#         #         {"error": "If you provide 'field1', you must also provide 'field1a'."},
-#         #         status=400,
-#         #     )
+        # construct email
+        context["submission_type"] = "Vulnerability Report"
+        subject = f"[{settings.REPORT_IDENTIFIER}{vrf_id}] "
+        if context["product_name"]:
+            subject += context["product_name"]
+        else:
+            subject += "New Report Submission (No Title Provided)"
+        if context["tracking"]:
+            subject += " [" + context["tracking"] + "]"
 
-#         # Validate and save if valid
-#         if form.is_valid():
-#             try:
-#                 form.instance.vrf_id = get_vrf_id()
-#                 logger.debug(f"API vul report received and assigned vrf_id {form.instance.vrf_id}. The form.data is {form.data}")
-#                 instance = form.save()
-#                 return JsonResponse(
-#                     {
-#                         "message": "Created successfully",
-#                         "id": instance.pk,
-#                     },
-#                     status=201,
-#                 )
-#             except:
-#                 logger.debug('something went wrong trying to digest a vul report via the API.')
-#         else:
-#             # Form validation failed
-#             return JsonResponse({"errors": form.errors}, status=400)
+        context["title"] = subject
 
-#         return JsonResponse({
-#             "message": "you submitted a vrf!",
-#             "status": "ok"
-#         })
+        if len(subject) > 99:
+            subject = subject[:99]
+
+        s3Client = boto3.client("s3", region_name=settings.AWS_REGION, config=Config(signature_version="s3v4"))
+
+        attachment = context.get("user_file")
+        if attachment:
+            context["s3_file_name"] = newrequest.user_file.name
+            try:
+                # tag object with vrf id
+                # copy from private to incoming reports directory
+                rd = s3Client.copy_object(
+                    CopySource=f"/{settings.PRIVATE_BUCKET_NAME}/{settings.AWS_PRIVATE_MEDIA_LOCATION}/{newrequest.user_file.name}",
+                    Bucket=settings.VP_PRIVATE_BUCKET_NAME,
+                    Key=settings.VRF_PRIVATE_MEDIA_LOCATION + "/" + newrequest.user_file.name,
+                    Tagging=f"ID={vrf_id}",
+                )
+                logger.debug(f"trying to put file in {settings.VRF_PRIVATE_MEDIA_LOCATION} result is {rd}")
+            except:
+                send_sns(vrf_id, "tagging uploaded file", traceback.format_exc())
+
+        if context.get("first_contact"):
+            context["first_contact"] = str(context["first_contact"])
+
+        context["vrf_id"] = f"{settings.REPORT_IDENTIFIER}{vrf_id}"
+
+        # put report in S3 bucket
+        try:
+            report_template = get_template("vincepub/email-md.txt")
+            fkey = f"{settings.VRF_REPORT_DIR}/{vrf_id}.txt"
+            s3Client.put_object(
+                Body=report_template.render(context=context), Bucket=settings.VP_PRIVATE_BUCKET_NAME, Key=fkey
+            )
+        except:
+            send_sns(vrf_id, "writing report to s3 bucket", traceback.format_exc())
+            logger.debug(report_template.render(context=context))
+
+        # reset this back to just the numbers and not with the identifier
+        context["vrf_id"] = vrf_id
+        context.pop("user_file")
+        # Track should create a new CaseRequest now. To make that happen, the following function adds the new report
+        # to an SNS topic that the Track SQS queue subscribes to, thus triggering ingest_vulreport in vinceworker/views.
+        send_sns_json("vul", subject, json.dumps(context))
+        # add report identifier after
+
+        context["user_file"] = attachment
+
+        # if reporter provided an email, send an ack email
+        reporter_email = context.get("contact_email")
+        if reporter_email:
+            autoack_email_template = get_template(settings.ACK_EMAIL_TEMPLATE)
+            sesclient = boto3.client("ses", "us-east-1")
+            try:
+                response = sesclient.send_email(
+                    Destination={
+                        "ToAddresses": [context["contact_email"]],
+                    },
+                    Message={
+                        "Body": {
+                            "Text": {
+                                "Data": html.unescape(autoack_email_template.render(context=context)),
+                                "Charset": "UTF-8",
+                            },
+                        },
+                        "Subject": {
+                            "Charset": "UTF-8",
+                            "Data": f"Thank you for submitting {settings.REPORT_IDENTIFIER}{vrf_id}",
+                        },
+                    },
+                    Source=f"{settings.DEFAULT_VISIBLE_NAME} DONOTREPLY <{settings.DEFAULT_FROM_EMAIL}>",
+                )
+            except ClientError as e:
+                logger.debug("ERROR SENDING EMAIL")
+                send_sns(vrf_id, "Sending ack email for vul reporting form", e.response["Error"]["Message"])
+                logger.debug(e.response["Error"]["Message"])
+            except:
+                logger.debug("ERROR SENDING EMAIL - Not a ClientError")
+                send_sns(vrf_id, "Sending ack email for vul reporting form", traceback.format_exc())
+                logger.debug(traceback.format_exc())
+            else:
+                logger.debug("Email Sent! Message ID: "),
+                logger.debug(response["MessageId"])
+        # log the report
+        logger.debug(f"Authenticated user submitted a report via API with the following info: {context}")
+
+        return JsonResponse({
+            "message": "Vulnerability report submitted successfully",
+            "vrf_id": f"{settings.REPORT_IDENTIFIER}{vrf_id}",
+            "status": "success"
+        }, status=201)
 
 
 class CasesAPIView(generics.ListAPIView):

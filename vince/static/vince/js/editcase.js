@@ -47,7 +47,7 @@ $(document).ready(function() {
     let checkbox = document.getElementById("dateTBDCheckbox");
     checkbox.addEventListener("click", function() {
         if(checkbox.checked == true){
-            $('#id_due_date').attr("readonly", true);
+            $('#id_due_date').prop("readOnly", true);
             $('#id_due_date').datepicker("destroy");
             $('#id_due_date').val("");
         }else{

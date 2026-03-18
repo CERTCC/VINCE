@@ -131,6 +131,24 @@ $(document).ready(function() {
                     });
     });
 
+    $(document).on("change", "#troublesome-toggle", function(event) {
+        var csrftoken = getCookie('csrftoken');
+        var userId = $(this).attr("data-user-id");
+        var isChecked = $(this).is(':checked');
+        var url = "/vince/contact/vcuser/" + userId + "/troublesome/";
+
+        $.post(url, {
+            'csrfmiddlewaretoken': csrftoken,
+            'troublesome': isChecked
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            }
+        }).fail(function() {
+            $("#troublesome-toggle").prop('checked', !isChecked);
+            alert("Failed to update troublesome flag");
+        });
+    });
 
     var filter_task = document.getElementById("filter_tasks");
     if (filter_task) {

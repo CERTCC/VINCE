@@ -18,7 +18,7 @@
 <div class="callout warning">
   <b>Vul Note pending approval. Refer to the following ticket(s): </b><br/>
   {% for tkt in approvaltickets %}
-  <a href="{{ tkt.get_absolute_url }}">{{ tkt.ticket_for_url }}</a> {% if tkt.assigned_to %} Assigned to {{ tkt.assigned_to.usersettings.vince_username }} {% else %}Unassigned{% endif %}  {% autoescape off %} {{ tkt.get_status_html }} {% endautoescape %} {% if tkt.review.complete %}<a href="{% url 'vince:reviewdetail' tkt.review.id %}" class="button tiny assignme">View Review</a> {% if tkt.review.approved or vulnote.approved %}{% else %}<button href="{% url 'vince:askapproval' tkt.id %}" id="askapproval" class="tiny button assignme">Ask for Approval</button>{% endif %}{% endif %}<br/>
+  <a href="{{ tkt.get_absolute_url }}">{{ tkt.ticket_for_url }}</a> {% if tkt.review_type == "tech_review" %}Technical review{% elif tkt.review_type == "prepublish_review" %}Publication approval {% endif %}{% if tkt.reviewer %}{% if tkt.status != 4 %}{% if tkt.review_type == "prepublish_review" and tkt.assigned_to == vulnote.owner %}ticket returned to author {% else %}assigned to {% endif %}{% else %} completed by {% endif %}{{ tkt.reviewer.usersettings.vince_username }} {% else %}Unassigned{% endif %}  {% autoescape off %} {{ tkt.get_status_html }} {% endautoescape %} {% if tkt.review.complete %}<a href="{% url 'vince:reviewdetail' tkt.review.id %}" class="button tiny assignme">View Review</a> {% endif %}<br/>
   {% endfor %}
 </div>
 {% endif %}

@@ -38,6 +38,15 @@
       </div>
       {% endif %}
 
+      {% if form.non_field_errors %}
+        <div class="callout alert">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+
       <div class="row">
 	<div class="large-8 columns">
 	  {% for hidden in form.hidden_fields %}

@@ -2,7 +2,7 @@
 <div class="row" id="comment">
   <div class="small-12 large-12 columns">
     <h3 class="section-title">Comment</h3>
-    <form method="post" id="commentform" action="{{ comm_action }}" enctype='multipart/form-data' {% if close_confirm %}confirm="{% url 'vince:closeticket' ticket.id %}"{% endif %}>
+    <form method="post" id="commentform" action="{{ comm_action }}" enctype='multipart/form-data' {% if close_confirm %}confirm_close="{% url 'vince:closeticket' ticket.id %}"{% endif %} confirm="{% url 'vince:changeticketstatus' ticket.id %}">
       {% csrf_token %}
       <div class="row">
         <div class="large-8 columns">

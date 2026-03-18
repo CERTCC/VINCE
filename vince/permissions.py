@@ -29,9 +29,17 @@
 from .apps import VinceTrackConfig
 from vince.models import Ticket, TicketQueue, QueuePermissions, CasePermissions, CaseAssignment
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def is_in_group_vincetrack(user):
-    return user.groups.filter(name=VinceTrackConfig.name).exists() 
+    result = user.groups.filter(name=VinceTrackConfig.name).exists()
+    logger.debug(f"is_in_group_vincetrack for user {user.username}: checking for group '{VinceTrackConfig.name}', result={result}")
+    user_groups = list(user.groups.all().values_list('name', flat=True))
+    logger.debug(f"User {user.username} groups: {user_groups}")
+    return result 
 
 def has_queue_read_access(user, queue):
     if user.is_superuser:

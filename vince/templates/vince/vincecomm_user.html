@@ -90,6 +90,12 @@
       {% else %}
       <b>MFA Enabled:</b> {{ vc_user.vinceprofile.multifactor|yesno }} ({{ PreferredMfaSetting }})<br/>
       {% endif %}
+      <b>Troublesome User:</b>
+      <input type="checkbox" id="troublesome-toggle"
+             {% if vc_user.vinceprofile.troublesome %}checked{% endif %}
+             data-user-id="{{ vc_user.id }}">
+      <label for="troublesome-toggle">Flag as troublesome</label>
+      <br/>
     </p>
   </div>
   <div class="large-6 columns">

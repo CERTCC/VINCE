@@ -1291,6 +1291,14 @@ def send_weekly_report_mail(recipients, my_team, html_content):
         "vince_weekly_report_email", context, recipients=recipients, fail_silently=True, files=None, html=True
     )
 
+def send_triage_cue_email(useremail, username, message):
+    subject = f"VINCE Triage Reminder"
+
+    context = {"message": message, "username": username, "login_url": f"{settings.SERVER_NAME}"}
+
+    send_templated_mail(
+        "vince_triage_cue", context, recipients=useremail, fail_silently=True, files=None, html=False
+    )
 
 def send_alert_email(recipients, crlink):
     subject = "VINCE Alert"

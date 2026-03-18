@@ -21,14 +21,17 @@
 	{% endif %}
 
 	{% if vulnote.approved %}
-	<a href="{% url 'vince:notify' case.id %}"><button class="button cmu tiny" id="publishvulnote" action="{% url 'vince:publish' vulnote.id %}" {% if vulnote.ticket_to_approve.status != 4 %}disabled{% else %}{% if not case.can_be_resolved %}disabled{% endif %}{% endif %}><i class="fas fa-bell"></i> Publish</button></a>
+		<a href="{% url 'vince:notify' case.id %}"><button class="button cmu tiny" id="publishvulnote" action="{% url 'vince:publish' vulnote.id %}" {% if vulnote.ticket_to_approve.status != 4 %}disabled{% else %}{% if not case.can_be_resolved %}disabled{% endif %}{% endif %}><i class="fas fa-bell"></i> Publish</button></a>
 	{% else %}
-	<a href="{% url 'vince:newticket' case.id %}?approval=1" id="approvalrequest"><button class="button cmu tiny"> <i class="fas fa-hands-helping"></i> Request Approval</button></a>
-	{% if user.is_superuser %}
-	<button class="button cmu tiny" id="approvevulnote" action="{% url 'vince:approvevulnote' vulnote.id %}"><i class="fas fa-thumbs-up"></i> Approve for Publishing</button>
+		<a href="{% url 'vince:newticket' case.id %}?tech_review=1" id="techreviewrequest"><button class="button cmu tiny" {% if vulnote.ticket_to_approve and vulnote.ticket_to_approve.status %}{% if vulnote.ticket_to_approve.status != 4 %}disabled{% endif %} {% endif %} > <i class="fas fa-hands-helping"></i> Request Technical Review</button></a>
+		{% if vulnote.ticket_to_approve.status == 4 %}
+			<a href="{% url 'vince:newticket' case.id %}?publish_approval=1" id="publishrequest"><button class="button cmu tiny"> <i class="fas fa-hands-helping"></i> Request Publication</button></a>
+		{% endif %}
+		{% if user.is_superuser or current_user_may_approve_publication %}
+			<button class="button cmu tiny" id="approvevulnote" action="{% url 'vince:approvevulnote' vulnote.id %}"><i class="fas fa-thumbs-up"></i> Approve for Publishing</button>
+		{% endif %}
 	{% endif %}
 
-	{% endif %}
 	{% else %}
 	<a href="{% url 'vince:create' case.id %}"> <button class="button cmu tiny"> <i class="fas fa-plus"></i> Start Vul Note </button></a>
 	{% endif %}

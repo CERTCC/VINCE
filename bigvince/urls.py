@@ -94,6 +94,8 @@ if settings.IS_KBWORKER:
         path('vcworker/daily/',  kbworker_views.vc_daily_digest),
         path('vinceworker/daily/', kbworker_views.vt_daily_digest),
         path('vinceworker/reminder/', kbworker_views.vt_daily_digest),
+        path('vinceworker/weeklyreport/', kbworker_views.vt_weekly_report),
+        path('vinceworker/triagecue/', kbworker_views.vt_triage_cue),
     ])
 
 if settings.IS_VCWORKER:
@@ -101,6 +103,8 @@ if settings.IS_VCWORKER:
         path('vcworker/', include(('vincecommworker.urls', 'vincecommworker'), namespace='vincecommworker')),
         path('vinceworker/daily/', vcworker_views.vt_daily_digest),
         path('vinceworker/reminder/', vcworker_views.vt_daily_digest),
+        path('vinceworker/weeklyreport/', vcworker_views.vt_weekly_report),
+        path('vinceworker/triagecue/', vcworker_views.vt_triage_cue),
     ])
     
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
