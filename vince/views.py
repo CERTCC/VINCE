@@ -4415,13 +4415,11 @@ class VulNoteReviewal(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormV
             context["marks"] = json.loads(check.marks)
 
         else:
-            # If the current user is the vulnote author, look for incomplete reviews
-            # by any reviewer so the author can see the reviewer's feedback/edits
-            reviewer_review = None
-            if self.request.user == vulnote.owner:
-                reviewer_review = VulNoteReview.objects.filter(
-                    vulnote=vulnote.current_revision.id, complete=False
-                ).first()
+            # Look for incomplete reviews by any reviewer so all users with access
+            # can see the reviewer's feedback/edits (in read-only mode if not the reviewer)
+            reviewer_review = VulNoteReview.objects.filter(
+                vulnote=vulnote.current_revision.id, complete=False
+            ).first()
 
             if reviewer_review:
                 initial = {
