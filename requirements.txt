@@ -48,7 +48,7 @@ jmespath==1.0.1
 jsonschema==4.17.0
 kombu==5.2.4
 M2Crypto==0.38.0
-Markdown==3.5
+Markdown==3.8.1
 openpyxl==3.1.5
 packaging==22.0
 pinax-messages==3.0.0
