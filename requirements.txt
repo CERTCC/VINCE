@@ -4,7 +4,7 @@ asgiref==3.6.0
 asn1crypto==1.5.1
 async-timeout==4.0.2
 attrs==22.1.0
-awscli==1.29.85
+awscli==1.44.38
 backports.zoneinfo;python_version<"3.9"
 beautifulsoup4==4.11.1
 billiard==4.0.2
