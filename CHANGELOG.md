@@ -7,6 +7,13 @@ VINCE Coordination platform code
 ## Description
 VINCE Coordination platform 
 
+Version 3.0.34 2026-03-19
+
+* modified exception handling for certain cases in the "troublesome user" code (Internal-837)
+* fixed bug affecting vulnote workflow (Internal-828)
+* dependabot update recommendation: `gunicorn` 21.2.0 to 22.2.0
+
+
 Version 3.0.33 2026-03-16
 
 * modified code for creating weekly report spreadsheet in response to user request (Internal-804)
