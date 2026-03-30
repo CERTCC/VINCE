@@ -4621,6 +4621,7 @@ class CommVulReportAPIView(generics.GenericAPIView):
 
         # construct email
         context["submission_type"] = "Vulnerability Report"
+        context["submission_source"] = "api"
         subject = f"[{settings.REPORT_IDENTIFIER}{vrf_id}] "
         if context["product_name"]:
             subject += context["product_name"]

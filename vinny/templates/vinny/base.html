@@ -110,9 +110,9 @@
               <div class="commentbar">
                 <div class="row">
                   <div class="large-6 medium-6 medium-push-6 medium-text-right columns">
-                      <a href="https://vuls.cert.org/confluence/display/VIN/" target="_blank" class="font-weight-bold">VINCE Help</a>
+                      <a href="{{ DOC_URLS.VINCE_DOCS }}" target="_blank" class="font-weight-bold">VINCE Help</a>
                     <!--<ul class="vertical menu medium-text-right text-left">-->
-		      <!--<li><a href="https://vuls.cert.org/confluence/display/VIN/" target="_blank" class="font-weight-bold">VINCE Help</a></li>-->
+		      <!--<li><a href="https://certcc.github.io/VINCE-docs/" target="_blank" class="font-weight-bold">VINCE Help</a></li>-->
                       <!--<li><a href="{% url 'vinny:construction' %}" class="font-weight-bold">Project Wiki</a></li>-->
                       <!--<li><a href="{% url 'vinny:construction' %}" class="font-weight-bold">Issue Tracker</a></li>-->
                     <!--</ul>-->
@@ -148,8 +148,8 @@
 		      <ul class="vertical menu medium-text-right text-left ul_nobullet">
 			<li>
 			  <div>© {% now "Y" %} Carnegie Mellon University</div></li>
-                        <li><div><a href="https://certcc.github.io/VINCE-docs/VINCE-Code-of-Conduct/" target="_blank" rel="nopener">Terms of Use</a></div></li>
-			<li><div><a href="https://vuls.cert.org/confluence/display/Wiki/Vulnerability+Disclosure+Policy" target="_blank" rel="nopener">Vulnerability Disclosure Policy</a></div></li>
+                        <li><div><a href="{{ DOC_URLS.VINCE_CODE_OF_CONDUCT }}" target="_blank" rel="noopener">Terms of Use</a></div></li>
+			<li><div><a href="{{ ORG_POLICY_URL }}" target="_blank" rel="noopener">Vulnerability Disclosure Policy</a></div></li>
 			<li><div><span class="font-weight-bold">V.{{ VERSION }}</span></div></li>
 		      </ul>
                     </div>

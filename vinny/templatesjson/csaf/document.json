@@ -7,7 +7,7 @@
             ]
         }
     ],
-    "category": "%(ORG_NAME)s Vulnerability Notice",
+    "category": "CERT/CC Vulnerability Note",
     "csaf_version": "2.0",
     "notes": [
         {
@@ -19,22 +19,27 @@
             "category": "legal_disclaimer",
             "text": "%(LEGAL_DISCLAIMER)s",
             "title": "Legal Disclaimer"
-        }
+        },
+	{
+         "category": "other",
+         "text": "CERT/CC Vulnerability Note is a limited advisory. It primarily identifies vendors impacted by the advisory and not specific products. We only support \"known_affected\" and \"known_not_affected\" status. Please consult the vendor's statements and advisory URL if provided by the vendor for more details ",
+         "title": "Limitations of Advisory"
+      }
     ],
     "publisher": {
         "category": "coordinator",
-        "contact_details": "Email: %(CONTACT_EMAIL)s, Phone: %(CONTACT_PHONE)s",
-        "issuing_authority": "%(ORG_AUTHORITY)s",
-        "name": "%(ORG_NAME)s",
-        "namespace": "%(WEBSITE)s"
+        "contact_details": "Email: cert@cert.org, Phone: +1412 268 5800",
+        "issuing_authority": "CERT/CC under DHS/CISA https://www.cisa.gov/cybersecurity also see https://kb.cert.org/ ",
+        "name": "CERT/CC",
+        "namespace": "https://kb.cert.org/"
     },
     "references": [
         {
-            "url": "%(ORG_POLICY_URL)s",
-            "summary": "%(ORG_NAME)s vulnerability disclosure policy"
+            "url": "https://certcc.github.io/certcc_disclosure_policy",
+            "summary": "CERT/CC vulnerability disclosure policy"
         },
         {
-            "summary": "%(ORG_NAME)s document released",
+            "summary": "CERT/CC document released",
             "category": "self",
             "url": "%(publicurl)s"
         }

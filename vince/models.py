@@ -1892,6 +1892,7 @@ class CaseRequest(Ticket):
     SUB_CHOICES = (
         ('email', 'email'),
         ('web', 'web'),
+        ('api', 'api'),
         ('manual', 'manual'),
         )
     VRF_FORM = 1

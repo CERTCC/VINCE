@@ -3,7 +3,7 @@
   <div class="large-9 medium-8 small-12 columns">
     <h3>Vulnerability Report</h3>
     {% if ticket.user %}
-    <p>Reported by {% if user.is_staff %}<a href="{% url 'vince:vcuser' ticket.user.id %}">{{ ticket.user.vinceprofile.vince_username }}</a>{% else %}{{ ticket.user.vinceprofile.vince_username }}{% endif %} [{{ ticket.user.get_full_name }}] on {{ ticket.date_submitted|date:"Y-m-d, H:i" }} ({{ ticket.date_submitted|timesince }} ago) via web submission.</p>
+    <p>Reported by {% if user.is_staff %}<a href="{% url 'vince:vcuser' ticket.user.id %}">{{ ticket.user.vinceprofile.vince_username }}</a>{% else %}{{ ticket.user.vinceprofile.vince_username }}{% endif %} [{{ ticket.user.get_full_name }}] on {{ ticket.date_submitted|date:"Y-m-d, H:i" }} ({{ ticket.date_submitted|timesince }} ago) via {{ ticket.submission_type|default:"web" }} submission.</p>
     {% else %}
     {% if user.is_superuser %}
     <button class="tiny default button">Add reporter</button>

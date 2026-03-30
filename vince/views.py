@@ -15330,7 +15330,7 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
 
         # Create ActiveCasesInProgress Sheet
         active_cases_sheet = workbook.create_sheet("Active Cases in Progress")
-        active_cases_sheet.append(["Case ID", "Case Name", "Date of Last Action", "Next Steps", "Blockers", "Estimated Completion", "Coordinator", "Publish Next Week (1 for yes, 0 for no)"])
+        active_cases_sheet.append(["Case ID", "Case Name", "Date of Last Action", "Next Steps", "Blockers", "Estimated Completion", "Publish Next Week (1 for yes, 0 for no)", "Coordinator"])
 
         active_cases = VulnerabilityCase.objects.filter(
             status=VulnerabilityCase.ACTIVE_STATUS, created__lt=oneweekago, team_owner__name=settings.ORG_NAME
@@ -15354,7 +15354,7 @@ class WeeklyXLSSummary(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
                 assignee_name = assignee.first_name + ' ' + assignee.last_name
             except:
                 assignee_name = 'unassigned'
-            active_cases_sheet.append([f"VU#{case.vuid}", case.title, last_modified, " ", " ", due_date, assignee_name])
+            active_cases_sheet.append([f"VU#{case.vuid}", case.title, last_modified, " ", " ", due_date, " ", assignee_name])
         
         active_cases_sheet.append([""])
         active_cases_sheet.append(["Total vul notes expected to be published next week:"])

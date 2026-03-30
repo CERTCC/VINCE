@@ -11,7 +11,7 @@ coordinated vulnerability disclosure (CVD) at the CERT Coordination Center
 (CERT/CC) which is a part of the Software Engineering Institute at Carnegie
 Mellon University.
 
-* The CERT Guide to Coordinated Vulnerability Disclosure: [https://vuls.cert.org/confluence/display/CVD](https://vuls.cert.org/confluence/display/CVD)
+* The CERT Guide to Coordinated Vulnerability Disclosure: [https://certcc.github.io/CERT-Guide-to-CVD](https://certcc.github.io/CERT-Guide-to-CVD)
 * Report a Vulnerability [https://www.kb.cert.org/vuls/report/](https://www.kb.cert.org/vuls/report/)
 * VINCE User Documentation: [https://certcc.github.io/VINCE-docs/](https://certcc.github.io/VINCE-docs/)
 * Vulnerability Note API Documentation: [https://certcc.github.io/VINCE-docs/Vulnerability-Note-API/](https://certcc.github.io/VINCE-docs/Vulnerability-Note-API/)

@@ -1,0 +1,117 @@
+{% extends "vulcoord/base.html" %}
+
+{% block content %}
+
+<div class="row columns callout hex-background">
+      <div class="text-center">
+        <h2>For Vendors and Distributors of Software</h2>
+      </div>
+    </div>
+
+ <div class="row" id="content">
+      <div class="large-12 medium-12 columns">
+	<div class="blog-post">
+	  <h2>Who is a Vendor?</h2>
+	  <p>As software and computers find their way into more and more industries, more and more vendors find themselves becoming software vendors. Aside from the traditional software companies, we are seeing other industries such as:</p>
+	  <ul>
+	    <li>consumer devices, such as internet modems, routers, and the internet of things (IoT) home automation</li>
+	    <li>internet providers</li>
+	    <li>cell phone manufacturers, and carriers</li>
+	    <li>HVAC manufacturers</li>
+	    <li>industrial control systems, including building automation</li>
+	    <li>energy industry, including growth of "smart energy"</li>
+	    <li>airline industry</li>
+	    <li>automotive industry</li>
+	    <li>medical devices and health devices manufacturers</li>
+	    </ul>
+	  <p>
+	    Any company or organization that provides a product that relies on a computer or software is referred to as a <i>vendor</i>, even if your company doesn't directly make the computer or software components used by your products.
+	    </p>
+	    <p>
+	      If you are producing products that rely on computers and software, you need to begin taking action now to have appropriate processes and response. The CERT/CC can help with that. The links provided below and at the left will provide some guidance on taking that action and working with us.
+	    </p>
+	  <h2>Working with the CERT/CC</h2>
+	  <h3>Updating Vendor Contact Information</h3>
+	  <p>
+	    If you haven't yet, please contact the CERT/CC at <a href="mailto:cert@cert.org" rel="nofollow">cert@cert.org</a> and provide the following information:
+	  </p>
+	  <ul>
+	  <li>Primary email contact address for security/vulnerability handling at your organization (may be a person, or an general email)</li>
+	  <li>For secure communication, please provide a PGP public key for us to use. For more information on using PGP or obtaining the CERT/CC's PGP key, please see <a href="{% url 'vulcoord:pgp' %}">Sending Sensitive Information</a>.</li>
+	  </ul>
+	  <h3>Verifying a CERT/CC Notification Message</h3>
+	  <h4>Email and PGP</h4>
+	  <p>The CERT/CC's primary method of communication is email. If we do not have an email address on file, we will attempt to find a contact email on your organization's website.</p>
+	  <p>Emails usually will come to you from <a href="mailto:cert@cert.org" rel="nofollow">cert@cert.org</a>, our general vulnerability reporting email, and will be PGP signed to provide verification that it is a true email from the CERT/CC. You may use our PGP key to verify the signature, and you may call our Hotline during business hours to verify the PGP key fingerprint. For more information on working with PGP, please see <a href="{% url 'vulcoord:pgp' %}">Sending Sensitive Information.</a></p>
+	  <p>
+	    You may also receive email directly from one of our analysts. Our analysts all use email addresses ending in @cert.org for official business. If there is any question on the authenticity of the message from someone claiming to be a CERT/CC employee, you may contact us to verify.</p>
+	  <h4>Other Contact Methods </h4>
+	  <p>If email contact fails, we may attempt to establish contact with your organization via publicly-listed phone numbers, or social media such as Twitter and LinkedIn.</p>
+	  <p>We may also send certified US Mail to your business address. For more information on our contact methodology, please see the blog post <a href="https://insights.sei.cmu.edu/cert/2015/08/reach-out-and-mail-someone.html" target="_blank">"Reach Out and Mail Someone"</a>.</p>
+	  <p>As above, you can email us or call us to verify that this message was an official CERT/CC contact attempt; if available, please refer to the VU# when contacting us.</p>
+	  <h4>General Information</h4>
+	  <p>Once secure communication is established, we will forward a vulnerability report and any extra analysis we have done to your organization for review. Typically, this report will be PGP encrypted to a public key provided by your organization, unless the CERT/CC is requested to not encrypt details.
+	    </p>
+	  <p>
+	    In some circumstances however, particularly when multiple vendors are involved, we reserve the right to refuse to send an un-encrypted vulnerability report, in order to protect the security of all parties involved.
+	    </p>
+	  <h3>Responding to a CERT/CC Vulnerability Notification</h3>
+	  <h4>Be Familiar With Disclosure Policy</h4>
+	  <p>You may want to review our <a href="{% url 'vulcoord:policy' %}">Vulnerability Disclosure Policy</a>. In brief, we generally target publication of details of the vulnerability we reported to you 45 days after our initial contact attempt. Since our goal is a safe internet for users, we do allow some negotiation on the timeline; feel free to contact us and discuss your concerns. Likewise, we may disclose earlier than initially reported if we believe there is significant evidence of current exploit of this vulnerability.
+	  </p>
+	  <h4>Responding to the CERT/CC</h4>
+	  <p>
+	    After reviewing the vulnerability report submitted, you can respond by sending an email to <a href="mailto:cert@cert.org" rel="nofollow">cert@cert.org</a>. When doing so, be sure to include your VU# in the subject line, so that our automated system can route your response to the analyst handling your case. If you forget to add the VU# to the subject line of your response email, our response may be delayed significantly.
+	    </p>
+	  <p>
+	    We recommend encrypting your response email to <a href="mailto:cert@cert.org" rel="nofollow">cert@cert.org</a> with the CERT/CC's PGP public key, in order to maintain privacy until the public disclosure date. For more information on using PGP or obtaining the CERT/CC's PGP key, please see <a href="{% url 'vulcoord:pgp' %}">Sending Sensitive Information</a>.
+	  </p>
+	  <p>
+	    To fully communicate with the CERT/CC in a secure manner, we need your organization's most up-to-date contact information, including your own PGP public key. To update your information with us, please read above about updating your vendor contact information.
+	    </p>
+	  <h4>What does the CERT/CC look for in a response?</h4>
+	  <p>Typically, we would like the following questions answered in your organization's response:
+	   </p>
+	  <ul>
+	    <li>Is this report indicative of a real vulnerability? If not, can you provide details why you do not believe it is a vulnerability?</li>
+	    <li>Has this vulnerability already been addressed in a recent or upcoming release?</li>
+	    <li>If the vulnerability has not been addressed yet, when might the fix be available?</li>
+	    <li>Do you need any further information from the CERT/CC or the reporter in order to address this issue?</li>
+	  </ul>
+	  <p>
+	    If you require extra information from the CERT/CC before a determination can be made, please feel free to contact us. The best way to do so is to send an email to <a href="mailto:cert@cert.org" rel="nofollow">cert@cert.org</a> with your VU# in the subject line, asking for more information. You may also call our phone number during business hours and an analyst will follow up with your message.
+	    </p>
+	  <p>
+	    We may also be able to arrange conference calls with analysts, or use other communication methods if requested.
+	  </p>
+	  <h4>Publications and Vulnerability Disclosure</h4>
+	  <p>
+	  After 45 days or another agreed upon timeline, we publish Vulnerability Notes on our website <a href="{% url 'vulcoord:viewbypublish' 'desc' %}">http://www.kb.cert.org/vuls/</a> to disclose the vulnerability and information on addressing the vulnerability if available.
+	  </p>
+	  <p>
+	    We welcome Vendor Statements on any Vulnerability Note, even if the Note is already published. The Vendor Statement can consist of any statement or information you wish; we will copy this statement verbatim into our published Vulnerability Note. To send a Vendor Statement, please fill out the <a href="{% url 'vulcoord:vendorstmt' %}">Vendor Statement Form</a> or email us at <a href="mailto:cert@cert.org" rel="nofollow">cert@cert.org</a> with the VU# of the vulnerability in the subject line, and include your statement in the body of the email. This email should be PGP signed by your organization's key so we may verify its authenticity.
+	  </p>
+	  <h2>Coordinating with Other Vendors </h2>
+	  <p>
+	    If you discover a vulnerability that might affect more products than just your own (for example, you find a vulnerability in a widely-used open source library), please feel free to reach out to us to coordinate with all vendors at once.
+	    </p>
+	  <p>We can keep your organization anonymous when coordinating with other vendors.</p>
+	  <h2> Standards and Best Practices</h2>
+	  <p>Several organizations have presented some standards and best practices documents, to aid vendors in establishing vulnerability response and coordination teams.
+	    </p>
+	  <p>Below are links to some of these standards and best practices. Please note that CERT does not necessarily endorse any of these documents and is currently providing this list only for informational purposes.</p>
+	  <p>You may consider referring to the following documents and standards for advice when establishing a PSIRT in your organization.</p>
+	  <ul>
+	    <li><a href="http://www.iso.org/iso/catalogue_detail.htm?csnumber=45170" target="_blank">ISO-29147:2014</a> -- Vulnerability Disclosure</li>
+	    <li><a href="http://www.iso.org/iso/catalogue_detail.htm?csnumber=53231" target="_blank">ISO-30111:2013</a> -- Vulnerability Handling Processes</li>
+	    <li><a href="https://hackerone.com/vulnerability-coordination-maturity-model/" target="_blank">HackerOne Vulnerability Coordination Maturity Model</a> -- self-assessment for vulnerability handling best practices in your organization</li>
+	  </ul>
+	  <h4> CERT Training </h4>
+	  <p>Please <a href="{{ DOC_URLS.SEI_CONTACT }}">contact us</a> if you are interested in arranging for a PSIRT class taught by CERT.</p>
+	</div>
+      </div>
+
+ </div>
+
+{% endblock %}
+ 

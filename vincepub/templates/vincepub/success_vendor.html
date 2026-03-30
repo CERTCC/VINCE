@@ -1,0 +1,50 @@
+{% extends "vincepub/base.html" %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="row columns">
+  <nav aria-label="You are here:" role="navigation">
+    <ul class="breadcrumbs">
+      <li><a href="{% url 'vincepub:initreport' %}">Report</a></li>
+      <li><a href="{% url 'vincepub:vendorstmt' %}">Vendor Statement Form</a></li>
+      <li><span class="show-for-sr">Current: </span>Success</li>
+    </ul>
+  </nav>
+</div>
+<br/>
+<div class="row columns">
+  <h2>Got it! Your statement has been recorded.</h2>
+</div>
+ <div class="row" id="content">
+   <div class="large-8 medium-8 columns">
+     <div class="blog-post"> 
+       <p class="lead-body">Thank you for submitting a statement regarding this vulnerability. This statement submission is tracked as: <b>VRF#{{ vrf_id }}</b></p>
+       {% if form.org_email.value %}
+       <p>An acknowledgment email has also been sent to the email address you provided. Please check for an email from cert+donotreply@cert.org that confirms receipt of your report. (You may need to add cert+donotreply@cert.org to your address book to ensure it is not flagged as spam.)</p>
+       {% endif %}
+       <p>If you wish to contact us regarding this statement, please email us at
+         <a href="mailto:cert@cert.org?Subject=Follow-up%20to%20VRF%23{{ vrf_id }}">cert@cert.org</a> and be sure to include the full <b>VRF#{{ vrf_id }}</b> in the subject of your email.</p>
+       
+       <p>If you need to send us encrypted email, please see
+         <a href="{{ DOC_URLS.VINCE_PGP_KEY }}" target="_blank">Sending Sensitive Information</a> for our PGP key. Add cert@cert.org to your address book if necessary, to prevent any follow-up emails from going to your spam folder.</p>
+       <h3 class="subtitle">Submitted Data:</h3>
+       
+       <table class="unstriped">
+         {% for field in form %}
+	 {% if field.value %}
+	 <tr>
+           <td class="item">{{ field.label_tag }}</td>
+           <td>{% if field.name == "coord_status" %}{% for val in coord_choice %}<li>{{ val }}</li>{% endfor %}{% else %}{{ field.value }}{% endif %}</td>
+         </tr>
+	 {% endif %}
+	 {% endfor %}
+	 
+       </table>
+       
+     </div>
+   </div>
+   <div class="large-4 medium-4 columns">
+     {% include "vincepub/statementsidebar.html" %}
+   </div>
+</div>
+{% endblock %}
+
