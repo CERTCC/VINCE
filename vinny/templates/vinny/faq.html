@@ -1,0 +1,118 @@
+{% extends "vinny/base.html" %}{% load i18n %}
+<!-- site-title  -->
+{% block vince_title %}{% trans "VINCE FAQ" %}{% endblock %}
+{% load staticfiles %}
+
+{% block content %}
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-6 columns">
+      <h2>VINCE FAQ</h2>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="large-9 columns">
+    <h3>General Policy Questions</h3>
+    <p>
+      <b>Why is CERT/CC moving to a collaborative vulnerability coordination process?</b>
+    </p>
+    <p>CERT/CC is moving to a collaborative vulnerability coordination process because it is more efficient, fosters goodwill and trust between those involved, and provides for a consolidation of relevant information into a single shared space. The change to a bus topology will ease communication between vendors when multiple parties are involved, lessen the requirement for a coordinator to be a moderator, and increase speed (and ideally the accuracy) of information transmission in multiparty vulnerability coordination efforts.</p>
+    <p><b>Why should I make a VINCE account?</b></p>
+    <p>We encourage both vendors and reporters to make a VINCE account so that they can be actively involved in the coordination of vulnerabilities reported to CERT/CC. Vendors without an account will be unable to view vulnerability reports shared with CERT/CC or participate in the coordination process. Reporters without an account will be unable to communicate with vendors or receive updates on the coordination status of submitted reports. Reporters without an account can create one after submission to gain access to their reports, as long as the account created uses the same email address as the email address provided in the submission.
+    </p>
+    <p>
+      <b>What is the service-level agreement (SLA) between CERT/CC and VINCE users?</b>
+    </p>
+    <p>
+      Vendors and reporters can expect a response from CERT/CC within three days.
+    </p>
+    <p><b>What happened to PGP?</b></p>
+    <p>The VINCE platform does not require PGP for secure communications, because instead it relies on account access controls and HTTPS to keep case discussions and messaging secure. Vendors and reporters are still able to upload and share PGP keys on their contact page for interested parties.</p>
+    <p><b>What type of case does CERT/CC usually coordinate?</b></p>
+    <p>
+      CERT/CC considers the following conditions when deciding to coordinate:
+      <ul class="disc-list">
+	<li>whether the vendor or maintainer has not replied in a reasonable time frame (typically about two weeks)</li>
+	<li>whether the vendor was initially responsive, but then stopped responding (typically about two weeks of silence)</li>
+	<li>whether the vendor has fixed a critical issue, but did not clearly document the fix in a security advisory, news article, or changelog</li>
+	<li>whether the vulnerability affects multiple vendors, which would be difficult for an individual reporter to coordinate alone</li>
+	<li>whether the vulnerability is extremely serious and could cause extensive nation-wide or world-wide damage (for example, problems with internet infrastructure protocols like DNS and NTP)</li>
+	<li>whether the reporter wishes to remain anonymous</li>
+      </ul>
+      More information on this topic can be found <a href="{{ DOC_URLS.CVD_COORD_GUIDELINES }}" target="_blank">on our wiki</a>.
+    </p>
+    <p><b>Can I still send email to cert@cert.org?</b></p>
+    <p>We prefer that you message us through the VINCE site, but you may still email us at cert@cert.org. Please continue to use the appropriate tracking number (VRF# or VU#) in the subject of the email. Messages through the VINCE site will have a faster response time than email.</p>
+    <p><b>Who sees my private messages with CERT?</b></p>
+    <p>A direct private message sent to CERT/CC by an individual user can be seen by the user and CERT/CC analysts. A direct private message sent from CERT/CC to a vendor can be seen by CERT/CC analysts and all members of the vendor organization with associated VINCE accounts.</p>
+    <p><b>Who sees the posts in the case discussion?</b></p>
+    <p>Anyone participating in the case can see the posts in the case discussion.  All coordinators, vendors, and participants are listed on the left-hand side of the case view. </p>
+    <p><b>Who sees my status and statement?</b></p>
+    <p>Anyone participating in the case can see your status and statement before we publish the vulnerability note.  Once CERT/CC publishes the vulnerability note, the public will be able to view your status and statement.</p>
+    <p><b>What does "public" mean for my contact information?</b></p>
+    <p>Contact information marked "public" will be shared with participants that require it, including reporterss. Our eventual goal is to share contact information marked as "public" on our website so that it can be searched by the general public.</p>
+    <p><b>Can I private message a VINCE user other than CERT/CC?</b></p>
+    <p>No, you are unable to direct private-message another VINCE user. We encourage all relevant case discussion and coordination to happen within VINCE's case discussion page.</p>
+    <p><b>Who are the coordinators? Can there be more than one?</b></p>
+    <p>The coordinators will primarily be members of the vulnerability analysis team within CERT/CC. At this time, CERT/CC is the only coordinator in VINCE.</p>
+
+    
+    <h3>Vendor FAQ</h3>
+    <p><b>Is CERT/CC changing how they coordinate vulnerabilities?</b></p>
+    <p>No.  Although VINCE is a new platform upon which the coordination will occur, the same goals, practices, and policies remain in place for CERT/CC's coordinated vulnerability disclosure procedure. </p>
+    <p><b>What should I do if a reporter is not responding or participating in the discussion on VINCE?</b></p>
+    <p>If a reporter is not participating in the case, it is possible that the reporter chose not to create a VINCE account. CERT/CC also may not have contact information for the reporter, so it is possible that the reporter will not be involved in the case. If an unresponsive reporter is listed among the VINCE participants in the case discussion, CERT/CC may encourage the reporter to respond (perhaps by reaching out directly to the reporter).</p>
+    <p><b>How do I add my vulnerability status and submit an official statement?</b></p>
+    <p>Once CERT/CC has identified and added the vulnerabilities to the case, we will request the status and statement from each impacted vendor. At that time, you will be able to add a status (affected/unaffected) and an official statement from the case discussion page. </p>
+    <p><b>How do I change my vulnerability status or official statement?</b></p>
+    <p>You can update your status and modify your statement from the case discussion page (the same place that you provided your original status and statement). </p>
+    <p><b>How long do statement updates take to publish on a live vulnerability note?</b></p>
+    <p>CERT/CC will receive a notification when you update your statement.  Once CERT/CC views and approves the update, the changes will be reflected immediately on the published vulnerability note.</p>
+    <p><b>How do I update my public contact information?</b></p>
+    <p>Use the "My Contact Info" page to edit your public contact information. Click "Edit My Contact Info" in the top right and toggle the "Public" switch to "Yes" to make specific contact information public. By default, all contact information that CERT/CC has for your organization is set to "Not Public". 
+    </p>
+    <p><b>How can I give VINCE access to someone else in my organization?</b></p>
+    <p>Each organization has a designated group administrator account. This account permits invitation to the organization's group, which in turn allows access to the organization's cases. If a group administrator is not set for your organization, send CERT/CC a private message with the email address of the desired group administrator, and we will make the change. If you are the group administrator, you may invite someone from the User Management Page by adding the new user's email address. This email address must match the email associated with the user's VINCE account. If an existing VINCE user is added to an organization, the user must log out and back in to gain access to the organization's cases. Users associated with an organization automatically have access to <u>all</u> of the organization's cases.
+    </p>
+    <b>Can I control which cases specific people in my organization have access to?</b>
+    <p>Not at this time. We hope to add this feature in the near future.</p>
+
+    <h3>Reporter FAQ</h3>
+    <p><b>Can I participate anonymously?</b></p>
+    <p>You are welcome to participate anonymously by creating an account without any personally identifiable information. Only your chosen display name will appear within the case discussion, which means that your first and last name will not appear anywhere. To assist with anonymity, we suggest creating a VINCE account with a disposable or temporary email address and use a pseudonym for your display name.</p>
+    <p><b>Will the vendor know who I am?</b></p>
+    <p>The vendor and any other participant in the case will only be able to see the display name you choose when you create the VINCE account. This name can be changed at any time from the in Profile page.</p>
+    <p><b>What happens to reports submitted anonymously (i.e., without being linked to a VINCE account)?</b></p>
+    <p>Because a VINCE account is required in order to access case files, you will be unable to participate in the coordination process for reports that are not associated with a VINCE account. It is possible to create a VINCE account after submitting your report, which will grant access your initial report (and the ensuing coordination activities) as long as the email address listed on the report is the same as the one used to create the VINCE account.</p>
+    <p><b>What should I do if a vendor is not responding?</b></p>
+    <p>If a vendor is unresponsive, CERT/CC will attempt to elicit participation from the vendor, but CERT/CC can coordinate disclosure and publish a Vulnerability Note without the vendor's involvement.</p>
+    <p><b>What do the various case statuses mean?</b></p>
+    <p>The report status will be "pending" when you initially submit your vulnerability report. The status will change to "open" once we accept the report for coordination and assign an associated VU# tracking number. "Closed" indicates that CERT/CC has either not accepted the report for coordination, or coordination is complete. "Published" means that CERT/CC has published a vulnerability note associated with the case to kb.cert.org.</p>
+    <p><b>How can I add information to my submitted vulnerability report?</b></p>
+    <p>You can edit your initial vulnerability report until we have accepted or declined the report for coordination. Once the status of your initial vulnerability report leaves the "pending" status, you will be unable to edit your report. If you need to provide CERT/CC with more information, you can add a comment to the vulnerability report, post in the open case discussion, or send CERT/CC a direct private message.</p>
+    <p><b>How do I ask CERT/CC to reconsider a closed case?</b></p>
+    <p>You can add a comment to the closed VRF# report with any additional information that you think is relevant for reconsideration, including new vulnerability details or a change in vendor cooperation.</p>
+    <p><b>Will CERT/CC give me a CVE ID?</b></p>
+    <p>CERT/CC may assign CVEs to vulnerabilities that we actively coordinate, but typically only after vendor(s) have declined to do so.  Reporters may always request a CVE ID by contacting the CVE Program directly using <a href="cveform.mitre.org" target="_blank">cveform.mitre.org</a>, so if you are attempting to obtain a CVE ID for your report, we suggest starting there.</p>
+    <p><b>Can I add another researcher/reporter to a current case?</b></p>
+    <p>If another researcher should be added to the case, please send CERT/CC a direct private message with the user's VINCE account information, including the email address.
+    </p>
+    <p><b>Who else can see my report?</b></p>
+    <p>If CERT/CC accepts the vulnerability report for coordination, any participant added to the case (including vendors) will be able to see your initial report.</p>
+    <p><b>What should I do if a reporter is not responding/participating?</b></p>
+    <p>If a reporter is not participating in the case, CERT/CC will do our best to encourage them to respond to your questions. What else?</p>
+    <p><b>What should I do if a vendor is not responding?</b></p>
+    <p>If a vendor is not participating in the case, CERT/CC will do our best to encourage them to respond but we will plan to publish a vulnerability note with or without their involvement.</p>
+
+    <h3>API FAQ</h3>
+    <p><b>How do I use the API</b></p>
+    <p>To be added...</p>
+
+
+    
+  </div>
+  <div class="large-3 columns">
+  </div>
+</div>
+{% endblock %}

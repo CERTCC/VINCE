@@ -371,7 +371,7 @@ def ingest_vulreport(request):
                             None,
                         )
                         return JsonResponse({"response": "success"}, status=200)
-            data["submission_type"] = "web"
+            data["submission_type"] = data.get("submission_source", "web")
 
             if data.get("affected_website"):
                 data["request_type"] = CaseRequest.GOV_FORM

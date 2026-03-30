@@ -1,0 +1,56 @@
+{% autoescape off %}
+
+=======================================================================
+THIS IS AN AUTOMATED EMAIL CONFIRMING RECEIPT OF YOUR REPORT.
+THIS EMAIL IS SENT FROM AN ACCOUNT THAT IS NOT MONITORED.
+DO NOT REPLY TO THIS EMAIL, OR WE WILL BE UNABLE TO RESPOND.
+=======================================================================
+
+Hello {% if contact_name %}{{ contact_name }}{% endif %},
+
+Thank you for submitting a report to the CERT Coordination Center.
+
+We have received your vulnerability report and request for coordination
+assistance, and confirm the following details:
+
+* VRF#{{ vrf_id }}
+* Title: {{ product_name }}{{ affected_website }}
+* Date Submitted: {{ vrf_date_submitted }}
+
+The rest of the details of your report have not been included in this
+email for security reasons, but have been received.
+
+NEXT STEPS
+----------
+
+We will analyze your report and follow-up with you
+at this email address as necessary.
+
+Any follow-up from us will come from <cert@cert.org>
+and be PGP signed by our most recent PGP key.
+Our latest PGP key is always available at:
+
+https://certcc.github.io/pgp
+
+Due to resource and time constraints, we may not be able to
+accept or reply to every report we receive. Should you not receive
+a response from us in a reasonable time frame, we recommend
+that you attempt to reach the vendor yourself first before
+publishing information on the vulnerability.
+
+For more information, you can read our coordination guidance
+for reporters and researchers at:
+
+https://certcc.github.io/CERT-Guide-to-CVD/howto/coordination/
+
+Best Regards,
+
+Vulnerability Analysis Team
+CERT Coordination Center
+Software Engineering Institute
+Carnegie Mellon University
+www.cert.org
+
+
+{% endautoescape %}
+ 

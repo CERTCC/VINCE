@@ -1,53 +1,37 @@
 <!DOCTYPE html>
 <html>  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <meta property="og:url"           content="https://www.kb.cert.org"/>
-    <meta property="og:type"          content="website" />
-    <meta property="og:image:alt"      content="CERT Coordination Center" />
-    
-    {% block extra_head_tags %}
-    <meta property="og:title"         content="CERT Coordination Center" />
-    <meta property="og:description"   content="The Vulnerability Notes Database provides information about software vulnerabilities." />
-    <title class="swiftype" data-type="string">CERT Vulnerability Notes Database</title>
-    <META class="swiftype" name="sei_date_published" data-type="date" content="2022-01-03" />
-    <META class="swiftype" name="sei_year_published" data-type="integer" content="2022" />
-    <META class="swiftype" name="published_at" data-type="date" content="2022-01-03" />
-    <META property="st:type" content="asset" />
-    <META name="sei_title" content="CERT Vulnerability Notes Database" class="swiftype" data-type="string">
-    <META name="st:robots" content="follow, index">
-    <META name="sei_topic" class="swiftype" data-type="string" content="Vulnerability Analysis">
-    <META name="AssetTypeName" id="AssetTypeName" content="Vulnerability" class="swiftype" data-type="string" />
-    <META name="siteDomain" content="www.kb.cert.org" class="swiftype" data-type="string">
-    {% endblock %}
-    
-    {% load staticfiles %}
-    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/foundation.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'vincepub/css/style.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery-ui.min.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'vince/css/jquery.qtip.min.css' %}" />
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
-    <link rel="shortcut icon" href="{% static 'vincepub/images/favicon.ico' %}" type="image/x-icon" />
 
-    
-    
-    {% block js %}
-    <script type="text/javascript" src="{% static 'vince/js/jquery.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'vince/js/jquery-ui.js' %}"></script>
-    <script type="text/javascript" src="{% static 'vince/js/jquery.formset.js' %}"></script>
-    <script type="text/javascript" src="{% static 'vince/js/jquery.qtip.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'vincepub/js/analytics.js' %}"></script>
-    <script type="text/javascript" src="{% static 'vince/js/mathjax_config.js' %}"></script>
-    <script type="text/javascript" id="MathJax-script" src="{% static 'vince/js/mathjax/tex-chtml.js' %}"></script>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    {% endblock %}
+  <meta property="og:url"           content="https://www.kb.cert.org"/>
+  <meta property="og:type"          content="website" />
+  <meta property="og:title"         content="CERT Coordination Center" />
+  <meta property="og:description"   content="The Vulnerability Notes Database provides information about software vulnerabilities." />
+  <meta property="og:image"         content="some image" />
 
-    <script src="https://www.google.com/recaptcha/api.js"></script>
-  </head>
-  <body>
+  <title>CERT Vulnerability Notes Database</title>
+
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static 'vulcoord/css/foundation.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'vulcoord/css/style.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'vulcoord/css/jquery-ui.min.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'vulcoord/css/jquery.qtip.min.css' %}" />
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+<link rel="shortcut icon" href="{% static 'vulcoord/images/favicon.ico' %}" type="image/x-icon" />
+
+{% block js %}
+<script type="text/javascript" src="{% static 'vulcoord/js/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vulcoord/js/jquery-ui.js' %}"></script>
+<script type="text/javascript" src="{% static 'vulcoord/js/jquery.formset.js' %}"></script>
+<script type="text/javascript" src="{% static 'vulcoord/js/jquery.qtip.min.js' %}"></script>
+{% endblock %}
+
+<script src='https://www.google.com/recaptcha/api.js'></script>
+</head>
+<body>
 <!-- Google Tag Manager -->
 <noscript>
 <iframe src="//www.googletagmanager.com/ns.html?id=GTM-M62LG9" height="0" width="0" id="googletagmanager">
@@ -100,21 +84,7 @@
     </symbol>
   </defs>
 </svg>
-{% block notice %}{% endblock %}
-<div class="off-canvas-wrapper">
-  <div class="off-canvas position-right" id="offCanvas" data-off-canvas data-transition="overlap" data-auto-focus="false">
-    <!-- Close button -->
-    <ul class="vertical menu">
-      <li class="menu-close"><a href="#" data-close title="Close menu">&times;</a></li>
-      <li><a href="{% url 'vincepub:index' %}">Home</a></li>
-      <li><a href="{% url 'vincepub:viewbypublish' 'desc' %}">Notes</a></li>
-      <li><a href="{% url 'vincepub:search' %}">Search</a></li>
-      <li><a href="{% url 'vincepub:initreport' %}">Report a Vulnerability</a></li>
-      <li><a href="{% url 'vincepub:discguidance' %}">Disclosure Guidance</a></li>
-      <li><a href="{% url 'vince:index' %}">VINCE</a></li>
-    </ul>
-  </div>  
-<div id="wrapper" class="off-canvas-content" data-off-canvas-content>
+<div id="wrapper">
   <!-- Start Top Bar -->
   <!-- redbar -->
   <div class="topbar-redbar">
@@ -126,13 +96,15 @@
 	  <a class="wordmark" href="https://www.cmu.edu"><span class="sr-only">Carnegie Mellon University</span> <svg class="cmu-wordmark"><use xlink:href="#cmu-wordmark"></use></svg></a>
         </a>
       </div>
-      <div class="small-2 columns show-for-small-only">
-	<button type="button" class="vulcoord-menu-btn" data-toggle="offCanvas"><i class="fas fa-bars"></i></button>
+      <div class="small-2 columns">
+	<div class="title-bar section" data-responsive-toggle="vulcoord-menu" data-hide-for="medium">
+	  <button type="button" class="vulcoord-menu-btn" data-toggle><i class="fas fa-bars"></i></button>
+	</div>
       </div>
       <!-- search -->
       <div class="small-12 medium-6 large-6 columns">
         <div class="quicksearch">
-          <form action="{% url 'vincepub:quickSearch' %}" method="GET" id="myform" name="queryForm">
+          <form action="{% url 'vulcoord:quickSearch' %}" method="GET" id="myform" name="queryForm">
             <div class="input-group">
               <input class="input-group-field" name="searchbar" id="searchbar" type="search" placeholder="Search vulnerability notes" required>
               <button type="submit" class="button"><i class="fas fa-search"></i></button>
@@ -142,48 +114,46 @@
       </div>
     </div>
   </div>
-  <div class="announcement-banner">
-  </div>
-
-  <!-- site-title  -->
+  
+ <!-- site-title  -->
   <div class="row site-title">
     <div class="columns small-12 medium-12 large-12">
       <div class="sitename">
 	<h1><a href="https://www.sei.cmu.edu/">Software Engineering Institute</a>
 	</h1>
       </div>
-    </div>
-  </div>
+</div>
+</div>
   <div class="row site-subtitle ">
     <div class="small-12 medium-12 large-12 columns">
       <h2 >CERT Coordination Center</h2>
     </div>
   </div>
   <!-- navigation -->
-  <div class="row hide-for-small-only">
+  <div class="row">
     <div class="top-bar" id="vulcoord-menu">
       <div class="top-bar-left">
         <ul class=" medium-horizontal vertical dropdown menu" data-responsive-menu="accordion medium-dropdown">
-          <li class="{{ homepage|yesno:'is,not' }}-active nav-menu-item"><a href="{% url 'vincepub:index' %}">Home</a></li>
-	  <li class="{{ notespage|yesno:'is,not' }}-active nav-menu-item"><a href="{% url 'vincepub:viewbypublish' 'desc' %}">Notes</a></li> 
-          <li class="{{ searchpage|yesno:'is,not' }}-active nav-menu-item"><a href="{% url 'vincepub:search' %}">Search</a></li>
-          <li class="{{ reportpage|yesno:'is,not' }}-active nav-menu-item"><a href="{% url 'vincepub:initreport' %}">Report a Vulnerability</a></li>
-          <li class="{{ guidepage|yesno:'is,not' }}-active nav-menu-item"><a href="{% url 'vincepub:discguidance' %}">Disclosure Guidance</a></li>
-	  <li class="{{ vincepage|yesno:'is,not' }}-active nav-menu-item"><a href="{% url 'vince:index' %}">VINCE</a></li>
+          <li class="{{ homepage|yesno:'is,not' }}-active"><a href="{% url 'vulcoord:index' %}">Home</a></li>
+	  <li class="{{ notespage|yesno:'is,not' }}-active"><a href="{% url 'vulcoord:viewbypublish' 'desc' %}">Notes</a></li> 
+          <li class="{{ searchpage|yesno:'is,not' }}-active"><a href="{% url 'vulcoord:search' %}">Search</a></li>
+          <li class="{{ reportpage|yesno:'is,not' }}-active"><a href="{% url 'vulcoord:initreport' %}">Report a Vulnerability</a></li>
+	  <li class="{{ stmtpage|yesno:'is,not' }}-active"><a href="{% url 'vulcoord:vendorstmt' %}">Provide a Vendor Statement</a></li>
+          <li class="{{ guidepage|yesno:'is,not' }}-active"><a href="{% url 'vulcoord:discguidance' %}">Disclosure Guidance</a></li>
         </ul>
       </div>
     </div>
   </div>
   
   <div class="mainbody section">
-    
+      
     {% block content %}
     {% endblock %}
-    
-  </div><!--endmainbody-->
-  {% block footer %}
-  
-  
+
+</div><!--endmainbody-->
+{% block footer %}
+
+
 </div>
 </div>
 
@@ -192,7 +162,7 @@
 <div id="sponsorbar">
   <div class="row">
     <div class="large-12 medium-12 columns">
-      <p>Sponsored by <a href="https://www.cisa.gov/cybersecurity" target="_blank" rel="noopener">CISA.</a> </p>
+      <p>Sponsored by the Department of Homeland Security <a href="http://www.dhs.gov/office-cybersecurity-and-communications" target="_blank" rel="noopener">Office of Cybersecurity and Communications.</a> </p>
     </div>
   </div>
 </div>
@@ -200,19 +170,20 @@
   <div class="row">
     <div class="large-4 medium-4 columns">
       <div class="wanttolist">
-	<!--<p><a href="{% url 'vincepub:initreport' %}">Report a vulnerability</a></p>-->
-	<a href="{{ DOC_URLS.VINCE_PGP_KEY }}"><i class="fas fa-key" aria-hidden="true"></i>  Download PGP Key </a>
+	<!--<p><a href="{% url 'vulcoord:initreport' %}">Report a vulnerability</a></p>-->
+	<a href="https://certcc.github.io/pgp"><i class="fas fa-key" aria-hidden="true"></i>  Download PGP/GPG Key </a>
+	<!--<p><a href="{% url 'vulcoord:vendorstmt' %}">Provide a vendor statement</a></p>-->
       </div>
     </div>
     <div class="large-4 medium-4 columns">
       <div class="wanttolist">
-        <p><a href="{{ DOC_URLS.CERT_BLOG }}" target="_blank" rel="noopener">Read CERT/CC Blog</a></p>
+        <p><a href="https://insights.sei.cmu.edu/cert/" target="_blank" rel="noopener">Read CERT/CC Blog</a></p>
         
       </div>
     </div>
     <div class="large-4 medium-4 columns">
       <div class="wanttolist">
-	<p><a href="{{ DOC_URLS.SEI_VUL_ANALYSIS }}" target="_blank" rel="noopener">Learn about Vulnerability Analysis</a></p>
+	<p><a href="https://www.sei.cmu.edu/research-capabilities/all-work/display.cfm?customel_datapageid_4050=21304" target="_blank" rel="noopener">Learn about Vulnerability Analysis</a></p>
       </div>
     </div>
   </div>
@@ -239,7 +210,7 @@
 	<div class="large-6 medium-6 columns">
 	  <ul class="social">
 	    <li><a href="https://www.facebook.com/SEICMU/" class="facebook" target="_blank"></a></li>
-	    <li><a href="https://twitter.com/sei_cmu" class="twitter" target="_blank"></a></li>
+	    <li><a href="https://twitter.com/SEInews" class="twitter" target="_blank"></a></li>
 	    <li><a href="https://www.linkedin.com/company/software-engineering-institute" class="linkedin" target="_blank"></a></li>
 	    <li><a href="https://www.youtube.com/user/TheSEICMU" class="youtube" target="_blank"></a></li>
 	    <li><a href="https://itunes.apple.com/us/podcast/software-engineering-institute-sei-podcast-series/id566573552?mt=2" class="itunes" target="_blank"></a></li>
@@ -249,8 +220,7 @@
       <div class="row">
 	<div class="large-12 columns">
 	  <div class="contactlinks">
-	    <a href="http://www.sei.cmu.edu/locations/index.cfm"><small>Office Locations</small></a> | <a href="http://www.sei.cmu.edu/additional-sites-directory/index.cfm" target=""><small>Additional Sites Directory</small></a> | <a href="{{ DOC_URLS.VINCE_CODE_OF_CONDUCT }}"><small>Legal</small></a> | <a href="https://www.sei.cmu.edu/legal/privacy-notice/index.cfm" target=""><small>Privacy Notice</small>
-</a> |  <a href="https://www.cmu.edu/hr/ethics-hotline/" target=""><small>CMU Ethics Hotline</small></a> | <a href="http://www.sei.cmu.edu"><small>www.sei.cmu.edu</small></a>
+	    <a href="http://www.sei.cmu.edu/locations/index.cfm"><small>Office Locations</small></a> | <a href="http://www.sei.cmu.edu/additional-sites-directory/index.cfm" target=""><small>Additional Sites Directory</small></a> | <a href="http://www.sei.cmu.edu/legal/index.cfm"><small>Legal Info</small></a> | <a href="https://www.cmu.edu/hr/ethics-hotline/" target=""><small>CMU Ethics Hotline</small></a> | <a href="http://www.sei.cmu.edu"><small>www.sei.cmu.edu</small></a>
 	  </div>
 	</div>
       </div>
@@ -261,14 +231,14 @@
       </div>
     </div>
     <div class="large-4 medium-4 columns">
-      <a href="{{ DOC_URLS.SEI_CONTACT }}" class="contact-button button expanded">Contact SEI</a>
+      <a href="https://www.sei.cmu.edu/contact-us/" class="contact-button button expanded">Contact SEI</a>
 
       <div class="contactlist">
 	    <h4>Contact CERT/CC</h4>
             <p><i class="fas fa-phone" aria-hidden="true"></i><a href="tel:+14122685800">  412-268-5800</a><br/>
 	    
             <i class="fas fa-envelope" aria-hidden="true"></i> <a href="mailto:cert@cert.org" ref="nofollow"> cert@cert.org</a> </p>
-            <p><!--<i class="fas fa-rss"></i><a href="{% url 'vincepub:vulfeed' %}">  Subscribe to our feed</a>--></p>
+            <p><!--<i class="fas fa-rss"></i><a href="{% url 'vulcoord:vulfeed' %}">  Subscribe to our feed</a>--></p>
 
           </div>
 	  <!--<a class="contact-button hollow button large expanded" href="https://www.sei.cmu.edu/contact-us/">Contact Us</a>-->
@@ -276,9 +246,9 @@
   </div>
   </div>
 </div>
-</div>
-<script type="text/javascript" src="{% static 'vince/js/foundation.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'vincepub/js/formactions.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'vulcoord/js/foundation.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'vulcoord/js/formactions.js' %}"></script>
 
 {% endblock %}
 

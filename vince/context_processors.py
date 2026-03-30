@@ -42,11 +42,13 @@ def vince_version(request):
             'WEB_TITLE': settings.WEB_TITLE,
             'ORG_NAME': settings.ORG_NAME,
             'CONTACT_EMAIL': settings.CONTACT_EMAIL,
+            'ORG_POLICY_URL': settings.ORG_POLICY_URL,
             'VINCEPUB_BASE_TEMPLATE': settings.VINCEPUB_BASE_TEMPLATE,
             'VINCETRACK_BASE_TEMPLATE': settings.VINCETRACK_BASE_TEMPLATE,
             'VINCECOMM_BASE_TEMPLATE': settings.VINCECOMM_BASE_TEMPLATE,
             'CASE_ID': settings.CASE_IDENTIFIER,
-            'REPORT_ID': settings.REPORT_IDENTIFIER}
+            'REPORT_ID': settings.REPORT_IDENTIFIER,
+            'DOC_URLS': settings.DOC_URLS}
 
             
 

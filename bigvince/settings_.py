@@ -54,7 +54,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "3.0.34"
+VERSION = "3.0.35"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -768,6 +768,38 @@ CONTACT_EMAIL = "vuls@vince.example"
 CONTACT_PHONE = "+12021115555"
 ORG_POLICY_URL = "https://vuls.vince.example/terms"
 ORG_AUTHORITY = f"{ORG_NAME} "
+
+DOC_URLS = {
+    # VINCE Documentation (certcc.github.io/VINCE-docs/)
+    "VINCE_DOCS": "https://certcc.github.io/VINCE-docs/",
+    "VINCE_CASE_HANDLING": "https://certcc.github.io/VINCE-docs/Case-Handling/",
+    "VINCE_VENDOR_STATEMENT": "https://certcc.github.io/VINCE-docs/Case-Handling/#giving-a-vendor-status-and-statement",
+    "VINCE_CODE_OF_CONDUCT": "https://certcc.github.io/VINCE-docs/VINCE-Code-of-Conduct/",
+    "VINCE_MFA_INFO": "https://certcc.github.io/VINCE-docs/Access-and-Authorization/#multifactor-authentication",
+    "VINCE_VENDOR_CONTACT": "https://certcc.github.io/VINCE-docs/Vendor-Screens/#edit-contact-info",
+    # CERT Guide to CVD (certcc.github.io/CERT-Guide-to-CVD/)
+    "CVD_GUIDE": "https://certcc.github.io/CERT-Guide-to-CVD/",
+    "CVD_ABOUT_VUL_NOTES": "https://certcc.github.io/CERT-Guide-to-CVD/reference/policy_templates/receivers/?h=vulnerability+notes",
+    "CVD_COORD_PROCESS": "https://certcc.github.io/CERT-Guide-to-CVD/tutorials/coord_certcc/",
+    "CVD_HOW_TO_REPORT": "https://certcc.github.io/CERT-Guide-to-CVD/tutorials/response_process/reporter/",
+    "CVD_FOR_REPORTERS": "https://certcc.github.io/CERT-Guide-to-CVD/howto/coordination/",
+    "CVD_FOR_VENDORS": "https://certcc.github.io/CERT-Guide-to-CVD/howto/",
+    "CVD_WORKING_WITH_CERTCC": "https://certcc.github.io/CERT-Guide-to-CVD/tutorials/coord_certcc/vendor/",
+    "CVD_WHAT_IS_CVE": "https://certcc.github.io/CERT-Guide-to-CVD/topics/phases/public_awareness/?h=cve#vulnerability-identifiers",
+    "CVD_COORD_GUIDELINES": "https://certcc.github.io/CERT-Guide-to-CVD/howto/coordination/validation",
+    # PGP Key
+    "VINCE_PGP_KEY": "https://certcc.github.io/pgp",
+    # VINCE Help (GitHub)
+    "VINCE_HELP": "https://github.com/CERTCC/VINCE",
+    # SEI / CERT Blog / Contact
+    "CERT_BLOG": "https://insights.sei.cmu.edu/cert/",
+    "CERT_DIVISION": "https://insights.sei.cmu.edu/divisions/cert/",
+    "SEI_VUL_ANALYSIS": "https://www.sei.cmu.edu/research-capabilities/all-work/display.cfm?customel_datapageid_4050=21304",
+    "SEI_CONTACT": "https://www.sei.cmu.edu/contact-us/",
+    # External reference links
+    "CVE_REQUEST": "https://cveform.mitre.org",
+    "DOD_VULN_REPORT": "https://hackerone.com/deptofdefense",
+}
 VINCEPUB_BASE_TEMPLATE = "vincepub/base_public.html"
 VINCECOMM_BASE_TEMPLATE = "vinny/base_public.html"
 VINCETRACK_BASE_TEMPLATE = "vince/base_public.html"

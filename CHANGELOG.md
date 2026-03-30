@@ -7,6 +7,16 @@ VINCE Coordination platform code
 ## Description
 VINCE Coordination platform 
 
+Version 3.0.35 2026-03-30
+
+* dependabot update recommendation: `requests` 2.23.4 to 2.33.0, `ecdsa` 0.18.0 to 0.19.2, `cryptography` 44.0.1 to 46.0.6
+* updated `cffi` 1.17.1 to 2.0.0
+* updated and paramaterized links to documentation (Internal-816)
+* created API endpoint allowing users to POST vul reports (Internal-821)
+* enhanced security controls limiting recipients of Track ticket update emails (Internal-838)
+* modified spreadsheet for weekly reports on VINCE activity in response to user request (Internal-804)
+
+
 Version 3.0.34 2026-03-19
 
 * modified exception handling for certain cases in the "troublesome user" code (Internal-837)

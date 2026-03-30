@@ -342,8 +342,8 @@ def update_ticket(request, ticket_id):
         template_suffix = "submitter"
 
         if ticket.submitter_email != request.user.email:
-            # Is this a vincetrack user?
-            vt_user = User.objects.filter(username=ticket.submitter_email).first()
+            # Only send to genuine VINCE Track staff (in the "vince" group)
+            vt_user = User.objects.filter(username=ticket.submitter_email, groups__name="vince").first()
             if vt_user:
                 send_ticket_mail(
                     template + template_suffix,
@@ -422,9 +422,19 @@ def return_to_ticket(user, ticket):
 
 
 def email_ticketcc(ticket, template, context, files, messages_sent_to):
-    # Send email to people that are cc'd on ticket (watch list)
+    # Send email to people that are cc'd on ticket (watch list),
+    # but only if they are genuine VINCE Track staff (in the "vince" group).
     for cc in ticket.ticketcc_set.all():
         if cc.email_address not in messages_sent_to:
+            # Check if CC recipient is a VINCE Track user in the "vince" group
+            if cc.user:
+                is_vince_staff = cc.user.groups.filter(name="vince").exists()
+            else:
+                is_vince_staff = User.objects.filter(
+                    email=cc.email_address, groups__name="vince"
+                ).exists()
+            if not is_vince_staff:
+                continue
             send_ticket_mail(
                 template,
                 context,

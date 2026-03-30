@@ -1,0 +1,58 @@
+{% autoescape off %}
+
+=======================================================================
+THIS IS AN AUTOMATED EMAIL CONFIRMING RECEIPT OF YOUR STATEMENT.
+THIS EMAIL IS SENT FROM AN ACCOUNT THAT IS NOT MONITORED.
+DO NOT REPLY TO THIS EMAIL, OR WE WILL BE UNABLE TO RESPOND.
+=======================================================================
+
+Hello {% if contact_name %}{{ contact_name }}{% endif %},
+
+Thank you for submitting a statement to the CERT Coordination Center.
+
+We have received your statement, and confirm the following details:
+
+* VRF#{{ vrf_id }}
+* Date Submitted: {{ vrf_date_submitted }}
+
+The rest of the details of your statement have not been included in this
+email for security reasons, but have been received.
+
+NEXT STEPS
+----------
+
+We will review your statement and add it to the published VU# you specified.
+If applicable, we will also update our records for the latest contact
+information for your organization.
+
+We will follow up with you once these changes are complete.
+
+Any follow-up from us will come from <cert@cert.org>
+and be PGP signed by our most recent PGP key.
+Our latest PGP key is always available at:
+
+https://certcc.github.io/pgp
+
+Please ensure you add <cert@cert.org> and our latest PGP key to
+your address book for future use.
+
+For more information, you can read our coordination expectations
+for vendors at:
+
+https://certcc.github.io/CERT-Guide-to-CVD/howto/
+
+This page provides some information on best practices on establishing
+a coordinated vulnerability response capability at your organization,
+if you have not already done so.
+
+Best Regards,
+
+Vulnerability Analysis Team
+CERT Coordination Center
+Software Engineering Institute
+Carnegie Mellon University
+www.cert.org
+
+
+{% endautoescape %}
+ 

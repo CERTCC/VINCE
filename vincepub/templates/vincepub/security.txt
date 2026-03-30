@@ -1,0 +1,10 @@
+Contact: https://kb.cert.org/vuls/report/
+Contact: mailto:cert@cert.org
+Expires: 2029-10-05T04:00:00.000Z
+Encryption: https://certcc.github.io/pgp/asc/latest.asc
+Encryption: https://certcc.github.io/pgp/
+Acknowledgments: https://kb.cert.org/vuls/
+Preferred-Languages: en
+Canonical: https://certcc.github.io/.well-known/security.txt
+Policy: https://certcc.github.io/CERT-Guide-to-CVD/reference/certcc_disclosure_policy/
+Hiring: https://cmu.wd5.myworkdayjobs.com/SEI
