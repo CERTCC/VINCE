@@ -128,7 +128,7 @@ def get_parameter(param):
 
 
 def md5_file(f):
-    hash_md5 = hashlib.md5()
+    hash_md5 = hashlib.md5(usedforsecurity=False)
     b = bytearray(128 * 1024)
     mv = memoryview(b)
     for n in iter(lambda: f.readinto(mv), 0):

@@ -7,6 +7,14 @@ VINCE Coordination platform code
 ## Description
 VINCE Coordination platform 
 
+Version 3.0.36 2026-04-20
+
+* dependabot update recommendation: `sqlparse` 0.5.0 to 0.5.4, `PyJWT` 2.6.0 to 2.12.0, `markdown` 3.5 to 3.8.1, `pyasn1` 0.4.8 to 0.6.3, `awscli` 1.26.85 to 1.44.38, `Django` 4.2.28 to 4.2.30, `cryptography` 46.0.6 to 46.0.7
+* updated `python-jose` 3.4.0 to 3.5.0, `botocore` 1.31.85 to 1.42.48, `docutils` 0.16 to 0.18.1, `s3transfer` 0.7.0 to 0.16.0, `boto3` 1.28.85 to 1.42.48, `typing-extensions` 4.4.0 to 4.9.0, `M2Crypto` 0.38.0 to 0.47.0 (Internal-841)
+* added `setuptools` >=65.0.0,<81 (Internal-841)
+* tweaked code in various files to prepare for upgrade to Python 3.12 (Internal-841)
+
+
 Version 3.0.35 2026-03-30
 
 * dependabot update recommendation: `requests` 2.23.4 to 2.33.0, `ecdsa` 0.18.0 to 0.19.2, `cryptography` 44.0.1 to 46.0.6

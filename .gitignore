@@ -28,3 +28,6 @@ venv*
 .devcontainer
 .claude
 .claudeignore
+
+# references folder
+references/
