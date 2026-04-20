@@ -2716,7 +2716,7 @@ pre code {
 .announcement-banner {
   background-color: #b00;
   color: #fefefe;
-  font-size: small;
+  font-size: xx-large;
   padding-left: 20px;
   padding-right: 20px;
   border-top-style: solid;
@@ -2741,7 +2741,7 @@ pre code {
     top: 0;
     left: 0;
     right: 0;
-    font-size: small;
+    font-size: xx-large;
     background-color: #b00;
     color: #fefefe;
     padding-left: 20px;

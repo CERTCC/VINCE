@@ -144,7 +144,7 @@ h1.vince_login_logo {
 .announcement-banner {
     background-color: #b00;
     color: #fefefe;
-    font-size: small;
+    font-size: xx-large;
     padding-left: 20px;
     padding-right: 20px;
 }
@@ -173,7 +173,7 @@ h1.vince_login_logo {
     top: 0;
     left: 0;
     right: 0;
-    font-size: small;
+    font-size: xx-large;
     background-color: #b00;
     color: #fefefe;
     padding-left: 20px;
@@ -1431,7 +1431,7 @@ div.homelink a {
     padding-right:0;
 }
 
-/* When putting up an announcement-banner, change padding-top for the following selectors to something appropriate, */
+/* When putting up an announcement-banner, change padding-top for the following selectors to something appropriate, so that */
 /* the sidebar menu does not get partially obscured by the banner when scrolling down, When the banner goes away, */
 /* change it back to 150px and 130px respectively. */
 
@@ -1442,7 +1442,7 @@ div.homelink a {
     border-right: 1px solid #c2c2c2;
     color: #4d4d4f;
     padding-top: 150px;
-    /* padding-top:340px; */
+    /* padding-top: 225px; */
 
 }
 
@@ -1452,22 +1452,24 @@ div.homelink a {
     border-right: 1px solid #c2c2c2;
     background-color: #282829;
     padding-top:130px;
+    /* padding-top: 205px; */
 
 }
 
-/* When putting up an announcement-banner, change top for the following selector to something appropriate, */
+/* When putting up an announcement-banner, change top for the following two selectors to something appropriate, so that */
 /* the sidebar menu does not get partially obscured by the banner when scrolling down. When the banner goes away, */
 /* change it back to "0 !important". */
 
 .less_padding {
     top: 0 !important;
-    /* top: 340px !important; */
+    /* top: 225px !important; */
     position: absolute;
     width:100%;
 }
 
 .less_padding_vt {
     top: 0px !important;
+    /* top: 225px !important; */
     position: absolute;
     width:100%;
 }
@@ -1481,6 +1483,7 @@ div.homelink a {
     border-right: 1px solid #c2c2c2;
     color: #f1f1f2;
     padding-top:130px;
+    /* padding-top: 225px; */
 
 }
 
@@ -1489,7 +1492,7 @@ div.homelink a {
     border-right: 1px solid #c2c2c2;
     color: #4d4d4f;
     padding-top: 150px;
-    /* padding-top:340px; */
+    /* padding-top:225px; */
 }
 
 /*.position-left.reveal-for-medium ~ .off-canvas-content {

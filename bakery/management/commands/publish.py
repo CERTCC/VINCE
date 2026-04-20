@@ -333,7 +333,7 @@ class Command(BasePublishCommand):
         Returns the md5 checksum of the provided file name.
         """
         with self.fs.open(filename, "rb") as f:
-            m = hashlib.md5(f.read())
+            m = hashlib.md5(f.read(), usedforsecurity=False)
         return m.hexdigest()
 
     def get_multipart_md5(self, filename, chunk_size=8 * 1024 * 1024):
@@ -352,13 +352,13 @@ class Command(BasePublishCommand):
                 if not data:
                     break
                 # Generate a md5 hash for each chunk
-                md5s.append(hashlib.md5(data))
+                md5s.append(hashlib.md5(data, usedforsecurity=False))
 
         # Combine the chunks
         digests = b"".join(m.digest() for m in md5s)
 
         # Generate a new hash using them
-        new_md5 = hashlib.md5(digests)
+        new_md5 = hashlib.md5(digests, usedforsecurity=False)
 
         # Create the ETag as Amazon will
         new_etag = '"%s-%s"' % (new_md5.hexdigest(), len(md5s))

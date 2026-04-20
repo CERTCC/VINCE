@@ -50,7 +50,7 @@ def _basic_auth_str(username, password):
             "Non-string passwords will no longer be supported in Requests "
             "3.0.0. Please convert the object you've passed in ({!r}) to "
             "a string or bytes object in the near future to avoid "
-            "problems.".format(password),
+            "problems.".format(type(password)),
             category=DeprecationWarning,
         )
         password = str(password)
@@ -145,7 +145,7 @@ class HTTPDigestAuth(AuthBase):
             def md5_utf8(x):
                 if isinstance(x, str):
                     x = x.encode('utf-8')
-                return hashlib.md5(x).hexdigest()
+                return hashlib.md5(x, usedforsecurity=False).hexdigest()
             hash_utf8 = md5_utf8
         elif _algorithm == 'SHA':
             def sha_utf8(x):
@@ -239,7 +239,7 @@ class HTTPDigestAuth(AuthBase):
         """
 
         # If response is not 4xx, do not auth
-        # See https://github.com/requests/requests/issues/3772
+        # See https://github.com/psf/requests/issues/3772
         if not 400 <= r.status_code < 500:
             self._thread_local.num_401_calls = 1
             return r
