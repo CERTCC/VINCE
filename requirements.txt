@@ -81,7 +81,7 @@ soupsieve==2.3.2.post1
 sqlparse==0.5.4
 typing-extensions>=4.9.0
 # (urllib3 is currently at 1.26.19. Dependabot recommends urllib3 2.6.3, but that breaks when combined with any currently available version of botocore.)
-urllib3==1.26.19
+urllib3==2.7.0
 vine==5.0.0
 watchtower==3.0.0
 webencodings==0.5.1
