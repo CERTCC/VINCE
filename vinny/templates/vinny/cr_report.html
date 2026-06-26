@@ -91,7 +91,14 @@
 	  <a href="{{ attachment.attachment.url }}">{{ attachment.attachment.name }}</a>
 	  {% endif %}
 	  </span>
-          <div class="document-info">Uploaded by {{ attachment.action.user.vinceprofile.vince_username }} on {{ attachment.action.date|date:'Y-m-d' }}</div>
+          <div class="document-info">Uploaded by
+            {% if attachment.action.is_coordinator %}
+              Vulnerability Coordinator
+            {% else %}
+              {{ attachment.action.user.vinceprofile.vince_username }}
+            {% endif %}
+            on {{ attachment.action.date|date:'Y-m-d' }}
+          </div>
       </div>
     </div>
     {% empty %}
@@ -128,7 +135,7 @@
       <div class="row">
         <div class="large-8 columns">
           <div class="form-group">
-            <label for='commentBox'>{% trans "Coordinator/Reporter Comments" %}</label>
+            <label for='commentBox'>{% trans "Add a comment to communicate with the reporter/coordination team" %}</label>
             <textarea rows='8' cols='70' name='comment' id='commentBox'></textarea>
           </div>
 	  <input type="submit" value="Add Comment" name="vrfSubmit" class="primary button"/>

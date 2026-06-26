@@ -373,6 +373,20 @@ def ingest_vulreport(request):
                         return JsonResponse({"response": "success"}, status=200)
             data["submission_type"] = data.get("submission_source", "web")
 
+            # code for later, maybe, if we add a t_cr endpoint:
+            # if (
+            #     data.get("metadata")
+            #     and data["metadata"].get("source") == "t_cr"
+            # ):
+            #     tcrqueue = TicketQueue.objects.filter(title="TCR").first()
+            #     if tcrqueue:
+            #         data["queue"] = tcrqueue.id
+            #         logger.debug(f"{log_tag} routing T report to TCR queue")
+            #     else:
+            #         # Fallback to CR if TCR queue doesn't exist yet
+            #         data["queue"] = vulqueue.id
+            #         logger.warning(f"{log_tag} TCR queue not found, falling back to CR queue")
+            # elif data.get("affected_website"):
             if data.get("affected_website"):
                 data["request_type"] = CaseRequest.GOV_FORM
                 data["queue"] = cisaqueue.id

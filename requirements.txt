@@ -8,7 +8,7 @@ awscli==1.44.38
 backports.zoneinfo;python_version<"3.9"
 beautifulsoup4==4.11.1
 billiard==4.0.2
-bleach==5.0.1
+bleach==6.4.0
 bleach-whitelist==0.0.11
 boto==2.49.0
 boto3==1.42.48
@@ -20,7 +20,7 @@ chardet==5.0.0
 charset-normalizer==2.1.1
 click==8.1.3
 colorama==0.4.4
-cryptography==46.0.7
+cryptography==48.0.1
 cvelib==1.3.0
 Deprecated==1.2.13
 dictdiffer==0.9.0
@@ -40,7 +40,7 @@ envs==1.4
 fs==2.4.16
 fs-s3fs==1.1.1
 gunicorn==22.0.0
-idna==3.7
+idna==3.15
 importlib-metadata==5.0.0
 importlib-resources==5.10.0
 pip-install==1.3.5
@@ -50,7 +50,7 @@ kombu==5.2.4
 M2Crypto==0.47.0
 Markdown==3.8.1
 openpyxl==3.1.5
-packaging==22.0
+packaging==24.2
 pinax-messages==3.0.0
 pip-autoremove==0.10.0
 pkgutil-resolve-name==1.3.10
@@ -60,7 +60,7 @@ pyasn1==0.6.3
 pycparser==2.21
 pycryptodome==3.19.1
 pydantic==1.10.13
-PyJWT==2.12.0
+PyJWT==2.13.0
 pyparsing==3.0.9
 pyrsistent==0.19.2
 python-dateutil==2.8.2
@@ -80,8 +80,7 @@ six==1.16.0
 soupsieve==2.3.2.post1
 sqlparse==0.5.4
 typing-extensions>=4.9.0
-# (urllib3 is currently at 1.26.19. Dependabot recommends urllib3 2.6.3, but that breaks when combined with any currently available version of botocore.)
-urllib3==1.26.19
+urllib3==2.7.0
 vine==5.0.0
 watchtower==3.0.0
 webencodings==0.5.1

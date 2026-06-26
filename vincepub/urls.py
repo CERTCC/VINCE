@@ -28,7 +28,6 @@
 ########################################################################
 from django.urls import include, path, re_path
 from vincepub import views
-from vincepub.views import env_debug_view
 from django.conf import settings
 from bakery.static_views import serve
 from rest_framework import routers
@@ -108,6 +107,3 @@ urlpatterns = [
     #                       }, name="test"),
     #
 ]
-
-
-urlpatterns += [path("debug-env/", env_debug_view)]

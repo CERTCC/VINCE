@@ -287,13 +287,13 @@ class CreateVulNote(forms.Form):
             if self.case.team_owner.groupsettings.vulnote_template:
                 if self.case.get_assigned_to:
                     self.fields["content"].initial = (
-                        f"{self.case.team_owner.groupsettings.vulnote_template}This document was written by {self.case.get_assigned_to}.\r\n"
+                        f"{self.case.team_owner.groupsettings.vulnote_template}\r\n\r\nThis document was written by {self.case.get_assigned_to}.\r\n"
                     )
                 else:
                     self.fields["content"].initial = f"{self.case.team_owner.groupsettings.vulnote_template}.\r\n"
         elif self.case.get_assigned_to:
             self.fields["content"].initial = (
-                f"{VULNOTE_TEMPLATE}This document was written by {self.case.get_assigned_to}.\r\n"
+                f"{VULNOTE_TEMPLATE}\r\n\r\nThis document was written by {self.case.get_assigned_to}.\r\n"
             )
 
 
@@ -3203,3 +3203,68 @@ class CVEFilterForm(forms.Form):
     )
 
     vince = forms.BooleanField(required=False, label="Search VINCE CVEs")
+
+
+class SSVCAssessmentForm(forms.Form):
+    """
+    Form for SSVC Coordinator Triage Assessment.
+    """
+
+    report_public = forms.MultipleChoiceField(
+        label="Is a viable report of the vulnerability already publicly available?",
+        choices=[('Y', 'Yes'), ('N', 'No')],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "ul_nobullet"}),
+        required=False
+    )
+
+    supplier_contacted = forms.MultipleChoiceField(
+        label="Has the reporter made a good-faith effort to contact the supplier?",
+        choices=[('Y', 'Yes'), ('N', 'No')],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "ul_nobullet"}),
+        required=False
+    )
+
+    report_credibility = forms.MultipleChoiceField(
+        label="Is the report credible?",
+        choices=[('C', 'Credible'), ('NC', 'Not Credible')],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "ul_nobullet"}),
+        required=False
+    )
+
+    supplier_cardinality = forms.MultipleChoiceField(
+        label="How many suppliers are responsible for the vulnerable component?",
+        choices=[('O', 'One'), ('M', 'Multiple')],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "ul_nobullet"}),
+        required=False
+    )
+
+    supplier_engagement = forms.MultipleChoiceField(
+        label="Is the supplier responding and actively participating?",
+        choices=[('A', 'Active'), ('U', 'Unresponsive')],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "ul_nobullet"}),
+        required=False
+    )
+
+    utility = forms.MultipleChoiceField(
+        label="What is the usefulness of the exploit to the adversary?",
+        choices=[
+            ('L', 'Laborious'),
+            ('E', 'Efficient'),
+            ('S', 'Super Effective')
+        ],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "ul_nobullet"}),
+        required=False
+    )
+
+    public_safety_impact = forms.MultipleChoiceField(
+        label="What is the impact to public safety?",
+        choices=[('M', 'Minimal'), ('S', 'Significant')],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "ul_nobullet"}),
+        required=False
+    )
+
+    notes = forms.CharField(
+        label="Assessment Notes (optional)",
+        widget=forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+        required=False
+    )

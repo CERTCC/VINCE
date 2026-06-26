@@ -101,7 +101,7 @@ def get_next_assignment(data):
 def auto_assignment(role, exclude=None):
     # get users for this role
 
-    users = UserAssignmentWeight.objects.filter(role__id=role)
+    users = UserAssignmentWeight.objects.filter(role__id=role, user__is_active=True)
 
     # are any of these users OOF today?
     oof_users = get_oof_users()

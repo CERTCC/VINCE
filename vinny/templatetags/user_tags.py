@@ -69,5 +69,5 @@ def notify_emails(user, contact):
         else:
             return False
     return False
-    
-    
+
+

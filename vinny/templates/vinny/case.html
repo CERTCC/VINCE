@@ -103,7 +103,7 @@
 	{{ message }}<br/>
 	{% endfor %}
 	{% else %}
-	We have identified {{ checkvuls|length }} {% if checkvuls|length > 1 %}vulnerabilities {% else %} vulnerability {% endif %}in this case. Your status was previously submitted on {% with s1=status|last_status %}<span class="datefield">{{ s1.date_modified|date:"c" }}</span> by {{ s1.user.vinceprofile.preferred_username }}{% endwith %}.
+	{{ checkvuls|length }} {% if checkvuls|length > 1 %}vulnerabilities have {% else %} vulnerability has {% endif %}been reported in this case. Your status was previously submitted on {% with s1=status|last_status %}<span class="datefield">{{ s1.date_modified|date:"c" }}</span> by {{ s1.user.vinceprofile.preferred_username }}{% endwith %}.
 	{% endif %}
       </p>
       <h5 class="dashboard-nav-card-action"><p class="btn-cta">View vuls and update your status</p></h5>
@@ -114,7 +114,7 @@
       <i class="dashboard-nav-card-icon fas fa-exclamation-triangle" aria-hidden="true"></i>
       <h3 class="dashboard-nav-title">Action Required</h3>
       <h2 class="dashboard-nav-date">{{ checkvuls|length }} {% if checkvuls|length > 1 %}Vulnerabilities{% else %}Vulnerability{% endif %}</h2>
-      <p class="dashboard-nav-summary">We have identified {{ checkvuls|length }} {% if checkvuls|length > 1 %}vulnerabilities{% else %}vulnerability{% endif %} in this
+      <p class="dashboard-nav-summary">{{ checkvuls|length }} {% if checkvuls|length > 1 %}vulnerabilities have{% else %}vulnerability has{% endif %} been reported in this
 	case. Please let us know if your organization is vulnerable.</p>
       <h5 class="dashboard-nav-card-action"><p class="btn-cta">View vulnerabilities and update status</p></h5>
 
@@ -160,8 +160,8 @@
   <div class="large-4 medium-4 small-12 columns">
     <a class="dashboard-nav-card vin-card" href="{% url 'vinny:vuls' case.id %}" id="vulspanel">
       <i class="dashboard-nav-card-icon fas fa-bug" aria-hidden="true"></i>
-      <h3 class="dashboard-nav-title">{{ vuls|length }} {% if vuls|length == 1 %}Vulnerability{% else %}Vulnerabilities{% endif %} Identified</h3>
-      <p class="dashboard-nav-summary">We have identified {{ vuls|length }} {% if vuls|length == 1 %}vulnerability{% else %}vulnerabilities{% endif %} in this case.
+      <h3 class="dashboard-nav-title">{{ vuls|length }} {% if vuls|length == 1 %}Vulnerability{% else %}Vulnerabilities{% endif %} Reported</h3>
+      <p class="dashboard-nav-summary">{{ vuls|length }} {% if vuls|length == 1 %}vulnerability has{% else %}vulnerabilities have{% endif %} been reported in this case.
 	</p>
       <h5 class="dashboard-nav-card-action"><p class="btn-cta">View vulnerabilities</p></h5>
     </a>

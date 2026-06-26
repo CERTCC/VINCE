@@ -2294,14 +2294,22 @@ def generate_hmac(key, message, b64=True):
     key = key.encode("utf-8") if isinstance(key, str) else key
     message = message.encode("utf-8") if isinstance(message, str) else message
 
+
+    # Show what we're hashing (but truncate key for security - just show length and first/last few chars)
+    logger.debug(f"generate_hmac: key length = {len(key)}, key preview = {key[:4]!r}...{key[-4:]!r}")
+    logger.debug(f"generate_hmac: message length = {len(message)}, message = {message!r}")
+
     hash_algorithm = hashlib.sha256
 
     # Create HMAC object
     hmac_obj = hmac.new(key, message, hash_algorithm)
     hmac_digest = hmac_obj.digest()
     if b64:
-        return base64.b64encode(hmac_digest).decode("utf-8")
+        result = base64.b64encode(hmac_digest).decode("utf-8")
+        logger.debug(f"generate_hmac result (base64): {result}")
+        return result
 
+    logger.debug(f"generate_hmac result (raw bytes): {hmac_digest!r}")
     return hmac_digest
 
 
@@ -2334,7 +2342,21 @@ def compute_authenticity_header(msg, key, headers, b64=True):
     auth_str = "|".join(parts)
     logger.debug(f"Authenticity header string: {auth_str}")
 
+    # Show exact bytes of auth_str
+    logger.debug(f"Authenticity header string bytes: {auth_str.encode('utf-8')!r}")
+    logger.debug(f"Authenticity header string length: {len(auth_str)}, bytes length: {len(auth_str.encode('utf-8'))}")
+
+
     value = generate_hmac(key=key, message=auth_str, b64=b64)
+
+    # Show computed HMAC in base64 for easy comparison
+    if not b64:
+        value_b64 = base64.b64encode(value).decode('utf-8')
+        logger.debug(f"Computed HMAC (raw bytes): {value!r}")
+        logger.debug(f"Computed HMAC (base64): {value_b64}")
+    else:
+        logger.debug(f"Computed HMAC (base64): {value}")
+
 
     return value
 
@@ -2358,17 +2380,31 @@ def verify_authenticity_header(msg, key, headers):
 
     if header in msg:
         b64value = msg.get(header)
+        # Show what we received
+        logger.debug(f"Received X-Cert-Auth (base64): {b64value}")
+
         value = base64.b64decode(b64value.encode("utf-8"))
+
+        # Show received value in raw bytes
+        logger.debug(f"Received X-Cert-Auth (decoded bytes): {value!r}")
+        
         # note: the hmac docs recommend using compare_digest to avoid timing attacks
         # that can be a concern if we were to use:
         # return msg[header] == expected_value
         match = hmac.compare_digest(value, expected_value)
         if not match:
+            # Show both values in multiple formats for comparison
+            expected_b64 = base64.b64encode(expected_value).decode('utf-8')
             logger.warn(
-                f"match did not happen correctly. expected_value is {expected_value} and actual value is {value}"
+                f"HMAC mismatch. "
+                f"Expected (bytes): {expected_value!r}, "
+                f"Expected (base64): {expected_b64}, "
+                f"Actual (bytes): {value!r}, "
+                f"Actual (base64): {b64value}"
             )
         return match
 
+    logger.warn(f"X-Cert-Auth header not found in message")
     return False
 
 
@@ -2378,6 +2414,9 @@ def get_decoded_header(message, header_key):
     if not raw_value:
         return ""  # Return empty string if header is missing
 
+    # Show raw value with repr() to see hidden characters
+    logger.debug(f"get_decoded_header({header_key}): raw_value = {repr(raw_value)}")
+
     decoded_parts = decode_header(raw_value)
     decoded_value = ""
 
@@ -2386,6 +2425,10 @@ def get_decoded_header(message, header_key):
             decoded_value += part.decode(encoding or "utf-8")
         else:
             decoded_value += part
+
+    # Show decoded value and its byte representation
+    logger.debug(f"get_decoded_header({header_key}): decoded_value = {repr(decoded_value)}, bytes = {decoded_value.encode('utf-8')!r}")
+
 
     return decoded_value
 
@@ -2399,14 +2442,37 @@ def create_ticket_from_email(filename, body, bucket):
     from_email = email_header_decode_helper(b["From"])
     if from_email:
         outbound_email_address = get_parameter("OUTBOUND_EMAIL_ADDRESS")
+
+        # Security check before trusted-forwarder comparison:
+        # Reject if the decoded from_email matches OUTBOUND_EMAIL_ADDRESS but the raw
+        # From header had no literal @ outside of RFC 2047 encoded-word segments.
+        # This prevents RFC 2047 encoded-word attacks where an attacker sends
+        # From: =?utf-8?Q?vincecert=40cert.org?= which decodes to vincecert@cert.org
+        # and bypasses DMARC checks while matching the OUTBOUND_EMAIL_ADDRESS.
+        if from_email == outbound_email_address:
+            raw_from = b["From"]
+            if raw_from:
+                # Check if @ appears in the raw From header outside of encoded-word segments
+                # Encoded-words have format: =?charset?encoding?encoded-text?=
+                encoded_word_pattern = r'=\?[^?]+\?[BbQq]\?[^?]*\?='
+                raw_from_without_encoded_words = re.sub(encoded_word_pattern, '', raw_from)
+                has_literal_at_in_raw = '@' in raw_from_without_encoded_words
+
+                if not has_literal_at_in_raw:
+                    # The @ only appears in encoded form - reject as spoofing attempt
+                    logger.warning(
+                        f"Rejecting email that matches OUTBOUND_EMAIL_ADDRESS but has no literal @ in raw From header. "
+                        f"This indicates a potential RFC 2047 encoded-word spoofing attack. "
+                        f"Raw From: {raw_from}, Decoded: {from_email}, S3 filename: {filename}"
+                    )
+                    return
+
         if from_email == outbound_email_address:
             # obtain the secret key (in the AWS parameter store)
             auth_key = get_parameter("AUTHENTICITY_KEY")
             # use the secret key and the specific attributes to verify the HMAC string in the `X-Cert-Auth` header
             auth_hdrs = ["X-Original-Message-ID", "From", "X-Original-From", "X-Cert-Index", "X-Date-Received"]
             auth_checks_out = verify_authenticity_header(b, auth_key, auth_hdrs)
-            # temporarily ignoring authenticity checks:
-            auth_checks_out = True
             if auth_checks_out:  # true if auth checks out
                 logger.debug(f"in create_ticket_from_email, auth checks out with b = {b}")
                 try:
@@ -3989,3 +4055,180 @@ def reset_user_mfa(attributes, body):
     )
 
     fup.save()
+
+
+# SSVC Coordinator Triage Decision Calculator
+# Based on SSVC v2 Coordinator Triage v1.0.0
+
+class SSVCCalculator:
+    """
+    Calculator for SSVC Coordinator Triage decisions.
+
+    Loads the decision table from JSON and provides lookup functionality
+    based on the 7 decision point values using VINCE's short codes.
+    """
+
+    def __init__(self):
+        """Initialize the calculator and load the decision table."""
+        self._decision_table = None
+        self._load_decision_table()
+
+    def _load_decision_table(self):
+        """Load the decision table from JSON file."""
+        from pathlib import Path
+
+        # Path to the JSON file in static/vince/data/
+        json_path = Path(__file__).parent / "static" / "vince" / "data" / "ssvc_coordinator_triage_1_0_0.json"
+
+        if not json_path.exists():
+            raise FileNotFoundError(
+                f"SSVC decision table not found at {json_path}"
+            )
+
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        # Build a dictionary for fast lookup
+        # Key: tuple of 7 decision values
+        # Value: outcome
+        self._decision_table = {}
+        for decision in data['decisions']:
+            key = (
+                decision['rp'],
+                decision['sc'],
+                decision['rc'],
+                decision['scard'],
+                decision['se'],
+                decision['u'],
+                decision['psi']
+            )
+            self._decision_table[key] = decision['outcome']
+
+    def calculate_outcome(
+        self,
+        report_public,
+        supplier_contacted,
+        report_credibility,
+        supplier_cardinality,
+        supplier_engagement,
+        utility,
+        public_safety_impact,
+    ):
+        """
+        Calculate SSVC coordinator triage outcome.
+
+        Args:
+            report_public: 'Y' (Yes) or 'N' (No)
+            supplier_contacted: 'Y' (Yes) or 'N' (No)
+            report_credibility: 'C' (Credible) or 'NC' (Not Credible)
+            supplier_cardinality: 'O' (One) or 'M' (Multiple)
+            supplier_engagement: 'A' (Active) or 'U' (Unresponsive)
+            utility: 'L' (Laborious), 'E' (Efficient), or 'S' (Super Effective)
+            public_safety_impact: 'M' (Minimal) or 'S' (Significant)
+
+        Returns:
+            Outcome code: 'D' (Decline), 'T' (Track), or 'C' (Coordinate)
+
+        Raises:
+            ValueError: If invalid codes provided or combination not in decision table
+        """
+        # Validate inputs
+        valid_codes = {
+            'report_public': ['Y', 'N'],
+            'supplier_contacted': ['Y', 'N'],
+            'report_credibility': ['C', 'NC'],
+            'supplier_cardinality': ['O', 'M'],
+            'supplier_engagement': ['A', 'U'],
+            'utility': ['L', 'E', 'S'],
+            'public_safety_impact': ['M', 'S'],
+        }
+
+        inputs = {
+            'report_public': report_public,
+            'supplier_contacted': supplier_contacted,
+            'report_credibility': report_credibility,
+            'supplier_cardinality': supplier_cardinality,
+            'supplier_engagement': supplier_engagement,
+            'utility': utility,
+            'public_safety_impact': public_safety_impact,
+        }
+
+        for field_name, value in inputs.items():
+            if value not in valid_codes[field_name]:
+                raise ValueError(
+                    f"Invalid value '{value}' for {field_name}. "
+                    f"Expected one of: {valid_codes[field_name]}"
+                )
+
+        # Build lookup key
+        key = (
+            report_public,
+            supplier_contacted,
+            report_credibility,
+            supplier_cardinality,
+            supplier_engagement,
+            utility,
+            public_safety_impact,
+        )
+
+        # Look up outcome
+        outcome = self._decision_table.get(key)
+        if outcome is None:
+            raise ValueError(
+                f"No outcome found in decision table for: {key}"
+            )
+
+        return outcome
+
+
+# Singleton instance for SSVC calculator
+_ssvc_calculator_instance = None
+
+
+def get_ssvc_calculator():
+    """
+    Get or create the singleton SSVCCalculator instance.
+
+    Returns:
+        SSVCCalculator: The calculator instance
+    """
+    global _ssvc_calculator_instance
+    if _ssvc_calculator_instance is None:
+        _ssvc_calculator_instance = SSVCCalculator()
+    return _ssvc_calculator_instance
+
+
+def calculate_ssvc_outcome(
+    report_public,
+    supplier_contacted,
+    report_credibility,
+    supplier_cardinality,
+    supplier_engagement,
+    utility,
+    public_safety_impact,
+):
+    """
+    Convenience function to calculate SSVC coordinator triage outcome.
+
+    Args:
+        report_public: 'Y' (Yes) or 'N' (No)
+        supplier_contacted: 'Y' (Yes) or 'N' (No)
+        report_credibility: 'C' (Credible) or 'NC' (Not Credible)
+        supplier_cardinality: 'O' (One) or 'M' (Multiple)
+        supplier_engagement: 'A' (Active) or 'U' (Unresponsive)
+        utility: 'L' (Laborious), 'E' (Efficient), or 'S' (Super Effective)
+        public_safety_impact: 'M' (Minimal) or 'S' (Significant)
+
+    Returns:
+        Outcome code: 'D' (Decline), 'T' (Track), or 'C' (Coordinate)
+    """
+    calculator = get_ssvc_calculator()
+    return calculator.calculate_outcome(
+        report_public=report_public,
+        supplier_contacted=supplier_contacted,
+        report_credibility=report_credibility,
+        supplier_cardinality=supplier_cardinality,
+        supplier_engagement=supplier_engagement,
+        utility=utility,
+        public_safety_impact=public_safety_impact,
+    )
