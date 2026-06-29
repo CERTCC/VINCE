@@ -4748,366 +4748,366 @@ class CommVulReportAPIView(generics.GenericAPIView):
         }, status=201)
 
 
-class TVulReportAPIView(generics.GenericAPIView):
-    """
-    T Vulnerability Report API endpoint (Extended fields version).
+# class TVulReportAPIView(generics.GenericAPIView):
+#     """
+#     T Vulnerability Report API endpoint (Extended fields version).
 
-    This endpoint accepts vulnerability reports with extended metadata fields.
-    Reports are routed to the TCR queue for specialized handling.
+#     This endpoint accepts vulnerability reports with extended metadata fields.
+#     Reports are routed to the TCR queue for specialized handling.
 
-    Key differences from standard CommVulReportAPIView:
-    - Accepts JSON POST body instead of form data
-    - Stores extended fields in the metadata JSON field
-    - Routes to TCR queue instead of CR queue
-    - Supports ZIP file attachment for bundling multiple files
-    """
-    throttle_classes = [UserRateThrottle]
+#     Key differences from standard CommVulReportAPIView:
+#     - Accepts JSON POST body instead of form data
+#     - Stores extended fields in the metadata JSON field
+#     - Routes to TCR queue instead of CR queue
+#     - Supports ZIP file attachment for bundling multiple files
+#     """
+#     throttle_classes = [UserRateThrottle]
 
-    def post(self, request, *args, **kwargs):
-        """
-        Accept T vulnerability report submission.
+#     def post(self, request, *args, **kwargs):
+#         """
+#         Accept T vulnerability report submission.
 
-        Expected JSON body structure:
-        {
-            // Standard VINCE fields (required)
-            "product_name": "...",
-            "product_version": "...",
-            "vul_description": "...",
-            "vul_exploit": "...",
-            "vul_impact": "...",
-            "vul_discovery": "...",
-            "vul_public": true/false,
-            "vul_exploited": true/false,
-            "vul_disclose": true/false,
-            "share_release": true/false,
-            "credit_release": true/false,
-            "comm_attempt": true/false,
-            "multiplevendors": true/false,
+#         Expected JSON body structure:
+#         {
+#             // Standard VINCE fields (required)
+#             "product_name": "...",
+#             "product_version": "...",
+#             "vul_description": "...",
+#             "vul_exploit": "...",
+#             "vul_impact": "...",
+#             "vul_discovery": "...",
+#             "vul_public": true/false,
+#             "vul_exploited": true/false,
+#             "vul_disclose": true/false,
+#             "share_release": true/false,
+#             "credit_release": true/false,
+#             "comm_attempt": true/false,
+#             "multiplevendors": true/false,
 
-            // Optional standard fields
-            "contact_name": "...",
-            "contact_email": "...",
-            "contact_org": "...",
-            "vendor_name": "...",
-            "tracking": "...",
+#             // Optional standard fields
+#             "contact_name": "...",
+#             "contact_email": "...",
+#             "contact_org": "...",
+#             "vendor_name": "...",
+#             "tracking": "...",
 
-            // Extended T fields (stored in metadata)
-            "discovery_method_type": "ai_scan|manual|hybrid",
-            "cvss_score": 8.1,
-            "cvss_version": "3.1",
-            "cvss_vector": "CVSS:3.1/AV:N/AC:L/...",
-            "epss_score": 0.75,
-            "epss_date": "2026-06-20",
-            "embargo_requested": true,
-            "embargo_rationale": "...",
-            "ci_impact": true,
-            "ci_sectors": ["financial_services"],
-            "validation_status": "validated|partially_validated|unvalidated",
-            ... (see metadata schema docs)
-        }
+#             // Extended T fields (stored in metadata)
+#             "discovery_method_type": "ai_scan|manual|hybrid",
+#             "cvss_score": 8.1,
+#             "cvss_version": "3.1",
+#             "cvss_vector": "CVSS:3.1/AV:N/AC:L/...",
+#             "epss_score": 0.75,
+#             "epss_date": "2026-06-20",
+#             "embargo_requested": true,
+#             "embargo_rationale": "...",
+#             "ci_impact": true,
+#             "ci_sectors": ["financial_services"],
+#             "validation_status": "validated|partially_validated|unvalidated",
+#             ... (see metadata schema docs)
+#         }
 
-        File upload: Attach as multipart/form-data "user_file" field.
-        For multiple files, submit as ZIP archive.
-        """
-        try:
-            # Parse JSON body
-            if request.content_type == 'application/json':
-                data = json.loads(request.body.decode('utf-8'))
-            else:
-                # Fallback to POST data for form submissions
-                data = request.POST.dict()
+#         File upload: Attach as multipart/form-data "user_file" field.
+#         For multiple files, submit as ZIP archive.
+#         """
+#         try:
+#             # Parse JSON body
+#             if request.content_type == 'application/json':
+#                 data = json.loads(request.body.decode('utf-8'))
+#             else:
+#                 # Fallback to POST data for form submissions
+#                 data = request.POST.dict()
 
-            # Extract T metadata fields
-            t_metadata = self._extract_t_metadata(data)
+#             # Extract T metadata fields
+#             t_metadata = self._extract_t_metadata(data)
 
-            # Build form data from standard VINCE fields
-            form_data = self._build_form_data(data)
+#             # Build form data from standard VINCE fields
+#             form_data = self._build_form_data(data)
 
-            # Handle file upload
-            files = request.FILES if request.FILES else {}
+#             # Handle file upload
+#             files = request.FILES if request.FILES else {}
 
-            # Create form and validate
-            form = CaseRequestForm(data=form_data, files=files)
+#             # Create form and validate
+#             form = CaseRequestForm(data=form_data, files=files)
 
-            if not form.is_valid():
-                return JsonResponse({
-                    "error": "Validation failed",
-                    "errors": form.errors,
-                    "status": "error"
-                }, status=400)
+#             if not form.is_valid():
+#                 return JsonResponse({
+#                     "error": "Validation failed",
+#                     "errors": form.errors,
+#                     "status": "error"
+#                 }, status=400)
 
-            # Record API access
-            create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
+#             # Record API access
+#             create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
 
-            # Generate VRF ID
-            # NOTE (JH concern): For bulk T submissions, consider using a separate
-            # seed/number range to avoid exhausting the standard VRF ID pool.
-            # Current implementation uses standard get_vrf_id() - may need modification
-            # for high-volume batch imports.
-            vrf_id = get_vrf_id()
+#             # Generate VRF ID
+#             # NOTE (JH concern): For bulk T submissions, consider using a separate
+#             # seed/number range to avoid exhausting the standard VRF ID pool.
+#             # Current implementation uses standard get_vrf_id() - may need modification
+#             # for high-volume batch imports.
+#             vrf_id = get_vrf_id()
 
-            # Prepare context with form data
-            context = form.cleaned_data
+#             # Prepare context with form data
+#             context = form.cleaned_data
 
-            # Store T metadata with source marker
-            context["metadata"] = {
-                "source": "t_cr",
-                "ai_ml_system": t_metadata.get("ai_ml_system", False),
-                **t_metadata  # Include all T-specific fields
-            }
+#             # Store T metadata with source marker
+#             context["metadata"] = {
+#                 "source": "t_cr",
+#                 "ai_ml_system": t_metadata.get("ai_ml_system", False),
+#                 **t_metadata  # Include all T-specific fields
+#             }
 
-            # Save the CaseRequest
-            form.instance.vrf_id = vrf_id
-            newrequest = form.save(commit=False)
-            newrequest.user = self.request.user
-            newrequest.submission_type = "api"
-            newrequest.save()
+#             # Save the CaseRequest
+#             form.instance.vrf_id = vrf_id
+#             newrequest = form.save(commit=False)
+#             newrequest.user = self.request.user
+#             newrequest.submission_type = "api"
+#             newrequest.save()
 
-            # Prepare context for SNS and email
-            context["vrf_id"] = vrf_id
-            context["vrf_date_submitted"] = datetime.now(EST()).isoformat()
-            context["submission_type"] = "T Vulnerability Report"
-            context["submission_source"] = "api"
+#             # Prepare context for SNS and email
+#             context["vrf_id"] = vrf_id
+#             context["vrf_date_submitted"] = datetime.now(EST()).isoformat()
+#             context["submission_type"] = "T Vulnerability Report"
+#             context["submission_source"] = "api"
 
-            # Get submission metadata
-            context["remote_addr"] = self.request.META.get("REMOTE_ADDR", "unknown")
-            context["remote_host"] = self.request.META.get("REMOTE_HOST", "unknown")
-            context["http_user_agent"] = self.request.META.get("HTTP_USER_AGENT", "unknown")
-            context["http_referer"] = self.request.META.get("HTTP_REFERER", "unknown")
+#             # Get submission metadata
+#             context["remote_addr"] = self.request.META.get("REMOTE_ADDR", "unknown")
+#             context["remote_host"] = self.request.META.get("REMOTE_HOST", "unknown")
+#             context["http_user_agent"] = self.request.META.get("HTTP_USER_AGENT", "unknown")
+#             context["http_referer"] = self.request.META.get("HTTP_REFERER", "unknown")
 
-            # Construct subject line
-            subject = f"[{settings.REPORT_IDENTIFIER}{vrf_id}] "
-            if context.get("product_name"):
-                subject += context["product_name"]
-            else:
-                subject += "New T Report Submission (No Title Provided)"
-            if context.get("tracking"):
-                subject += " [" + context["tracking"] + "]"
+#             # Construct subject line
+#             subject = f"[{settings.REPORT_IDENTIFIER}{vrf_id}] "
+#             if context.get("product_name"):
+#                 subject += context["product_name"]
+#             else:
+#                 subject += "New T Report Submission (No Title Provided)"
+#             if context.get("tracking"):
+#                 subject += " [" + context["tracking"] + "]"
 
-            context["title"] = subject
-            if len(subject) > 99:
-                subject = subject[:99]
+#             context["title"] = subject
+#             if len(subject) > 99:
+#                 subject = subject[:99]
 
-            # Handle file upload to S3
-            s3Client = boto3.client("s3", region_name=settings.AWS_REGION, config=Config(signature_version="s3v4"))
-            attachment = context.get("user_file")
+#             # Handle file upload to S3
+#             s3Client = boto3.client("s3", region_name=settings.AWS_REGION, config=Config(signature_version="s3v4"))
+#             attachment = context.get("user_file")
 
-            if attachment:
-                context["s3_file_name"] = newrequest.user_file.name
-                try:
-                    # Copy file to VRF reports directory
-                    rd = s3Client.copy_object(
-                        CopySource=f"/{settings.PRIVATE_BUCKET_NAME}/{settings.AWS_PRIVATE_MEDIA_LOCATION}/{newrequest.user_file.name}",
-                        Bucket=settings.VP_PRIVATE_BUCKET_NAME,
-                        Key=settings.VRF_PRIVATE_MEDIA_LOCATION + "/" + newrequest.user_file.name,
-                        Tagging=f"ID={vrf_id}&source=t_cr",
-                    )
-                    logger.debug(f"T file uploaded to {settings.VRF_PRIVATE_MEDIA_LOCATION}, result: {rd}")
-                except Exception as e:
-                    send_sns(vrf_id, "T API: tagging uploaded file", traceback.format_exc())
-                    logger.error(f"T file upload error: {e}")
+#             if attachment:
+#                 context["s3_file_name"] = newrequest.user_file.name
+#                 try:
+#                     # Copy file to VRF reports directory
+#                     rd = s3Client.copy_object(
+#                         CopySource=f"/{settings.PRIVATE_BUCKET_NAME}/{settings.AWS_PRIVATE_MEDIA_LOCATION}/{newrequest.user_file.name}",
+#                         Bucket=settings.VP_PRIVATE_BUCKET_NAME,
+#                         Key=settings.VRF_PRIVATE_MEDIA_LOCATION + "/" + newrequest.user_file.name,
+#                         Tagging=f"ID={vrf_id}&source=t_cr",
+#                     )
+#                     logger.debug(f"T file uploaded to {settings.VRF_PRIVATE_MEDIA_LOCATION}, result: {rd}")
+#                 except Exception as e:
+#                     send_sns(vrf_id, "T API: tagging uploaded file", traceback.format_exc())
+#                     logger.error(f"T file upload error: {e}")
 
-            # Format dates for serialization
-            if context.get("first_contact"):
-                context["first_contact"] = str(context["first_contact"])
+#             # Format dates for serialization
+#             if context.get("first_contact"):
+#                 context["first_contact"] = str(context["first_contact"])
 
-            context["vrf_id"] = f"{settings.REPORT_IDENTIFIER}{vrf_id}"
+#             context["vrf_id"] = f"{settings.REPORT_IDENTIFIER}{vrf_id}"
 
-            # Save report to S3
-            try:
-                report_template = get_template("vincepub/email-md.txt")
-                fkey = f"{settings.VRF_REPORT_DIR}/{vrf_id}.txt"
-                s3Client.put_object(
-                    Body=report_template.render(context=context),
-                    Bucket=settings.VP_PRIVATE_BUCKET_NAME,
-                    Key=fkey
-                )
-            except Exception as e:
-                send_sns(vrf_id, "T API: writing report to S3 bucket", traceback.format_exc())
-                logger.error(f"T S3 report save error: {e}")
+#             # Save report to S3
+#             try:
+#                 report_template = get_template("vincepub/email-md.txt")
+#                 fkey = f"{settings.VRF_REPORT_DIR}/{vrf_id}.txt"
+#                 s3Client.put_object(
+#                     Body=report_template.render(context=context),
+#                     Bucket=settings.VP_PRIVATE_BUCKET_NAME,
+#                     Key=fkey
+#                 )
+#             except Exception as e:
+#                 send_sns(vrf_id, "T API: writing report to S3 bucket", traceback.format_exc())
+#                 logger.error(f"T S3 report save error: {e}")
 
-            # Reset vrf_id for SNS message
-            context["vrf_id"] = vrf_id
-            if "user_file" in context:
-                context.pop("user_file")
+#             # Reset vrf_id for SNS message
+#             context["vrf_id"] = vrf_id
+#             if "user_file" in context:
+#                 context.pop("user_file")
 
-            # CRITICAL: Route to TCR queue instead of default CR queue
-            # This is handled in vinceworker/views.py ingest_vulreport by checking
-            # metadata["source"] == "t_cr" and routing to TCR queue
-            context["queue_name"] = "TCR"  # Signal to route to TCR queue
+#             # CRITICAL: Route to TCR queue instead of default CR queue
+#             # This is handled in vinceworker/views.py ingest_vulreport by checking
+#             # metadata["source"] == "t_cr" and routing to TCR queue
+#             context["queue_name"] = "TCR"  # Signal to route to TCR queue
 
-            # Send to SNS topic for processing by vinceworker
-            send_sns_json("vul", subject, json.dumps(context))
+#             # Send to SNS topic for processing by vinceworker
+#             send_sns_json("vul", subject, json.dumps(context))
 
-            # Restore attachment for potential email
-            context["user_file"] = attachment
+#             # Restore attachment for potential email
+#             context["user_file"] = attachment
 
-            # Send acknowledgment email if reporter provided email
-            # NOTE: For bulk T submissions, consider disabling auto-ack emails
-            reporter_email = context.get("contact_email")
-            if reporter_email:
-                try:
-                    autoack_email_template = get_template(settings.ACK_EMAIL_TEMPLATE)
-                    sesclient = boto3.client("ses", "us-east-1")
+#             # Send acknowledgment email if reporter provided email
+#             # NOTE: For bulk T submissions, consider disabling auto-ack emails
+#             reporter_email = context.get("contact_email")
+#             if reporter_email:
+#                 try:
+#                     autoack_email_template = get_template(settings.ACK_EMAIL_TEMPLATE)
+#                     sesclient = boto3.client("ses", "us-east-1")
 
-                    response = sesclient.send_email(
-                        Destination={"ToAddresses": [reporter_email]},
-                        Message={
-                            "Body": {
-                                "Text": {
-                                    "Data": html.unescape(autoack_email_template.render(context=context)),
-                                    "Charset": "UTF-8",
-                                }
-                            },
-                            "Subject": {
-                                "Charset": "UTF-8",
-                                "Data": f"Thank you for submitting {settings.REPORT_IDENTIFIER}{vrf_id}",
-                            },
-                        },
-                        Source=f"{settings.DEFAULT_VISIBLE_NAME} DONOTREPLY <{settings.DEFAULT_FROM_EMAIL}>",
-                    )
-                    logger.debug(f"T ack email sent, Message ID: {response['MessageId']}")
-                except ClientError as e:
-                    send_sns(vrf_id, "T API: Sending ack email", e.response["Error"]["Message"])
-                    logger.error(f"T ack email error: {e}")
-                except Exception as e:
-                    send_sns(vrf_id, "T API: Sending ack email", traceback.format_exc())
-                    logger.error(f"T ack email error: {e}")
+#                     response = sesclient.send_email(
+#                         Destination={"ToAddresses": [reporter_email]},
+#                         Message={
+#                             "Body": {
+#                                 "Text": {
+#                                     "Data": html.unescape(autoack_email_template.render(context=context)),
+#                                     "Charset": "UTF-8",
+#                                 }
+#                             },
+#                             "Subject": {
+#                                 "Charset": "UTF-8",
+#                                 "Data": f"Thank you for submitting {settings.REPORT_IDENTIFIER}{vrf_id}",
+#                             },
+#                         },
+#                         Source=f"{settings.DEFAULT_VISIBLE_NAME} DONOTREPLY <{settings.DEFAULT_FROM_EMAIL}>",
+#                     )
+#                     logger.debug(f"T ack email sent, Message ID: {response['MessageId']}")
+#                 except ClientError as e:
+#                     send_sns(vrf_id, "T API: Sending ack email", e.response["Error"]["Message"])
+#                     logger.error(f"T ack email error: {e}")
+#                 except Exception as e:
+#                     send_sns(vrf_id, "T API: Sending ack email", traceback.format_exc())
+#                     logger.error(f"T ack email error: {e}")
 
-            # Log successful submission
-            logger.info(f"T report submitted successfully: VRF#{vrf_id}, user={self.request.user}, product={data.get('product_name')}")
+#             # Log successful submission
+#             logger.info(f"T report submitted successfully: VRF#{vrf_id}, user={self.request.user}, product={data.get('product_name')}")
 
-            # Return success response
-            return JsonResponse({
-                "message": "T vulnerability report submitted successfully",
-                "vrf_id": f"{settings.REPORT_IDENTIFIER}{vrf_id}",
-                "status": "success",
-                "queue": "TCR"
-            }, status=201)
+#             # Return success response
+#             return JsonResponse({
+#                 "message": "T vulnerability report submitted successfully",
+#                 "vrf_id": f"{settings.REPORT_IDENTIFIER}{vrf_id}",
+#                 "status": "success",
+#                 "queue": "TCR"
+#             }, status=201)
 
-        except json.JSONDecodeError as e:
-            logger.error(f"T API: Invalid JSON: {e}")
-            return JsonResponse({
-                "error": "Invalid JSON in request body",
-                "details": str(e),
-                "status": "error"
-            }, status=400)
-        except Exception as e:
-            logger.error(f"T API: Unexpected error: {e}")
-            logger.error(traceback.format_exc())
-            return JsonResponse({
-                "error": "Internal server error processing T report",
-                "details": str(e),
-                "status": "error"
-            }, status=500)
+#         except json.JSONDecodeError as e:
+#             logger.error(f"T API: Invalid JSON: {e}")
+#             return JsonResponse({
+#                 "error": "Invalid JSON in request body",
+#                 "details": str(e),
+#                 "status": "error"
+#             }, status=400)
+#         except Exception as e:
+#             logger.error(f"T API: Unexpected error: {e}")
+#             logger.error(traceback.format_exc())
+#             return JsonResponse({
+#                 "error": "Internal server error processing T report",
+#                 "details": str(e),
+#                 "status": "error"
+#             }, status=500)
 
-    def _extract_t_metadata(self, data):
-        """
-        Extract T-specific fields from request data and structure for metadata JSON.
+#     def _extract_t_metadata(self, data):
+#         """
+#         Extract T-specific fields from request data and structure for metadata JSON.
 
-        Returns dict of T metadata fields.
-        """
-        t_fields = {
-            # Discovery fields
-            "discovery_method_type": data.get("discovery_method_type"),
-            "discovery_model_owner": data.get("discovery_model_owner"),
-            "discovery_model_name": data.get("discovery_model_name"),
-            "discovery_model_version": data.get("discovery_model_version"),
-            "discovery_date": data.get("discovery_date"),
+#         Returns dict of T metadata fields.
+#         """
+#         t_fields = {
+#             # Discovery fields
+#             "discovery_method_type": data.get("discovery_method_type"),
+#             "discovery_model_owner": data.get("discovery_model_owner"),
+#             "discovery_model_name": data.get("discovery_model_name"),
+#             "discovery_model_version": data.get("discovery_model_version"),
+#             "discovery_date": data.get("discovery_date"),
 
-            # Severity scoring
-            "cvss_score": data.get("cvss_score"),
-            "cvss_version": data.get("cvss_version"),
-            "cvss_vector": data.get("cvss_vector"),
-            "epss_score": data.get("epss_score"),
-            "epss_date": data.get("epss_date"),
+#             # Severity scoring
+#             "cvss_score": data.get("cvss_score"),
+#             "cvss_version": data.get("cvss_version"),
+#             "cvss_vector": data.get("cvss_vector"),
+#             "epss_score": data.get("epss_score"),
+#             "epss_date": data.get("epss_date"),
 
-            # Embargo
-            "embargo_requested": data.get("embargo_requested"),
-            "embargo_rationale": data.get("embargo_rationale"),
+#             # Embargo
+#             "embargo_requested": data.get("embargo_requested"),
+#             "embargo_rationale": data.get("embargo_rationale"),
 
-            # Critical Infrastructure
-            "ci_impact": data.get("ci_impact"),
-            "ci_sectors": data.get("ci_sectors"),  # Expecting list
+#             # Critical Infrastructure
+#             "ci_impact": data.get("ci_impact"),
+#             "ci_sectors": data.get("ci_sectors"),  # Expecting list
 
-            # Validation
-            "validation_status": data.get("validation_status"),
-            "validation_evidence_summary": data.get("validation_evidence_summary"),
-            "reproduction_steps": data.get("reproduction_steps"),
-            "network_reachable": data.get("network_reachable"),
-            "network_reachable_explanation": data.get("network_reachable_explanation"),
-            "exploitability_assessed": data.get("exploitability_assessed"),
-            "exploitability_evidence": data.get("exploitability_evidence"),
+#             # Validation
+#             "validation_status": data.get("validation_status"),
+#             "validation_evidence_summary": data.get("validation_evidence_summary"),
+#             "reproduction_steps": data.get("reproduction_steps"),
+#             "network_reachable": data.get("network_reachable"),
+#             "network_reachable_explanation": data.get("network_reachable_explanation"),
+#             "exploitability_assessed": data.get("exploitability_assessed"),
+#             "exploitability_evidence": data.get("exploitability_evidence"),
 
-            # Mitigation
-            "mitigation_summary": data.get("mitigation_summary"),
-            "workaround_available": data.get("workaround_available"),
-            "workaround_steps": data.get("workaround_steps"),
-            "config_mitigation": data.get("config_mitigation"),
-            "fixed_version": data.get("fixed_version"),
-            "recommended_version": data.get("recommended_version"),
+#             # Mitigation
+#             "mitigation_summary": data.get("mitigation_summary"),
+#             "workaround_available": data.get("workaround_available"),
+#             "workaround_steps": data.get("workaround_steps"),
+#             "config_mitigation": data.get("config_mitigation"),
+#             "fixed_version": data.get("fixed_version"),
+#             "recommended_version": data.get("recommended_version"),
 
-            # File references (if multiple files submitted as ZIP)
-            "attached_files": data.get("attached_files"),  # Dict or list of filenames
-        }
+#             # File references (if multiple files submitted as ZIP)
+#             "attached_files": data.get("attached_files"),  # Dict or list of filenames
+#         }
 
-        # Remove None values to keep metadata clean
-        return {k: v for k, v in t_fields.items() if v is not None}
+#         # Remove None values to keep metadata clean
+#         return {k: v for k, v in t_fields.items() if v is not None}
 
-    def _build_form_data(self, data):
-        """
-        Extract standard VINCE fields from request data for CaseRequestForm.
+#     def _build_form_data(self, data):
+#         """
+#         Extract standard VINCE fields from request data for CaseRequestForm.
 
-        Returns dict suitable for CaseRequestForm initialization.
-        """
-        form_data = {
-            # Required fields
-            "product_name": data.get("product_name", ""),
-            "product_version": data.get("product_version", ""),
-            "vul_description": data.get("vul_description", ""),
-            "vul_exploit": data.get("vul_exploit", ""),
-            "vul_impact": data.get("vul_impact", ""),
-            "vul_discovery": data.get("vul_discovery", ""),
-            "vul_public": data.get("vul_public", False),
-            "vul_exploited": data.get("vul_exploited", False),
-            "vul_disclose": data.get("vul_disclose", False),
-            "share_release": data.get("share_release", True),
-            "credit_release": data.get("credit_release", True),
-            "comm_attempt": data.get("comm_attempt", False),
-            "multiplevendors": data.get("multiplevendors", False),
+#         Returns dict suitable for CaseRequestForm initialization.
+#         """
+#         form_data = {
+#             # Required fields
+#             "product_name": data.get("product_name", ""),
+#             "product_version": data.get("product_version", ""),
+#             "vul_description": data.get("vul_description", ""),
+#             "vul_exploit": data.get("vul_exploit", ""),
+#             "vul_impact": data.get("vul_impact", ""),
+#             "vul_discovery": data.get("vul_discovery", ""),
+#             "vul_public": data.get("vul_public", False),
+#             "vul_exploited": data.get("vul_exploited", False),
+#             "vul_disclose": data.get("vul_disclose", False),
+#             "share_release": data.get("share_release", True),
+#             "credit_release": data.get("credit_release", True),
+#             "comm_attempt": data.get("comm_attempt", False),
+#             "multiplevendors": data.get("multiplevendors", False),
 
-            # Optional contact fields
-            "contact_name": data.get("contact_name", ""),
-            "contact_org": data.get("contact_org", ""),
-            "contact_email": data.get("contact_email", ""),
-            "contact_phone": data.get("contact_phone", ""),
+#             # Optional contact fields
+#             "contact_name": data.get("contact_name", ""),
+#             "contact_org": data.get("contact_org", ""),
+#             "contact_email": data.get("contact_email", ""),
+#             "contact_phone": data.get("contact_phone", ""),
 
-            # Optional vendor fields
-            "vendor_name": data.get("vendor_name", ""),
-            "other_vendors": data.get("other_vendors", ""),
-            "vendor_communication": data.get("vendor_communication", ""),
+#             # Optional vendor fields
+#             "vendor_name": data.get("vendor_name", ""),
+#             "other_vendors": data.get("other_vendors", ""),
+#             "vendor_communication": data.get("vendor_communication", ""),
 
-            # Optional vuln fields
-            "public_references": data.get("public_references", ""),
-            "exploit_references": data.get("exploit_references", ""),
-            "disclosure_plans": data.get("disclosure_plans", ""),
+#             # Optional vuln fields
+#             "public_references": data.get("public_references", ""),
+#             "exploit_references": data.get("exploit_references", ""),
+#             "disclosure_plans": data.get("disclosure_plans", ""),
 
-            # Optional meta fields
-            "tracking": data.get("tracking", ""),
-            "comments": data.get("comments", ""),
-            "ics_impact": data.get("ics_impact", False),
-            "ai_ml_system": data.get("ai_ml_system", False),
+#             # Optional meta fields
+#             "tracking": data.get("tracking", ""),
+#             "comments": data.get("comments", ""),
+#             "ics_impact": data.get("ics_impact", False),
+#             "ai_ml_system": data.get("ai_ml_system", False),
 
-            # Optional coordination fields
-            "why_no_attempt": data.get("why_no_attempt", ""),
-            "please_explain": data.get("please_explain", ""),
-        }
+#             # Optional coordination fields
+#             "why_no_attempt": data.get("why_no_attempt", ""),
+#             "please_explain": data.get("please_explain", ""),
+#         }
 
-        # Handle date field if provided
-        if data.get("first_contact"):
-            form_data["first_contact"] = data.get("first_contact")
+#         # Handle date field if provided
+#         if data.get("first_contact"):
+#             form_data["first_contact"] = data.get("first_contact")
 
-        return form_data
+#         return form_data
 
 
 class CasesAPIView(generics.ListAPIView):
