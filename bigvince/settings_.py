@@ -54,7 +54,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "3.0.36"
+VERSION = "3.0.43"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -419,6 +419,7 @@ if VINCE_NAMESPACE == "vince":
         "OPTIONS": {
             "sslmode": "require",
         },
+        "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
     }
 
 if VINCE_NAMESPACE in ["vince", "vinny"]:
@@ -429,6 +430,7 @@ if VINCE_NAMESPACE in ["vince", "vinny"]:
         "PASSWORD": vincecomm_password,
         "HOST": os.environ.get("VINCE_COMM_DB_HOST", "localhost"),
         "PORT": os.environ.get("VINCE_COMM_DB_PORT", 5432),
+        "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
     }
 
 DATABASES["vincepub"] = {
@@ -438,6 +440,7 @@ DATABASES["vincepub"] = {
     "PASSWORD": vincepub_password,
     "HOST": os.environ.get("VINCE_PUB_DB_HOST", "localhost"),
     "PORT": os.environ.get("VINCE_PUB_DB_PORT", 5432),
+    "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
 }
 
 if VINCE_NAMESPACE == "vincepub":
@@ -450,6 +453,7 @@ if VINCE_NAMESPACE == "vincepub":
         "PASSWORD": vincepub_password,
         "HOST": os.environ.get("VINCE_PUB_DB_HOST", "localhost"),
         "PORT": os.environ.get("VINCE_PUB_DB_PORT", 5432),
+        "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
     }
 
 
@@ -462,6 +466,7 @@ if VINCE_NAMESPACE == "vinny":
         "PASSWORD": vincecomm_password,
         "HOST": os.environ.get("VINCE_COMM_DB_HOST", "localhost"),
         "PORT": os.environ.get("VINCE_COMM_DB_PORT", 5432),
+        "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
     }
 
 # Each application has their own database, so we can set permissions

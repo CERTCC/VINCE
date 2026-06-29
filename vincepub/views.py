@@ -483,10 +483,6 @@ def cvevuls(vuls):
     return vuls.filter(cve__isnull=False)
 
 
-def env_debug_view(request):
-    return JsonResponse({"SECRET_KEY": os.environ.get("SECRET_KEY", "NOT FOUND")})
-
-
 def estimate_count_fast(type):
     """postgres really sucks at full table counts, this is a faster version
     see: http://wiki.postgresql.org/wiki/Slow_Counting"""

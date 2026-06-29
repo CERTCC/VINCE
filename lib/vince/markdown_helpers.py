@@ -144,10 +144,24 @@ def markdown(value):
     markdown_attrs['a'].append("class")
     markdown_attrs['img'].append("width")
     markdown_attrs['img'].append("height")
-    return bleach.clean(md.markdown(value, extensions=['toc', 'markdown.extensions.fenced_code', UserMentionExtension(), MathExtension()]), generally_xss_safe, markdown_attrs)
+    # Add table-related tags to allow markdown tables to render
+    markdown_attrs.setdefault('table', [])
+    markdown_attrs.setdefault('thead', [])
+    markdown_attrs.setdefault('tbody', [])
+    markdown_attrs.setdefault('tr', [])
+    markdown_attrs.setdefault('th', [])
+    markdown_attrs.setdefault('td', [])
+    return bleach.clean(md.markdown(value, extensions=['toc', 'markdown.extensions.fenced_code', 'tables', 'nl2br', UserMentionExtension(), MathExtension()]), generally_xss_safe, markdown_attrs)
 
 def markdown_filter(value, users):
     markdown_attrs['a'].append("class")
     markdown_attrs['img'].append("width")
     markdown_attrs['img'].append("height")
-    return bleach.clean(md.markdown(value, extensions=['toc', 'markdown.extensions.fenced_code', UserMentionExtension(users), MathExtension()]), generally_xss_safe, markdown_attrs)
+    # Add table-related tags to allow markdown tables to render
+    markdown_attrs.setdefault('table', [])
+    markdown_attrs.setdefault('thead', [])
+    markdown_attrs.setdefault('tbody', [])
+    markdown_attrs.setdefault('tr', [])
+    markdown_attrs.setdefault('th', [])
+    markdown_attrs.setdefault('td', [])
+    return bleach.clean(md.markdown(value, extensions=['toc', 'markdown.extensions.fenced_code', 'tables', 'nl2br', UserMentionExtension(users), MathExtension()]), generally_xss_safe, markdown_attrs)

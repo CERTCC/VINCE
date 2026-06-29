@@ -1,0 +1,101 @@
+{% extends 'vince/base.html' %}
+{% load i18n humanize %}
+{% load staticfiles %}
+
+{% block content %}
+
+<div class="app-top-panel">
+  <div class="row">
+    <div class="large-12 columns">
+      <h2>SSVC Coordinator Triage Assessment</h2>
+      <p class="lead">Case Request [{{ ticket.queue }}-{{ ticket.id }}]: {{ ticket.title }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="large-8 columns">
+    <div class="callout info">
+      <h4><i class="fas fa-info-circle"></i> About SSVC</h4>
+      <p>
+        The Stakeholder-Specific Vulnerability Categorization (SSVC) helps coordinators
+        prioritize vulnerability response by answering 7 decision points. Based on your
+        answers, SSVC will recommend whether to <strong>Decline</strong>, <strong>Track</strong>,
+        or <strong>Coordinate</strong> this case request.
+      </p>
+      <p>
+        <strong>Instructions:</strong> For each question below, check all answers that are
+        <em>possible</em> based on what you currently know. If you're uncertain between
+        multiple options, check all that apply. Only leave answers unchecked if you're
+        certain they are false.
+      </p>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <fieldset class="fieldset">
+        <legend>Decision Points</legend>
+
+        {% for field in form %}
+          <div class="form-group">
+            <label><strong>{{ field.label }}</strong></label>
+            {% if field.help_text %}
+              <p class="help-text">{{ field.help_text }}</p>
+            {% endif %}
+            {{ field }}
+            {% if field.errors %}
+              <div class="alert callout">{{ field.errors }}</div>
+            {% endif %}
+          </div>
+          {% if not forloop.last %}<hr>{% endif %}
+        {% endfor %}
+      </fieldset>
+
+      <div class="button-group">
+        <button type="submit" class="button primary">
+          <i class="fas fa-check"></i> Complete Assessment
+        </button>
+        <a href="{% url 'vince:cr' ticket.id %}" class="button secondary">
+          <i class="fas fa-times"></i> Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div class="large-4 columns">
+    <div class="callout secondary">
+      <h4>Case Request Details</h4>
+      <dl>
+        <dt>CR ID:</dt>
+        <dd>{{ ticket.queue }}-{{ ticket.id }}</dd>
+
+        <dt>Title:</dt>
+        <dd>{{ ticket.title }}</dd>
+
+        <dt>Status:</dt>
+        <dd>{{ ticket.get_status_display }}</dd>
+
+        <dt>Created:</dt>
+        <dd>{{ ticket.created|date:"Y-m-d H:i" }}</dd>
+      </dl>
+    </div>
+
+    {% if previous_assessments %}
+    <div class="callout warning">
+      <h4>Previous Assessments</h4>
+      <p>This CR has been assessed {{ previous_assessments.count }} time(s) before.</p>
+      <ul>
+        {% for assessment in previous_assessments %}
+        <li>
+          {{ assessment.assessed_at|date:"Y-m-d" }} by {{ assessment.assessed_by.get_username }}
+          <br><strong>Outcome:</strong> {{ assessment.get_outcome_display }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

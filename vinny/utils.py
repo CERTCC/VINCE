@@ -31,6 +31,9 @@
 #from pinax-messages
 
 from functools import wraps
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def cached_attribute(func):

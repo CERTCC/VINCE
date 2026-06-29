@@ -7,6 +7,60 @@ VINCE Coordination platform code
 ## Description
 VINCE Coordination platform 
 
+Version 3.0.43 2026-06-25
+
+* dependabot update recommendations: `PyJWT` 2.12.0 to 2.13.0, `cryptography` 46.0.7 to 48.0.1, `bleach` from 5.0.1 to 6.4.0
+* updated `packaging` 22.0 to 24.2
+* increased number of workers and established connection pooling (Internal-857)
+
+
+Version 3.0.42 2026-06-01
+
+* dependabot update recommendation: `idna` 3.7 to 3.15
+* anonymized coordinator names in case request activity and file uploads shown to submitters before case creation (Internal-850)
+* improved vulnerability note template formatting to add proper spacing before author attribution (Internal-853)
+* updated security.txt disclosure policy link to point to new documentation location (Internal-816)
+* added due date display to group case view showing time remaining until due date or "TBD" if not set (Internal-849)
+* rephrased vulnerability status language throughout VINCE Comm case pages (Internal-852)
+* added detailed logging for debugging HMAC mismatches
+
+
+
+Version 3.0.41 2026-05-18
+
+* modified code for filtering out spoofed emails to allow legititmately encoded headers through vetting process (Internal-846)
+
+
+
+Version 3.0.40 2026-05-12
+
+* dependabot update recommendation: `urllib3` 1.26.19 to 2.7.0
+* added code to properly record identity of users who submit vul reports for VINCE Comm (Internal-821)
+* fixed VINCE Comm login code to prevent "login loop" caused in rare cases by corrupted session objects (Internal-847)
+* added SSVC assessment tool to the Case Reqeust page in VINCE Track (Internal-840)
+
+
+
+Version 3.0.39 2026-05-06
+
+* fixed issue preventing users from making lists and tables in VINCE Comm comments (VIN-845)
+* fixed bug reported by user affecting VINCE's vetting of incoming email ticket reports (VIN-846)
+
+
+
+Version 3.0.38 2026-05-05
+
+* fixed issue preventing vulnote tab from displaying in certain circumstances (Internal-828)
+
+
+Version 3.0.37 2026-05-04
+
+* updates: `jsonschema` 4.17.0 to 4.25.1, `pydantic` 1.10.13 to 2.11.7, `attrs` 22.1.0 to 23.1.0, `packaging` 22.0 to 24.0
+* fixed review link to appear even if case review not complete (Internal-828)
+* added active status filter to autoassign function (Internal-844)
+* fixed security issue caused by debug endpoint
+
+
 Version 3.0.36 2026-04-20
 
 * dependabot update recommendation: `sqlparse` 0.5.0 to 0.5.4, `PyJWT` 2.6.0 to 2.12.0, `markdown` 3.5 to 3.8.1, `pyasn1` 0.4.8 to 0.6.3, `awscli` 1.26.85 to 1.44.38, `Django` 4.2.28 to 4.2.30, `cryptography` 46.0.6 to 46.0.7

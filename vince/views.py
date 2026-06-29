@@ -18856,3 +18856,135 @@ def error_400(request, exception):
         return render(request, f"{app_name}/400.html", data, status=400)
 
     return render(request, "vincepub/400.html", data, status=400)
+
+
+class SSVCAssessmentView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """
+    SSVC Coordinator Triage Assessment for Case Requests.
+    """
+    template_name = 'vince/ssvc_assessment.html'
+    form_class = SSVCAssessmentForm
+    login_url = "vince:login"
+
+    def test_func(self):
+        return is_in_group_vincetrack(self.request.user)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.ticket_id = kwargs.get('ticket_id')
+        self.ticket = get_object_or_404(Ticket, id=self.ticket_id)
+
+        # Verify this is a Case Request
+        if not (self.ticket.queue and self.ticket.queue.queue_type == TicketQueue.CASE_REQUEST_QUEUE):
+            raise Http404("SSVC assessment only available for Case Requests")
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['ticket'] = self.ticket
+
+        # Import SSVCAssessment here to avoid circular import
+        from vince.models import SSVCAssessment
+        context['previous_assessments'] = SSVCAssessment.objects.filter(
+            case_request=self.ticket
+        )
+        return context
+
+    def form_valid(self, form):
+        # Import SSVCAssessment here to avoid circular import
+        from vince.models import SSVCAssessment
+        import itertools
+
+        # Calculate possible outcomes using SSVC decision table
+        possible_outcomes = self.calculate_possible_outcomes(form.cleaned_data)
+
+        # Determine outcome to store
+        if len(possible_outcomes) == 1:
+            outcome = list(possible_outcomes)[0]
+        else:
+            # Multiple possible outcomes - prioritize Coordinate > Track > Decline
+            if 'C' in possible_outcomes:
+                outcome = 'C'
+            elif 'T' in possible_outcomes:
+                outcome = 'T'
+            else:
+                outcome = 'D'
+
+        # For storage, use first selected value or empty string
+        data = form.cleaned_data
+
+        # Create assessment record
+        assessment = SSVCAssessment(
+            case_request=self.ticket,
+            assessed_by=self.request.user,
+            report_public=data['report_public'][0] if data['report_public'] else '',
+            supplier_contacted=data['supplier_contacted'][0] if data['supplier_contacted'] else '',
+            report_credibility=data['report_credibility'][0] if data['report_credibility'] else '',
+            supplier_cardinality=data['supplier_cardinality'][0] if data['supplier_cardinality'] else '',
+            supplier_engagement=data['supplier_engagement'][0] if data['supplier_engagement'] else '',
+            utility=data['utility'][0] if data['utility'] else '',
+            public_safety_impact=data['public_safety_impact'][0] if data['public_safety_impact'] else '',
+            outcome=outcome,
+            notes=form.cleaned_data.get('notes', ''),
+            ssvc_json={
+                'selections': data,
+                'possible_outcomes': sorted(list(possible_outcomes))
+            }
+        )
+        assessment.save()
+
+        # Create message based on outcomes
+        if len(possible_outcomes) == 1:
+            message = f"SSVC Assessment completed. Recommendation: {assessment.get_outcome_display()}"
+        else:
+            outcome_labels = [dict(SSVCAssessment._meta.get_field('outcome').choices)[o] for o in sorted(possible_outcomes, reverse=True)]
+            message = f"SSVC Assessment completed. Possible outcomes: {', '.join(outcome_labels)}"
+
+        messages.success(self.request, message)
+
+        return HttpResponseRedirect(reverse('vince:cr', args=[self.ticket_id]))
+
+    def calculate_possible_outcomes(self, data):
+        """
+        Calculate all possible SSVC outcomes based on checkbox selections.
+        For each decision point, if nothing is checked, all values are possible.
+        Returns a set of possible outcome codes.
+        """
+        from vince.lib import calculate_ssvc_outcome
+        import itertools
+
+        # Get all selected values for each decision point
+        # If nothing selected, use all possible values
+        rp_values = data['report_public'] or ['Y', 'N']
+        sc_values = data['supplier_contacted'] or ['Y', 'N']
+        rc_values = data['report_credibility'] or ['C', 'NC']
+        scard_values = data['supplier_cardinality'] or ['O', 'M']
+        se_values = data['supplier_engagement'] or ['A', 'U']
+        u_values = data['utility'] or ['L', 'E', 'S']
+        psi_values = data['public_safety_impact'] or ['M', 'S']
+
+        # Generate all combinations
+        possible_outcomes = set()
+        for combo in itertools.product(rp_values, sc_values, rc_values, scard_values, se_values, u_values, psi_values):
+            try:
+                outcome = calculate_ssvc_outcome(
+                    report_public=combo[0],
+                    supplier_contacted=combo[1],
+                    report_credibility=combo[2],
+                    supplier_cardinality=combo[3],
+                    supplier_engagement=combo[4],
+                    utility=combo[5],
+                    public_safety_impact=combo[6],
+                )
+                possible_outcomes.add(outcome)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"SSVC calculation error for combo {combo}: {str(e)}")
+                continue
+
+        # If no outcomes calculated, default to Coordinate
+        if not possible_outcomes:
+            possible_outcomes.add('C')
+
+        return possible_outcomes

@@ -119,6 +119,11 @@
                   {{ c.case.get_title }}</a>
 	      </h4>
               <h6> Last updated {{ c.case.modified|naturaltime }}</h6>
+              {% if c.case.due_date %}
+              <h6> Due Date {{ c.case.due_date|naturaltime }}</h6>
+              {% else %}
+              <h6> Due Date TBD </h6>
+              {% endif %}
             </div>
             <div class="large-4 columns text-right">
               {% autoescape off %}{{ c.case.get_status_html }}{% endautoescape %}

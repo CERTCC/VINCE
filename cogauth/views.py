@@ -563,6 +563,11 @@ class COGLoginView(FormView):
         if settings.DEBUG:
             context["token_login"] = True
 
+        # Pass the 'next' parameter to the template context
+        # This is required for the hidden input field in the login form
+        next_page = self.request.GET.get("next", "")
+        context["next"] = next_page
+
         return context
 
     def form_valid(self, form):
@@ -791,6 +796,15 @@ class MFAAuthRequiredView(FormView, AccessMixin):
 
     def dispatch(self, request, *args, **kwargs):
         if not (request.session.get("MFAREQUIRED") and request.session.get("username")):
+            # Check for potential redirect loop: if user came from login page and is trying
+            # to access MFA page, but session check failed, redirect to dashboard instead
+            # of creating a loop where next=/mfa/
+            referer = request.META.get('HTTP_REFERER', '')
+            if '/login/' in referer and '/mfa/' in request.path:
+                logger.debug(
+                    f"Detected potential MFA redirect loop. Referer: {referer}, Path: {request.path}. Session missing MFAREQUIRED or username. Redirecting to dashboard to break loop."
+                )
+                return redirect(settings.LOGIN_REDIRECT_URL)
             return self.handle_no_permission()
         return super(MFAAuthRequiredView, self).dispatch(request, *args, **kwargs)
 

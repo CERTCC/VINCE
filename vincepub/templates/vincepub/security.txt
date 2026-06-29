@@ -6,5 +6,5 @@ Encryption: https://certcc.github.io/pgp/
 Acknowledgments: https://kb.cert.org/vuls/
 Preferred-Languages: en
 Canonical: https://certcc.github.io/.well-known/security.txt
-Policy: https://certcc.github.io/CERT-Guide-to-CVD/reference/certcc_disclosure_policy/
+Policy: https://certcc.github.io/certcc_disclosure_policy/
 Hiring: https://cmu.wd5.myworkdayjobs.com/SEI
