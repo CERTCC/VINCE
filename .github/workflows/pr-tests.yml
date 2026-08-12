@@ -106,6 +106,16 @@ jobs:
           WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'vincepubtest')\gexec
           SQL
 
+      - name: Clean-slate migrations and regenerate
+        run: |
+          for d in */migrations/*.py; do
+              if [ "$(basename "$d")" != "__init__.py" ]; then
+                  rm -f "$d"
+              fi
+          done
+
+          python -W ignore manage.py makemigrations
+
       - name: Run migrations
         run: |
           python manage.py migrate
