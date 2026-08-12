@@ -122,11 +122,6 @@ jobs:
           python manage.py migrate --database=vincecomm
           python manage.py migrate --database=vincepub
 
-      - name: Run local-auth smoke tests
-        run: python manage.py test vince.auth.tests --verbosity=2
+      - name: Run all tests vince and vinny
+        run: python manage.py test vince vinny --verbosity=2
 
-      - name: Run VINCE test suite
-        run: python manage.py test vince --verbosity=2
-
-      - name: Run VINCEComm test suite
-        run: python manage.py test vinny --verbosity=2

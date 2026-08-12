@@ -5550,7 +5550,7 @@ class CVEVulAPIView(generics.GenericAPIView):
         cve = f"CVE-{year}-{pk}"
         cvewo = f"{year}-{pk}"
         report = None
-        old_report = VUReport.objects.raw(f"SELECT * from vincepub_vureport where cveids::text like '%%{cve}%%'")
+        old_report = VUReport.objects.filter(cveids__icontains=cve)
         for x in old_report:
             cveids = x.cveids
             if cve in cveids:
