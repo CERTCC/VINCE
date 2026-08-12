@@ -1231,7 +1231,7 @@ def is_query_ticket_id(s):
     queues = list(TicketQueue.objects.all().values_list("slug", flat=True))
     queues.append("General")
     rq = "|".join(queues)
-    rq = "(?i)(" + rq + ")-(\d+)"
+    rq = "(?i)(" + rq + r")-(\d+)"
     m = re.search(rq, s)
     if m:
         return True, m.group(1), m.group(2)
@@ -17462,7 +17462,7 @@ class CreateNewEmailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
         # General queue is the only one where slug != title
         queues.append("General")
         rq = "|".join(queues)
-        rq = "(?i)(" + rq + ")-(\d+)"
+        rq = "(?i)(" + rq + r")-(\d+)"
         m = re.search(rq, form.cleaned_data["subject"])
         if m:
             q = m.group(1)
@@ -17477,7 +17477,7 @@ class CreateNewEmailView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, ge
             # subject contains SOME ticket id - check if it's the right one
             if tkt:
                 rq = f"{form_tkt.queue.slug}|{form_tkt.queue.title}"
-                rq = "(?i)(" + rq + ")-(\d+)"
+                rq = "(?i)(" + rq + r")-(\d+)"
                 m = re.search(rq, form.cleaned_data["subject"])
                 if not m:
                     # subject doesn't contain THIS ticket id

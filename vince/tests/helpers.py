@@ -4,7 +4,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core import mail
 
 
-FIXTURES = ['auth.json', 'emailtemplate.json', 'TicketQueue_dwight.json']
+FIXTURES = ['auth.json', 'EmailTemplate.json', 'TicketQueue_d.json']
 
 
 def addwatchers(ticket):

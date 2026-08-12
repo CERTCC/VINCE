@@ -2751,3 +2751,17 @@ pre code {
 .login-announcement-banner p {
     margin-bottom: 0rem;
 }
+/* Vul Reporting Form CSAF Related */
+.vulcsaf #mjsoneditor {
+    width: 100%;
+    height: 100dvh;
+    min-height: 100vh;
+    font-size: 14px;
+}
+.vulcsaf .tabs-content {
+    border: none;
+}
+
+.vulcsaf .tabs-panel {
+    padding: 0px;
+}

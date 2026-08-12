@@ -848,7 +848,7 @@ class SearchResultView(generic.ListView):
         if "years" in self.request.POST:
             yearlist = self.request.POST.getlist("years")
             for year in yearlist:
-                year = re.sub("[^\d]", "", year)
+                year = re.sub(r"[^\d]", "", year)
                 if year != "":
                     datefilter.append(Q(datefirstpublished__year=year))
 
@@ -1532,8 +1532,8 @@ class VUNoteViewByMonth(PublicListAPIView):
         return "Vulnerability Notes Published by Month"
 
     def get_queryset(self):
-        year = re.sub("[^\d]", "", self.kwargs["year"])
-        month = re.sub("[^\d]", "", self.kwargs["month"])
+        year = re.sub(r"[^\d]", "", self.kwargs["year"])
+        month = re.sub(r"[^\d]", "", self.kwargs["month"])
         return VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month)
 
 
@@ -1541,7 +1541,7 @@ class VUNoteViewByYear(PublicListAPIView):
     serializer_class = serializers.VUReportSerializer
 
     def get_queryset(self):
-        year = re.sub("[^\d]", "", self.kwargs["year"])
+        year = re.sub(r"[^\d]", "", self.kwargs["year"])
         return VUReport.objects.filter(datefirstpublished__year=year)
 
 
@@ -1586,16 +1586,16 @@ class VendorViewByMonth(PublicListAPIView):
         return "Vendors By Month"
 
     def get_queryset(self):
-        year = re.sub("[^\d]", "", self.kwargs["year"])
-        month = re.sub("[^\d]", "", self.kwargs["month"])
+        year = re.sub(r"[^\d]", "", self.kwargs["year"])
+        month = re.sub(r"[^\d]", "", self.kwargs["month"])
         reports = VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month).values_list(
             "vuid", flat=True
         )
         return VendorRecord.objects.filter(vuid__in=reports)
 
     def get(self, request, *args, **kwargs):
-        year = re.sub("[^\d]", "", self.kwargs["year"])
-        month = re.sub("[^\d]", "", self.kwargs["month"])
+        year = re.sub(r"[^\d]", "", self.kwargs["year"])
+        month = re.sub(r"[^\d]", "", self.kwargs["month"])
         reports = VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month).values_list(
             "idnumber", flat=True
         )
@@ -1610,7 +1610,7 @@ class VendorViewByYear(PublicListAPIView):
     serializer_class = serializers.VendorRecordSerializer
 
     def get_queryset(self):
-        year = re.sub("[^\d]", "", self.kwargs["year"])
+        year = re.sub(r"[^\d]", "", self.kwargs["year"])
         reports = VUReport.objects.filter(datefirstpublished__year=year).values_list("vuid", flat=True)
         return VendorRecord.objects.filter(vuid__in=reports)
 
@@ -1621,8 +1621,8 @@ class VendorViewByMonthSummary(VendorViewByMonth):
 
     def summarize(self, request, *args, **kwargs):
         # make sure the filters of the parent class get applied
-        year = re.sub("[^\d]", "", self.kwargs["year"])
-        month = re.sub("[^\d]", "", self.kwargs["month"])
+        year = re.sub(r"[^\d]", "", self.kwargs["year"])
+        month = re.sub(r"[^\d]", "", self.kwargs["month"])
         reports = VUReport.objects.filter(datefirstpublished__year=year, datefirstpublished__month=month).values_list(
             "idnumber", flat=True
         )
@@ -1705,8 +1705,8 @@ class CVEVulViewAPI(PublicAPIView):
     def get(self, request, *args, **kwargs):
         # Be safe and remove all alpha character if this view
         # is accessed some other way than URL regex map
-        year = re.sub("[^\d]", "", self.kwargs["year"])
-        pk = re.sub("[^\d]", "", self.kwargs["pk"])
+        year = re.sub(r"[^\d]", "", self.kwargs["year"])
+        pk = re.sub(r"[^\d]", "", self.kwargs["pk"])
         cve = f"CVE-{year}-{pk}"
         cvewo = f"{year}-{pk}"
         report = None
@@ -1780,7 +1780,7 @@ class CaseCSAFAPIView(PublicAPIView):
         return "Public Vulnerability Advisory in CSAF format"
 
     def get_object(self):
-        svuid = re.sub("[^\d]", "", self.kwargs["vuid"])
+        svuid = re.sub(r"[^\d]", "", self.kwargs["vuid"])
         vr = VUReport.objects.filter(idnumber=svuid).first()
         if not vr:
             self.is_empty = True

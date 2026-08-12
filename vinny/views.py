@@ -60,7 +60,7 @@ import boto3
 from rest_framework import exceptions, generics, authentication, viewsets, mixins, status as rest_status
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, BasePermission
 from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from vinny.serializers import (
@@ -123,6 +123,7 @@ from botocore.exceptions import ClientError
 from botocore.client import Config
 from lib.vince.m2crypto_encrypt_decrypt import ED
 from lib.vince import utils as vinceutils
+from packaging.version import Version
 
 # Create your views here.
 
@@ -803,6 +804,7 @@ class TokenLogin(GetUserMixin, generic.TemplateView):
     template_name = "vinny/index.html"
 
     def post(self, request, *args, **kwargs):
+        ip = vinceutils.get_ip(self.request)
         if (
             self.request.POST.get("access_token", None)
             and self.request.POST.get("refresh_token", None)
@@ -815,13 +817,13 @@ class TokenLogin(GetUserMixin, generic.TemplateView):
             if user:
                 auth_login(request, user)
                 request.session["timezone"] = user.vinceprofile.timezone
-                logger.debug(f"Token Login attempt for {user}")
+                logger.debug(f"Token Login attempt for {user} from {ip} success")
                 return JsonResponse({"response": "success"}, status=200)
         try:
             url = request.build_absolute_uri()
-            logger.debug(f"unauthorized access for User {user} to {url}")
+            logger.debug(f"unauthorized access from IP {ip} to {url}")
         except Exception as e:
-            logger.debug(f"unauthorized access for User {user} to resources. Error when building URI {e}")
+            logger.debug(f"unauthorized access from IP {ip} to resources. Error when building URI {e}")
 
         return JsonResponse({"response": "Unauthorized", "error": "Unauthorized access"}, status=401)
 
@@ -895,7 +897,7 @@ class VinceAttachmentView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, g
             t_attach = VinceTrackAttachment.objects.filter(file__uuid=self.kwargs.get("path")).first()
             if t_attach == None:
                 raise Http404
-            if t_attach.case:
+            if t_attach.case and (t_attach.shared or self.request.user.is_staff or self.request.user.is_superuser):
                 case = get_object_or_404(Case, id=t_attach.case.id)
                 return _is_my_case(self.request.user, case.id) and PendingTestMixin.test_func(self)
         raise Http404
@@ -1872,9 +1874,18 @@ class ModifyEmailNotifications(LoginRequiredMixin, TokenMixin, UserPassesTestMix
                 return True
         return False
 
+    def _get_scoped_email(self):
+        """
+        Enforce object-level authorization: the email record must belong to
+        the vendor/contact in the URL.
+        """
+        vendor_id = self.kwargs.get("vendor_id")
+        uid = self.kwargs.get("uid")
+        return get_object_or_404(VinceCommEmail, id=uid, contact__id=vendor_id)
+
     def post(self, request, *args, **kwargs):
         logger.debug(f"{self.__class__.__name__} post: {self.request.POST}")
-        email = get_object_or_404(VinceCommEmail, id=self.kwargs.get("uid"))
+        email = self._get_scoped_email()
         if email.email_function in ["TO", "CC"]:
             email.email_function = "EMAIL"
             email.save()
@@ -2572,7 +2583,31 @@ class GetStatementView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gene
 
     def test_func(self):
         self.case = get_object_or_404(Case, id=self.kwargs["pk"])
-        return _is_my_case(self.request.user, self.kwargs["pk"]) and PendingTestMixin.test_func(self)
+
+        if not (_is_my_case(self.request.user, self.kwargs["pk"]) and PendingTestMixin.test_func(self)):
+            return False
+
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            return True
+
+        member_id = self.kwargs.get("member")
+        my_members = _my_groups_for_case(self.request.user, self.case)
+
+        # Optional member: user must at least belong to one allowed case-member group
+        if member_id is None:
+            return my_members.exists()
+
+        case_member = CaseMember.objects.filter(id=member_id, case=self.case).first()
+        if not case_member:
+            return False
+
+        # 1) User can always see their own member group's statement
+        if my_members.filter(id=case_member.id).exists():
+            return True
+
+        # 2) Otherwise only if statement is shared
+        shared_stmt = CaseStatement.objects.filter(case=self.case, member=case_member, share=True).exists()
+        return shared_stmt
 
     def get_context_data(self, **kwargs):
         context = super(GetStatementView, self).get_context_data(**kwargs)
@@ -4603,11 +4638,292 @@ class PendingUserPermission(BasePermission):
 
 class CommVulReportAPIView(generics.GenericAPIView):
     throttle_classes = [UserRateThrottle]
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+
+    @staticmethod
+    def _get_nested_value(data, path, default=""):
+        current = data
+        for key in path:
+            if isinstance(key, int):
+                if not isinstance(current, list) or len(current) <= key:
+                    return default
+                current = current[key]
+                continue
+            if not isinstance(current, dict):
+                return default
+            if key not in current:
+                return default
+            current = current[key]
+        return current
+
+    @staticmethod
+    def _parse_date(iso_date):
+        if not iso_date:
+            return ""
+        try:
+            return parse(str(iso_date)).date().isoformat()
+        except Exception:
+            return ""
+
+    @staticmethod
+    def _coerce_choice_bool(value):
+        return "True" if bool(value) else "False"
+
+    @staticmethod
+    def _append_unique(values, value):
+        if not isinstance(value, str):
+            return
+        normalized = value.strip()
+        if normalized and normalized not in values:
+            values.append(normalized)
+
+    @classmethod
+    def _extract_product_tree_fields(cls, csaf):
+        vendors = []
+        product_names = []
+        product_versions = []
+
+        def _walk_branches(node):
+            if isinstance(node, list):
+                for item in node:
+                    _walk_branches(item)
+                return
+
+            if not isinstance(node, dict):
+                return
+
+            category = node.get("category")
+            name = node.get("name")
+            if category == "vendor":
+                cls._append_unique(vendors, name)
+            elif category == "product_name":
+                cls._append_unique(product_names, name)
+            elif category == "product_version":
+                cls._append_unique(product_versions, name)
+
+            _walk_branches(node.get("branches"))
+
+        _walk_branches(cls._get_nested_value(csaf, ["product_tree", "branches"], []))
+
+        if not (vendors and product_names and product_versions):
+            raise ValidationError(
+                {"csaf": ["At least one value for vendor, product_name, and product_version is required."]}
+            )
+
+        has_multiple_vendors = len(vendors) > 1
+        return {
+            "vendor_name": vendors[0],
+            "product_name": product_names[0],
+            "product_version": ",".join(product_versions),
+            "multiplevendors": has_multiple_vendors,
+            "other_vendors": "\n".join(vendors[1:]) if has_multiple_vendors else "",
+        }
+    @staticmethod
+    def _has_exploitation_active_ssvc(metrics):
+        MIN_SCHEMA = Version("2.0.0")
+        MIN_EXPLOITATION = Version("1.1.0")
+        if not isinstance(metrics, list):
+            return False
+
+        for metric in metrics:
+            if not isinstance(metric, dict):
+                continue
+
+            content = metric.get("content")
+            if not isinstance(content, dict):
+                continue
+
+            ssvc = content.get("ssvc_v2")
+            if not isinstance(ssvc, dict):
+                continue
+
+            # Check schema version
+            try:
+                if Version(ssvc.get("schemaVersion", "0")) < MIN_SCHEMA:
+                    continue
+            except Exception:
+                continue
+
+            # Find Exploitation decision point
+            for selection in ssvc.get("selections", []):
+                if selection.get("key") != "E":
+                    continue
+
+                try:
+                    if Version(selection.get("version", "0")) < MIN_EXPLOITATION:
+                        continue
+                except Exception:
+                    continue
+
+                if any(
+                        value.get("key") == "A"
+                        for value in selection.get("values", [])
+                        if isinstance(value, dict)
+                ):
+                    return True
+
+        return False
+    @classmethod
+    def _map_csaf_to_form_data(cls, csaf):
+        vulnerabilities = csaf.get("vulnerabilities") if isinstance(csaf, dict) else []
+        vulnerability = vulnerabilities[0] if vulnerabilities and isinstance(vulnerabilities[0], dict) else {}
+        notes = vulnerability.get("notes") if isinstance(vulnerability.get("notes"), list) else []
+        threats = vulnerability.get("threats") if isinstance(vulnerability.get("threats"), list) else []
+        involvements = vulnerability.get("involvements") if isinstance(vulnerability.get("involvements"), list) else []
+        references = vulnerability.get("references") if isinstance(vulnerability.get("references"), list) else []
+        metrics = vulnerability.get("metrics") if isinstance(vulnerability.get("metrics"), list) else []
+        x_extensions = csaf.get("x_extensions") if isinstance(csaf, dict) else []
+        x_extension_content = (
+            x_extensions[0].get("content", {}) if x_extensions and isinstance(x_extensions[0], dict) else {}
+        )
+
+        description_note = next((n for n in notes if isinstance(n, dict) and n.get("category") == "description"), {})
+        discovery_note = next(
+            (n for n in notes if isinstance(n, dict) and n.get("title") == "Vulnerability Discovery Method"), {}
+        )
+        if not discovery_note and len(notes) > 1:
+            discovery_note = notes[1] if isinstance(notes[1], dict) else {}
+
+        contact_attempt_involvements = [
+            involvement
+            for involvement in involvements
+            if isinstance(involvement, dict) and involvement.get("status") == "contact_attempted"
+        ]
+        contact_attempt_involvement = contact_attempt_involvements[0] if contact_attempt_involvements else {}
+        if contact_attempt_involvements and any(not involvement.get("date") for involvement in contact_attempt_involvements):
+            raise ValidationError(
+                {"csaf": ["first_contact date is required when involvement status is contact_attempted."]}
+            )
+        no_contact_involvement = next(
+            (
+                involvement
+                for involvement in involvements
+                if isinstance(involvement, dict) and involvement.get("status") == "not_contacted"
+            ),
+            {},
+        )
+        disclosure_involvement = next(
+            (
+                involvement
+                for involvement in involvements
+                if isinstance(involvement, dict)
+                and involvement.get("status") == "open"
+                and involvement.get("party") == "discoverer"
+            ),
+            {},
+        )
+        exploit_threat = next(
+            (threat for threat in threats if isinstance(threat, dict) and threat.get("category") == "exploit_status"),
+            {},
+        )
+        impact_threat = next(
+            (threat for threat in threats if isinstance(threat, dict) and threat.get("category") == "impact"),
+            {},
+        )
+
+        comm_attempt = bool(contact_attempt_involvement)
+        first_contact = cls._parse_date(
+            next((involvement.get("date") for involvement in contact_attempt_involvements if involvement.get("date")), "")
+        )
+        no_attempt_summary = (no_contact_involvement.get("summary") or "").strip()
+        why_no_attempt = ""
+        please_explain = ""
+        if not comm_attempt:
+            if no_attempt_summary == "I have not attempted to contact any vendors":
+                why_no_attempt = "1"
+            elif no_attempt_summary == "I have been unable to find contact information for a vendor":
+                why_no_attempt = "2"
+            elif no_attempt_summary:
+                why_no_attempt = "3"
+                please_explain = no_attempt_summary
+
+        disclosure_plans = (disclosure_involvement.get("summary") or "").strip()
+        vul_disclose = bool(disclosure_plans)
+
+        public_references = [
+            ref.get("url")
+            for ref in references
+            if isinstance(ref, dict) and ref.get("url") and "publicly known references" in (ref.get("summary", "").lower())
+        ]
+        exploit_references = [
+            ref.get("url")
+            for ref in references
+            if isinstance(ref, dict) and ref.get("url") and "publicly exploited references" in (ref.get("summary", "").lower())
+        ]
+
+        namespace = cls._get_nested_value(csaf, ["document", "publisher", "namespace"], "")
+        if isinstance(namespace, str) and namespace.startswith("mailto:"):
+            contact_email = namespace.replace("mailto:", "", 1)
+        else:
+            contact_email = namespace if isinstance(namespace, str) else ""
+
+        has_exploitation_active = cls._has_exploitation_active_ssvc(metrics)
+        product_tree_fields = cls._extract_product_tree_fields(csaf)
+        multiplevendors_from_extension = bool(x_extension_content.get("multiple_vendors_impacted", False))
+        extension_other_vendors = "\n".join(x_extension_content.get("multiple_vendors") or [])
+        has_multiple_vendors = product_tree_fields["multiplevendors"] or multiplevendors_from_extension
+
+        return {
+            "contact_name": cls._get_nested_value(csaf, ["document", "publisher", "name"], ""),
+            "contact_org": cls._get_nested_value(csaf, ["document", "publisher", "issuing_authority"], ""),
+            "contact_email": contact_email,
+            "vendor_name": product_tree_fields["vendor_name"],
+            "product_name": product_tree_fields["product_name"],
+            "product_version": product_tree_fields["product_version"],
+            "vul_description": description_note.get("text") or vulnerability.get("title", ""),
+            "vul_discovery": discovery_note.get("text", ""),
+            "vul_exploit": exploit_threat.get("details", ""),
+            "vul_impact": impact_threat.get("details", ""),
+            "comm_attempt": cls._coerce_choice_bool(comm_attempt),
+            "vendor_communication": contact_attempt_involvement.get("summary", "") if comm_attempt else "",
+            "first_contact": first_contact if comm_attempt else "",
+            "why_no_attempt": why_no_attempt,
+            "please_explain": please_explain,
+            "vul_disclose": cls._coerce_choice_bool(vul_disclose),
+            "disclosure_plans": disclosure_plans if vul_disclose else "",
+            "vul_public": cls._coerce_choice_bool(bool(public_references)),
+            "public_references": "\n".join(public_references),
+            "vul_exploited": cls._coerce_choice_bool(has_exploitation_active),
+            "exploit_references": "\n".join(exploit_references),
+            "ics_impact": bool(x_extension_content.get("ics_impact", False)),
+            "ai_ml_system": bool(x_extension_content.get("ai_ml_system", False) or x_extension_content.get("ai/ml", False)),
+            "share_release": cls._coerce_choice_bool(bool(x_extension_content.get("share_contact_with_vendor", False))),
+            "multiplevendors": cls._coerce_choice_bool(has_multiple_vendors),
+            "other_vendors": product_tree_fields["other_vendors"] if product_tree_fields["multiplevendors"] else extension_other_vendors,
+            "tracking": x_extension_content.get("Tracking_IDs", ""),
+            "comments": x_extension_content.get("private_comments", ""),
+            "credit_release": cls._coerce_choice_bool(
+                bool(cls._get_nested_value(csaf, ["document", "acknowledgments"], []))
+            ),
+        }
 
     def post(self, request, *args, **kwargs):
+        content_type = request.content_type or ""
+        is_json_csaf = content_type.startswith("application/json")
+        multipart_csaf = None
+        submitted_csaf = None
+
+        form_data = request.POST
+        try:
+            if is_json_csaf:
+                submitted_csaf = request.data
+                form_data = self._map_csaf_to_form_data(submitted_csaf)
+            else:
+                multipart_csaf = request.data.get("csaf") if hasattr(request, "data") else None
+            if multipart_csaf:
+                if isinstance(multipart_csaf, dict):
+                    csaf_json = multipart_csaf
+                else:
+                    csaf_json = json.loads(multipart_csaf)
+                submitted_csaf = csaf_json
+                form_data = self._map_csaf_to_form_data(csaf_json)
+        except ValidationError as exc:
+            return JsonResponse({"errors": exc.message_dict, "status": "error"}, status=400)
+        except (exceptions.ParseError, TypeError, json.JSONDecodeError):
+            return JsonResponse({"errors": {"csaf": ["Malformed CSAF JSON."]}, "status": "error"}, status=400)
 
         form = CaseRequestForm(
-            data=request.POST,
+            data=form_data,
             files=request.FILES
         )
 
@@ -4620,12 +4936,16 @@ class CommVulReportAPIView(generics.GenericAPIView):
         create_record_of_API_access(self.request.build_absolute_uri(), self.request.user)
         vrf_id = get_vrf_id()
         context = form.cleaned_data
-        if context["ai_ml_system"] == True:
-            context["metadata"] = {"ai_ml_system": True}
-        else:
-            context["metadata"] = {"ai_ml_system": False}
+        metadata = context.get("metadata")
+        if not isinstance(metadata, dict):
+            metadata = {}
+        metadata.setdefault("ai_ml_system", context["ai_ml_system"])
+        if submitted_csaf is not None:
+            metadata["csaf"] = submitted_csaf
+        context["metadata"] = metadata
         form.instance.vrf_id = vrf_id
         newrequest = form.save(commit=False)
+        newrequest.metadata = metadata
         newrequest.user = self.request.user
         newrequest.save()
         context["vrf_id"] = vrf_id
@@ -5225,8 +5545,8 @@ class CVEVulAPIView(generics.GenericAPIView):
         return f"CVE Lookup View"
 
     def get(self, request, *args, **kwargs):
-        year = re.sub("[^\d]", "", self.kwargs["year"])
-        pk = re.sub("[^\d]", "", self.kwargs["pk"])
+        year = re.sub(r"[^\d]", "", self.kwargs["year"])
+        pk = re.sub(r"[^\d]", "", self.kwargs["pk"])
         cve = f"CVE-{year}-{pk}"
         cvewo = f"{year}-{pk}"
         report = None
@@ -5696,7 +6016,7 @@ class CaseCSAFAPIView(generics.RetrieveAPIView):
         if (
             response.status_code == 200
             and request.headers.get("Origin")
-            and request.headers.get("Origin").find("https://") > -1
+            and request.headers.get("Origin").startswith("https://")
         ):
             response["Access-Control-Allow-Origin"] = request.headers.get("Origin")
         return response

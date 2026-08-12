@@ -35,8 +35,8 @@ from vincepub.feeds import LatestVulReportActivity
 from django.views.generic import RedirectView
 
 router = routers.DefaultRouter()
-router.register("notes", views.VUNoteViewSet)
-router.register("api", views.VUNoteViewSet)
+router.register("notes", views.VUNoteViewSet, basename="notes")
+router.register("api", views.VUNoteViewSet, basename="api_notes")
 
 urlpatterns = [
     # path("health/", health_check),
@@ -60,29 +60,29 @@ urlpatterns = [
     path("help/fieldhelp/", views.HelpFieldView.as_view(), name="fields"),
     path("html/fieldhelp/", RedirectView.as_view(pattern_name="vincepub:fields")),
     path("html/help/", RedirectView.as_view(pattern_name="vincepub:fields")),
-    re_path("^api/vendors/(?P<pk>\d+)/$", views.VendorViewAPI.as_view(), name="vendorview"),
-    re_path("^api/(?P<pk>\d+)/vendors/$", views.VendorViewAPI.as_view(), name="vendorview"),
-    re_path("^api/(?P<vuid>\d+)/csaf/$", views.CaseCSAFAPIView.as_view(), name="vulcsaf"),
-    re_path("^vendors/(?P<pk>\d+)/$", RedirectView.as_view(pattern_name="vincepub:vendorview")),
-    re_path("^api/vuls/(?P<pk>\d+)/$", views.VulViewAPI.as_view(), name="vulview"),
-    re_path("^api/vuls/cve/(?P<year>\d+)-(?P<pk>\d+)/$", views.CVEVulViewAPI.as_view(), name="cvevulview"),
-    re_path("^api/(?P<pk>\d+)/vuls/$", views.VulViewAPI.as_view(), name="vulview"),
-    re_path("^api/vendors/vuls/(?P<pk>\d+)/$", views.VendorVulViewAPI.as_view(), name="vendorvulview"),
-    re_path("^api/(?P<pk>\d+)/vendors/vuls/$", views.VendorVulViewAPI.as_view(), name="vendorvulview"),
-    re_path("^api/(?P<year>(?!0000)\d{4})/(?P<month>0?[1-9]|1[012])/$", views.VUNoteViewByMonth.as_view()),
+    re_path(r"^api/vendors/(?P<pk>\d+)/$", views.VendorViewAPI.as_view(), name="vendorview"),
+    re_path(r"^api/(?P<pk>\d+)/vendors/$", views.VendorViewAPI.as_view(), name="vendorview"),
+    re_path(r"^api/(?P<vuid>\d+)/csaf/$", views.CaseCSAFAPIView.as_view(), name="vulcsaf"),
+    re_path(r"^vendors/(?P<pk>\d+)/$", RedirectView.as_view(pattern_name="vincepub:vendorview")),
+    re_path(r"^api/vuls/(?P<pk>\d+)/$", views.VulViewAPI.as_view(), name="vulview"),
+    re_path(r"^api/vuls/cve/(?P<year>\d+)-(?P<pk>\d+)/$", views.CVEVulViewAPI.as_view(), name="cvevulview"),
+    re_path(r"^api/(?P<pk>\d+)/vuls/$", views.VulViewAPI.as_view(), name="vulview"),
+    re_path(r"^api/vendors/vuls/(?P<pk>\d+)/$", views.VendorVulViewAPI.as_view(), name="vendorvulview"),
+    re_path(r"^api/(?P<pk>\d+)/vendors/vuls/$", views.VendorVulViewAPI.as_view(), name="vendorvulview"),
+    re_path(r"^api/(?P<year>(?!0000)\d{4})/(?P<month>0?[1-9]|1[012])/$", views.VUNoteViewByMonth.as_view()),
     re_path(
-        "^api/(?P<year>(?!0000)\d{4})/(?P<month>0?[1-9]|1[012])/summary/$", views.VUNoteViewByMonthSummary.as_view()
+        r"^api/(?P<year>(?!0000)\d{4})/(?P<month>0?[1-9]|1[012])/summary/$", views.VUNoteViewByMonthSummary.as_view()
     ),
-    re_path("^api/(?P<year>(?!0000)\d{4})/summary/$", views.VUNoteViewByYearSummary.as_view()),
-    re_path("^api/vendors/(?P<year>(?!0000)\d{4})/(?P<month>0?[1-9]|1[012])/$", views.VendorViewByMonth.as_view()),
+    re_path(r"^api/(?P<year>(?!0000)\d{4})/summary/$", views.VUNoteViewByYearSummary.as_view()),
+    re_path(r"^api/vendors/(?P<year>(?!0000)\d{4})/(?P<month>0?[1-9]|1[012])/$", views.VendorViewByMonth.as_view()),
     re_path(
-        "^api/vendors/(?P<year>(?!0000)\d{4})/(?P<month>0?[1-9]|1[012])/summary/$",
+        r"^api/vendors/(?P<year>(?!0000)\d{4})/(?P<month>0?[1-9]|1[012])/summary/$",
         views.VendorViewByMonthSummary.as_view(),
     ),
-    re_path("^api/vendors/(?P<year>(?!0000)\d{4})/summary/$", views.VendorViewByYearSummary.as_view()),
+    re_path(r"^api/vendors/(?P<year>(?!0000)\d{4})/summary/$", views.VendorViewByYearSummary.as_view()),
     # path("api/vulreport/", views.VulReportAPIView.as_view(), name="vul_report_api"),
     re_path("^id/(?P<vendorid>[A-Z0-9]+-[A-Z0-9]+)/?$", views.OldVendorView.as_view(), name="oldvendorview"),
-    re_path("^id/(?P<slug>\d+)/?$", views.VUView.as_view(), name="vudetail"),
+    re_path(r"^id/(?P<slug>\d+)/?$", views.VUView.as_view(), name="vudetail"),
     re_path("^vendor/(?P<vuid>VU#[0-9]+)/$", views.VendorView.as_view(), name="vendor"),
     re_path("^vendorstatus/(?P<vuid>VU#[0-9]+)/$", views.VendorStatusView.as_view(), name="vendorstatus"),
     re_path("^bypublic/(?P<asc_or_desc>asc)/$", views.DatePublicView.as_view(), name="viewbypublic"),

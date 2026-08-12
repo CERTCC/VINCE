@@ -1,0 +1,122 @@
+name: PR Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: pr-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  django-tests:
+    name: Django PR tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DJANGO_SETTINGS_MODULE: bigvince.settings_
+      AUTH_BACKEND_MODE: local
+      DEBUG: "True"
+      VINCE_DB_SSL_MODE: disable
+      # SECRET_KEY and GOOGLE_RECAPTCHA_SECRET_KEY are generated ephemerally
+      # in the "Generate ephemeral test secrets" step below.
+      GOOGLE_SITE_KEY: test-site-key
+      VINCE_DEV_SYSTEM: "1"
+      VINCE_TRACK_DB_HOST: 127.0.0.1
+      VINCE_TRACK_DB_PORT: "5432"
+      VINCE_TRACK_DB_USER: vince
+      VINCE_TRACK_DB_PASS: vince
+      VINCE_TRACK_DB_NAME: vincetest
+      VINCE_COMM_DB_HOST: 127.0.0.1
+      VINCE_COMM_DB_PORT: "5432"
+      VINCE_COMM_DB_USER: vince
+      VINCE_COMM_DB_PASS: vince
+      VINCE_COMM_DB_NAME: vincecommtest
+      VINCE_PUB_DB_HOST: 127.0.0.1
+      VINCE_PUB_DB_PORT: "5432"
+      VINCE_PUB_DB_USER: vince
+      VINCE_PUB_DB_PASS: vince
+      VINCE_PUB_DB_NAME: vincepubtest
+      NO_REPLY_EMAIL: noreply@example.com
+      REPLY_EMAIL: support@example.com
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Generate ephemeral test secrets
+        run: |
+          # Use Python stdlib (no Django needed yet) to generate a 50-char
+          # URL-safe random string.  These values are thrown away after the run.
+          echo "SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')" >> $GITHUB_ENV
+          echo "GOOGLE_RECAPTCHA_SECRET_KEY=ci-ephemeral-recaptcha-key" >> $GITHUB_ENV
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client swig libpq-dev libssl-dev
+
+      - name: Install Python build tools
+        run: pip install --upgrade wheel cython
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create application databases
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d postgres <<'SQL'
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vince') THEN
+              CREATE ROLE vince LOGIN PASSWORD 'vince' CREATEDB;
+            END IF;
+          END
+          $$;
+          SELECT 'CREATE DATABASE vincetest OWNER vince'
+          WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'vincetest')\gexec
+          SELECT 'CREATE DATABASE vincecommtest OWNER vince'
+          WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'vincecommtest')\gexec
+          SELECT 'CREATE DATABASE vincepubtest OWNER vince'
+          WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'vincepubtest')\gexec
+          SQL
+
+      - name: Run migrations
+        run: |
+          python manage.py migrate
+          python manage.py migrate --database=vincecomm
+          python manage.py migrate --database=vincepub
+
+      - name: Run local-auth smoke tests
+        run: python manage.py test vince.auth.tests --verbosity=2
+
+      - name: Run VINCE test suite
+        run: python manage.py test vince --verbosity=2
+
+      - name: Run VINCEComm test suite
+        run: python manage.py test vinny --verbosity=2

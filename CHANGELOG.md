@@ -5,7 +5,27 @@ VINCE Coordination platform code
 
 
 ## Description
-VINCE Coordination platform 
+VINCE Coordination platform
+
+Version 3.0.44 2026-08-12
+
+* dependabot update recommendations: `awscli` 1.44.38 to 1.45.28 with corresponding updates - `boto3` to 1.43.28, `botocore` to 1.43.28, `s3transfer` 0.16.0 to 0.18.0
+* Added GitHub workflow for `.github/workflows/pr-tests.yml` and a number of Test Cases
+* Added `vince/auth` override for local authentication to support IDAM and OpenID usage and building related Test Cases
+* CSAF intake capability is now introduced with the `CommVulReportAPIView` auto-detect Form or API JSON submission (GH-Issue #24 ongoing)
+* CSAF JSON view (using Ace Editor library ) supported to help adoption in Vulnerability Request form (VRF) submission using VRF profile of CSAF
+* dependabot update recommendations: `soupsieve` 2.3.2.post1 to 2.8.4, `pyasn1` 0.6.3 to 0.6.4, `cryptography` 48.0.1 to 50.0.0
+* added logging to address login loop issue (Internal-847)
+* modified regexes to avoid syntax error caused by Python 3.12 update (Internal-859)
+* disabled view for TCR API endpoint view (Internal-856)
+* proper fix for revisited CaseFilterResults View add Due Date in template vince/templates/vince/searchresults.html (Internal-849)
+* CVE-2026-18744 - poor permissions management in vinny/views.py: (GetStatementView) not checking member_id of user
+* CVE-2026-18749 - poor permissions management in vinny/views.py: (VinceAttachmentView type=track).
+  check if attachment is `shared` before allowing it.
+* CVE-2026-18750 - poor permissions management in vinny/views.py: (ModifyEmailNotifications).
+  Check the record's contact belongs to the requesting group-admin.
+* CSAFSerializer relaxed check on origin to start with "https://" instead of .find("https://") > -1
+* Updates of dependencies djangorestframework==3.15.2 redis==4.5.5 from	vulnerability scan.
 
 Version 3.0.43 2026-06-25
 
@@ -43,8 +63,8 @@ Version 3.0.40 2026-05-12
 
 Version 3.0.39 2026-05-06
 
-* fixed issue preventing users from making lists and tables in VINCE Comm comments (VIN-845)
-* fixed bug reported by user affecting VINCE's vetting of incoming email ticket reports (VIN-846)
+* fixed issue preventing users from making lists and tables in VINCE Comm comments (Internal-845)
+* fixed bug reported by user affecting VINCE's vetting of incoming email ticket reports (Internal-846)
 
 
 

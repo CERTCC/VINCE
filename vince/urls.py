@@ -395,6 +395,7 @@ urlpatterns = [
     ),
     re_path("^case/(?P<case>[0-9]+)/artifacts/$", views.CaseArtifacts.as_view(), name="caseartifacts"),
     re_path("^cr/(?P<pk>[0-9]+)/$", views.CaseRequestView.as_view(), name="cr"),
+    re_path("^cr/(?P<ticket_id>[0-9]+)/ssvc/$", views.SSVCAssessmentView.as_view(), name="ssvc_assessment"),
     re_path("^add_dependency/(?P<ticket_id>[0-9]+)/$", views.AddTicketDependency.as_view(), name="adddep"),
     re_path(
         "^rm_dependency/(?P<ticket_id>[0-9]+)/(?P<dep_id>[0-9]+)/$",
@@ -500,7 +501,7 @@ urlpatterns = [
     re_path("^manage/role/adduser/(?P<pk>[0-9]+)/$", views.ManageRoleAddUser.as_view(), name="adduserrole"),
     re_path("^manage/cve/detail/(?P<pk>[0-9]+)/", views.CVEServicesDetailAccount.as_view(), name="cve_detail"),
     re_path(
-        "^manage/cve/detail/single/(?P<pk>[0-9]+)/(?P<cveid>CVE-\d+-\d+)/",
+        r"^manage/cve/detail/single/(?P<pk>[0-9]+)/(?P<cveid>CVE-\d+-\d+)/",
         views.CVESingleDetailView.as_view(),
         name="detailedcve",
     ),

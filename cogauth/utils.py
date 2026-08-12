@@ -276,6 +276,13 @@ def add_permissions(user):
 
 def cognito_check_track_permissions(request):
     logger.debug(f"=== cognito_check_track_permissions called for user {request.user.username if request.user.is_authenticated else 'ANONYMOUS'} ===")
+    if getattr(settings, "AUTH_BACKEND_MODE", None) == "local":
+        logger.debug(f"Bypass cognito checks for user {request.user.username} to local checks")
+        return (
+            request.user is not None
+            and request.user.is_authenticated
+            and request.user.is_active
+        )
     old_user = False
     access_token = request.session.get('ACCESS_TOKEN')
     logger.debug(f"ACCESS_TOKEN present in session: {access_token is not None}")
