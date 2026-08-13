@@ -55,7 +55,16 @@
 	  {% if ticket|case_access:user %}{{ ticket.get_title }}{% else %}{{ ticket.vu_vuid }}{% endif %}</a> {% autoescape off %}{{ ticket.get_status_html }} {{ ticket.get_tag_html }} {{ ticket.get_owner_html }}{% endautoescape %}
 {% endif %}
 </h4>
-<h6>{% if ticket.queue %}Submitted by {% if ticket.contact_email %}{% autoescape off %}{{ ticket.contact_email|vince_user }}{% endautoescape %}{% else %}{% autoescape off %}{{ ticket.submitter_email|vince_user }}{% endautoescape %} {% endif %}<span class="px-1">·</span> {% endif %} Last updated {{ ticket.modified|date:"Y-m-d" }} ({{ ticket.modified|naturaltime }})</h6>
+<h6>{% if ticket.queue %}Submitted by {% if ticket.contact_email %}{% autoescape off %}{{ ticket.contact_email|vince_user }}{% endautoescape %}{% else %}{% autoescape off %}{{ ticket.submitter_email|vince_user }}{% endautoescape %} {% endif %}<span class="px-1">·</span> {% endif %} Last updated {{ ticket.modified|date:"Y-m-d" }} ({{ ticket.modified|naturaltime }})<br>
+<!-- For Cases show the Due Date as well if present -->
+ {% if not ticket.queue and ticket|case_access:user %}
+  {% if ticket.due_date %}
+  <span> Due Date {{ ticket.due_date|naturaltime }}</span>
+  {% else %}
+  <span> Due Date TBD </span>
+  {% endif %}
+{% endif %}
+</h6>
       {% if note.dateupdated != note.datefirstpublished %}
       <span class="updated-date">Updated {{ note.dateupdated|date:"F d, Y" }}</span>
       {% endif %}

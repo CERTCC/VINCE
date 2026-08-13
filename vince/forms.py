@@ -3143,7 +3143,7 @@ class ReminderForm(forms.ModelForm):
                 queues = list(TicketQueue.objects.all().values_list("slug", flat=True))
                 queues.append("General")
                 rq = "|".join(queues)
-                rq = "(?i)(" + rq + ")-(\d+)"
+                rq = "(?i)(" + rq + r")-(\d+)"
                 m = re.search(rq, data)
                 if m:
                     data = m.group(2)

@@ -56,76 +56,76 @@ urlpatterns = [
         views.VinceCommPrintReportsView.as_view(),
         name="printreport",
     ),
-    re_path("^case/summary/(?P<pk>\d+)/$", views.CaseSummaryView.as_view(), name="case_summary"),
-    re_path("^case/request/(?P<pk>\d+)/$", views.RequestAccessView.as_view(), name="requestaccess"),
+    re_path(r"^case/summary/(?P<pk>\d+)/$", views.CaseSummaryView.as_view(), name="case_summary"),
+    re_path(r"^case/request/(?P<pk>\d+)/$", views.RequestAccessView.as_view(), name="requestaccess"),
     path("preferences/", views.PreferencesView.as_view(), name="preferences"),
     path("dashboard/filter/", views.DashboardCaseView.as_view(), name="dashboardfilter"),
     path("limited/filter/", views.LimitedAccessSearch.as_view(), name="limitedfilter"),
     path("reports/filter/", views.MyReportsFilterView.as_view(), name="myreportsfilter"),
     path("contact/", views.ContactView.as_view(), name="contact"),
     path("profile/newcolor/", views.GenerateNewRandomColor.as_view(), name="newcolor"),
-    re_path("^contact/(?P<vendor_id>\d+)/$", views.ContactView.as_view(), name="contact"),
+    re_path(r"^contact/(?P<vendor_id>\d+)/$", views.ContactView.as_view(), name="contact"),
     path("contact/multi/", views.MultipleContactView.as_view(), name="multiple_contacts"),
-    re_path("^vc/contact/edit/(?P<vendor_id>\d+)/$", views.EditContactView.as_view(), name="editcontact"),
-    re_path("^contact/(?P<vendor_id>\d+)/add/logo/$", views.ContactAddLogoView.as_view(), name="addlogo"),
+    re_path(r"^vc/contact/edit/(?P<vendor_id>\d+)/$", views.EditContactView.as_view(), name="editcontact"),
+    re_path(r"^contact/(?P<vendor_id>\d+)/add/logo/$", views.ContactAddLogoView.as_view(), name="addlogo"),
     re_path(
-        "^groupadmin/change/access/(?P<vendor_id>\d+)/", views.ChangeDefaultCaseAccess.as_view(), name="changeaccess"
+        r"^groupadmin/change/access/(?P<vendor_id>\d+)/", views.ChangeDefaultCaseAccess.as_view(), name="changeaccess"
     ),
     re_path(
-        "^groupadmin/caseaccess/(?P<vendor_id>\d+)/(?P<user_id>\d+)/",
+        r"^groupadmin/caseaccess/(?P<vendor_id>\d+)/(?P<user_id>\d+)/",
         views.CaseAccessView.as_view(),
         name="caseaccess",
     ),
     path("groupadmin/", views.AdminView.as_view(), name="admin"),
     path("groupadmin/multi/", views.MultipleGroupAdminView.as_view(), name="multiple_admins"),
     re_path(
-        "^groupadmin/(?P<vendor_id>\d+)/promote/(?P<uid>\d+)/$", views.PromoteUserView.as_view(), name="promoteuser"
+        r"^groupadmin/(?P<vendor_id>\d+)/promote/(?P<uid>\d+)/$", views.PromoteUserView.as_view(), name="promoteuser"
     ),
-    re_path("^groupadmin/(?P<vendor_id>\d+)/$", views.AdminView.as_view(), name="admin"),
-    re_path("^groupadmin/users/(?P<vendor_id>\d+)/$", views.UserCaseAccessView.as_view(), name="adminusers"),
+    re_path(r"^groupadmin/(?P<vendor_id>\d+)/$", views.AdminView.as_view(), name="admin"),
+    re_path(r"^groupadmin/users/(?P<vendor_id>\d+)/$", views.UserCaseAccessView.as_view(), name="adminusers"),
     re_path(
-        "^groupadmin/service/create/(?P<vendor_id>\d+)/$",
+        r"^groupadmin/service/create/(?P<vendor_id>\d+)/$",
         views.CreateServiceAccountView.as_view(),
         name="createservice",
     ),
-    re_path("groupadmin/(?P<vendor_id>\d+)/adduser/", views.AdminAddUserView.as_view(), name="adduser"),
+    re_path(r"groupadmin/(?P<vendor_id>\d+)/adduser/", views.AdminAddUserView.as_view(), name="adduser"),
     re_path(
-        "^groupadmin/(?P<vendor_id>\d+)/rmuser/(?P<type>(contact|user))/(?P<uid>\d+)/$",
+        r"^groupadmin/(?P<vendor_id>\d+)/rmuser/(?P<type>(contact|user))/(?P<uid>\d+)/$",
         views.AdminRemoveUser.as_view(),
         name="rmuser",
     ),
     re_path(
-        "^groupadmin/(?P<vendor_id>\d+)/email/modify/(?P<type>(email|user))/(?P<uid>\d+)/$",
+        r"^groupadmin/(?P<vendor_id>\d+)/email/modify/(?P<type>(email|user))/(?P<uid>\d+)/$",
         views.ModifyEmailNotifications.as_view(),
         name="changeemail",
     ),
     path("inbox/", views.InboxView.as_view(), name="inbox"),
     re_path("^inbox/(?P<deleted>(sent))/$", views.InboxView.as_view(), name="inbox"),
     path("inbox/filter/", views.SearchThreadsView.as_view(), name="filterthreads"),
-    re_path("^thread/(?P<pk>\d+)/$", views.ThreadView.as_view(), name="thread_detail"),
-    re_path("^thread/msg/(?P<pk>\d+)/$", views.MessageView.as_view(), name="msg_detail"),
-    re_path("^thread/messages/(?P<pk>\d+)/$", views.MessagesView.as_view(), name="messages"),
-    re_path("^thread/(?P<pk>\d+)/delete/$", views.ThreadDeleteView.as_view(), name="thread_delete"),
+    re_path(r"^thread/(?P<pk>\d+)/$", views.ThreadView.as_view(), name="thread_detail"),
+    re_path(r"^thread/msg/(?P<pk>\d+)/$", views.MessageView.as_view(), name="msg_detail"),
+    re_path(r"^thread/messages/(?P<pk>\d+)/$", views.MessagesView.as_view(), name="messages"),
+    re_path(r"^thread/(?P<pk>\d+)/delete/$", views.ThreadDeleteView.as_view(), name="thread_delete"),
     re_path("^sendmsg/(?P<type>[1-9]|10)?/$", views.SendMessageView.as_view(), name="sendmsg"),
-    re_path("^sendmsg/(?P<type>[2])/(?P<case>\d+)/$", views.SendMessageView.as_view(), name="sendmsg"),
+    re_path(r"^sendmsg/(?P<type>[2])/(?P<case>\d+)/$", views.SendMessageView.as_view(), name="sendmsg"),
     path("sendmsg/all/", views.SendMessageAllView.as_view(), name="sendmsgall"),
     path("auto/api/allvendors/", views.autocomplete_allvendors, name="all_vendors"),
     path("auto/api/vlookup/", views.VendorLookupView.as_view(), name="vendorlookup"),
     path("auto/api/vendors/", views.autocomplete_vendor, name="auto_vendor"),
     path("auto/api/users/", views.autocomplete_users, name="auto_user"),
     path("api/userapprove/", views.userapproverequest, {"caller": "vinny"}, name="userapprove"),
-    re_path("^auto/api/coord/(?P<pk>\d+)/$", views.autocomplete_coordinators, name="auto_coord"),
+    re_path(r"^auto/api/coord/(?P<pk>\d+)/$", views.autocomplete_coordinators, name="auto_coord"),
     path("sendmsg/", views.SendMessageView.as_view(), name="sendmsg"),
     path("sendmsg/user/", views.SendMessageUserView.as_view(), name="sendmsguser"),
-    re_path("^sendmsg/user/(?P<user_id>\d+)/$", views.SendMessageUserView.as_view(), name="sendmsgus"),
+    re_path(r"^sendmsg/user/(?P<user_id>\d+)/$", views.SendMessageUserView.as_view(), name="sendmsgus"),
     re_path(
-        "^sendmsg/group/(?P<group_id>\d+)_(?P<case>\d+)?/$", views.SendMessageUserView.as_view(), name="sendmsggroup"
+        r"^sendmsg/group/(?P<group_id>\d+)_(?P<case>\d+)?/$", views.SendMessageUserView.as_view(), name="sendmsggroup"
     ),
     re_path(
-        "^sendmsg/admins/(?P<admin_id>\d+)_(?P<case>\d+)?/$", views.SendMessageUserView.as_view(), name="sendmsgadmins"
+        r"^sendmsg/admins/(?P<admin_id>\d+)_(?P<case>\d+)?/$", views.SendMessageUserView.as_view(), name="sendmsgadmins"
     ),
     # path('groupchat/', views.GroupChatView.as_view(), name='groupchat'),
-    re_path("^groupchat/case/(?P<case_id>\d+)/$", views.GroupChatView.as_view(), name="groupchatcase"),
+    re_path(r"^groupchat/case/(?P<case_id>\d+)/$", views.GroupChatView.as_view(), name="groupchatcase"),
     # path('redirect/vintrack/', views.RedirectVince.as_view(), name='redirect_vince'),
     re_path("^case/(?P<pk>[0-9]+)?/$", views.CaseView.as_view(), name="case"),
     re_path("^case/(?P<pk>[0-9]+)?/vv/(?P<vendor>[0-9]+)?/$", views.CaseView.as_view(), name="vendorcase"),
@@ -177,32 +177,32 @@ urlpatterns = [
     path("api/vulreport/", views.CommVulReportAPIView.as_view(), name="vul_report_api"),
     # path("api/vulreport/t_cr/", views.TVulReportAPIView.as_view(), name="t_vul_report_api"),
     path("api/cases/", views.CasesAPIView.as_view(), name="cases_api"),
-    re_path("api/case/(?P<vuid>\d+)/$", views.CaseAPIView.as_view({"get": "retrieve"}), name="case_api"),
-    re_path("api/case/posts/(?P<vuid>\d+)/$", views.CasePostAPIView.as_view(), name="case_post_api"),
-    re_path("api/case/(?P<vuid>\d+)/posts/$", views.CasePostAPIView.as_view(), name="case_post_api"),
-    re_path("api/case/report/(?P<vuid>\d+)/$", views.CaseReportAPIView.as_view(), name="case_report_api"),
-    re_path("api/case/(?P<vuid>\d+)/report/$", views.CaseReportAPIView.as_view(), name="case_report_api"),
-    re_path("api/case/vuls/(?P<vuid>\d+)/$", views.CaseVulAPIView.as_view(), name="case_vul_api"),
-    re_path("api/case/(?P<vuid>\d+)/vuls/$", views.CaseVulAPIView.as_view(), name="case_vul_api"),
+    re_path(r"api/case/(?P<vuid>\d+)/$", views.CaseAPIView.as_view({"get": "retrieve"}), name="case_api"),
+    re_path(r"api/case/posts/(?P<vuid>\d+)/$", views.CasePostAPIView.as_view(), name="case_post_api"),
+    re_path(r"api/case/(?P<vuid>\d+)/posts/$", views.CasePostAPIView.as_view(), name="case_post_api"),
+    re_path(r"api/case/report/(?P<vuid>\d+)/$", views.CaseReportAPIView.as_view(), name="case_report_api"),
+    re_path(r"api/case/(?P<vuid>\d+)/report/$", views.CaseReportAPIView.as_view(), name="case_report_api"),
+    re_path(r"api/case/vuls/(?P<vuid>\d+)/$", views.CaseVulAPIView.as_view(), name="case_vul_api"),
+    re_path(r"api/case/(?P<vuid>\d+)/vuls/$", views.CaseVulAPIView.as_view(), name="case_vul_api"),
     re_path(
-        "api/case/vendor/statement/(?P<vuid>\d+)/$", views.UpdateVendorStatusAPIView.as_view(), name="update_stmt_api"
+        r"api/case/vendor/statement/(?P<vuid>\d+)/$", views.UpdateVendorStatusAPIView.as_view(), name="update_stmt_api"
     ),
     re_path(
-        "api/case/(?P<vuid>\d+)/vendor/statement/$", views.UpdateVendorStatusAPIView.as_view(), name="update_stmt_api"
+        r"api/case/(?P<vuid>\d+)/vendor/statement/$", views.UpdateVendorStatusAPIView.as_view(), name="update_stmt_api"
     ),
-    re_path("api/case/vendors/(?P<vuid>\d+)/$", views.CaseVendorStatusAPIView.as_view(), name="case_vendor_api"),
-    re_path("api/case/(?P<vuid>\d+)/vendors/$", views.CaseVendorStatusAPIView.as_view(), name="case_vendor_api"),
+    re_path(r"api/case/vendors/(?P<vuid>\d+)/$", views.CaseVendorStatusAPIView.as_view(), name="case_vendor_api"),
+    re_path(r"api/case/(?P<vuid>\d+)/vendors/$", views.CaseVendorStatusAPIView.as_view(), name="case_vendor_api"),
     re_path(
-        "api/case/vendors/vuls/(?P<vuid>\d+)/$", views.CaseVendorVulStatusAPIView.as_view(), name="case_vendor_vul_api"
+        r"api/case/vendors/vuls/(?P<vuid>\d+)/$", views.CaseVendorVulStatusAPIView.as_view(), name="case_vendor_vul_api"
     ),
     re_path(
-        "api/case/(?P<vuid>\d+)/vendors/vuls/$", views.CaseVendorVulStatusAPIView.as_view(), name="case_vendor_vul_api"
+        r"api/case/(?P<vuid>\d+)/vendors/vuls/$", views.CaseVendorVulStatusAPIView.as_view(), name="case_vendor_vul_api"
     ),
-    re_path("api/case/note/(?P<vuid>\d+)/$", views.CaseVulNoteAPIView.as_view(), name="case_vulnote_api"),
-    re_path("api/case/(?P<vuid>\d+)/note/$", views.CaseVulNoteAPIView.as_view(), name="case_vulnote_api"),
-    re_path("api/vuls/cve/(?P<year>\d+)-(?P<pk>\d+)/$", views.CVEVulAPIView.as_view(), name="cve_lookup_api"),
-    re_path("api/case/(?P<vuid>\d+)/csaf/$", views.CaseCSAFAPIView.as_view(), name="case_csaf_api"),
-    re_path("api/case/csaf/(?P<vuid>\d+)/$", views.CaseCSAFAPIView.as_view(), name="case_csaf_api"),
+    re_path(r"api/case/note/(?P<vuid>\d+)/$", views.CaseVulNoteAPIView.as_view(), name="case_vulnote_api"),
+    re_path(r"api/case/(?P<vuid>\d+)/note/$", views.CaseVulNoteAPIView.as_view(), name="case_vulnote_api"),
+    re_path(r"api/vuls/cve/(?P<year>\d+)-(?P<pk>\d+)/$", views.CVEVulAPIView.as_view(), name="cve_lookup_api"),
+    re_path(r"api/case/(?P<vuid>\d+)/csaf/$", views.CaseCSAFAPIView.as_view(), name="case_csaf_api"),
+    re_path(r"api/case/csaf/(?P<vuid>\d+)/$", views.CaseCSAFAPIView.as_view(), name="case_csaf_api"),
     re_path("api/unread_msg_count/$", views.UnreadCountAjax.as_view(), name="unread_msg_count"),
 ]
 

@@ -54,7 +54,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "3.0.43"
+VERSION = "3.0.44"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -67,6 +67,20 @@ if VINCE_DEV_SYSTEM == "1":
     VINCE_DEV_SYSTEM = "title-dev"
 
 LOCALSTACK = os.environ.get("LOCALSTACK")
+
+# ---------------------------------------------------------------------------
+# Auth backend mode
+# ---------------------------------------------------------------------------
+# Set AUTH_BACKEND_MODE=local in .env (or the environment) to bypass Cognito
+# for local development and automated tests.  The production default is
+# "cognito".  Any other value raises a ValueError at startup so
+# misconfigurations are caught early.
+AUTH_BACKEND_MODE = os.getenv("AUTH_BACKEND_MODE", "cognito").lower()
+if AUTH_BACKEND_MODE not in {"cognito", "local"}:
+    raise ValueError(
+        f"Invalid AUTH_BACKEND_MODE={AUTH_BACKEND_MODE!r}. "
+        "Valid choices are 'cognito' (default) and 'local'."
+    )
 
 TERMS_URL = os.environ.get(
     "TERMS_URL", "https://docs.aws.amazon.com/cognito/latest/developerguide/data-protection.html"
@@ -393,6 +407,7 @@ if os.environ.get("AWS_SECRET_MANAGER", None):
 # Check environment variables for database credentials
 else:
     VINCE_NAMESPACE = "vince"
+    MFA_REDIRECT_URL = "vince:mfaauth"
     SUPERUSER = {"username": "superuser@example.com", "password": "SavingTheWorldWithPerl"}
     vincetrack_user = os.environ.get("VINCE_TRACK_DB_USER", "vincetrack")
     vincetrack_password = os.environ.get("VINCE_TRACK_DB_PASS", "vincetrack")
@@ -417,7 +432,7 @@ if VINCE_NAMESPACE == "vince":
         "HOST": os.environ.get("VINCE_TRACK_DB_HOST", "localhost"),
         "PORT": os.environ.get("VINCE_TRACK_DB_PORT", 5432),
         "OPTIONS": {
-            "sslmode": "require",
+            "sslmode": os.environ.get("VINCE_DB_SSL_MODE", "require"),
         },
         "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
     }
@@ -482,9 +497,15 @@ if VINCE_NAMESPACE == "vinny":
 
 DATABASE_ROUTERS = ["vince.dbrouter.BigVinceRouter"]
 
-AUTHENTICATION_BACKENDS = [
-    "cogauth.backend.CognitoAuthenticate",
-]
+if AUTH_BACKEND_MODE == "local":
+    # Local mode: plain Django model-based auth, no Cognito dependency.
+    AUTHENTICATION_BACKENDS = [
+        "django.contrib.auth.backends.ModelBackend",
+    ]
+else:
+    AUTHENTICATION_BACKENDS = [
+        "cogauth.backend.CognitoAuthenticate",
+    ]
 
 # Cognito Settings - these can be found in the AWS Cognito Console.
 # The user pool must be setup prior to deploying
@@ -514,10 +535,11 @@ COGNITO_ADMIN_GROUP = os.environ.get("AWS_COGNITO_ADMIN_GROUP", "Coordinator")
 # "vincetrack" local group
 COGNITO_VINCETRACK_GROUPS = os.environ.get("AWS_COGNITO_VINCETRACK_GROUPS", default=COGNITO_ADMIN_GROUP)
 
-# Any user in this group will automatically be promoted to superuser
-# Choose wisely - ideally this should be a more select set than the
-# VINCETrack group
-COGNITO_SUPERUSER_GROUP = os.environ.get("AWS_COGNITO_SUPERUSER_GROUP", COGNITO_ADMIN_GROUP)
+# If you uncomment this line ny user in this group will automatically
+# be promoted to superuser. Choose wisely - ideally this should be
+#a more select set than the VINCETrack group like "SUPERADMIN"
+#COGNITO_SUPERUSER_GROUP = os.environ.get("AWS_COGNITO_SUPERUSER_GROUP", COGNITO_ADMIN_GROUP)
+COGNITO_SUPERUSER_GROUP = os.environ.get("AWS_COGNITO_SUPERUSER_GROUP", "SADMIN")
 
 # COGNITO_LIMITED_ACCESS_GROUPS can be used to give special permission to views
 # in VINCECOMM
@@ -718,8 +740,12 @@ vince.yourdomain.com\r\n\
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "cogauth.backend.HashedTokenAuthentication",
-        #'rest_framework.authentication.TokenAuthentication',
-        #        'cogauth.backend.JSONWebTokenAuthentication',
+#If you want to support fallback in REST request from a browser
+#using a local authenticated session
+#with Local Auth uncomment the first and with Cognito uncomment
+#the second line
+        #"rest_framework.authentication.SessionAuthentication",
+        #"cogauth.backend.CognitoAuthenticateAPI",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "user": "100/hour",  # Authenticated users can make 100 requests per hour

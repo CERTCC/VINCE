@@ -67,6 +67,7 @@ urlpatterns = [
     re_path('^vulfeed/?$', LatestVulReportActivity()),
     path('vince/admin/', admin.site.urls),
     path('vince/comm/', include(('vinny.urls', 'vinny'), namespace="vinny")),
+    path('vince/auth/', include(('vince.auth.urls', 'localauth'), namespace='localauth')),
     path('vince/',include(('vince.urls', 'vince'), namespace="vince")),
     path('vince/comm/auth/', include(('cogauth.urls', 'cogauth'), namespace='cogauth')),
     path('vince/comm/admin/', vinnyadmin.urls),

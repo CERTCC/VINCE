@@ -35,6 +35,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.translation import gettext as _
 from django.utils.decorators import method_decorator
 from django.core.exceptions import PermissionDenied
+from django.contrib.auth import update_session_auth_hash
 
 try:
     from django.urls import reverse_lazy, reverse
@@ -144,11 +145,20 @@ class GetUserMixin(object):
     cognito = None
 
     def get_token_groups(self):
+        if getattr(settings, "AUTH_BACKEND_MODE", None) == "local":
+            return list(
+                self.request.user.groups.values_list(
+                    "name",
+                    flat=True,
+                )
+            )
         if self.cognito is None:
             self.cognito = get_cognito(self.request)
         return get_group(self.request.session.get("ACCESS_TOKEN"))
 
     def get_user(self):
+        if getattr(settings, "AUTH_BACKEND_MODE", None) == "local":
+            return self.request.user
         if self.cognito is None:
             self.cognito = get_cognito(self.request)
         user = self.cognito.get_user(attr_map=settings.COGNITO_ATTR_MAPPING)
@@ -420,8 +430,9 @@ class GenerateTokenView(LoginRequiredMixin, TokenMixin, GetUserMixin, TemplateVi
         # identified by var vinny:deltoken
         token = VinceAPIToken(user=self.request.user)
         token.save(context["token"])
-        c = get_cognito(self.request)
-        c.update_profile({"custom:api_key": str(token)})
+        if getattr(settings, "AUTH_BACKEND_MODE", None) != "local":
+            c = get_cognito(self.request)
+            c.update_profile({"custom:api_key": str(token)})
         ip = vinceutils.get_ip(self.request)
         logger.debug(f"New API key generated for { self.request.user.username } from ip {ip}")
         return context
@@ -591,7 +602,12 @@ class COGLoginView(FormView):
                 logger.debug(
                     f"Login success! Now checking permissions for user {self.request.user.username} - is authenticated ? {self.request.user.is_authenticated} "
                 )
-                cognito_check_permissions(self.request)
+                if getattr(settings, "AUTH_BACKEND_MODE", None) != "local":
+                    cognito_check_permissions(self.request)
+                elif user.is_active and user.is_authenticated:
+                    logger.debug(f"Bypassing permissions checks to use local groups only for {user.username}")
+                else:
+                    raise PermissionDenied("User is not active or not authorized")
                 return super().form_valid(form)
                 # return redirect("vinny:dashboard")
             else:
@@ -796,6 +812,45 @@ class MFAAuthRequiredView(FormView, AccessMixin):
 
     def dispatch(self, request, *args, **kwargs):
         if not (request.session.get("MFAREQUIRED") and request.session.get("username")):
+            # Diagnostics: the MFA session check just failed. Capture whether the
+            # session is genuinely empty or whether a FRESH direct DB read of the same
+            # session key can see data the request-cycle session could not. A mismatch here
+            # (request session empty, but fresh DB read populated) points at a stale/pooled
+            # DB connection serving an out-of-date read rather than truly-missing data.
+            # Safe to leave on: only runs on the failure branch, logs no secret values.
+            try:
+                from django.contrib.sessions.backends.db import SessionStore
+                from django.db import connections
+
+                session_key = request.session.session_key
+                cycle_keys = sorted(request.session.keys())
+
+                # Fresh read: bypass the request's already-loaded session object.
+                fresh_keys = None
+                fresh_exists = None
+                if session_key:
+                    fresh_store = SessionStore(session_key=session_key)
+                    fresh_data = fresh_store.load()  # hits the DB again this request
+                    fresh_exists = bool(fresh_data)
+                    fresh_keys = sorted(fresh_data.keys())
+
+                # Which DB alias answered, and was the connection reused (pooled) or new?
+                alias = "default"
+                conn = connections[alias]
+                conn_reused = not getattr(conn, "connection", None) is None
+
+                logger.debug(
+                    "MFA-session-miss diagnostics: "
+                    f"session_key={session_key!r}, request_cycle_keys={cycle_keys}, "
+                    f"fresh_db_read_exists={fresh_exists}, fresh_db_read_keys={fresh_keys}, "
+                    f"db_alias={alias}, conn_max_age={conn.settings_dict.get('CONN_MAX_AGE')}, "
+                    f"conn_health_checks={conn.settings_dict.get('CONN_HEALTH_CHECKS')}, "
+                    f"connection_reused={conn_reused}, path={request.path}, "
+                    f"referer={request.META.get('HTTP_REFERER', '')!r}"
+                )
+            except Exception as diag_err:
+                logger.debug(f"MFA-session-miss diagnostics failed to run: {diag_err}")
+
             # Check for potential redirect loop: if user came from login page and is trying
             # to access MFA page, but session check failed, redirect to dashboard instead
             # of creating a loop where next=/mfa/
@@ -1016,6 +1071,13 @@ class ChangePasswordView(LoginRequiredMixin, TokenMixin, PendingTestMixin, FormV
     def form_valid(self, form):
         # user = form.save()
         # update_session_auth_hash(self.request, user)
+        if getattr(settings, "AUTH_BACKEND_MODE", None) == "local":
+            user = self.request.user
+            user.set_password(form.cleaned_data["new_password1"])
+            user.save()
+            update_session_auth_hash(self.request, user)
+            send_courtesy_email("password_change", self.request.user)
+            return super().form_valid(form)
 
         c = get_cognito(self.request)
         ip = vinceutils.get_ip(self.request)
@@ -1291,7 +1353,11 @@ class LogoutView(CALogoutView):
 
 
 class GetCognitoUserMixin(object):
-    client = boto3.client("apigateway", region_name=settings.COGNITO_REGION, endpoint_url=get_cognito_url())
+    client = (
+        boto3.client("apigateway", region_name=settings.COGNITO_REGION, endpoint_url=get_cognito_url())
+        if settings.COGNITO_REGION
+        else None
+    )
 
     def get_user_object(self):
         cog_client = boto3.client("cognito-idp", endpoint_url=get_cognito_url(), region=settings.COGNITO_REGION)

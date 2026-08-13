@@ -193,6 +193,39 @@ def gov_update_filename(instance, filename):
 
     return new_filename
     
+class GovReport(models.Model):
+    contact_name = models.CharField(max_length=100)
+    contact_org = models.CharField(max_length=100, blank=True, null=True)
+    contact_email = models.EmailField(max_length=254, blank=True, null=True)
+    contact_phone = models.CharField(max_length=20, blank=True, null=True)
+    credit_release = models.BooleanField(default=True)
+    affected_website = models.URLField()
+    vul_description = models.TextField()
+    tracking = models.CharField(max_length=100, blank=True, null=True)
+    comments = models.TextField(blank=True, null=True)
+    user_file = models.FileField(blank=True, null=True, storage=VRFReportsStorage(), upload_to=gov_update_filename)
+    
+    def get_absolute_url(self):
+        return reverse('govreport', kwargs={'pk': self.pk})
+
+    def __str__(self):
+        return self.id
+    
+class VendorStatement(models.Model):
+    contact_name = models.CharField(max_length=100)
+    contact_title = models.CharField(max_length=100, blank=True, null=True)
+    org_name = models.CharField(max_length=100)
+    org_email = models.EmailField()
+    addl_emails = models.CharField(max_length=1000, blank=True, null=True)
+    telephone = models.CharField(max_length=20, blank=True, null=True)
+    statement = models.TextField(max_length=2000),
+    tracking = models.CharField(max_length=100,blank=True, null=True)
+    comments = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.id
+
+
 class PrivateDocument(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     upload = models.FileField(storage=VRFReportsStorage())
@@ -227,7 +260,7 @@ class VulCoordRequest(models.Model):
         help_text=_('Extensible, currently used to specify relevance to AI/ML systems'),
         blank=True,
         null=True
-    )    
+    )
     vul_description = models.TextField()
     vul_exploit = models.TextField()
     vul_impact = models.TextField()

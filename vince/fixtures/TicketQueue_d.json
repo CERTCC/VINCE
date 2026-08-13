@@ -1,0 +1,15 @@
+[
+    {
+        "model": "vince.ticketqueue",
+        "pk": 1,
+        "fields": {
+            "title": "General",
+            "slug": "general",
+            "new_ticket_cc": "newticket-cc@example.org",
+            "updated_ticket_cc": "updated-cc@example.org",
+            "default_owner": 1,
+            "queue_type": 1,
+            "from_email": null
+        }
+    }
+]

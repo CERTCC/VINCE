@@ -94,7 +94,7 @@ def validate_not_future_date(value):
 # phone numbers vary greatly world-wide, so best we can do is verify
 # that no "weird" characters are entered.
 def validate_phone_number(value):
-    phone_re = "[^0-9()+.,\- ]"  # set of all things except phone number characters and commas
+    phone_re = r"[^0-9()+.,\- ]"  # set of all things except phone number characters and commas
     if search(phone_re, value) is not None:
         raise ValidationError("%s contains non-telephone characters" % value)
 

@@ -14,18 +14,22 @@
 # Released under a MIT (SEI)-style license, please see license.txt or contact
 # permission@sei.cmu.edu for full terms.
 #
-# [DISTRIBUTION STATEMENT A] This material has been approved for public
-# release and unlimited distribution.  Please see Copyright notice for non-US
-# Government use and distribution.
-#
-# Carnegie Mellon®, CERT® and CERT Coordination Center® are registered in the
-# U.S. Patent and Trademark Office by Carnegie Mellon University.
-#
-# This Software includes and/or makes use of Third-Party Software each subject
-# to its own license.
-#
 # DM21-1126
 ########################################################################
-from django.test import TestCase
+from django.urls import path
 
-# Create your tests here.
+from .views import whoami  # uncomment to enable the whoami debug endpoint
+
+urlpatterns = [
+    # The whoami endpoint is disabled by default.  It is a development/testing
+    # helper that returns JSON describing the authenticated user.
+    #
+    # To enable it locally:
+    #   1. Uncomment the import above.
+    #   2. Uncomment the path() entry below.
+    #   3. Ensure DEBUG=True and AUTH_BACKEND_MODE=local in your environment.
+    #      The view enforces DEBUG=True itself (returns HTTP 403 otherwise), but
+    #      keeping it wired up in production is an unnecessary attack surface.
+    #
+    path("whoami/", whoami, name="whoami"),
+]

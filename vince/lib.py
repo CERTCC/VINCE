@@ -2109,7 +2109,7 @@ def create_bounce_ticket(headers, bounce_info):
         queue = TicketQueue.objects.filter(title="General").first()
     nqueue = None
     # do ticket search for
-    rq = "(?i)(" + rq + ")-(\d+)"
+    rq = "(?i)(" + rq + r")-(\d+)"
     m = re.search(rq, subject)
     if m:
         q = m.group(1)
@@ -2135,7 +2135,7 @@ def create_bounce_ticket(headers, bounce_info):
                     create_bounce_record(email, bounce_type, subject, ticket)
                 return
     if not ticket:
-        m = re.search(f"{settings.CASE_IDENTIFIER}(\d+)", subject, re.IGNORECASE)
+        m = re.search(fr"{settings.CASE_IDENTIFIER}(\d+)", subject, re.IGNORECASE)
         if m:
             # search for case for vu#
 
@@ -2622,7 +2622,7 @@ def create_ticket_from_email(filename, body, bucket):
     nqueue = None
 
     # do ticket search for
-    rq = "(?i)(" + rq + ")-(\d+)"
+    rq = "(?i)(" + rq + r")-(\d+)"
     m = re.search(rq, subject)
     if m:
         q = m.group(1)
@@ -2679,7 +2679,7 @@ def create_ticket_from_email(filename, body, bucket):
 
     if not ticket:
         # didn't find a ticket, so search cases
-        case_regex = f"{settings.CASE_IDENTIFIER}(\d+)"
+        case_regex = fr"{settings.CASE_IDENTIFIER}(\d+)"
         m = re.search(case_regex, subject, re.IGNORECASE)
         if m:
             # search for case for vu#
