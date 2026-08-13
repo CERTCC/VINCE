@@ -1,6 +1,6 @@
 amqp==5.1.1
 appdirs==1.4.4
-asgiref==3.6.0
+asgiref==3.8.1
 asn1crypto==1.5.1
 async-timeout==4.0.2
 attrs==22.1.0
