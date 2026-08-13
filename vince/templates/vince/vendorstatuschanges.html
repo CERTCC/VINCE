@@ -1,7 +1,7 @@
 {% extends "vince/base.html" %}{% load i18n markdown_extras %}
 <!-- site-title  -->
 {% block vince_title %}{% trans "Vendor Status" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vince/js/vendorstatus.js' %}"></script>

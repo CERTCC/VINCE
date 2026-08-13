@@ -1,6 +1,6 @@
 {% extends "vince/modal.html" %}
 {% load i18n widget_tweaks %}
-{% load staticfiles %}
+{%  load static %}
 {% block content %}
 <div class="fullmodal">
   <form name="cmgr" enctype="multipart/form-data" method="POST" action="{% url 'vince:newcontact' %}" id="cmgrform">

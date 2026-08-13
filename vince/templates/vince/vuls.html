@@ -2,7 +2,7 @@
 {% load i18n humanize%}
 {% load widget_tweaks %}
 {% block vince_title %}{% trans "Edit Vuls" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>

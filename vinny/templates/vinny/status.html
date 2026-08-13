@@ -1,7 +1,7 @@
 {% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n post_tags markdown_extras %}
 <!-- site-title  -->
 {% block vince_title %}{% trans "Case" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">

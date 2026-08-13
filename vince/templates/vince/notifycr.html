@@ -1,7 +1,7 @@
 {% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize ticket_to_link %}
 {% block vince_title %}{% trans "Write Vendor Notification" %}{% endblock %}
 <!-- site-title  -->
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vince/css/easymde.min.css' %}">

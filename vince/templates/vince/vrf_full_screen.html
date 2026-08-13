@@ -3,7 +3,7 @@
 <head>
   <title>VRF {{object.vrf_id}}</title>
 </head>
-{% load staticfiles %}
+{%  load static %}
 <body>
 
 {{ object.description|force_escape|urlizetrunc:50|num_to_link|linebreaksbr }}

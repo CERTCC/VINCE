@@ -1,7 +1,7 @@
 {% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags post_tags %}
 <!-- site-title  -->
 {% block vince_title %}{% trans "Dashboard" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vince/js/tabulator.min.js' %}"></script>

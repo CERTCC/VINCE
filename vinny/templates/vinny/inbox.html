@@ -1,7 +1,7 @@
 {% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n %}
 <!-- site-title  -->
 {% block vince_title %}{% trans "Inbox" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vinny/js/inbox.js' %}"></script>

@@ -1,6 +1,6 @@
 {% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
 {% block vince_title %}{% trans "Create New Case Request" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vince/js/editcr.js' %}"></script>

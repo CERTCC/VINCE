@@ -1,6 +1,6 @@
 {% extends "vince/modal.html" %}{% load i18n %}
 {% load widget_tweaks %}
-{% load staticfiles %}
+{%  load static %}
 {% block content %}
 <div class="fullmodal">
   <form id="accessform" method="post" action="{% url 'vinny:caseaccess' vendor u.id %}">

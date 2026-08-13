@@ -1,7 +1,7 @@
 {% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n humanize post_tags %}{% load filename %}
 <!-- site-title  -->
 {% block vince_title %}{% trans "Case" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vince/css/simplemde.min.css' %}">

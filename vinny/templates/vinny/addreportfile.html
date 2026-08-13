@@ -1,6 +1,6 @@
 {% extends "vinny/modal.html" %}{% load i18n %}
 {% load widget_tweaks %}
-{% load staticfiles %}
+{%  load static %}
 {% block content %}
 <div class="fullmodal">
   <form method="post" id="uploadfile" action="{% url 'vinny:addreportfile' report.id %}" enctype="multipart/form-data">

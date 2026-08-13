@@ -1,7 +1,7 @@
 {% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n user_tags %}
 <!-- site-title  -->
 {% block vince_title %}{% trans "Dashboard" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vince/js/vinny_dashboard.js' %}"></script>
