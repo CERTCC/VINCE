@@ -55,7 +55,7 @@ from vince.settings import DEFAULT_USER_SETTINGS, VULNOTE_TEMPLATE
 from vince.permissions import get_user_gen_queue
 import traceback
 import os
-from django.utils.encoding import smart_str as smart_text
+from django.utils.encoding import smart_str
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -562,7 +562,7 @@ class UploadFileForm(forms.ModelForm):
         logger.debug("IN FILE UPLOAD SAVE")
         # create the vincecommattachment
         if file.size:
-            filename = smart_text(file.name)
+            filename = smart_str(file.name)
             logger.debug(filename)
             try:
                 mime_type = file.content_type

@@ -48,7 +48,7 @@ from .utils import cached_attribute
 from django.utils.functional import cached_property
 from vinny.mailer import send_newmessage_mail
 from bigvince.storage_backends import PrivateMediaStorage, SharedMediaStorage
-from django.utils.encoding import smart_str as smart_text
+from django.utils.encoding import smart_str
 from lib.vince.m2crypto_encrypt_decrypt import ED
 import base64
 import os
@@ -1820,7 +1820,7 @@ class MessageAttachment(models.Model):
         """
 
         if file.size:
-            filename = smart_text(file.name)
+            filename = smart_str(file.name)
             logger.debug(filename)
             try:
                 mime_type = file.content_type

@@ -41,7 +41,7 @@ from re import search
 from django.core.exceptions import ValidationError
 import mimetypes
 import os
-from django.utils.encoding import smart_str as smart_text
+from django.utils.encoding import smart_str
 from vinny.settings import DEFAULT_USER_SETTINGS
 from django.urls import reverse, reverse_lazy
 import base64
@@ -591,7 +591,7 @@ class UploadDocumentForm(forms.ModelForm):
         file = self.cleaned_data["attachment"]
 
         if file.size:
-            filename = smart_text(file.name)
+            filename = smart_str(file.name)
             logger.debug(filename)
             try:
                 mime_type = file.content_type
@@ -636,7 +636,7 @@ class UploadFileForm(forms.ModelForm):
         file = self.cleaned_data["attachment"]
 
         if file.size:
-            filename = smart_text(file.name)
+            filename = smart_str(file.name)
             logger.debug(filename)
             try:
                 mime_type = file.content_type
