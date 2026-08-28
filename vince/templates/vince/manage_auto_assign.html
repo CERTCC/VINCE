@@ -1,7 +1,7 @@
 {% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n dashboard_tags %}
 <!-- site-title  -->
 {% block vince_title %}{% trans "Manage Ticket Assignment" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vince/js/assignment.js' %}"></script>

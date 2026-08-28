@@ -1,6 +1,6 @@
 {% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n humanize%}
 {% block vince_title %}{% trans "Ticket Artifacts" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vince/css/tabulator_bootstrap4.min.css' %}">

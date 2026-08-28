@@ -17,7 +17,7 @@
 <meta name="keywords"             value="{{ object.keywords_str }}">
 {% endif %}
 {% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vincepub/js/vulaccordion.js' %}"></script>

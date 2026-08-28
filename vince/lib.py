@@ -48,7 +48,7 @@ from datetime import date, datetime, timedelta, time
 from django.core.files import File
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
-from django.utils.encoding import smart_str as smart_text
+from django.utils.encoding import smart_str
 from django.template.loader import render_to_string, get_template
 from vince.models import VulnerabilityCase
 
@@ -287,7 +287,7 @@ def process_attachments(followup, attached_files):
     for attached in attached_files:
         logger.debug(attached)
         if attached.size:
-            filename = smart_text(attached.name)
+            filename = smart_str(attached.name)
             logger.debug(filename)
             try:
                 mime_type = attached.content_type

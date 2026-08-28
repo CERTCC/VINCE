@@ -1,7 +1,7 @@
 {% extends VINCECOMM_BASE_TEMPLATE %}{% load i18n humanize post_tags %}{% load filename %}
 <!-- site-title  -->
 {% block vince_title %}{% trans "Case Summary" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vinny/js/ics.deps.min.js' %}"></script>

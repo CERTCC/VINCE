@@ -15,7 +15,7 @@ from fs import path
 from fs import copy
 from fs_s3fs import S3FS
 from fs.copy import copy_file
-from django.utils.encoding import smart_str as smart_text
+from django.utils.encoding import smart_str
 
 from django.apps import apps
 
@@ -223,7 +223,7 @@ class Command(BasePublishCommand):
             # Go ahead and use it
             self.build_dir = settings.BUILD_DIR
 
-        self.build_dir = smart_text(self.build_dir)
+        self.build_dir = smart_str(self.build_dir)
 
         # Connect the BUILD_DIR with our filesystem backend
         self.app = apps.get_app_config("bakery")
@@ -295,7 +295,7 @@ class Command(BasePublishCommand):
 
                 local_key = path.combine(path.frombase(path.abspath(self.build_dir), dirpath), fname.name)
                 local_key = path.relpath(local_key)
-                file_list.append(smart_text(local_key))
+                file_list.append(smart_str(local_key))
         return file_list
 
     def sync_with_s3(self):

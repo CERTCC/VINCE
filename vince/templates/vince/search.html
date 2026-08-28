@@ -1,7 +1,7 @@
 {% extends VINCETRACK_BASE_TEMPLATE %}{% load i18n %}
 <!-- site-title  -->
 {% block vince_title %}{% trans "Ticket Search" %}{% endblock %}
-{% load staticfiles %}
+{%  load static %}
 {% block js %}
 {{ block.super }}
 <script type="text/javascript" src="{% static 'vince/js/allsearch.js' %}"></script>

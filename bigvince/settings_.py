@@ -46,6 +46,8 @@ import boto3
 import environ
 import urllib
 
+import django
+
 env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env()
 
@@ -55,6 +57,11 @@ ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
 VERSION = "3.0.44"
+
+if django.VERSION >= (5, 1):
+    DB_BACKEND="django.db.backends.postgresql"
+else:
+    DB_BACKEND=DB_BACKEND
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -192,7 +199,14 @@ if os.environ.get("AWS_DEPLOYED"):
         STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
     # Tell the staticfiles app to use S3Boto3 storage when writing the collected static files (when
     # you run `collectstatic`).
-    STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    if django.VERSION >= (5, 1):
+        STORAGES = {
+            "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+            "staticfiles": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"},
+        }
+    else:
+        STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
     # set to True if you want VINCE to write a contacts backup file to an S3 directory,
     # you must also set ANCIENT_SRMAIL_BUCKET to S3 arn
     # To reload contacts into VINCE, set INITIAL_CONTACT_FILE and
@@ -425,7 +439,7 @@ else:
 DATABASES = {"default": {}}
 if VINCE_NAMESPACE == "vince":
     DATABASES["default"] = {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": DB_BACKEND,
         "NAME": vincetrack_db,
         "USER": vincetrack_user,
         "PASSWORD": vincetrack_password,
@@ -439,7 +453,7 @@ if VINCE_NAMESPACE == "vince":
 
 if VINCE_NAMESPACE in ["vince", "vinny"]:
     DATABASES["vincecomm"] = {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": DB_BACKEND,
         "NAME": vincecomm_db,
         "USER": vincecomm_user,
         "PASSWORD": vincecomm_password,
@@ -449,7 +463,7 @@ if VINCE_NAMESPACE in ["vince", "vinny"]:
     }
 
 DATABASES["vincepub"] = {
-    "ENGINE": "django.db.backends.postgresql_psycopg2",
+    "ENGINE": DB_BACKEND,
     "NAME": vincepub_db,
     "USER": vincepub_user,
     "PASSWORD": vincepub_password,
@@ -462,7 +476,7 @@ if VINCE_NAMESPACE == "vincepub":
     # don't enable the admin interface for kb
     ADMIN_ENABLED = False
     DATABASES["default"] = {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": DB_BACKEND,
         "NAME": vincepub_db,
         "USER": vincepub_user,
         "PASSWORD": vincepub_password,
@@ -475,7 +489,7 @@ if VINCE_NAMESPACE == "vincepub":
 if VINCE_NAMESPACE == "vinny":
     SESSION_COOKIE_PATH = "/vince/comm"
     DATABASES["default"] = {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": DB_BACKEND,
         "NAME": vincecomm_db,
         "USER": vincecomm_user,
         "PASSWORD": vincecomm_password,

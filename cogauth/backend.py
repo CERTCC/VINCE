@@ -49,7 +49,7 @@ import requests
 from vinny.models import VinceAPIToken
 from rest_framework import exceptions
 from rest_framework.authentication import BaseAuthentication, TokenAuthentication, get_authorization_header
-from django.utils.encoding import smart_str as smart_text
+from django.utils.encoding import smart_str
 from django.utils.translation import gettext as _
 from bigvince.utils import get_cognito_url, get_cognito_pool_url
 import traceback
@@ -443,7 +443,7 @@ class JSONWebTokenAuthentication(BaseAuthentication):
     def get_jwt_token(self, request):
         logger.debug(f"Collected headers for JSONWwebToken as {request.headers}")
         auth = get_authorization_header(request).split()
-        if not auth or smart_text(auth[0].lower()) != "bearer":
+        if not auth or smart_str(auth[0].lower()) != "bearer":
             return None
 
         if len(auth) == 1:
