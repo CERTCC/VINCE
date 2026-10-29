@@ -11,7 +11,7 @@
 	<p>If you don't receive an email, please make sure you've entered the correct address,
 	  and check your spam folder.</p>
 	<p>Still didn't get the code?  <a href="{% url 'cogauth:resend' %}">Resend it</a></p>
-	{{ form }}
+	{{ form.as_table }}
       </div>
       <div class="modal-footer text-right">
         <input class="button alert" type='submit' value='{% trans "Submit" %}' />

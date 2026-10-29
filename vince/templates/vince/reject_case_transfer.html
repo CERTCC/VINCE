@@ -8,7 +8,7 @@
       <div class="modal-body">
         {% csrf_token %}
 	{% if form %}
-	{{ form }}
+	{{ form.as_table }}
 	{% else %}
 	<p>You must a member of the {{ cr.user_name }} Team to reject this request.</p>
 	{% endif %}

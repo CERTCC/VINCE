@@ -2803,6 +2803,26 @@ class CaseFilterResults(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
         )
 
 
+class CaseCoordinatorNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.View):
+    """Save the brief coordinator note shown under each case on the case
+    search page. Updates only the coordinator_note column so it does not
+    bump the case's 'modified' timestamp."""
+    login_url = "vince:login"
+
+    def test_func(self):
+        if is_in_group_vincetrack(self.request.user):
+            case = get_object_or_404(VulnerabilityCase, id=self.kwargs["pk"])
+            return has_case_write_access(self.request.user, case)
+        return False
+
+    def post(self, request, *args, **kwargs):
+        case = get_object_or_404(VulnerabilityCase, id=self.kwargs["pk"])
+        note = request.POST.get("coordinator_note", "").strip()
+        case.coordinator_note = note or None
+        case.save(update_fields=["coordinator_note"])
+        return JsonResponse({"status": "success", "coordinator_note": case.coordinator_note or ""})
+
+
 class CaseFilter(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, FormView):
     form_class = CaseFilterForm
     template_name = "vince/searchcases.html"
@@ -4612,6 +4632,16 @@ class ApproveVulNote(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generi
                     user=u,
                 )
                 rem.save()
+
+            # Record who granted the publication approval
+            action = FollowUp(
+                ticket=vulnote.ticket_to_approve,
+                title="Publication approval completed",
+                comment=f"Vulnote approved for publication by {self.request.user.usersettings.preferred_username}.",
+                date=timezone.now(),
+                user=self.request.user,
+            )
+            action.save()
 
             request.POST = {"new_status": Ticket.RESOLVED_STATUS}
             kwargs["ticket_id"] = vulnote.ticket_to_approve.id
@@ -7730,7 +7760,10 @@ class CaseVulNoteView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gener
                         logger.debug("ticket was found to be closed")
                         completion_fup = (
                             tkt.followup_set
-                                .filter(title__icontains="Technical review completed")
+                                .filter(
+                                    Q(title__icontains="Technical review completed")
+                                    | Q(title__icontains="Publication approval completed")
+                                )
                                 .order_by("-date")
                                 .first()
                         )
@@ -13001,8 +13034,15 @@ class ShareArtifactView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, gen
             else:
                 vulnote = True
 
+            # A post/notification attachment (vulnote=False) is meant to be read by
+            # Comm participants, so share it immediately. Vulnote-draft attachments
+            # (vulnote=True) stay private until the vulnote is published.
+            is_participant_facing = not vulnote
+
             # save it in VINCEComm
-            attach = VinceTrackAttachment(file=att, vulnote=vulnote, case=vc_case)
+            attach = VinceTrackAttachment(
+                file=att, vulnote=vulnote, case=vc_case, shared=is_participant_facing
+            )
 
             attach.save(using="vincecomm")
 
@@ -16379,7 +16419,13 @@ class TriageView(LoginRequiredMixin, TokenMixin, UserPassesTestMixin, generic.Li
     def test_func(self):
         if is_in_group_vincetrack(self.request.user):
             if self.kwargs.get("pk"):
-                return has_queue_read_access(self.request.user, self.kwargs.get("pk"))
+                # The pk queue's triage queryset returns tickets for every queue
+                # owned by that queue's team, so a user may view it only if they
+                # belong to the owning team (is_my_team allows superusers).
+                queue = TicketQueue.objects.filter(id=self.kwargs.get("pk")).first()
+                if queue is None:
+                    return False
+                return is_my_team(self.request.user, queue.team_id)
             else:
                 return True
         else:

@@ -39,7 +39,7 @@ try:
 except:
     from six import iteritems
 from django.contrib.auth.models import User
-from lib.warrant import Cognito
+from cogauth.cognito import Cognito
 from lib.warrant.exceptions import ForceChangePasswordException, SoftwareTokenException, SMSMFAException
 from .utils import cognito_to_dict, password_challenge_dance
 from .validator import TokenError, TokenValidator
@@ -176,7 +176,11 @@ class CognitoAuthenticate(ModelBackend):
         ip = vinceutils.get_ip(request)
         # DIAGNOSTIC LOGGING - Log request details
         request_path = getattr(request, 'path', 'NO_PATH')
-        logger.debug(f"=== CognitoAuthenticate called from IP {ip}, path={request_path}, username={username} ===")
+        try:
+            request_host = request.get_host()
+        except Exception:
+            request_host = "UNKNOWN"
+        logger.debug(f"=== [LOGINLOOP] CognitoAuthenticate called from IP {ip}, host={request_host!r}, path={request_path}, username={username} ===")
 
         if username and password:
             logger.debug(f"CognitoAuthenticate is running with username {username}")

@@ -232,7 +232,33 @@ $(document).ready(function() {
 	$('#changes_to_publish').prop('checked',false);
 	searchTickets();
     });
-    
+
+    // Inline coordinator note: save on blur (when the textarea loses focus) if the text changed.
+    $(document).on("blur", ".coordinator-note-input", function() {
+        let $input = $(this);
+        let note = $input.val();
+        if (note === $input.attr("data-original")) {
+            return;
+        }
+        let url = $input.attr("data-note-url");
+        let csrftoken = $("input[name=csrfmiddlewaretoken]").first().val();
+        let $status = $input.siblings(".coordinator-note-status");
+        $status.text("Saving…");
+        $.ajax({
+            url: url,
+            type: "POST",
+            data: {"coordinator_note": note, "csrfmiddlewaretoken": csrftoken},
+            success: function(data) {
+                $input.attr("data-original", data.coordinator_note);
+                $status.text("Saved");
+                setTimeout(function() { $status.text(""); }, 2000);
+            },
+            error: function() {
+                $status.text("Save failed");
+            }
+        });
+    });
+
     searchTickets();
 
     /*$.getJSON("/vuls/ajax_calls/search/", function(data) {

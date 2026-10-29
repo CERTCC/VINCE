@@ -35,7 +35,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth import views as auth_views
 from django.contrib.admin.views.decorators import staff_member_required
-from cogauth.views import COGLoginView
+from cogauth.views import COGLoginView, GETLogoutView
 from django.conf import settings
 
 class MultiDBModelAdmin(admin.ModelAdmin):
@@ -170,7 +170,7 @@ class VinnyAdminSite(admin.AdminSite):
 
 
 vinnyadmin = VinnyAdminSite('vinnyadmin')
-vinnyadmin.logout = auth_views.LogoutView.as_view(template_name='cogauth/logout.html')
+vinnyadmin.logout = GETLogoutView.as_view(template_name='cogauth/logout.html')
 vinnyadmin.login = staff_member_required(COGLoginView.as_view(template_name='vince/admin_login.html'), login_url = settings.LOGIN_URL)
 
 vinnyadmin.register(User, CustomUserAdmin)

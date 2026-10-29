@@ -28,7 +28,7 @@
 ########################################################################
 
 from django.conf import settings
-from lib.warrant import Cognito
+from cogauth.cognito import Cognito
 import boto3
 from lib.warrant.aws_srp import AWSSRP
 from boto3.exceptions import Boto3Error
@@ -69,20 +69,50 @@ def get_cognito(request):
                 access_token=request.session.get('ACCESS_TOKEN'),
                 id_token=request.session.get('ID_TOKEN'),
                 refresh_token=request.session.get('REFRESH_TOKEN'))
-    changed = c.check_token()
+    # TEMPORARY diagnostic (VIN login-loop investigation): this is the ongoing
+    # per-request Cognito token check/refresh. c.check_token() calls Cognito to
+    # refresh a (near-)expired access token; if that call raises, or the refreshed
+    # token fails verification, the user can lose their session with no other log
+    # line -- which is the "Cognito exception triggers a silent session expiry"
+    # theory. Capture the outcome here. Logs no token values. Remove after diagnosis.
+    username = (
+        request.user.username
+        if getattr(request, "user", None) is not None and request.user.is_authenticated
+        else "ANONYMOUS"
+    )
+    req_path = getattr(request, "path", "?")
+    try:
+        changed = c.check_token()
+    except Exception as e:
+        logger.debug(
+            f"get_cognito: check_token() RAISED for user {username} path={req_path} "
+            f"error_type={type(e).__name__} error={e}"
+        )
+        raise
+    logger.debug(
+        f"get_cognito: check_token() ok for user {username} path={req_path} token_refreshed={changed}"
+    )
     if changed:
         #verify token
         claims = token_verify(c.access_token, expire_fail=True)
         if claims:
+            logger.debug(f"get_cognito: refreshed token verified OK for user {username}")
             request.session['ACCESS_TOKEN'] = c.access_token
             request.session['REFRESH_TOKEN'] = c.refresh_token
             request.session['ID_TOKEN'] = c.id_token
             #request.session.save()
         else:
             #invalid token, remove access
-            del(request.session['ACCESS_TOKEN'])
-            del(request.session['REFERSH_TOKEN'])
-            del(request.session['ID_TOKEN'])
+            logger.debug(
+                f"get_cognito: refreshed token FAILED verification for user {username} path={req_path}; "
+                f"clearing session tokens and raising SuspiciousOperation"
+            )
+            # NOTE: pop(...,None) instead of del -- the original code used
+            # del(request.session['REFERSH_TOKEN']) (misspelled), which would raise
+            # KeyError before this branch could complete. See flag to reviewers.
+            request.session.pop('ACCESS_TOKEN', None)
+            request.session.pop('REFRESH_TOKEN', None)
+            request.session.pop('ID_TOKEN', None)
             c = None
             raise SuspiciousOperation()
     return c
@@ -359,6 +389,14 @@ def cognito_check_track_permissions(request):
         
 def cognito_check_permissions(request):
     groups = get_group(request.session.get('ACCESS_TOKEN'))
+    # TEMPORARY diagnostic (VIN login-loop investigation): on the Comm side an
+    # ACCESS_TOKEN present but resolving to no groups was previously unlogged.
+    if not groups and request.session.get('ACCESS_TOKEN'):
+        logger.debug(
+            f"cognito_check_permissions: ACCESS_TOKEN present but get_group returned no groups "
+            f"for user {request.user.username if request.user.is_authenticated else 'ANONYMOUS'} "
+            f"path={getattr(request, 'path', '?')}"
+        )
     if groups:
         if settings.COGNITO_ADMIN_GROUP in groups:
             request.user.is_staff=True

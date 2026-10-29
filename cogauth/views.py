@@ -51,7 +51,8 @@ from django.views.decorators.cache import never_cache
 from django.contrib.auth.views import LogoutView as CALogoutView
 from django.conf import settings
 from django.contrib.auth import logout
-from lib.warrant import UserObj, Cognito
+from lib.warrant import UserObj
+from cogauth.cognito import Cognito
 from django.template.defaulttags import register
 from cogauth.utils import (
     get_cognito,
@@ -839,14 +840,53 @@ class MFAAuthRequiredView(FormView, AccessMixin):
                 conn = connections[alias]
                 conn_reused = not getattr(conn, "connection", None) is None
 
+                # Host the request actually arrived on, and whether a sessionid
+                # cookie was present at all (distinguishes "no cookie sent" from
+                # "cookie sent but row unreadable"; and tests the apex/www host-flip theory).
+                try:
+                    request_host = request.get_host()
+                except Exception:
+                    request_host = "UNKNOWN"
+                session_cookie_name = getattr(settings, "SESSION_COOKIE_NAME", "sessionid")
+                sessionid_cookie_present = session_cookie_name in request.COOKIES
+                # Correlate the ~6 simultaneous users / trace one user; detect proxy
+                # cookie-stripping (did csrftoken survive when sessionid didn't?) and
+                # which instance served this request. (This whole block is already
+                # inside dispatch()'s try/except, so a failure here cannot break login.)
+                client_ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", ""))
+                csrftoken_present = getattr(settings, "CSRF_COOKIE_NAME", "csrftoken") in request.COOKIES
+                cookie_names = sorted(request.COOKIES.keys())
+                ua = request.META.get("HTTP_USER_AGENT", "")[:120]
+                try:
+                    import os as _os
+                    import socket as _socket
+                    server_id = f"{_socket.gethostname()}:{_os.getpid()}"
+                except Exception:
+                    server_id = "UNKNOWN"
+                # Speculative/prefetch markers (Chrome Sec-Purpose, Safari/older Purpose,
+                # Firefox X-Moz). Empty does NOT rule out a prefetch (Safari may send none).
+                prefetch = ""
+                try:
+                    for _h in ("HTTP_SEC_PURPOSE", "HTTP_PURPOSE", "HTTP_X_PURPOSE", "HTTP_X_MOZ"):
+                        _v = request.META.get(_h)
+                        if _v:
+                            prefetch = f"{_h[5:].replace('_', '-').title()}={_v}"
+                            break
+                except Exception:
+                    prefetch = "UNKNOWN"
+
                 logger.debug(
-                    "MFA-session-miss diagnostics: "
+                    "[LOGINLOOP] MFA-session-miss diagnostics: "
                     f"session_key={session_key!r}, request_cycle_keys={cycle_keys}, "
                     f"fresh_db_read_exists={fresh_exists}, fresh_db_read_keys={fresh_keys}, "
                     f"db_alias={alias}, conn_max_age={conn.settings_dict.get('CONN_MAX_AGE')}, "
                     f"conn_health_checks={conn.settings_dict.get('CONN_HEALTH_CHECKS')}, "
                     f"connection_reused={conn_reused}, path={request.path}, "
-                    f"referer={request.META.get('HTTP_REFERER', '')!r}"
+                    f"host={request_host!r}, client_ip={client_ip!r}, "
+                    f"sessionid_cookie_present={sessionid_cookie_present}, "
+                    f"csrftoken_present={csrftoken_present}, cookie_names={cookie_names}, "
+                    f"referer={request.META.get('HTTP_REFERER', '')!r}, "
+                    f"prefetch={prefetch!r}, server={server_id}, ua={ua!r}"
                 )
             except Exception as diag_err:
                 logger.debug(f"MFA-session-miss diagnostics failed to run: {diag_err}")
@@ -857,7 +897,7 @@ class MFAAuthRequiredView(FormView, AccessMixin):
             referer = request.META.get('HTTP_REFERER', '')
             if '/login/' in referer and '/mfa/' in request.path:
                 logger.debug(
-                    f"Detected potential MFA redirect loop. Referer: {referer}, Path: {request.path}. Session missing MFAREQUIRED or username. Redirecting to dashboard to break loop."
+                    f"[LOGINLOOP] Detected potential MFA redirect loop. Referer: {referer}, Path: {request.path}. Session missing MFAREQUIRED or username. Redirecting to dashboard to break loop."
                 )
                 return redirect(settings.LOGIN_REDIRECT_URL)
             return self.handle_no_permission()
@@ -1350,6 +1390,19 @@ class LogoutView(CALogoutView):
         ip = vinceutils.get_ip(request)
         logger.info(f"Performing logout of user {request.user.username} from ip {ip}")
         return super(LogoutView, self).dispatch(request, *args, **kwargs)
+
+
+class GETLogoutView(CALogoutView):
+    """Drop-in replacement for django.contrib.auth.views.LogoutView that still
+    permits GET.  Django 5.0 restricted LogoutView to POST, but VINCE relies on
+    GET ``<a href>`` logout links across all three apps (plus the token-based
+    logout JS flow in the logout templates).  This re-permits GET without any
+    other behavior change; GET is routed to the standard POST logout handler."""
+
+    http_method_names = ["get", "post", "options"]
+
+    def get(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
 
 
 class GetCognitoUserMixin(object):

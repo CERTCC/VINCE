@@ -410,6 +410,16 @@ $(document).ready(function() {
 					     renderingConfig: {
 						 singleLineBreaks: false,
 					     },
+					     toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|",
+						     "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", {
+						     name: "guide",
+							 action: function openlink() {
+							     var win = window.open('https://www.markdownguide.org/basic-syntax/', '_blank');
+							     win.focus();
+							 },
+							 className: "fa fa-question-circle",
+							 title: "Markdown Guide"
+						     }],
 					     autoDownloadFontAwesome: false,
 					    });
 	    }

@@ -5,12 +5,9 @@
   <form method='post' action="{% url 'vince:changeticketstatus' ticket.id %}" id="why_change_form">
     <div class="modal-content">
       <div class="modal-header">
-	<h5 class="modal-title">{% trans "Why are you closing this ticket?" %}</h5>
+	<h5 class="modal-title">{% trans "Change ticket status" %}</h5>
       </div>
       <div class="modal-body">
-	<label for='id_{{ form.close_choice.name }}'>{{ form.close_choice.label }}</label>
-	{{ form.close_choice }}
-	{% if form.close_choice.help_text %}<small>{{ form.close_choice.help_text }}</small>{% endif %}
 	<label for='id_{{ form.send_email.name }}'>{{ form.send_email.label }}</label>
         {{ form.send_email }}
         {% if form.send_email.help_text %}<small>{{ form.send_email.help_text }}</small>

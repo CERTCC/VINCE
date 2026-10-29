@@ -135,6 +135,7 @@ urlpatterns = [
     re_path(r"^ticket/encrypt/(?P<pk>[0-9]+)/$", views.VinceEncryptandSend.as_view(), name="encrypt"),
     path("ticket/auto/assign/", views.TicketAutoAssign.as_view(), name="autoassign"),
     path("case/results/", views.CaseFilterResults.as_view(), name="caseresults"),
+    path("case/<int:pk>/note/", views.CaseCoordinatorNote.as_view(), name="casenote"),
     path("cases/approval/", views.VendorStatusListView.as_view(), name="reqapproval"),
     path("results/", views.AllResults.as_view(), name="results"),
     path("create/contact/", views.CreateContactView.as_view(), name="newcontact"),
@@ -524,7 +525,7 @@ try:
                     "login/", cogauth_views.COGLoginView.as_view(template_name="vince/tracklogin.html"), name="login"
                 ),
                 path("login/mfa/", cogauth_views.MFAAuthRequiredView.as_view(), name="mfaauth"),
-                path("logout/", auth_views.LogoutView.as_view(template_name="vince/tracklogout.html"), name="logout"),
+                path("logout/", cogauth_views.GETLogoutView.as_view(template_name="vince/tracklogout.html"), name="logout"),
             ]
         )
     else:
@@ -535,7 +536,7 @@ try:
                     auth_views.LoginView.as_view(extra_context={"token_login": 1}, template_name="vince/login.html"),
                     name="login",
                 ),
-                path("logout/", auth_views.LogoutView.as_view(template_name="vince/logout.html"), name="logout"),
+                path("logout/", cogauth_views.GETLogoutView.as_view(template_name="vince/logout.html"), name="logout"),
             ]
         )
 
@@ -544,7 +545,7 @@ except:
     urlpatterns.extend(
         [
             path("login/", auth_views.LoginView.as_view(template_name="vince/login.html"), name="login"),
-            path("logout/", auth_views.LogoutView.as_view(template_name="vince/logout.html"), name="logout"),
+            path("logout/", cogauth_views.GETLogoutView.as_view(template_name="vince/logout.html"), name="logout"),
         ]
     )
 

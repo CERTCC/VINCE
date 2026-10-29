@@ -2716,7 +2716,7 @@ pre code {
 .announcement-banner {
   background-color: #b00;
   color: #fefefe;
-  font-size: xx-large;
+  font-size: large;
   padding-left: 20px;
   padding-right: 20px;
   border-top-style: solid;
@@ -2736,12 +2736,37 @@ pre code {
     color: #fefefe;
 }
 
+/* Collapsible announcement banner (e.g. the VRF report form). The banner is a
+   <details> and the <summary> is the always-visible toggle bar, mirroring the
+   collapsible banner on the VINCE Comm pages. */
+.announcement-banner > summary {
+    cursor: pointer;
+    font-weight: 700;
+    padding: 2px 0;
+    outline: none;
+    list-style: none;           /* hide the default disclosure triangle (most browsers) */
+}
+.announcement-banner > summary::-webkit-details-marker {
+    display: none;              /* hide the default disclosure triangle (WebKit/Chrome) */
+}
+.announcement-banner > summary::before {
+    content: "\25B6  Click for an important announcement";  /* \25B6 = ▶ */
+}
+.announcement-banner[open] > summary::before {
+    content: "\25BC  Hide announcement";                    /* \25BC = ▼ */
+}
+/* When collapsed, make the prompt larger/taller so users notice it. */
+.announcement-banner:not([open]) > summary {
+    font-size: 1.15rem;
+    padding: 8px 0;
+}
+
 .login-announcement-banner {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    font-size: xx-large;
+    font-size: large;
     background-color: #b00;
     color: #fefefe;
     padding-left: 20px;

@@ -355,7 +355,7 @@
 	  <div id="case_tasks">
             {% include 'vince/include/case_tasks.html' %}
 	  </div>
-	  {% if ticket_list|length_is:"50" %}
+	  {% if ticket_list|length == 50 %}
 	  <p><b>This list is limited to 50 tickets.</b></p>
 	  {% endif %}
 	</div>

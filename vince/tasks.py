@@ -164,7 +164,7 @@ def vince_retrieve_vrf(bucket, filename, queue, request_type, attachment=None):
             followup = FollowUp.objects.get(ticket=case)
             path = "vince/attachments/%s/%s" % (case.ticket_for_url, followup.id)
             att_path = os.path.join(settings.MEDIA_ROOT, path)
-            if settings.DEFAULT_FILE_STORAGE == "django.core.files.storage.FileSystemStorage":
+            if settings.STORAGES["default"]["BACKEND"] == "django.core.files.storage.FileSystemStorage":
                 if not os.path.exists(att_path):
                     os.makedirs(att_path, 0o777)
 
@@ -345,7 +345,7 @@ def vince_pub_report_sqs():
                     if cr.request_type == CaseRequest.GOV_FORM:
                         # test sending email
                         send_encrypted_mail(
-                            settings.DEFAULT_FROM_EMAIL, "Test sending encrypted mail from VINCE", "This is a test"
+                            "cert@cert.org", "Test sending encrypted mail from VINCE", "This is a test"
                         )
 
                 else:

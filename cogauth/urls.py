@@ -68,14 +68,14 @@ urlpatterns = [
 try:
     if settings.MULTIURL_CONFIG:
         urlpatterns.extend([
-            path('logout/', auth_views.LogoutView.as_view(template_name='cogauth/logout.html'), name='logout'),
+            path('logout/', views.GETLogoutView.as_view(template_name='cogauth/logout.html'), name='logout'),
         ])
     else:
         urlpatterns.extend([
-            path('logout/', auth_views.LogoutView.as_view(extra_context={'token_login':1}, template_name='cogauth/logout.html'), name='logout'),
+            path('logout/', views.GETLogoutView.as_view(extra_context={'token_login':1}, template_name='cogauth/logout.html'), name='logout'),
         ])
 
 except:
     urlpatterns.extend([
-        path('logout/', auth_views.LogoutView.as_view(extra_context={'token_login':1}, template_name='cogauth/logout.html'), name='logout'),
+        path('logout/', views.GETLogoutView.as_view(extra_context={'token_login':1}, template_name='cogauth/logout.html'), name='logout'),
     ])
