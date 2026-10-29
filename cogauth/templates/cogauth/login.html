@@ -10,20 +10,20 @@
 {% if token_login %}
 <script type="text/javascript" src="{% static 'vince/js/vtoken_login.js' %}"></script>
 {% endif %}
-<style>
-    .temporary-alert {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 9999;
-    }
-</style>
 {% endblock %}
 
 {% block header %}
-  <div class="login-announcement-banner">
-</div>
+  <details class="login-announcement-banner" open>
+    <summary class="announcement-banner-toggle"></summary>
+    <h4>VINCE-NT Launching Soon</h4>
+<p>On September 17, 2026, the Cybersecurity and Infrastructure Security Agency (CISA) will launch <a href="https://vulnerabilities.cisa.gov/vincent/auth/login/?next=/cvdp/dashboard/" class="announcement-banner-link" target="_blank" rel="noopener">VINCE-NT</a>, its next-generation platform for Coordinated Vulnerability Disclosure (CVD).</p> 
+<p>While users may continue to contact SEI/CERT and use the legacy VINCE portal, after November 17, 2026, all CISA vulnerability reports must be submitted through VINCE-NT. All CISA CVD casework will be managed directly through VINCE-NT.</p> <p>What You Need to Know:</p> 
+<ul> 
+<li>VINCE-NT will become the primary platform for submitting and managing vulnerability reports to CISA.</li> 
+<li>If you expect CISA to take action on your report, please use VINCE-NT once it becomes available.</li> 
+</ul> 
+<p>If you need support, please reach out to us at <a href="mailto:cvd@cisa.dhs.gov" class="announcement-banner-link" ref="nofollow">cvd@cisa.dhs.gov</a>. For frequently asked questions and additional resources, please visit <a href="https://www.cisa.gov/cvd" class="announcement-banner-link" target="_blank" rel="noopener">cisa.gov/cvd</a>.</p>
+</details>
 
     {{ block.super }}
 {% endblock %}

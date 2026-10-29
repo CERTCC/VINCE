@@ -73,7 +73,7 @@ from vince.models import (
 )
 from vinny.models import Thread, Message, VTCaseRequest, CaseMember, VendorAction
 from django.contrib.admin.helpers import ActionForm
-from cogauth.views import COGLoginView
+from cogauth.views import COGLoginView, GETLogoutView
 
 from vincepub.models import VUReport, VulnerabilityNote, NoteVulnerability, Vendor, VendorRecord
 
@@ -682,7 +682,7 @@ class BounceAdmin(admin.ModelAdmin):
 admin.site.login = staff_member_required(
     COGLoginView.as_view(template_name="vince/admin_login.html"), login_url=settings.LOGIN_URL
 )
-admin.site.logout = auth_views.LogoutView.as_view(template_name="vince/tracklogout.html")
+admin.site.logout = GETLogoutView.as_view(template_name="vince/tracklogout.html")
 
 admin.site.site_header = "VinceTrack Admin"
 admin.site.site_title = "VinceTrack Admin Portal"

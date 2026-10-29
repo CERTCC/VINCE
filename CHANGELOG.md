@@ -7,6 +7,59 @@ VINCE Coordination platform code
 ## Description
 VINCE Coordination platform
 
+
+Version 3.0.52 2026-10-29
+
+* upgraded Django 4.2.30 to 5.2.17 with corresponding dependency updates: `asgiref` 3.6.0 to 3.12.1, `django-appconf` 1.0.5 to 1.2.0, `django-countries` 7.4.2 to 9.1.0, `django-environ` 0.9.0 to 0.14.0, `django-extensions` 3.2.1 to 4.1, `django-ses` 3.5.0 to 4.8.0, `django-storages` 1.13.1 to 1.14.6, `django-widget-tweaks` 1.4.12 to 1.5.1; removed `pinax-messages` 3.0.0 (Internal-866)
+* dependabot update recommendation: `certifi` 2024.7.4 to 2026.10.19, `djangorestframework` from 3.15.2 to 3.18.2
+* added more logs for the login loop (Internal-847)
+* fixed bug preventing Comm users from accessing certain attachment links (Internal-868)
+
+
+Version 3.0.51 2026-10-20
+
+* added more logs for the login loop (Internal-847)
+
+
+Version 3.0.50 2026-10-07
+
+* dependabot update recommendation: `soupsieve` 2.8.4 to 2.9, `urllib3` 2.7.0 to 2.8.0, `pyjwt` 2.13.0 to 2.15.0
+* added logging to get more information if login loop happens again (Internal-847)
+* added timeouts to Cognito calls to reduce possibility of 504s (Internal-865)
+* simplified health check endpoint to reduce possibility of 504s
+* fixed wording for status change modal (Internal-864)
+
+
+Version 3.0.49 2026-09-17
+
+* added code for a followup to be added to publication review tickets when approved (Internal-828)
+* added banner to VRF page (Internal-836)
+
+
+Version 3.0.48 2026-09-14
+
+* modified banner announcing VINCE-NT
+
+
+Version 3.0.47 2026-09-14
+
+* modified banner announcing VINCE-NT
+
+
+Version 3.0.46 2026-09-14
+
+* dependabot update recommendation: `djangorestframework` 3.15.2 to 3.17.2
+* added banner announcing VINCE-NT (Internal-836)
+
+
+Version 3.0.45 2026-08-24
+
+* dependabot update recommendation: `sqlparse` 0.5.4 to 0.6.0
+* created textboxes for coordinators to add comments on cases in case search view (Internal-862)
+* fixed broken link to MDE documentation (Internal-863)
+* lowered timeouts for gunicorn & nginx (Internal-857)
+
+
 Version 3.0.44 2026-08-12
 
 * dependabot update recommendations: `awscli` 1.44.38 to 1.45.28 with corresponding updates - `boto3` to 1.43.28, `botocore` to 1.43.28, `s3transfer` 0.16.0 to 0.18.0

@@ -581,7 +581,14 @@ class UploadFileForm(forms.ModelForm):
 
             vc_case = Case.objects.filter(vuid=case.vuid).first()
 
-            attach = VinceTrackAttachment(file=att, vulnote=vulnote, case=vc_case)
+            # A notify-page upload (vulnote=False) is meant to be read by Comm
+            # participants, so share it immediately. Vulnote-draft uploads
+            # (vulnote=True) stay private until the vulnote is published.
+            is_participant_facing = not vulnote
+
+            attach = VinceTrackAttachment(
+                file=att, vulnote=vulnote, case=vc_case, shared=is_participant_facing
+            )
             attach.save(using="vincecomm")
 
             vf = VinceFile(user=self.user, case=case, filename=att.filename, vulnote=vulnote, comm_id=attach.id)

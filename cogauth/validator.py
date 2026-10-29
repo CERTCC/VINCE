@@ -54,7 +54,13 @@ class TokenValidator:
 
     @cached_property
     def _json_web_keys(self):
-        response = requests.get(self.pool_url + "/.well-known/jwks.json")
+        # Cognito lives cross-region (us-east-2); never let a slow/hung Cognito
+        # freeze the worker. (connect, read) seconds -- well under the 90s
+        # gunicorn worker timeout. Tunable via settings for ops.
+        timeout = getattr(settings, "COGNITO_HTTP_TIMEOUT", (3.05, 7))
+        response = requests.get(
+            self.pool_url + "/.well-known/jwks.json", timeout=timeout
+        )
         response.raise_for_status()
         json_data = response.json()
         return {item["kid"]: json.dumps(item) for item in json_data["keys"]}

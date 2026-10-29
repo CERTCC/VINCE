@@ -54,7 +54,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = environ.Path(__file__) - 3
 
 # any change that requires database migrations is a minor release
-VERSION = "3.0.44"
+VERSION = "3.0.52"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -155,6 +155,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # TEMPORARY login-loop diagnostic; MUST stay first (outermost) so its
+    # response code runs after SessionMiddleware sets/blanks the cookie. Remove after diagnosis.
+    "vince.dbrouter.SessionCookieLifecycleMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "vince.dbrouter.DatabaseRouterMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -165,11 +168,21 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "vince.middleware.MultipleDomainMiddleware",
+    # TEMPORARY session-bounce diagnostic (VIN login-loop investigation); remove after diagnosis.
+    "vince.dbrouter.SessionBounceDiagnosticMiddleware",
 ]
 
 # When sending emails containing links to tickets/cases
 # this server name will be used.  i.e: SERVER_NAME/vince/ticket/70
 SERVER_NAME = os.environ.get("SERVER_NAME", "http://localhost:8000")
+
+# Django 4.2 deprecated STATICFILES_STORAGE / DEFAULT_FILE_STORAGE in favor of
+# the STORAGES dict (they are removed in Django 5.1).  We establish the Django
+# defaults here and override individual backends below as needed.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
 
 # If we are deployed in S3, we store the static files in S3.  Set this up
 if os.environ.get("AWS_DEPLOYED"):
@@ -192,7 +205,7 @@ if os.environ.get("AWS_DEPLOYED"):
         STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
     # Tell the staticfiles app to use S3Boto3 storage when writing the collected static files (when
     # you run `collectstatic`).
-    STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    STORAGES["staticfiles"] = {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"}
     # set to True if you want VINCE to write a contacts backup file to an S3 directory,
     # you must also set ANCIENT_SRMAIL_BUCKET to S3 arn
     # To reload contacts into VINCE, set INITIAL_CONTACT_FILE and
@@ -589,7 +602,12 @@ TIME_ZONE = "UTC"
 
 USE_I18N = True
 
-USE_L10N = True
+# USE_L10N was removed in Django 5.0 (localized formatting is always enabled).
+
+# Transitional setting (Django 5.0+): forms.URLField assumes https:// for
+# schemeless input.  Opting in now adopts the Django 6.0 behavior and silences
+# the deprecation warning.
+FORMS_URLFIELD_ASSUME_HTTPS = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/

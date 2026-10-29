@@ -501,8 +501,11 @@ def human_format(num):
     return "{}{}".format("{:f}".format(num).rstrip("0").rstrip("."), ["", "K", "M", "B", "T"][magnitude])
 
 
-# def health_check(request):
-#     return HttpResponse("OK", status=200)
+def health_check(request):
+    # Lightweight load-balancer health check: returns 200 without touching
+    # Cognito, the database, or auth, so a slow dependency can't make the ELB
+    # mark every instance unhealthy at once. Keep it dependency-free.
+    return HttpResponse("OK", status=200)
 
 
 class EST(tzinfo):

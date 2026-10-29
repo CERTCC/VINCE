@@ -39,7 +39,6 @@ router.register("notes", views.VUNoteViewSet, basename="notes")
 router.register("api", views.VUNoteViewSet, basename="api_notes")
 
 urlpatterns = [
-    # path("health/", health_check),
     re_path("^$", views.IndexView.as_view(), name="index"),
     path("search/", views.SearchView.as_view(), name="search"),
     re_path("^search$", RedirectView.as_view(pattern_name="vincepub:search")),

@@ -65,6 +65,16 @@
   {% endif %}
 {% endif %}
 </h6>
+{% if not ticket.queue and ticket|case_access:user %}
+<div class="coordinator-note">
+  {% if ticket|case_write_access:user %}
+  <textarea class="coordinator-note-input" rows="2" maxlength="1000" placeholder="Add a note…" style="display:block; width:30em; max-width:100%; margin-top:4px; font-size:0.85em; resize:vertical;" data-note-url="{% url 'vince:casenote' ticket.id %}" data-original="{{ ticket.coordinator_note|default_if_none:'' }}">{{ ticket.coordinator_note|default_if_none:'' }}</textarea>
+  <span class="coordinator-note-status" aria-live="polite"></span>
+  {% elif ticket.coordinator_note %}
+  <p class="coordinator-note-readonly">{{ ticket.coordinator_note }}</p>
+  {% endif %}
+</div>
+{% endif %}
       {% if note.dateupdated != note.datefirstpublished %}
       <span class="updated-date">Updated {{ note.dateupdated|date:"F d, Y" }}</span>
       {% endif %}

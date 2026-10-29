@@ -1218,7 +1218,7 @@ def attachment_path(instance, filename):
         path = 'vince/attachments/%s/%s' % (instance.action.get_related_case.case_for_url, instance.action.id)
 
     att_path = os.path.join(settings.MEDIA_ROOT, path)
-    if settings.DEFAULT_FILE_STORAGE == "django.core.files.storage.FileSystemStorage":
+    if settings.STORAGES["default"]["BACKEND"] == "django.core.files.storage.FileSystemStorage":
         if not os.path.exists(att_path):
             os.makedirs(att_path, 0o777)
     return os.path.join(path, filename)
@@ -2081,6 +2081,14 @@ class VulnerabilityCase(models.Model):
     changes_to_publish = models.BooleanField(
         default = False,
         help_text=_('Switch to True if changes to case require publishing')
+    )
+
+    coordinator_note = models.TextField(
+        _('Coordinator Note'),
+        blank=True,
+        null=True,
+        help_text=_('A brief internal note for coordinators, shown on the case search page. '
+                    'Not visible to vendors or reporters and not full-text searchable.'),
     )
 
     search_vector = SearchVectorField(null=True)
@@ -4630,3 +4638,88 @@ class VinceAlerts(models.Model):
         blank=True,
         null=True,
     )
+
+
+class SSVCAssessment(models.Model):
+    """
+    Stores SSVC coordinator triage assessments for Case Requests.
+    """
+    case_request = models.ForeignKey(
+        'Ticket',
+        on_delete=models.CASCADE,
+        related_name='ssvc_assessments'
+    )
+
+    assessed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    assessed_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # Decision Point Values (7 inputs)
+    report_public = models.CharField(
+        max_length=2,
+        choices=[('Y', 'Yes'), ('N', 'No')],
+        verbose_name="Report Public"
+    )
+    supplier_contacted = models.CharField(
+        max_length=2,
+        choices=[('Y', 'Yes'), ('N', 'No')],
+        verbose_name="Supplier Contacted"
+    )
+    report_credibility = models.CharField(
+        max_length=2,
+        choices=[('C', 'Credible'), ('NC', 'Not Credible')],
+        verbose_name="Report Credibility"
+    )
+    supplier_cardinality = models.CharField(
+        max_length=2,
+        choices=[('O', 'One'), ('M', 'Multiple')],
+        verbose_name="Supplier Cardinality"
+    )
+    supplier_engagement = models.CharField(
+        max_length=2,
+        choices=[('A', 'Active'), ('U', 'Unresponsive')],
+        verbose_name="Supplier Engagement"
+    )
+    utility = models.CharField(
+        max_length=2,
+        choices=[
+            ('L', 'Laborious'),
+            ('E', 'Efficient'),
+            ('S', 'Super Effective')
+        ],
+        verbose_name="Utility"
+    )
+    public_safety_impact = models.CharField(
+        max_length=2,
+        choices=[('M', 'Minimal'), ('S', 'Significant')],
+        verbose_name="Public Safety Impact"
+    )
+
+    # Outcome (calculated)
+    outcome = models.CharField(
+        max_length=2,
+        choices=[
+            ('D', 'Decline'),
+            ('T', 'Track'),
+            ('C', 'Coordinate')
+        ],
+        verbose_name="Recommended Action"
+    )
+
+    # Optional: Store full SSVC JSON for reference
+    ssvc_json = JSONField(null=True, blank=True)
+
+    # Optional: Coordinator notes
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-assessed_at']
+        verbose_name = "SSVC Assessment"
+        verbose_name_plural = "SSVC Assessments"
+
+    def __str__(self):
+        return f"SSVC Assessment for {self.case_request} by {self.assessed_by} - {self.get_outcome_display()}"

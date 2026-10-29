@@ -144,7 +144,7 @@ h1.vince_login_logo {
 .announcement-banner {
     background-color: #b00;
     color: #fefefe;
-    font-size: xx-large;
+    font-size: small;
     padding-left: 20px;
     padding-right: 20px;
 }
@@ -153,8 +153,10 @@ h1.vince_login_logo {
     margin-bottom: 0rem;
 }
 
-.announcement-banner h4 {
+.announcement-banner h4,
+.login-announcement-banner h4 {
     font-weight: 700 !important;
+    font-size: 1.2em;
 }
 
 .announcement-banner ul {
@@ -168,12 +170,44 @@ h1.vince_login_logo {
     color: #fefefe;
 }
 
+/* Collapsible announcement banners: the banners are <details> elements and the
+   <summary> is the always-visible toggle bar. Collapsed, only the summary shows
+   (a thin bar prompting the user to expand); expanded, the full banner shows. */
+.announcement-banner > summary,
+.login-announcement-banner > summary {
+    cursor: pointer;
+    font-weight: 700;
+    padding: 2px 0;
+    outline: none;
+    list-style: none;           /* hide the default disclosure triangle (most browsers) */
+}
+.announcement-banner > summary::-webkit-details-marker,
+.login-announcement-banner > summary::-webkit-details-marker {
+    display: none;              /* hide the default disclosure triangle (WebKit/Chrome) */
+}
+.announcement-banner > summary::before,
+.login-announcement-banner > summary::before {
+    content: "\25B6  Click for an important announcement";  /* \25B6 = ▶ */
+}
+.announcement-banner[open] > summary::before,
+.login-announcement-banner[open] > summary::before {
+    content: "\25BC  Hide announcement";                    /* \25BC = ▼ */
+}
+/* When collapsed, make the prompt larger and give it more height so users notice
+   it. Only applies to the collapsed state (:not([open])); the expanded "Hide
+   announcement" toggle stays subtle. */
+.announcement-banner:not([open]) > summary,
+.login-announcement-banner:not([open]) > summary {
+    font-size: 1.15rem;
+    padding: 8px 0;
+}
+
 .login-announcement-banner {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    font-size: xx-large;
+    font-size: small;
     background-color: #b00;
     color: #fefefe;
     padding-left: 20px;
@@ -182,6 +216,27 @@ h1.vince_login_logo {
 
 .login-announcement-banner p {
     margin-bottom: 0rem;
+}
+
+/* Login-page announcement popup (cogauth/login.html). Keep the modal text clear
+   of the Foundation close button, which is absolutely positioned top-right.
+   Note: `.reveal { padding: 0 !important }` (below) forces zero padding on all
+   reveals, so this rule needs the extra specificity + !important to win. */
+.reveal.announcement-modal {
+    padding: 3.5rem 1rem 1rem !important;
+    width: 90%;
+    max-width: 800px;
+}
+.announcement-modal .close-button {
+    top: 0.5rem;
+    right: 0.75rem;
+}
+.temporary-alert {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
 }
 
 .site-wrapper {
@@ -1431,9 +1486,12 @@ div.homelink a {
     padding-right:0;
 }
 
-/* When putting up an announcement-banner, change padding-top for the following selectors to something appropriate, so that */
-/* the sidebar menu does not get partially obscured by the banner when scrolling down, When the banner goes away, */
-/* change it back to 150px and 130px respectively. */
+/* NOTE: while an .announcement-banner is present, align_sidemenus_below_banner() in
+   vincefoundation.js measures the header height and injects a stylesheet rule that
+   overrides the padding-top below (and the .less_padding[_vt] `top` further down).
+   Editing these px while a banner is up therefore has no visible effect. The values
+   below only apply when no banner is present (150px / 130px are the no-banner
+   defaults). */
 
 
 #offCanvasLeft1 {
@@ -1441,8 +1499,8 @@ div.homelink a {
     background-color: #f1f1f2;
     border-right: 1px solid #c2c2c2;
     color: #4d4d4f;
-    padding-top: 150px;
-    /* padding-top: 225px; */
+    /* padding-top: 150px; */
+    padding-top: 225px;
 
 }
 
@@ -1456,20 +1514,23 @@ div.homelink a {
 
 }
 
-/* When putting up an announcement-banner, change top for the following two selectors to something appropriate, so that */
-/* the sidebar menu does not get partially obscured by the banner when scrolling down. When the banner goes away, */
-/* change it back to "0 !important". */
+/* These classes are toggled onto ul.vincesidemenu on scroll-down by vincecomm.js
+   (.less_padding) and vince.js (.less_padding_vt). While an .announcement-banner is
+   present, align_sidemenus_below_banner() in vincefoundation.js injects a rule that
+   overrides the `top` below with the measured header height, so editing this px has
+   no effect while a banner is up. The 225px is a pre-JS fallback; the no-banner
+   value is "0 !important". */
 
 .less_padding {
-    top: 0 !important;
-    /* top: 225px !important; */
+    /* top: 0 !important; */
+    top: 225px !important;
     position: absolute;
     width:100%;
 }
 
 .less_padding_vt {
-    top: 0px !important;
-    /* top: 225px !important; */
+    /* top: 0px !important; */
+    top: 225px !important;
     position: absolute;
     width:100%;
 }
@@ -1482,8 +1543,8 @@ div.homelink a {
     background-color: #282829;
     border-right: 1px solid #c2c2c2;
     color: #f1f1f2;
-    padding-top:130px;
-    /* padding-top: 225px; */
+    /* padding-top:130px; */
+    padding-top: 225px;
 
 }
 
@@ -1491,8 +1552,8 @@ div.homelink a {
     background-color: #f1f1f2;
     border-right: 1px solid #c2c2c2;
     color: #4d4d4f;
-    padding-top: 150px;
-    /* padding-top:225px; */
+    /* padding-top: 150px; */
+    padding-top:225px;
 }
 
 /*.position-left.reveal-for-medium ~ .off-canvas-content {

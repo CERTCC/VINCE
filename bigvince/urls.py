@@ -57,6 +57,12 @@ from kbworker import views as kbworker_views
 
 
 urlpatterns = [
+    # Root-level load-balancer health check. Deliberately NOT inside a
+    # namespaced include (vuls/vince/vince/comm): MultipleDomainMiddleware
+    # 302-redirects cross-namespace paths, which would fail the health check on
+    # the Comm/Track environments. A bare "health" view_name isn't domain-mapped,
+    # so it returns 200 on every environment. Served at /health/.
+    path('health/', vincepub_views.health_check, name='health'),
     path('vuls/', include(('vincepub.urls', 'vincepub'), namespace="vincepub")),
     path('vince/', include(('vincepub.vince_urls', 'pub'), namespace='pub')),
     re_path('^CERT_WEB/services/vul-notes.nsf/bypublished/?$', RedirectView.as_view(url='/vuls/bypublished/desc')),

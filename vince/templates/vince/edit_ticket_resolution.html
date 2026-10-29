@@ -7,7 +7,7 @@
       </div>
       <div class="modal-body">
         {% csrf_token %}
-	{{ form }}
+	{{ form.as_table }}
       </div>
       <div class="modal-footer text-right">
         <a href="#" class="hollow button cancel_confirm" data-close type="cancel">Cancel</a>

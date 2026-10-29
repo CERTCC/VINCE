@@ -7,7 +7,7 @@
       </div>
       <div class="modal-body">
         {% csrf_token %}
-	{{ form }}
+	{{ form.as_table }}
 
 	<p><small>Depending on permissions, you may not be able to view or edit the ticket once re-assigned.</p>
       </div>

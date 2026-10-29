@@ -45,6 +45,8 @@ from django.utils.safestring import mark_safe
 from django.contrib.auth.models import User, Group
 from django.utils.html import urlize as urlize_impl
 from bs4 import BeautifulSoup
+from vince.permissions import has_case_write_access
+from vince.models import VulnerabilityCase
 import logging
 
 logger = logging.getLogger(__name__)
@@ -185,4 +187,13 @@ def case_access(case, user):
     if isinstance(case, int):
         return CasePermissions.objects.filter(case__id=case, group__in=user_groups, group_read=True).exists()
     return CasePermissions.objects.filter(case=case, group__in=user_groups, group_read=True).exists()
-    
+
+
+@register.filter
+def case_write_access(case, user):
+    if isinstance(case, int):
+        case = VulnerabilityCase.objects.filter(id=case).first()
+        if not case:
+            return False
+    return has_case_write_access(user, case)
+

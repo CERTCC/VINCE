@@ -11,7 +11,7 @@
 
 <form action="{% url 'cogauth:account_activation_sent' %}" method="post" class="form">
   {% csrf_token %}
-  {{ form }}
+  {{ form.as_table }}
   <input type="submit" class="primary button expanded search-button" value="Submit">
 </form>
   
